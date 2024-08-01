@@ -1,0 +1,17 @@
+.signOutBtn {
+    font-size: 24px; /* Increase the font size for the icon */
+    padding: 10px 20px; /* Add padding to make the button bigger */
+    border: none; /* Remove default border */
+    background-color: #171717; /* Set background color */
+    color: white; /* Set text color */
+    cursor: pointer; /* Change cursor on hover */
+    display: flex; /* Use flex to center the icon */
+    align-items: center; /* Center the icon vertically */
+    justify-content: center; /* Center the icon horizontally */
+    border-radius: 5px; /* Add some border radius */
+    transition: background-color 0.3s; /* Smooth transition for background color change */
+}
+
+.signOutBtn:hover {
+    background-color: #333; /* Darken background on hover */
+}
