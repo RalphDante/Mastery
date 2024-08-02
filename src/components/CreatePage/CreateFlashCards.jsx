@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import styles from './CreateFilePage.module.css';
+
 
 function CreateFlashCards({onAddFlashCard}){
+
+    const textareaRefs = useRef([]);
 
     const [question, setQuestion] = useState("");
     const [answer, setAnswer] = useState("");
@@ -14,28 +18,58 @@ function CreateFlashCards({onAddFlashCard}){
         onAddFlashCard({question, answer})
         setQuestion("");
         setAnswer("");
-
+        resetSizes()
     }
 
+    
+    const autoResize = (e)=>{
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 'px';
+    }
+
+    const resetSizes = ()=>{
+        textareaRefs.current.forEach((textarea)=>{
+            textarea.style.height = 'auto'
+        })
+    }
+
+    
+
     return(
-        <div>
             <form onSubmit={addAsFlashCard}>
                 
+            <div className={styles.createFlashCardContainer}>
 
-
-                <input type="text" value={question}
-                onChange={(e) => setQuestion(e.target.value)}
+            <div className={styles.questionContainer}>
+                <textarea className={styles.flashCardInput} type="text" value={question}
+                ref={(el)=>textareaRefs.current[0] = el}
+                onChange={(e) =>{ 
+                    setQuestion(e.target.value) 
+                    autoResize(e)
+                }}
                 placeholder = "question"
-                ></input>
-                <input type="text" value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                placeholder = "answer"
-                ></input>
+                onInput={autoResize}
 
+                ></textarea>
+            </div>
+            <div className={styles.answerContainer}>
+                <textarea className={styles.flashCardInput} type="text" value={answer}
+                ref={(el)=>textareaRefs.current[1] = el}
+                onChange={(e) =>{
+                    setAnswer(e.target.value)
+                    autoResize(e)
+                }}
+                onInput={autoResize}
+                placeholder = "answer"
+                ></textarea>
+
+            </div>
+            </div>
+            
+               
 
                 <button type="submit">Add as Flash Card</button>
             </form>
-        </div>
     )
 
 }

@@ -1,0 +1,10 @@
+{
+  "projects": {
+    "default": "mastery-innovate",
+    "prod": "mastery-innovate",
+    "quizyyy": "quizlet-fa547"
+  },
+  "targets": {},
+  "etags": {},
+  "dataconnectEmulatorConfig": {}
+}

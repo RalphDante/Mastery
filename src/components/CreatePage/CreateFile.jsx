@@ -16,6 +16,15 @@ function CreateFile(){
     const [flashCards, setFlashCards] = useState([]);
     const [authUser, setAuthUser] = useState(null);
 
+    const navigate = useNavigate(); 
+
+    const autoResize = (e) => {
+        setTimeout(() => {
+            e.target.style.height = 'auto';
+            e.target.style.height = e.target.scrollHeight + 'px';
+        }, 0);
+    };
+
 
     useState(()=>{
         onAuthStateChanged(auth, (user) =>{
@@ -36,13 +45,7 @@ function CreateFile(){
     };
 
 
-    const updateFlashCard = (index, updatedFlashCard) => {
-        const newFlashCard = flashCards.map((fc, idx)=>
-        index === idx ? updatedFlashCard : fc
-        );
-
-        setFlashCards(newFlashCard);
-    }
+   
 
 
     const deleteFlashCard = (index)=>{
@@ -70,8 +73,10 @@ function CreateFile(){
     set(newDocRef, {
         Description: fileDescription,
         Flashcards: flashCards
-    }).then(
-        alert("Saved Successfuly")
+    }).then(()=>{
+        navigate('/flashcards', {state: {fileName: `${folderName}/${fileName}`}});
+        // alert("Saved Successfuly")
+    }
     )
     
 
@@ -87,10 +92,14 @@ function CreateFile(){
             placeholder='Enter File Name'
             ></input>
             <br></br>
-            <input className={styles.fileNameInput} type="text" value={fileDescription}
-            onChange={(e)=>setFileDescription(e.target.value)}
+            <textarea className={styles.fileNameInput} type="text" value={fileDescription}
+            onChange={(e)=>{
+                setFileDescription(e.target.value)
+                autoResize(e)
+            }}
             placeholder='Enter File Description'
-            ></input>
+            onInput={autoResize}
+            ></textarea>
 
             <h4 style={{marginBottom: '4px'}}>Your Juicy Flash Cards</h4>
 
@@ -106,9 +115,11 @@ function CreateFile(){
             flashCards ={flashCards}
             onDelete = {deleteFlashCard}
             setFlashCards={setFlashCards}
+            autoResize={autoResize}
             />
 
-            <CreateFlashCards onAddFlashCard={addFlashCard}/>
+            <CreateFlashCards onAddFlashCard={addFlashCard} 
+            autoResize={autoResize}/>
 
             <br></br>
 

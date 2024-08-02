@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './CreateFilePage.module.css'
 
 
-function DisplayFlashCards({flashCards, setFlashCards, onDelete}){
+function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
+
+    const textareaRefs = useRef([]);
 
     const onEdit = (index, fieldType, value)=>{
         const editedFlashCard = flashCards.map((flashCard, i)=>{
@@ -12,7 +14,13 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete}){
         setFlashCards(editedFlashCard);
     }
 
-
+    useEffect(() => {
+        textareaRefs.current.forEach(textarea => {
+            if (textarea) {
+                autoResize({ target: textarea });
+            }
+        });
+    }, [flashCards, autoResize]);
 
 
     
@@ -26,23 +34,35 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete}){
                          
                         <div className={styles.innerDisplayFlashCardsContainer}>
                             <div className={styles.questionContainer}>
-                                <input className={styles.flashCardInput} value={flashCard.question}
-                                    onChange={(e)=>onEdit(index, 'question', e.target.value)}
+                                <textarea className={styles.flashCardInput} value={flashCard.question}
+                                    ref={el => textareaRefs.current[index * 2] = el}
+                                    onChange={(e)=>{
+                                        onEdit(index, 'question', e.target.value)
+                                        autoResize(e)
+                                    }}
                                     placeholder='Question'
-                                    ></input>
-                                    <button onClick={()=>onDelete(index)}>Delete</button>
+                                    onInput={autoResize}
+                                    ></textarea>
 
                             </div>
                             <div className={styles.answerContainer}>
-                                <input className={styles.flashCardInput}value={flashCard.answer}
-                                    onChange={(e)=>onEdit(index, 'answer', e.target.value)}
+                                <textarea className={styles.flashCardInput} value={flashCard.answer}
+                                    ref={el => textareaRefs.current[index * 2 + 1] = el}
+                                    onChange={(e)=>{
+                                        onEdit(index, 'answer', e.target.value)
+                                        autoResize(e)
+                                    }}
                                     placeholder='Answer'
+                                    onInput={autoResize}
                                 
-                                ></input>
+                                ></textarea>
 
                             </div>
+
                                 
                         </div>
+                        <button onClick={()=>onDelete(index)}>Delete</button>
+
 
                     
                     </li>

@@ -11,7 +11,7 @@ import {auth} from '../../firebase'
 function CreateFolder (){
 
     const navigate = useNavigate();
-    const location = useLocation();
+
 
     const [authUser, setAuthUser] = useState(null);
 
@@ -46,7 +46,7 @@ function CreateFolder (){
             set(newDocRef, {
                 Description: folderDescription
             }).then(()=>{
-                alert("Saved successfuly")
+                // alert("Saved successfuly")
                 navigate('/createfile', {state: {folderName: folderName}});
             })
             } else {
@@ -58,7 +58,7 @@ function CreateFolder (){
     return(
         <div>
             <h1>Create a Folder</h1>
-            <h1>Signed in as {authUser ? authUser.email : 'Loading...'}</h1>
+            {/* <h1>Signed in as {authUser ? authUser.email : 'Loading...'}</h1> */}
             
             <input type="text" value={folderName}
             onChange={(e) => setFolderName(e.target.value)}

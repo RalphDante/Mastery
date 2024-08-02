@@ -25,6 +25,9 @@
   transition: .4s;
   margin-bottom: 3px;
   box-sizing: border-box;
+  min-height: 50px;
+  resize: none;
+  overflow-y: auto;
 }
 
 .fileNameInput:hover {
@@ -41,6 +44,8 @@
 
 .innerDisplayFlashCardsContainer {
     display: flex;
+    margin-bottom: 10px;
+    
 }
 
 .list {
@@ -68,12 +73,20 @@
     transition: .4s;
     margin-bottom: 3px;
     box-sizing: border-box;
-    width:99.8%;
+    width:99.5%;
     overflow-X: auto;
+    overflow-y: auto;
+    resize: none;
+    min-height: 50px;
+
 }
 
 .questionContainer {
     width: 50%;
+    box-sizing: border-box;
+    display: flex;
+    background-color: red;
+    
 }
 
 .answerContainer {
@@ -82,10 +95,20 @@
     padding-right: 0px;
     display: flex;
     justify-content: flex-end; /* Align content to the right */
+    background-color: blue;
+
 }
 
 .flashCardInput:hover {
     box-shadow: 0 0 0 .15vw rgba(135, 207, 235, 0.186);
+  }
+
+
+  /* FLASH CARD CREATOR CONTAINER */
+
+  .createFlashCardContainer {
+    display: flex;
+    min-height: 80px;
   }
 
   
