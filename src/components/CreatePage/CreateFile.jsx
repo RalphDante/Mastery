@@ -6,6 +6,7 @@ import DisplayFlashCards from './DisplayFlashCards';
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../firebase'
 import styles from './CreateFilePage.module.css'
+import { useEffect } from 'react';
 
 import CreateFlashCards from './CreateFlashCards';
 
@@ -13,8 +14,9 @@ function CreateFile(){
 
     const [fileName, setFileName] = useState("");
     const [fileDescription, setFileDescription] = useState("");
-    const [flashCards, setFlashCards] = useState([]);
+    const [flashCards, setFlashCards] = useState([{question: "", answer: ""},{question: "", answer: ""},{question: "", answer: ""}]);
     const [authUser, setAuthUser] = useState(null);
+
 
     const navigate = useNavigate(); 
 
@@ -26,7 +28,7 @@ function CreateFile(){
     };
 
 
-    useState(()=>{
+    useEffect(()=>{
         onAuthStateChanged(auth, (user) =>{
             if(user){
                 setAuthUser(user);
@@ -53,9 +55,24 @@ function CreateFile(){
         setFlashCards(newFlashCard)
     }
     
+
+    const checkEmpty = () => {
+        for (const flashCard of flashCards) {
+            if (flashCard.question.trim() === "" || flashCard.answer.trim() === "") {
+                return true; // Return true if any flashcard is empty
+            }
+        }
+        return false; // Return false if no flashcards are empty
+    }
+    
    
 
     const saveData = () => {
+    const isEmpty = checkEmpty()
+    if (isEmpty) {
+        alert("There is an empty question or answer")
+        return;
+    }
     
     if(fileName === "" || fileDescription === ""){
         alert("Please enter your File Name and its Description")
@@ -64,7 +81,7 @@ function CreateFile(){
         alert("Please add at least 3 flashcards")
         return;
     }
-
+    
     const uid = authUser.uid
     const db = getDatabase(app);
     const newFileRef = ref(db, `QuizletsFolders/${uid}/${folderName}/${fileName}`);
@@ -128,8 +145,11 @@ function CreateFile(){
 
             <br></br>
 
-            
-            <button className={styles.saveBtn} onClick={saveData} >Save</button>
+            <div className={styles.saveBtnContainer}>
+                <button className={styles.saveBtn} onClick={saveData} >Save</button>
+
+            </div>
+
 
 
         </div>

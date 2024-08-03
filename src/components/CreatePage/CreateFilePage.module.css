@@ -118,6 +118,7 @@
     display: flex;
     min-height: 80px;
     justify-content: space-between;
+    
   }
 
 
@@ -152,7 +153,7 @@
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgb(252, 70, 100);
+    background-color: rgba(252, 70, 100, 0.534);
     transform: translateX(-100%);
     transition: all .3s;
     z-index: -1;
@@ -162,10 +163,53 @@
     transform: translateX(0);
    }
   
+   
+
+   /* ADD NEW FLASH CARD BUTTON */
+
+   .addNewFlashCardBtnContainer {
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgb(28,28,30);
+    border-radius: 0.4vw;
+    box-shadow: 0 0 .4vw rgba(0,0,0,0.5), 0 0 0 .15vw transparent;
+    transition: .4s;
+
+   }
+
+   .addNewFlashCardBtnContainer:hover {
+    box-shadow: 0 0 0 .15vw rgba(135, 207, 235, 0.186);
+   }
+
+   .addCardBtn {
+    display: inline-block;
+    padding: 0.2rem 0.1rem;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    border: none;
+    border-bottom: 3px solid #2eb533;
+    cursor: pointer;
+    position: relative;
+    background-color: transparent;
+    text-decoration: none;
+    overflow: hidden;
+    z-index: 1;
+    height: 40px;
+    width: 130px;
+    display: flex; /* Use flexbox for better alignment */
+    align-items: center; /* Center text vertically */ 
+    justify-content: center; /* Center text horizontally */
+   }
+
+   /* SAVE BUTTON CONTAINER */
+
    .saveBtn {
     display: inline-block;
     padding: 0.9rem 1.8rem;
-    font-size: 12px;
+    font-size: 20px;
     font-weight: 700;
     color: white;
     border: 3px solid #6b71eb;
@@ -175,10 +219,33 @@
     text-decoration: none;
     overflow: hidden;
     z-index: 1;
-    height: 10px;
-    width: 30px;
+    height: 40px;
+    width: 100px;
     display: flex; /* Use flexbox for better alignment */
     align-items: center; /* Center text vertically */ 
     justify-content: center; /* Center text horizontally */
+    margin-bottom: 10px;
     
+   }
+
+   .saveBtn::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #6b71eb;
+    transform: translateX(-100%);
+    transition: all .3s;
+    z-index: -1;
+   }
+   
+   .saveBtn:hover::before {
+    transform: translateX(0);
+   }
+
+   .saveBtnContainer {
+    display: flex;
+    justify-content: flex-end;
    }

@@ -11,10 +11,10 @@ function CreateFlashCards({onAddFlashCard}){
 
     const addAsFlashCard = (e) => {
         e.preventDefault();
-        if (question.trim() === "" || answer.trim() === "") {
-            alert("Please enter both a question and an answer.");
-            return;
-        }
+        // if (question.trim() === "" || answer.trim() === "") {
+        //     alert("Please enter both a question and an answer.");
+        //     return;
+        // }
         onAddFlashCard({question, answer})
         setQuestion("");
         setAnswer("");
@@ -36,40 +36,12 @@ function CreateFlashCards({onAddFlashCard}){
     
 
     return(
-            <form onSubmit={addAsFlashCard}>
-                
-            <div className={styles.createFlashCardContainer}>
-
-            <div className={styles.questionContainer}>
-                <textarea className={styles.flashCardInput} type="text" value={question}
-                ref={(el)=>textareaRefs.current[0] = el}
-                onChange={(e) =>{ 
-                    setQuestion(e.target.value) 
-                    autoResize(e)
-                }}
-                placeholder = "question"
-                onInput={autoResize}
-
-                ></textarea>
-            </div>
-            <div className={styles.answerContainer}>
-                <textarea className={styles.flashCardInput} type="text" value={answer}
-                ref={(el)=>textareaRefs.current[1] = el}
-                onChange={(e) =>{
-                    setAnswer(e.target.value)
-                    autoResize(e)
-                }}
-                onInput={autoResize}
-                placeholder = "answer"
-                ></textarea>
-
-            </div>
-            </div>
             
-               
+        <div className={styles.addNewFlashCardBtnContainer}>
+            <button className={styles.addCardBtn} onClick={addAsFlashCard}>ADD CARD</button>
+                
+        </div>
 
-                <button type="submit">Add as Flash Card</button>
-            </form>
     )
 
 }
