@@ -5,6 +5,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { auth } from "../../firebase";
 import { onValue } from "firebase/database";
+import CreateFileInDisplayFilesBtn from "./CreateFileInDisplayFilesBtn";
 
 
 function DisplayFiles({folderUID}) {
@@ -70,6 +71,7 @@ function DisplayFiles({folderUID}) {
                     </li>
                 ))}
             </ul>
+            <CreateFileInDisplayFilesBtn/ >
         </div>
     );
 }
