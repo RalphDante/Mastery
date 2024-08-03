@@ -2,7 +2,8 @@
   "projects": {
     "default": "mastery-innovate",
     "prod": "mastery-innovate",
-    "quizyyy": "quizlet-fa547"
+    "quizyyy": "quizlet-fa547",
+    "hosting mastery": "mastery-innovate"
   },
   "targets": {},
   "etags": {},

@@ -101,12 +101,12 @@ function CreateFile(){
             onInput={autoResize}
             ></textarea>
 
-            <h4 style={{marginBottom: '4px'}}>Your Juicy Flash Cards</h4>
-
-            <div style={{height: '1px', backgroundColor: 'rgb(135, 207, 235, 0.186)', width: '100%', margin: '0'}}></div>
+            <h4 style={{marginBottom: '10px'}}>Your Juicy Flash Cards</h4>
 
 
-            <br></br>
+
+
+            {/* <br></br> */}
 
 
             {/* FLASHCARDS */}
@@ -118,14 +118,18 @@ function CreateFile(){
             autoResize={autoResize}
             />
 
+            <div style={{height: '1px', backgroundColor: 'rgb(135, 207, 235, 0.186)', width: '100%', marginBottom: '20px', marginTop: '20px'}}></div>
+
+
+
+
             <CreateFlashCards onAddFlashCard={addFlashCard} 
             autoResize={autoResize}/>
 
             <br></br>
 
             
-
-            <button onClick={saveData}>Save</button>
+            <button className={styles.saveBtn} onClick={saveData} >Save</button>
 
 
         </div>

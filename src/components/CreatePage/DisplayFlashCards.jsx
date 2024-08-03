@@ -61,7 +61,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
                                 
                         </div>
-                        <button onClick={()=>onDelete(index)}>Delete</button>
+                        <div>
+                            <button className={styles.btn} onClick={()=>onDelete(index)}>Delete</button>
+
+                        </div>
 
 
                     
