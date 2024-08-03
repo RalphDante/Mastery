@@ -24,7 +24,9 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
 
     const [answers, setAnswers] = useState([]);
- 
+    
+
+    const [processing, setProcessing] = useState(false)
 
 
     const db = getDatabase(app);
@@ -88,6 +90,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     }, [fetchFlashCards]);
 
     const handleShuffle = ()=>{
+        setProcessing(false)
         let flashCardsCopy = [...flashCards];
         let shuffledFlashCards = [];
         while(flashCardsCopy.length != 0){
@@ -106,27 +109,41 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
 
     const handleKnow = ()=>{
+
+        setProcessing(true)
+
         if(currentIndex < flashCards.length){
             setShowAnswer(false)
             setTimeout(()=>{
                 setCurrentIndex(currentIndex+1)
                 knowAnswer(prev => prev + 1)
                 setAnswers([...answers, true])
-            }, 200)
+                setProcessing(false)
+            },  200)             
+        } else {
+            setProcessing(false)
         }
+
+        
     }
 
-    const handleDontKnow = ()=>{
-        if(currentIndex < flashCards.length){
-            setShowAnswer(false)
-            setTimeout(()=>{
-                setCurrentIndex(currentIndex+1)
-                dontKnowAnswer(prev => prev+1)
-                setAnswers([...answers, false])
 
-            },200)
-            
-        } 
+    const handleDontKnow = ()=>{
+
+        setProcessing(true)
+   
+        if(currentIndex < flashCards.length){
+        setShowAnswer(false)
+        setTimeout(()=>{
+            setCurrentIndex(currentIndex+1)
+            dontKnowAnswer(prev => prev+1)
+            setAnswers([...answers, false])
+            setProcessing(false)
+
+        },200)
+        } else {
+            setProcessing(false);
+        }
     }
 
     const handleShowAnswer = ()=>{
@@ -140,6 +157,9 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
 
     const handleGoBack = ()=>{
+
+    
+        setProcessing(true)
         if(currentIndex > 0){
             setShowAnswer(false)
             setTimeout(()=>{
@@ -151,10 +171,13 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
                 }
                 setCurrentIndex(currentIndex-1)
                 setAnswers(answers.slice(0, -1));
+                setProcessing(false)
 
             },200)
             
             
+        } else {
+            setProcessing(false)
         }
     }
 
@@ -189,12 +212,12 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
             </div>
             
             <div className={styles.buttonsContainer}>
-                <button className={styles.outerFlashCardButtons} onClick={()=>handleGoBack()}><i class="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i></button>
-                <button className={styles.innerFlashCardButtons} onClick={()=>handleDontKnow()}><i class="fa-solid fa-xmark" id="wrongButton"></i></button>
+                <button className={styles.outerFlashCardButtons} disabled={processing} onClick={()=>handleGoBack()}><i class="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i></button>
+                <button className={styles.innerFlashCardButtons} disabled={processing} onClick={()=>handleDontKnow()}><i class="fa-solid fa-xmark" id="wrongButton"></i></button>
                 <div className={styles.scoreContainer}>
                     <h2 style={{margin: '0px'}}>{currentIndex < flashCards.length? `${currentIndex+1}/${flashCards.length}`: `${flashCards.length}/${flashCards.length}`}</h2>
                 </div>
-                <button className={styles.innerFlashCardButtons} onClick={()=>handleKnow()}><i class="fa-solid fa-check" id="checkButton"></i></button>
+                <button className={styles.innerFlashCardButtons} disabled={processing} onClick={()=>handleKnow()}><i class="fa-solid fa-check" id="checkButton"></i></button>
                 <button className={styles.outerFlashCardButtons} onClick={()=>handleShuffle()}><i class="fa-solid fa-repeat"></i></button>
             </div>
             
