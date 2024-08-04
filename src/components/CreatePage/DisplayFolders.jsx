@@ -3,6 +3,7 @@ import {ref, getDatabase, onValue} from 'firebase/database';
 import {app} from '../../firebase';
 import DisplayFiles from './DisplayFiles'
 import { useNavigate, useLocation } from 'react-router-dom';
+import styles from './CreateFilePage.module.css'
 
 
 
@@ -17,7 +18,11 @@ function DisplayFolder({uid}){
   const db = getDatabase(app);
   const folderRef = ref(db, `QuizletsFolders/${uid}`)
 
+  const handleClick = (folderName,e)=>{
+    e.preventDefault();
 
+    navigate("/displayfiles", {state: {folderName: folderName}})
+  }
 
 
   useEffect(()=>{
@@ -41,21 +46,22 @@ function DisplayFolder({uid}){
       })
   },[uid])
   return (
-    <div>
-      <ul >
+    <div className={styles.folderListContainer}>
+    
       {folder.map((folderItem, index)=>(
         folder.length>0 ? (
-          <li>
-            <a href="#" onClick={(e)=>{
-              e.preventDefault();
+            <div onClick={(e)=>handleClick(folderItem.name,e)} className={styles.card}>
+                <div className={styles.card2}>
+                    
+                        <a style={{textDecoration: 'none'}} href="#" >{folderItem.name}</a>
+                 
 
-              navigate("/displayfiles", {state: {folderName: folderItem.name}})
-            }
+                     
 
-            }><p>{folderItem.name}</p></a>
+                </div>
+            </div>
             
-            <button>Delete</button>
-          </li>
+            
         ) : (
           <p>no folder</p>
         )
@@ -63,7 +69,6 @@ function DisplayFolder({uid}){
 
       }
 
-      </ul>
     </div>
 
 

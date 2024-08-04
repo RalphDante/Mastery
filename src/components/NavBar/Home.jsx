@@ -5,6 +5,7 @@ import {auth} from '../../firebase'
 import { useState, useEffect } from 'react';
 import DisplayFolders from '../CreatePage/DisplayFolders.jsx';
 import UserName from '../auth/UserName.jsx';
+import styles from './navbar.module.css';
 
 function Home() {
 
@@ -22,7 +23,7 @@ function Home() {
   },[])
 
   return(
-    <>
+    <div className={styles.homeContainer}>
 
 
     <h1>Your Folders</h1>
@@ -36,7 +37,7 @@ function Home() {
     <UserName />
     <Footer></Footer>
 
-    </>
+    </div>
   )
 
 }

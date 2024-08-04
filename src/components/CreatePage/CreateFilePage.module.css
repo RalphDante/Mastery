@@ -249,3 +249,86 @@
     display: flex;
     justify-content: flex-end;
    }
+  
+
+/* DISPLAY FOLDER PAGE */
+
+.folderListContainer {
+  max-width: 1014px;
+  height: 1000px;
+  display: flex;
+  flex-wrap: wrap;
+  margin: auto;
+  align-content: flex-start;
+  gap: 1rem;
+}
+
+.folderList {
+  list-style: none;
+  background-color: #2eb533;
+  padding: 0; /* Remove default padding */
+  margin: 0; /* Remove default margin */
+  
+}
+
+/* From Uiverse.io by Tiagoadag */ 
+.card {
+  width: 190px;
+  height: 100px;
+  border-radius: 20px;
+  transition: all .3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(163deg, #00ff75 0%, #3700ff 100%);
+  opacity: 0;
+  transition: opacity .3s;
+}
+
+.card2 {
+  width: 100%;
+  height: 100%;
+  background-color: rgb(44, 44, 44);
+  border-radius: 20px;
+  transition: all .2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.card2 a {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
+  text-align: center;
+  color: white;
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
+  padding: 10px;
+}
+
+.card:hover::before {
+  opacity: 1;
+}
+
+.card:hover .card2 {
+  transform: scale(0.98);
+  border-radius: 20px;
+}
+
+.card:hover {
+  box-shadow: 0px 0px 30px 1px rgba(0, 255, 117, 0.30);
+  cursor: pointer;
+}
