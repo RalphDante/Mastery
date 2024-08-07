@@ -65,13 +65,13 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                 const updatedFlashCards = [...flashCards];
                 updatedFlashCards[index][field] = downloadURL;
                 setFlashCards(updatedFlashCards)
+             
             } catch (error) {
                 console.error("Error uploading image: ", error);
-                alert("Error uploading file, please try again")
-            }
-            } else {
-                alert("Drop an image file")
-            }
+                alert("Error uploading file, please try again");
+            } 
+        } else {
+            alert("Drop an image file")
         }
     }
 
@@ -142,6 +142,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
     )
 
 
-
+}
 
 export default DisplayFlashCards;
