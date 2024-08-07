@@ -11,21 +11,12 @@ function CreateFlashCards({onAddFlashCard}){
 
     const addAsFlashCard = (e) => {
         e.preventDefault();
-        // if (question.trim() === "" || answer.trim() === "") {
-        //     alert("Please enter both a question and an answer.");
-        //     return;
-        // }
         onAddFlashCard({question, answer})
         setQuestion("");
         setAnswer("");
         resetSizes()
     }
 
-    
-    const autoResize = (e)=>{
-        e.target.style.height = 'auto';
-        e.target.style.height = e.target.scrollHeight + 'px';
-    }
 
     const resetSizes = ()=>{
         textareaRefs.current.forEach((textarea)=>{

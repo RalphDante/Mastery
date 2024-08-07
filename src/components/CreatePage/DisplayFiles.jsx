@@ -1,4 +1,4 @@
-import { getDatabase, ref } from "firebase/database";
+import { getDatabase, ref, remove } from "firebase/database";
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from "../../firebase"
 import { onAuthStateChanged } from "firebase/auth";
@@ -7,12 +7,15 @@ import { auth } from "../../firebase";
 import { onValue } from "firebase/database";
 import CreateFileInDisplayFilesBtn from "./CreateFileInDisplayFilesBtn";
 
+import styles from './CreateFilePage.module.css'
+
 
 function DisplayFiles({folderUID}) {
     const [authUser, setAuthUser] = useState(null);
     const [folderContents, setFolderContents] = useState([]);
-
     const navigate = useNavigate()
+
+    
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -26,8 +29,39 @@ function DisplayFiles({folderUID}) {
         return () => unsubscribe();
     }, []);
 
+
+
+    const handleDeleteFolder = (folderName) => {
+        if(authUser){
+            const db = getDatabase(app)
+            const folderRef = ref(db, `QuizletsFolders/${authUser.uid}/${folderName}`)
+
+            remove(folderRef).then(()=>{
+                console.log("Folder deleted")
+            }).catch((error)=>{
+                console.log(error)
+
+            })
+            
+            navigate("/home")
+        }
+        
+    }
+
+
+
+    
+
     const location = useLocation();
     const { folderName } = location.state
+
+
+    const handleFileClick = (item, e) => {
+        const newDirectory = `${folderName}/${item}`
+        e.preventDefault();
+        navigate("/flashcards", {state: {fileName: newDirectory}})
+    }
+
 
     useEffect(() => {
         if (authUser) {
@@ -53,25 +87,28 @@ function DisplayFiles({folderUID}) {
     }, [authUser, folderName]);
 
     return (
-        <div>
+        <div className={styles.displayFilesPage}>
             <h1>Currently in folder: {folderName}</h1>
-            <h1>You are in the display files: {authUser ? authUser.uid : "No account"}</h1>
-            <ul>
+            {/* <h1>You are in the display files: {authUser ? authUser.uid : "No account"}</h1> */}
+
+            <div className={styles.displayFilesContainer}>
                 {folderContents.map((item, index) => (
-                    <li key={index}>
-                        <a href="#" onClick={(e)=>{
-                            const newDirectory = `${folderName}/${item}`;
-                            e.preventDefault();
-                            navigate("/flashcards", {state: {fileName: newDirectory}})//this might have the same directory so be careful
-                            
-                        }}>
-                            
-                            <h2>{item}</h2>
-                        </a>
-                    </li>
-                ))}
-            </ul>
+
+                    <div className={styles.card} onClick={(e)=>handleFileClick(item, e)}>
+                        <div className={styles.card2} key={index}>
+                            <a href="#" style={{textDecoration: 'none'}}> 
+                                {item}
+                            </a>
+                        </div>
+                    </div>
+
+                    ))}
+
+                
+            </div>
             <CreateFileInDisplayFilesBtn/ >
+            <button onClick={()=>handleDeleteFolder(folderName)}>Delete Folder</button>
+                
         </div>
     );
 }

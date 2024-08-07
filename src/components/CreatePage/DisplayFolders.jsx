@@ -54,16 +54,12 @@ function DisplayFolder({uid}){
                 <div className={styles.card2}>
                     
                         <a style={{textDecoration: 'none'}} href="#" >{folderItem.name}</a>
-                 
-
-                     
-
                 </div>
             </div>
             
             
         ) : (
-          <p>no folder</p>
+          <h4>loading hehehe</h4>
         )
       ))
 
