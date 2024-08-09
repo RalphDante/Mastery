@@ -17,6 +17,7 @@ import CreateFolder from './components/CreatePage/CreateFolder.jsx'
 import CreateFile from './components/CreatePage/CreateFile.jsx'
 import DisplayFiles from './components/CreatePage/DisplayFiles.jsx';
 import DisplayFlashCardsPage from './components/FlashCardsPage/FlashCardsPage.jsx';
+import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx'
 
 
 function App() {
@@ -40,6 +41,7 @@ function App() {
                   <Route path="/createfile" element={<CreateFile />} />
                   <Route path="/displayfiles" element={<DisplayFiles />} />
                   <Route path="/flashcards" element={<DisplayFlashCardsPage />}/>
+                  <Route path="/editflashcard" element={<EditFlashCardPage />}/>
               </Routes>
 
               

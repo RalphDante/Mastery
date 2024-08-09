@@ -1,17 +1,33 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './CreateFilePage.module.css'
-import {app} from '../../firebase'
+import {app, auth} from '../../firebase'
 import {getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { onAuthStateChanged } from 'firebase/auth';
 
 
 
 function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
+
+    const [authUser, setAuthUser] = useState(null);
 
     const [image, setImage] = useState(null);
 
     const [draggingOverStates, setDraggingOverStates] = useState({});
 
     const textareaRefs = useRef([]);
+
+
+    useEffect(()=>{
+        onAuthStateChanged(auth, (user)=>{
+            if(user){
+                setAuthUser(user);
+            } else {
+                setAuthUser(null);
+            }
+        })
+
+    },[])
+
 
     const onEdit = (index, fieldType, value)=>{
         const editedFlashCard = flashCards.map((flashCard, i)=>{
@@ -52,7 +68,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         e.preventDefault();
         const file = e.dataTransfer.files[0];
 
-        if(file && file.type.startsWith('image/')){
+        if(file && file.type.startsWith('image/') && authUser){
             try {
                 const storage = getStorage(app)
 
@@ -86,7 +102,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                         <div className={styles.innerDisplayFlashCardsContainer}>
                             <div className={styles.questionContainer}>
                                 {flashCard.question.startsWith('https://firebasestorage.googleapis.com') ? (
-                                    <img src={flashCard.question} alt="Question" className={styles.flashCardImage}> </img>
+                                    <img src={flashCard.question} alt="Question" className={styles.flashCardImage} />
                                 ) : (
                                     <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-question`]? styles.dragOver : ''}`} value={flashCard.question}
                                     ref={el => textareaRefs.current[index * 2] = el}
@@ -106,7 +122,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
                             </div>
                             <div className={styles.answerContainer}>
-                                <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-answer`] ? styles.dragOver : ''}`} value={flashCard.answer}
+                                {flashCard.answer.startsWith('https://firebasestorage.googleapis.com') ? (
+                                    <img src={flashCard.answer} alt='Answer' className={styles.flashCardImage} />
+                                ) : (
+                                    <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-answer`] ? styles.dragOver : ''}`} value={flashCard.answer}
                                     ref={el => textareaRefs.current[index * 2 + 1] = el}
                                     onDragOver={(e)=>handleDragOver(e, 'answer', index)}
                                     onDrop={(e)=>handleDrop(e, 'answer', index)}
@@ -119,8 +138,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     placeholder='Answer'
                                     onInput={autoResize}
                                 
-                                ></textarea>
+                                    ></textarea>
 
+                                )}
+                                
                             </div>
 
                                 

@@ -5,6 +5,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useLocation } from "react-router-dom";
 import styles from './FlashCardsPage.module.css'
 
+import EditFlashCardBtn from './EditFlashCardBtn'
+
 
 function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
@@ -158,7 +160,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
     const handleGoBack = ()=>{
 
-    
         setProcessing(true)
         if(currentIndex > 0){
             setShowAnswer(false)
@@ -197,15 +198,28 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     return(
         <>
             {/* maybe put the buttons in a seperate component */}
-            
+            <EditFlashCardBtn
+                fileName = {fileName}
+            />
             
             <div className={styles.flashCardTextContainer} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
                     <div className={styles.flipCardFront}>
-                        <h2>{currentIndex != flashCards.length? currentQuestion: "You completed it!!!"}</h2>
+                        {currentQuestion ? (currentQuestion.startsWith('https://firebasestorage.googleapis.com') ? (
+                            <img src={currentQuestion} alt="question" className={styles.questionImage}/>
+                        ) : (
+                            <h2>{currentIndex != flashCards.length? currentQuestion: "You completed it!!!"}</h2>
+                        )) : <h2>loading...</h2>}
+                        
                     </div>
                     <div className={styles.flipCardBack}>
-                        <h2>{currentIndex != flashCards.length? currentAnswer: "You completed it!!!"}</h2>
+                        {currentAnswer ? currentAnswer.startsWith('https://firebasestorage.googleapis.com') ? (
+                            <img src={currentAnswer} alt="answer" className={styles.questionImage} />
+                        ) : (
+                            <h2>{currentIndex != flashCards.length? currentAnswer: "You completed it!!!"}</h2>
+                        ) : (
+                            <h2>loading...</h2>
+                        )}
                     </div>
                 </div>
                 

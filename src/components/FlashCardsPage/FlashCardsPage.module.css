@@ -11,7 +11,7 @@
     margin-left: 50px;
 }
 
-/* FLASHCARDS */
+/* FLASH CARD UI */
 .flashCardTextContainer {
     perspective: 1000px;
     background-color: transparent;
@@ -70,6 +70,12 @@
     overflow-y: auto; /* Add scrollbar to text if it exceeds the container */
 }
 
+.questionImage {
+    max-width: 100%;
+    max-height: 350px;
+    object-fit: contain;
+}
+
 /* BUTTONS */
 .buttonsContainer {
     display: flex;
@@ -114,6 +120,9 @@
 .outerFlashCardButtons:hover {
     background-color: #333;
 }
+
+
+/* SCORE */
 
 .scoreContainer {
     margin-left: 10px;
