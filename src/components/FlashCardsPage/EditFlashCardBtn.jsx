@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 
-function EditFlashCardBtn({folderName}){
+function EditFlashCardBtn({fileName}){
 
     const navigate = useNavigate();
 
     const handleEditFlashCard = ()=>{
-        navigate("/editflashcard", {state: {folderName : folderName}});
+        navigate("/editflashcard", {state: {fileName : fileName}});
         
     }
 

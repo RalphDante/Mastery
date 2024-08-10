@@ -12,6 +12,8 @@ function FlashCardsPage() {
     const location = useLocation();
     const { fileName } = location.state || {};
 
+
+
     const [authUser, setAuthUser] = useState(null);
     const db = getDatabase(app);
 
@@ -46,8 +48,10 @@ function FlashCardsPage() {
 
                     {/* {authUser ? <h1>Welcome {authUser.email}</h1> : <h1>No user</h1>} */}
                     <FlashCardUI 
+              
                         knowAnswer = {setKnowAnswer}
                         dontKnowAnswer={setDontKnowAnswer}
+                
                     />
 
                 </div>

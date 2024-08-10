@@ -1,8 +1,20 @@
-import CreateFile from '../CreatePage/CreateFile'
+import CreateFile from './CreateFile'
+
+import { useLocation } from 'react-router-dom';
 
 function EditFlashCardPage(){
+
+    const location = useLocation();
+
+    const {fileName} = location.state || {};
+
     return (
-        <CreateFile />
+        <div>
+            <CreateFile 
+            fileNameDirectory = {fileName}
+        />
+        </div>
+        
     )
 }
 

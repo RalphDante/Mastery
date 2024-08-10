@@ -40,8 +40,8 @@ function DisplayFolder({uid}){
 
         }
 
-  
-
+      return ()=> onSnapshot;
+ 
 
       })
   },[uid])

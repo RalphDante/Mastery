@@ -51,7 +51,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     
             const unsubscribe = onValue(fileDocRef, (snapshot) => {
                 const data = snapshot.val();
-                console.log("Snapshot:",data);
+                // console.log("Snapshot:",data);
 
                 if(data){
                     const descriptionUID = Object.keys(data);
@@ -80,7 +80,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     
             return () => unsubscribe();
         }
-    }, [authUser, fileName])
+    }, [authUser, fileName, db])
 
 
     
