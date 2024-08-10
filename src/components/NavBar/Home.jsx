@@ -26,15 +26,15 @@ function Home() {
     <div className={styles.homeContainer}>
 
 
-    <h1>Your Folders</h1>
+    <h1>Your Folders:</h1>
 
     <DisplayFolders uid={authUser.uid}/>
 
     {/* <CreateBtn /> */}
 
 
-    <h1>You are signed in as {authUser.email}</h1>
-    <UserName />
+    {/* <h1>You are signed in as {authUser.email}</h1> */}
+    {/* <UserName /> */}
     <Footer></Footer>
 
     </div>

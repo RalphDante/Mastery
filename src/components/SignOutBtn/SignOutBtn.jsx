@@ -10,7 +10,7 @@ function SignOutBtn (){
         try {
             await signOut(auth);
             console.log('User signed out');
-            navigate("/");
+            navigate("/signin");
         } catch (error) {
             console.error('Error signing out:', error);
         }

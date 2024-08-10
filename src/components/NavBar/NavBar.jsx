@@ -17,7 +17,7 @@ function NavBar() {
                         <h1 className={styles.navBarTitle}>Mastery</h1>
                         <ul className={styles.navList}>
                             <li className={styles.navItem}>
-                                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/home'); }}>Home</a>
+                                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Home</a>
                             </li>
                             <li className={styles.navItem}>
                                 <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }}>About</a>

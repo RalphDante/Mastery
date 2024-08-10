@@ -18,6 +18,7 @@ import CreateFile from './components/CreatePage/CreateFile.jsx'
 import DisplayFiles from './components/CreatePage/DisplayFiles.jsx';
 import DisplayFlashCardsPage from './components/FlashCardsPage/FlashCardsPage.jsx';
 import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx'
+import ContactMe from './components/NavBar/ContactMe.jsx'
 
 
 function App() {
@@ -32,16 +33,17 @@ function App() {
               </ShowNavBar>
        
               <Routes>
-                  <Route path="/" element={<SignIn />} />
+                  <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} />
                   <Route path="/authdetails" element={<AuthDetails />} />
-                  <Route path="/home" element={<Home />} />
+                  <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />
                   <Route path="/createfile" element={<CreateFile />} />
                   <Route path="/displayfiles" element={<DisplayFiles />} />
                   <Route path="/flashcards" element={<DisplayFlashCardsPage />}/>
                   <Route path="/editflashcard" element={<EditFlashCardPage />}/>
+                  <Route path="/contactme" element={<ContactMe />}/>
               </Routes>
 
               

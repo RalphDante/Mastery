@@ -14,7 +14,7 @@ function SignUp(){
         createUserWithEmailAndPassword(auth, email, password)
         .then((userCredential) => {
             console.log(userCredential)
-            navigate('/home')
+            navigate('/')
         })
         .catch((error) => {
             console.log(error)
