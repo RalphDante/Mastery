@@ -6,11 +6,13 @@ import { useState, useEffect } from 'react';
 import DisplayFolders from '../CreatePage/DisplayFolders.jsx';
 import UserName from '../auth/UserName.jsx';
 import styles from './navbar.module.css';
+import { useNavigate } from 'react-router-dom';
 
 function Home() {
 
-  const [authUser, setAuthUser] = useState("");
+  const [authUser, setAuthUser] = useState(null);
 
+  const navigate = useNavigate();
 
   useEffect(()=>{
     onAuthStateChanged(auth, (user) =>{
@@ -18,6 +20,7 @@ function Home() {
         setAuthUser(user)
       }else{
         setAuthUser(null)
+        navigate('/signin');
       }
     })
   },[])
