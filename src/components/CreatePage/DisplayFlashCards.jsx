@@ -25,7 +25,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                 setAuthUser(null);
             }
         })
-
     },[])
 
 
@@ -137,11 +136,13 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     }}
                                     placeholder='Answer'
                                     onInput={autoResize}
+
+                                    
                                 
                                     ></textarea>
 
                                 )}
-                                
+                                   
                             </div>
 
                                 

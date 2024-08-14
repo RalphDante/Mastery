@@ -271,7 +271,10 @@
   min-height: 100px;
   display: flex;
   flex-wrap: wrap;
+
   margin: auto;
+  /* margin-left: 30px;
+  margin-right: auto; */
   align-content: flex-start;
   gap: 1rem;
 }

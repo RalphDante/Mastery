@@ -14,17 +14,24 @@ function Home() {
 
   const navigate = useNavigate();
 
-  useEffect(()=>{
-    onAuthStateChanged(auth, (user) =>{
-      if(user){
-        setAuthUser(user)
-      }else{
-        setAuthUser(null)
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setAuthUser(user);
+      } else {
+        setAuthUser(null);
         navigate('/signin');
       }
-    })
-  },[])
+    });
 
+    // Clean up the subscription on unmount
+    return () => unsubscribe();
+    
+  }, []);
+
+  if (!authUser) {
+    return null; // Optionally, you can render a loading spinner or message here
+  }
   return(
     <div className={styles.homeContainer}>
 

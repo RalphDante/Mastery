@@ -18,6 +18,8 @@ function CreateFile(){
     const [authUser, setAuthUser] = useState(null);
 
 
+    
+
     const navigate = useNavigate(); 
 
     const autoResize = (e) => {
@@ -136,8 +138,6 @@ function CreateFile(){
             />
 
             <div style={{height: '1px', backgroundColor: 'rgb(135, 207, 235, 0.186)', width: '100%', marginBottom: '20px', marginTop: '20px'}}></div>
-
-
 
 
             <CreateFlashCards onAddFlashCard={addFlashCard} 
