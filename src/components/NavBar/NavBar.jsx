@@ -1,40 +1,52 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import styles from './navbar.module.css';
 import SignOutBtn from '../SignOutBtn/SignOutBtn';
 import CreateBtn from '../CreateQuizlet/QuizletBtn/QuizletBtn';
-import AuthDetails from '../auth/AuthDetails';
 import UserName from '../auth/UserName';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './NavBar.css';
+
+import 'bootstrap';
 
 function NavBar() {
     const navigate = useNavigate();
+    const navbarToggler = useRef(null);
+
+    const closeNavbar = () => {
+        if (navbarToggler.current && navbarToggler.current.getAttribute('aria-expanded') === 'true') {
+            navbarToggler.current.click();
+        }
+    };
 
     return (
-        <div className={styles.navBar}>
-            <header>
-                <nav className={styles.navContainer}>
-                    <div className={styles.leftNavContainer}>
-                        <h1 className={styles.navBarTitle}>Mastery</h1>
-                        <ul className={styles.navList}>
-                            <li className={styles.navItem}>
-                                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Home</a>
-                            </li>
-                            <li className={styles.navItem}>
-                                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); }}>About</a>
-                            </li>
-                            <li className={styles.navItem}>
-                                <a href="#" onClick={(e) => { e.preventDefault(); navigate('/contactme'); }}>Contact Me</a>
-                            </li>
-                        </ul>
+        <nav className="navbar navbar-expand-lg navbar-dark">
+            <div className="container-fluid">
+                <a className="navbar-brand custom-navbar-brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/mastery'); closeNavbar(); }}>Mastery</a>
+                
+                <button ref={navbarToggler} className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon"></span>
+                </button>
+                
+                <div className="collapse navbar-collapse" id="navbarNav">
+                    <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+                        <li className="nav-item">
+                            <a className="nav-link custom-nav-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/'); closeNavbar(); }}>Home</a>
+                        </li>
+                        <li className="nav-item">
+                            <a className="nav-link custom-nav-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/about'); closeNavbar(); }}>About</a>
+                        </li>
+                        <li className="nav-item">
+                            <a className="nav-link custom-nav-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/contactme'); closeNavbar(); }}>Contact Me</a>
+                        </li>
+                    </ul>
+                    <div className="d-flex align-items-center">
+                        <div onClick={closeNavbar}><CreateBtn /></div>
+                        <div onClick={closeNavbar}><UserName /></div>
+                        <div onClick={closeNavbar}><SignOutBtn /></div>
                     </div>
-                    <div className={styles.rightNavContainer}>
-                        <CreateBtn />
-                        <UserName />
-                        <SignOutBtn />
-                    </div>
-                </nav>
-            </header>
-        </div>
+                </div>
+            </div>
+        </nav>
     );
 }
 

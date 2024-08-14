@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import { auth } from '../../firebase';
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useNavigate } from 'react-router-dom';
-
+import styles from './SignInPage.module.css';
 
 function SignIn() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const navigate = useNavigate(); 
-
 
     const signIn = (e) => {
         e.preventDefault();
@@ -23,25 +22,54 @@ function SignIn() {
     };
 
     return (
-        <div className="sign-in-container">
+        <>
+        <div className={styles.universal}>
+            <div className={styles.wrapper}>
+                <h2>Login</h2>
+                <form onSubmit={signIn}>
+                    {/* <div className={styles.inputBox}>
+                        <input type="text" placeholder="Enter your name" required />
+                    </div> */}
+                    <div className={styles.inputBox}>
+                        <input 
+                            type="email" 
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}              
+                        />
+                    </div>
+                    {/* <div className={styles.inputBox}>
+                        <input type="password" placeholder="Create password" required />
+                    </div> */}
+                    <div className={styles.inputBox}>
+                        <input 
+                            type="password" 
+                            placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </div>
+                    
+                    <div className={styles.inputBox + " " + styles.button}>
+                        <input type="submit" value="Log In" />
+                    </div>
+                    <div className={styles.text}>
+                        <h3>Don't have an account? <a href="#" onClick={(e) => {e.preventDefault();navigate('/signup')}}>Sign Up</a></h3> 
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        {/* <div className={styles.signInContainer}>
             <form onSubmit={signIn}>
                 <h1>Log in to your account</h1>
-                <input 
-                    type="email" 
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}              
-                />
-                <input 
-                    type="password" 
-                    placeholder="Enter your password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
+                
+                
                 <button type="submit">Log In</button>
-                <a href="#" onClick={(e) => {e.preventDefault();navigate('/signup')}}>Sign Up</a>
+                
             </form>
-        </div>
+        </div> */}
+        </>
     );
 }
 

@@ -367,3 +367,29 @@
   align-content: flex-start;
   gap: 1rem;
 }
+
+/* CREATE FOLDER PAGE */
+
+.CreateFolderContainer {
+  margin: 0 auto;
+  padding: 1rem;
+  border: none;
+  max-width: 800px; /* Adjust max-width */
+}
+
+@media (max-width: 768px) {
+  .CreateFolderContainer {
+    margin-left: 1rem;
+    margin-right: 1rem;
+    padding: 0.5rem;
+  }
+
+  .fileNameInput {
+    width: 100%; /* Full width on small screens */
+    margin-bottom: 0.5rem; /* Space between inputs */
+  }
+  
+  .saveBtn {
+    width: 100%; /* Full width button */
+  }
+}

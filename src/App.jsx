@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-route
 import Footer from './Footer.jsx';
 
 
+
 // Components
 
 import NavBar from './components/NavBar/NavBar.jsx';

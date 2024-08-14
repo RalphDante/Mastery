@@ -6,6 +6,7 @@ import AuthDetails from '../auth/AuthDetails'
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../firebase'
 
+import styles from "./CreateFilePage.module.css"
 
 
 function CreateFolder (){
@@ -56,19 +57,21 @@ function CreateFolder (){
     }
 
     return(
-        <div>
+        <div className={styles.CreateFolderContainer}>
             <h1>Create a Folder</h1>
             {/* <h1>Signed in as {authUser ? authUser.email : 'Loading...'}</h1> */}
             
-            <input type="text" value={folderName}
+            <input type="text" value={folderName} className={styles.fileNameInput}
             onChange={(e) => setFolderName(e.target.value)}
             placeholder='Folder name'
             ></input>
-            <input type="text" value={folderDescription}
+            <input type="text" value={folderDescription} className={styles.fileNameInput}
             onChange={(e)=>{setFolderDescription(e.target.value)}}
             placeholder='Description'
             ></input>
-            <button onClick={saveData}>Save</button>
+           
+                <button className={styles.saveBtn} onClick={saveData} >Save</button>
+
         </div>
 
     )

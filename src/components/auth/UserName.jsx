@@ -33,7 +33,7 @@ function UserName(){
 
     return(
         <>
-            <h1 style={{margin: '0px'}}>{userName? userName: 'no username'}</h1>
+            <h4 style={{margin: '0px'}}>{userName? userName: 'no username'}</h4>
         </>
     )
 
