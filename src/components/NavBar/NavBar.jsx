@@ -39,11 +39,15 @@ function NavBar() {
                             <a className="nav-link custom-nav-link" href="#" onClick={(e) => { e.preventDefault(); navigate('/contactme'); closeNavbar(); }}>Contact Me</a>
                         </li>
                     </ul>
-                    <div className="d-flex align-items-center">
+                    <div className="custom-navbar-gap">
                         <div onClick={closeNavbar}><CreateBtn /></div>
                         <div onClick={closeNavbar}><UserName /></div>
-                        <div onClick={closeNavbar}><SignOutBtn /></div>
+              
                     </div>
+
+                    <div className="separator"></div>
+
+                    <div onClick={closeNavbar} title="log out"><SignOutBtn /></div>
                 </div>
             </div>
         </nav>

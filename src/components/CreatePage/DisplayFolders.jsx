@@ -24,6 +24,11 @@ function DisplayFolder({uid}){
     navigate("/displayfiles", {state: {folderName: folderName}})
   }
 
+  const handleCreate = (e)=>{
+    e.preventDefault()
+    navigate("/createfolder")
+  }
+
 
   useEffect(()=>{
       const onSnapshot = onValue(folderRef, (snapshot)=>{
@@ -59,11 +64,15 @@ function DisplayFolder({uid}){
             
             
         ) : (
-          <h4>loading hehehe</h4>
+          <h4>loading folder...</h4>
         )
-      ))
-
-      }
+      ))}
+      <div onClick={(e)=>handleCreate(e)} className={styles.card}>
+              <div className={styles.card2}>
+                  
+                      <a style={{textDecoration: 'none', color:'#2eb533', fontSize: '30px'}} href="#" ><i class="fa fa-plus" aria-hidden="true"></i></a>
+              </div>
+      </div>
 
     </div>
 

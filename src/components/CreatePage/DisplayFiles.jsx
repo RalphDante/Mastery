@@ -183,8 +183,9 @@ function DisplayFiles({ folderUID }) {
                         </div>
                     </div>
                 ))}
+                <CreateFileInDisplayFilesBtn />
             </div>
-            <CreateFileInDisplayFilesBtn />
+            
             <button onClick={() => handleDeleteFolder}>Delete Folder</button>
         </div>
     );

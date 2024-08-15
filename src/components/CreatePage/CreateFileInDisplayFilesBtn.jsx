@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import styles from './CreateFilePage.module.css'
 
 
 function CreateFileInDisplayFilesBtn (){
@@ -15,7 +16,12 @@ function CreateFileInDisplayFilesBtn (){
 
     }
     return(
-        <button onClick={handleCreate}>Create File</button>
+        <div onClick={(e)=>handleCreate(e)} className={styles.card}>
+              <div className={styles.card2}>
+                  
+                      <a style={{textDecoration: 'none', color:'white', fontSize: '30px'}} href="#" ><i class="fa fa-plus" aria-hidden="true"></i></a>
+              </div>
+      </div>
     )
 
 }

@@ -22,3 +22,14 @@
     background-color: rgba(255, 255, 255, 0.1); /* Slight background on hover */
     border-radius: 5px; /* Rounded corners on hover */
 }
+
+.custom-navbar-gap {
+    display: flex;
+    align-items: center;
+    gap: 15px; /* Adjust the spacing as needed */
+}
+.separator {
+    height: 1px;
+    background-color: #5f5f5f; /* Light grey color */
+    margin: 10px 0; /* Optional: Add spacing above and below the separator */
+}
