@@ -8,6 +8,7 @@ import styles from './CreateFilePage.module.css'
 
 
 
+
 function DisplayFolder({uid}){
   
   const navigate = useNavigate();
@@ -51,30 +52,36 @@ function DisplayFolder({uid}){
       })
   },[uid])
   return (
-    <div className={styles.folderListContainer}>
     
-      {folder.map((folderItem, index)=>(
-        folder.length>0 ? (
-            <div onClick={(e)=>handleClick(folderItem.name,e)} className={styles.card}>
+    <div>
+        <h1 className='my-2 text-xl'>Your Folders:</h1>
+        <div className={styles.folderListContainer}>
+        
+      
+        {folder.map((folderItem, index)=>(
+          folder.length>0 ? (
+              <div onClick={(e)=>handleClick(folderItem.name,e)} className={styles.card}>
+                  <div className={styles.card2}>
+                      
+                          <a style={{textDecoration: 'none'}} href="#" >{folderItem.name}</a>
+                  </div>
+              </div>
+              
+              
+          ) : (
+            <h4>loading folder...</h4>
+          )
+        ))}
+        <div onClick={(e)=>handleCreate(e)} className={styles.card}>
                 <div className={styles.card2}>
                     
-                        <a style={{textDecoration: 'none'}} href="#" >{folderItem.name}</a>
+                        <a style={{textDecoration: 'none', color:'white', fontSize: '30px'}} href="#" ><i class="fa fa-plus" aria-hidden="true"></i></a>
                 </div>
-            </div>
-            
-            
-        ) : (
-          <h4>loading folder...</h4>
-        )
-      ))}
-      <div onClick={(e)=>handleCreate(e)} className={styles.card}>
-              <div className={styles.card2}>
-                  
-                      <a style={{textDecoration: 'none', color:'#2eb533', fontSize: '30px'}} href="#" ><i class="fa fa-plus" aria-hidden="true"></i></a>
-              </div>
-      </div>
+        </div>
 
+      </div>
     </div>
+    
 
 
   )

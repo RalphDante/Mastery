@@ -19,7 +19,7 @@ function CreateFileInDisplayFilesBtn (){
         <div onClick={(e)=>handleCreate(e)} className={styles.card}>
               <div className={styles.card2}>
                   
-                      <a style={{textDecoration: 'none', color:'white', fontSize: '30px'}} href="#" ><i class="fa fa-plus" aria-hidden="true"></i></a>
+                      <a style={{textDecoration: 'none', color:'white', fontSize: '30px'}}><i class="fa fa-plus" aria-hidden="true"></i></a>
               </div>
       </div>
     )

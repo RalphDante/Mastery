@@ -72,9 +72,8 @@ h1 {
 
 /* HOME PAGE CONTAINER */
 .homeContainer {
-    margin-left: 100px;
-    margin-right: 100px;
-    
+    margin-left: auto;
+    margin-right: auto;
 
     
 }

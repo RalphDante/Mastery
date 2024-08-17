@@ -33,10 +33,10 @@ function Home() {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
-    <div className={styles.homeContainer}>
+    <div className={`${styles.homeContainer} flex flex-col justify-center max-w-fwidth`}>
 
 
-    <h1>Your Folders:</h1>
+
 
     <DisplayFolders uid={authUser.uid}/>
 

@@ -1,5 +1,12 @@
+
+
 function Mastery(){
     return (
-        <h1>Currently working on sharing flash card features hehehe</h1>
+        <div className="max-w-fwidth flex flex-row justify-content bg-red-500">
+            <h1>What others have made, yes</h1>
+        </div>
+
     )
 }
+
+export default Mastery;

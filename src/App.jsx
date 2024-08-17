@@ -18,8 +18,11 @@ import CreateFolder from './components/CreatePage/CreateFolder.jsx'
 import CreateFile from './components/CreatePage/CreateFile.jsx'
 import DisplayFiles from './components/CreatePage/DisplayFiles.jsx';
 import DisplayFlashCardsPage from './components/FlashCardsPage/FlashCardsPage.jsx';
-import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx'
-import ContactMe from './components/NavBar/ContactMe.jsx'
+import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx';
+import ContactMe from './components/NavBar/ContactMe.jsx';
+import Mastery from './components/NavBar/Mastery.jsx';
+
+import "tailwindcss/tailwind.css";
 
 
 function App() {
@@ -45,6 +48,7 @@ function App() {
                   <Route path="/flashcards" element={<DisplayFlashCardsPage />}/>
                   <Route path="/editflashcard" element={<EditFlashCardPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
+                  <Route path='/mastery' element={<Mastery />} />
               </Routes>
 
               
