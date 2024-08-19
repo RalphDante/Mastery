@@ -1,22 +1,46 @@
 .flashCardsPageContainer {
     display: flex;
+    padding: 0 50px;
+    max-width: 1400px;
+    margin: 0 auto;
+    display: flex;
+    flex-wrap: flex;
+    min-height: 100px;
+
+    align-content: flex-start;
+    gap: 1rem;
+
 }
 
 .leftSideFlashCardsPageContainer {
-    margin-left: 50px;
+    width: 800px;
 }
 
 .rightSideFlashCardsPageContainer {
-    margin-right: 50px;
-    margin-left: 50px;
+    
+    width: 600px;
 }
+
+@media (max-width: 768px) {
+    .flashCardsPageContainer {
+        flex-direction: column; /* Stack containers vertically */
+        padding: 0 20px; /* Adjust padding for smaller screens */
+    }
+
+    .leftSideFlashCardsPageContainer,
+    .rightSideFlashCardsPageContainer {
+        width: 100%; /* Make both containers take full width */
+    }
+}
+
 
 /* FLASH CARD UI */
 .flashCardTextContainer {
     perspective: 1000px;
     background-color: transparent;
     height: 400px;
-    width: 800px;
+    width: auto;
+
     margin-bottom: 10px;
     cursor: pointer;
 }

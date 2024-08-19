@@ -34,7 +34,7 @@ function FlashCardsPage() {
 
     return (
         <>  
-            <div className={styles.flashCardsPageContainer}>
+            <div className={`${styles.flashCardsPageContainer}`}>
                 <div className={styles.leftSideFlashCardsPageContainer}>
                     {/* <h1>Display Flash Cards</h1> */}
                     {fileName ? <h1 style={{marginBottom: '0px'}}>{fileName}</h1> : <h1>No file name</h1>}

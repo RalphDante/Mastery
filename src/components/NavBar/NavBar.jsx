@@ -42,6 +42,7 @@ function NavBar() {
                     <div className="custom-navbar-gap">
                         <div onClick={closeNavbar}><CreateBtn /></div>
                         <div onClick={closeNavbar}><UserName /></div>
+            
               
                     </div>
 

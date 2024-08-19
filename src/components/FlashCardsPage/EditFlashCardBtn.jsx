@@ -12,7 +12,7 @@ function EditFlashCardBtn({fileName}){
     return(
 
         <div>
-            <button onClick={handleEditFlashCard}>Edit Flash Card</button>            
+            <button className="btn btn-primary" onClick={handleEditFlashCard}>Edit Flash Card</button>            
 
         </div>
     )

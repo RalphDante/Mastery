@@ -6,10 +6,16 @@ import { useEffect, useState } from "react";
 import { auth } from "../../firebase";
 import { onValue } from "firebase/database";
 
+import 'bootstrap';
+
+
 // FILE IMPORTS
 import CreateFileInDisplayFilesBtn from "./CreateFileInDisplayFilesBtn";
 import styles from './CreateFilePage.module.css';
 import FolderDescription from "./FolderDescription";
+
+
+
 
 function DisplayFiles({ folderUID }) {
     const [authUser, setAuthUser] = useState(null);
@@ -62,15 +68,22 @@ function DisplayFiles({ folderUID }) {
 
     const handleDeleteFolder = (folderName) => {
         if (authUser) {
-            const db = getDatabase(app);
-            const folderRef = ref(db, `QuizletsFolders/${authUser.uid}/${currentFolderName || folderName}`);
+            const confirmed = window.confirm("Are you sure you want to remove this folder?");
+            if(confirmed){
+                const db = getDatabase(app);
+                const folderRef = ref(db, `QuizletsFolders/${authUser.uid}/${currentFolderName || folderName}`);
 
-            remove(folderRef).then(() => {
-                console.log("Folder deleted");
-                navigate("/home");
-            }).catch((error) => {
-                console.error("Error deleting folder:", error);
-            });
+                remove(folderRef).then(() => {
+                    console.log("Folder deleted");
+                    navigate("/");
+                }).catch((error) => {
+                    console.error("Error deleting folder:", error);
+                });
+            } else {
+                // If the user clicks "Cancel", do nothing
+                console.log("Folder deletion canceled");
+            }
+            
         }
     };
 
@@ -154,8 +167,8 @@ function DisplayFiles({ folderUID }) {
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                         />
-                        <button onClick={()=>handleSave()}>Save</button>
-                        <button onClick={() => setIsEditing(false)}>Cancel</button>
+                        <button className="btn text-white"style={{ backgroundColor: 'green' }} onClick={()=>handleSave()}>Save</button>
+                        <button className="btn text-white"style={{ backgroundColor: '#ff5733' }} onClick={() => setIsEditing(false)}>Cancel</button>
                     </div>
                 ) : (
                     <div>
@@ -165,7 +178,7 @@ function DisplayFiles({ folderUID }) {
                             setDescription={setDescription}
                         />
                         <h3>Description: {description ? description: 'no description'}</h3>
-                        <button onClick={handleEditFolder}>Edit folder</button>
+                        <button className="btn btn-primary" onClick={handleEditFolder}>Edit folder</button>
                     </div>
                 )}
             </div>
@@ -186,7 +199,7 @@ function DisplayFiles({ folderUID }) {
                 <CreateFileInDisplayFilesBtn />
             </div>
             
-            <button onClick={() => handleDeleteFolder}>Delete Folder</button>
+            <button className="btn text-white"style={{ backgroundColor: '#ff5733' }} onClick={() => handleDeleteFolder(folderName)}>Delete Folder</button>
         </div>
     );
 }

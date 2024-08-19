@@ -190,10 +190,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
         }
     },[flashCards, currentQuestion, currentAnswer, currentIndex])
     
-    useEffect(()=>{
-        console.log(currentQuestion)
-        console.log(currentIndex)
-    },[currentQuestion, currentIndex])
+    
 
     return(
         <>
@@ -202,7 +199,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
                 fileName = {fileName}
             />
             
-            <div className={styles.flashCardTextContainer} onClick={handleShowAnswer}>
+            <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
                     <div className={styles.flipCardFront}>
                         {currentQuestion ? (currentQuestion.startsWith('https://firebasestorage.googleapis.com') ? (

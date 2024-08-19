@@ -3,7 +3,7 @@ export default {
   content: [
     "./src/components/NavBar/Home.jsx",
     "./src/components/CreatePage/DisplayFolders.jsx",
-    "./src/components/NavBar/Mastery.jsx"
+    "./src/components/NavBar/Mastery.jsx",
 
   ],
   theme: {
