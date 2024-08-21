@@ -45,7 +45,7 @@ function Home() {
 
     {/* <h1>You are signed in as {authUser.email}</h1> */}
     {/* <UserName /> */}
-    <Footer></Footer>
+    {/* <Footer></Footer> */}
 
     </div>
   )

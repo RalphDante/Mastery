@@ -4,14 +4,16 @@ export default {
     "./src/components/NavBar/Home.jsx",
     "./src/components/CreatePage/DisplayFolders.jsx",
     "./src/components/NavBar/Mastery.jsx",
+    "./src/components/CreatePage/DisplayFlashCards.jsx",
+    "./src/components/CreatePage/DisplayFiles.jsx",
 
   ],
   theme: {
     extend: {
 
       maxWidth: {
-        'fwidth': '1014px'
-      }
+        'fwidth': '1034px'
+      },
     },
   },
   plugins: [],

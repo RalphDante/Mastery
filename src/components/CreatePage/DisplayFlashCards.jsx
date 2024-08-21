@@ -93,13 +93,13 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
     return(
 
         <>
-        <ul className={styles.list}>
+        <ul className={`${styles.list}`}>
 
                 {flashCards.map((flashCard, index)=>(
                     <li className={styles.listItem} key={index}>
                          
-                        <div className={styles.innerDisplayFlashCardsContainer}>
-                            <div className={styles.questionContainer}>
+                        <div className={`${styles.innerDisplayFlashCardsContainer} md:flex md:flex-wrap`}>
+                            <div className={`${styles.questionContainer} md:w-1/2 w-full`}>
                                 {flashCard.question.startsWith('https://firebasestorage.googleapis.com') ? (
                                     <img src={flashCard.question} alt="Question" className={styles.flashCardImage} />
                                 ) : (
@@ -120,7 +120,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                 
 
                             </div>
-                            <div className={styles.answerContainer}>
+                            <div className={`${styles.answerContainer} md:w-1/2 w-full`}>
                                 {flashCard.answer.startsWith('https://firebasestorage.googleapis.com') ? (
                                     <img src={flashCard.answer} alt='Answer' className={styles.flashCardImage} />
                                 ) : (
@@ -148,7 +148,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                 
                         </div>
                         <div>
-                            <button className={styles.btn} onClick={()=>onDelete(index)}>Delete</button>
+                            <button className={`${styles.btn} ml-auto`} onClick={()=>onDelete(index)}>Delete</button>
 
                         </div>
 
@@ -162,8 +162,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         
         </>
     )
-
-
 }
 
 export default DisplayFlashCards;

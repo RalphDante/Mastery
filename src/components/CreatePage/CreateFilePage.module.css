@@ -1,8 +1,10 @@
+/* CREATE FILE PAGE */
+
 .createFilePage {
     margin-left: auto;
     margin-right: auto;
-    width: 900px;
-    padding: 0px;
+    max-width: 890px;
+    padding: 10px;
     border: 0px;
 }
 
@@ -44,6 +46,7 @@
 
 .innerDisplayFlashCardsContainer {
     display: flex;
+    flex-wrap: wrap;
     margin-bottom: 10px;
     justify-content: space-between;
     
@@ -57,6 +60,7 @@
 
 .listItem {
     margin-bottom: 10px; /* Optional: Add some space between list items */
+    
 }
 
 .flashCardInput {
@@ -82,7 +86,7 @@
 
 .questionContainer {
 
-    width: 49.9%;
+    width: 433px;
     box-sizing: border-box;
     display: flex;
     background: transparent;
@@ -94,7 +98,7 @@
 }
 
 .answerContainer {
-    width: 49.5%;
+    width: 433px;
     box-sizing: border-box;
     padding-right: 0px;
     display: flex;
@@ -189,6 +193,7 @@
     border-radius: 0.4vw;
     box-shadow: 0 0 .4vw rgba(0,0,0,0.5), 0 0 0 .15vw transparent;
     transition: .4s;
+    width: 100%
 
    }
 
@@ -267,7 +272,7 @@
 /* DISPLAY FOLDER PAGE */
 
 .folderListContainer {
-  max-width: 1014px;
+  width: 100%;
   min-height: 100px;
   display: flex;
   flex-wrap: wrap;
@@ -356,8 +361,8 @@
 /* DISPLAY FILES */
 
 .displayFilesPage {
-  margin-left: 100px;
-  margin-right: 100px;
+  margin: 0 auto;
+  padding: 0 10px;
 }
 
 .displayFilesContainer {

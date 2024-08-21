@@ -151,7 +151,7 @@ function DisplayFiles({ folderUID }) {
 
 
     return (
-        <div className={styles.displayFilesPage}>
+        <div className={`${styles.displayFilesPage} max-w-fwidth`}>
             <div>
                 {isEditing ? (
                     <div>
@@ -168,7 +168,8 @@ function DisplayFiles({ folderUID }) {
                             onChange={(e) => setDescription(e.target.value)}
                         />
                         <button className="btn text-white"style={{ backgroundColor: 'green' }} onClick={()=>handleSave()}>Save</button>
-                        <button className="btn text-white"style={{ backgroundColor: '#ff5733' }} onClick={() => setIsEditing(false)}>Cancel</button>
+                        <button className="btn btn-secondary" onClick={() => setIsEditing(false)}>Cancel</button>
+                        <button className="btn text-white"style={{ backgroundColor: '#ff5733' }} onClick={() => handleDeleteFolder(folderName)}>Delete Folder</button>
                     </div>
                 ) : (
                     <div>
@@ -182,7 +183,7 @@ function DisplayFiles({ folderUID }) {
                     </div>
                 )}
             </div>
-            <div className={styles.displayFilesContainer}>
+            <div className={`${styles.displayFilesContainer} justify-center`}>
                 {folderContents.map((item, index) => (
                     <div
                         className={styles.card}
@@ -199,7 +200,7 @@ function DisplayFiles({ folderUID }) {
                 <CreateFileInDisplayFilesBtn />
             </div>
             
-            <button className="btn text-white"style={{ backgroundColor: '#ff5733' }} onClick={() => handleDeleteFolder(folderName)}>Delete Folder</button>
+            
         </div>
     );
 }

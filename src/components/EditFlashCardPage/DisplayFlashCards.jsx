@@ -129,19 +129,19 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
     return(
 
         <>
-        <h1>{fileNameDirectory ? fileNameDirectory : "no folder"}</h1>
+        {/* <h1>{fileNameDirectory ? fileNameDirectory : "no folder"}</h1> */}
         <ul className={styles.list}>
             
             {flashCards ? (
                flashCards.map((flashCard, index)=>(
                 <li className={styles.listItem} key={index}>
                      
-                    <div className={styles.innerDisplayFlashCardsContainer}>
-                        <div className={styles.questionContainer}>
+                    <div className={`${styles.innerDisplayFlashCardsContainer} md:flex md:flex-wrap`}>
+                        <div className={`${styles.questionContainer} md:w-1/2 w-full `}>
                             {flashCard.question.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={flashCard.question} alt="Question" className={styles.flashCardImage} />
                             ) : (
-                                <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-question`]? styles.dragOver : ''}`} value={flashCard.question}
+                                <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-question`]? styles.dragOver : ''} `} value={flashCard.question}
                                 ref={el => textareaRefs.current[index * 2] = el}
                                 onDragOver={(e)=>handleDragOver(e, 'question', index)}
                                 onDrop={(e)=>handleDrop(e, 'question', index)}
@@ -158,7 +158,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
                             
 
                         </div>
-                        <div className={styles.answerContainer}>
+                        <div className={`${styles.answerContainer} md:w-1/2 w-full`}>
                             {flashCard.answer.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={flashCard.answer} alt='Answer' className={styles.flashCardImage} />
                             ) : (
@@ -184,7 +184,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
                             
                     </div>
                     <div>
-                        <button className={styles.btn} onClick={()=>onDelete(index)}>Delete</button>
+                        <button className={`${styles.btn} ml-auto`} onClick={()=>onDelete(index)}>Delete</button>
 
                     </div>
 
