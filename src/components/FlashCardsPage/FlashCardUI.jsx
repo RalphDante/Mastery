@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 import styles from './FlashCardsPage.module.css'
 
 import EditFlashCardBtn from './EditFlashCardBtn'
+import SetToPublic from "./SetToPublic";
 
 
 function FlashCardUI({knowAnswer, dontKnowAnswer}){
@@ -195,9 +196,13 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     return(
         <>
             {/* maybe put the buttons in a seperate component */}
-            <EditFlashCardBtn
-                fileName = {fileName}
-            />
+            <div>
+                <EditFlashCardBtn
+                    fileName = {fileName}
+                />
+                <SetToPublic />
+            </div>
+            
             
             <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
@@ -206,7 +211,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
                             <img src={currentQuestion} alt="question" className={styles.questionImage}/>
                         ) : (
                             <h2>{currentIndex != flashCards.length? currentQuestion: "You completed it!!!"}</h2>
-                        )) : <h2>loading...</h2>}
+                        )) : <h2>YOU FINISHED IT!</h2>}
                         
                     </div>
                     <div className={styles.flipCardBack}>
@@ -215,7 +220,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
                         ) : (
                             <h2>{currentIndex != flashCards.length? currentAnswer: "You completed it!!!"}</h2>
                         ) : (
-                            <h2>loading...</h2>
+                            <h2>YOU FINISHED IT!</h2>
                         )}
                     </div>
                 </div>

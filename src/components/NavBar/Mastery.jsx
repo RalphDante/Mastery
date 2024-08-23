@@ -20,7 +20,8 @@ function Mastery(){
 
     return (
         <div className="flex flex-column justify-center max-w-fwidth bg-red-500 mx-auto">
-            <h1 className='my-2 text-xl min-l-500'>What others have made, yes</h1>
+            <h1 className='my-2 text-xl min-l-500'>What others have made:</h1>
+            
             
         </div>
 

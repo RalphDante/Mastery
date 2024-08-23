@@ -55,7 +55,7 @@ function DisplayFolder({uid}){
     
     <div>
         <h1 className='my-2 text-xl'>Your Folders:</h1>
-        <div className={`${styles.folderListContainer} justify-center `}>
+        <div className={`${styles.folderListContainer} justify-start `}>
         
       
         {folder.map((folderItem, index)=>(

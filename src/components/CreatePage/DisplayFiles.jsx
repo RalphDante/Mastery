@@ -183,7 +183,7 @@ function DisplayFiles({ folderUID }) {
                     </div>
                 )}
             </div>
-            <div className={`${styles.displayFilesContainer} justify-center`}>
+            <div className={`${styles.displayFilesContainer} justify-start`}>
                 {folderContents.map((item, index) => (
                     <div
                         className={styles.card}
