@@ -157,7 +157,7 @@ function CreateFile({fileNameDirectory}){
         });
             console.log('Before navigation');
 
-            navigate('/flashcards', {state: {fileName: `${folderName}/${fileName}`}})
+            navigate(`/flashcards/${encodeURIComponent(`${folderName}/${fileName}`)}`)
 
             console.log('After navigation');
 

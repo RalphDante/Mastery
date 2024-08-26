@@ -3,14 +3,19 @@ import { useLocation } from "react-router-dom";
 import { app, auth } from '../../firebase';
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState, useCallback } from "react"; 
+import { useParams } from "react-router-dom";
+
+
 import FlashCardUI from "./FlashCardUI";
 import ModuleDescription from "./Description";
 import styles from './FlashCardsPage.module.css'
 
 
+
+
 function FlashCardsPage() {
     const location = useLocation();
-    const { fileName } = location.state || {};
+    const { fileName } = useParams();
 
 
 

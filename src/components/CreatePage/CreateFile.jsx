@@ -93,7 +93,7 @@ function CreateFile(){
         Description: fileDescription,
         Flashcards: flashCards
     }).then(()=>{
-        navigate('/flashcards', {state: {fileName: `${folderName}/${fileName}`}});
+        navigate(`/flashcards/${encodeURIComponent(`${folderName}/${fileName}`)}`);
         // alert("Saved Successfuly")
     }
     )

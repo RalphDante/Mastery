@@ -4,6 +4,8 @@ import { getDatabase, ref, onValue } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
 import { useLocation } from "react-router-dom";
 import styles from './FlashCardsPage.module.css'
+import { useParams } from "react-router-dom";
+
 
 import EditFlashCardBtn from './EditFlashCardBtn'
 import SetToPublic from "./SetToPublic";
@@ -13,7 +15,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
-    const {fileName} = location.state;
+    const {fileName} = useParams();
 
     const [flashCards, setFlashCards] = useState([]);
 

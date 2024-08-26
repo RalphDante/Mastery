@@ -45,7 +45,7 @@ function App() {
                   <Route path="/createfolder" element={<CreateFolder />} />
                   <Route path="/createfile" element={<CreateFile />} />
                   <Route path="/displayfiles" element={<DisplayFiles />} />
-                  <Route path="/flashcards" element={<DisplayFlashCardsPage />}/>
+                  <Route path="/flashcards/:fileName" element={<DisplayFlashCardsPage />}/>
                   <Route path="/editflashcard" element={<EditFlashCardPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />

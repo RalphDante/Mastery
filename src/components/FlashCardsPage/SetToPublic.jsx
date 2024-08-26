@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
-import { getDatabase } from "firebase/database";
-import { auth } from "../../firebase";
+import { getDatabase, ref } from "firebase/database";
+import { app, auth } from "../../firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { useParams } from "react-router-dom";
 
 function SetToPublic(){
 
     const [authUser, setAuthUser] = useState(null);
     const [isPublic, setIsPublic] = useState(false);
+
+    const { fileName} = useParams()
 
     useEffect(()=>{
         const unsubscribe = onAuthStateChanged(auth, (user)=>{
@@ -26,7 +29,8 @@ function SetToPublic(){
         if(authUser)
         if(!isPublic){
             setIsPublic(true)
-            const db = getDatabase(auth);
+            const db = getDatabase(app);
+            const folderRef = ref(db, `QuizletsFolders`);
 
 
         } else {

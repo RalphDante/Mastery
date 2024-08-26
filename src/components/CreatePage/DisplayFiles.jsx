@@ -140,7 +140,7 @@ function DisplayFiles({ folderUID }) {
     const handleFileClick = (item, e) => {
         const newDirectory = `${currentFolderName ? currentFolderName : folderName}/${item}`;
         e.preventDefault();
-        navigate("/flashcards", { state: { fileName: newDirectory } });
+        navigate(`/flashcards/${encodeURIComponent(newDirectory)}`);
     };
 
     const folderSpecification = ()=>{
