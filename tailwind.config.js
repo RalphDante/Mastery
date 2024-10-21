@@ -6,6 +6,7 @@ export default {
     "./src/components/NavBar/Mastery.jsx",
     "./src/components/CreatePage/DisplayFlashCards.jsx",
     "./src/components/CreatePage/DisplayFiles.jsx",
+    "./src/components/auth/Signin.jsx",
 
   ],
   theme: {

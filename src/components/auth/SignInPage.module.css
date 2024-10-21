@@ -1,18 +1,23 @@
 @import url('https://fonts.googleapis.com/css?family=Poppins:400,500,600,700&display=swap');
-.universal{
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
-}
-.universal{
+
+  
+
+.loginPageWrapper{
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+  gap: 100px;
+  background: linear-gradient(135deg, rgb(44, 44, 44), rgba(44, 44, 44, 0.8), #4070f4);
+  padding-left: 20px;
+  padding-right: 20px;
 
 }
-.wrapper{
+.rightSide{
   position: relative;
   max-width: 430px;
   width: 100%;
@@ -21,13 +26,20 @@
   border-radius: 6px;
   box-shadow: 0 5px 10px rgba(0,0,0,0.2);
 }
-.wrapper h2{
+
+.leftSide h1{
+  font-size: 50px;
+  font-weight: 600;
+  color: white;
+}
+
+.rightSide h2{
   position: relative;
   font-size: 22px;
   font-weight: 600;
   color: white;
 }
-.wrapper h2::before{
+.rightSide h2::before{
   content: '';
   position: absolute;
   left: 0;
@@ -37,10 +49,10 @@
   border-radius: 12px;
   background: #4070f4;
 }
-.wrapper form{
+.rightSide form{
   margin-top: 30px;
 }
-.wrapper form .inputBox{
+.rightSide form .inputBox{
   height: 52px;
   margin: 18px 0;
 }
@@ -93,4 +105,31 @@ form .text h3 a{
 }
 form .text h3 a:hover{
   text-decoration: underline;
+}
+
+
+@media (max-width: 768px) {
+  .loginPageWrapper {
+    flex-direction: column;
+    gap: 50px;
+  }
+
+  .rightSide, .leftSide {
+    max-width: 100%;
+    padding: 20px;
+  }
+
+  .leftSide h1 {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rightSide {
+    padding: 15px;
+  }
+
+  .leftSide h1 {
+    font-size: 24px;
+  }
 }

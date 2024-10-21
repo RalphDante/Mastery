@@ -23,8 +23,13 @@ function SignIn() {
 
     return (
         <>
-        <div className={styles.universal}>
-            <div className={styles.wrapper}>
+        <div className={styles.loginPageWrapper}>
+            <div className={styles.leftSide}>
+                <h1>You're just about to get a little smarter :)</h1>
+            </div>
+            
+            
+            <div className={styles.rightSide}>
                 <h2>Login</h2>
                 <form onSubmit={signIn}>
                     {/* <div className={styles.inputBox}>
@@ -58,7 +63,10 @@ function SignIn() {
                     </div>
                 </form>
             </div>
+           
+
         </div>
+        
         
         {/* <div className={styles.signInContainer}>
             <form onSubmit={signIn}>
