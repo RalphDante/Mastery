@@ -71,7 +71,6 @@ function CreateFolder (){
             ></input>
            
                 <button className={styles.saveBtn} onClick={saveData} >Save</button>
-
         </div>
 
     )

@@ -16,7 +16,7 @@ function CreateFlashCards({onAddFlashCard}){
         setAnswer("");
         resetSizes()
     }
-
+    
 
     const resetSizes = ()=>{
         textareaRefs.current.forEach((textarea)=>{
