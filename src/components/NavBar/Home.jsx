@@ -8,6 +8,7 @@ import UserName from '../auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
 
+
 function Home() {
 
   const [authUser, setAuthUser] = useState(null);
@@ -20,7 +21,7 @@ function Home() {
         setAuthUser(user);
       } else {
         setAuthUser(null);
-        navigate('/signin');
+        navigate('/mastery');
       }
     });
 

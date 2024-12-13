@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import Footer from './Footer.jsx';
 
 
@@ -21,12 +21,13 @@ import DisplayFlashCardsPage from './components/FlashCardsPage/FlashCardsPage.js
 import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx';
 import ContactMe from './components/NavBar/ContactMe.jsx';
 import Mastery from './components/NavBar/Mastery.jsx';
+import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFlashCardsPage.jsx';
 
 import "tailwindcss/tailwind.css";
 
 
-function App() {
-
+function App(){
+  
 
   return (
       <Router>
@@ -49,6 +50,10 @@ function App() {
                   <Route path="/editflashcard" element={<EditFlashCardPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
+                  <Route path='/publicFlashCards/:publicKeyCredential' element={<PublicKeyCredentialFlashCardsPage />} />
+
+                  {/* Try to understand what the ":folderName" does again */}
+                  {/* Last part we left off was at the integration of a new publicFlashCard Page */}
               </Routes>
 
               

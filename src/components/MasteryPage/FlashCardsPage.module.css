@@ -157,12 +157,3 @@
     padding: 0px;
 }
 
-
-
-/* TOP BUTTONS OPTIONS CONTAINER */
-
-.buttonsOptionsContainer{
-    display: flex;
-    flex-direction: row;
-}
-

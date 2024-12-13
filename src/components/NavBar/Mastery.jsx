@@ -1,6 +1,7 @@
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useEffect, useState } from "react";
+import DisplayFilesFromOtherUser from "../MasteryPage/DisplayFilesByOtherUsers.jsx";
 
 function Mastery(){
 
@@ -19,9 +20,9 @@ function Mastery(){
     },[])
 
     return (
-        <div className="flex flex-column justify-center max-w-fwidth bg-red-500 mx-auto">
+        <div className="flex flex-column justify-center max-w-fwidth  mx-auto">
             <h1 className='my-2 text-xl min-l-500'>What others have made: </h1>
-            
+            <DisplayFilesFromOtherUser />
             
         </div>
 

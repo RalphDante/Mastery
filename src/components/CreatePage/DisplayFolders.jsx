@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from 'react';
 import {ref, getDatabase, onValue} from 'firebase/database';
-import {app} from '../../firebase';
+import {app, auth} from '../../firebase';
 import DisplayFiles from './DisplayFiles'
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './CreateFilePage.module.css'
@@ -14,6 +14,19 @@ function DisplayFolder({uid}){
   const navigate = useNavigate();
 
   const [folder, setFolder] = useState([]);
+
+  const [authUser, setAuthUser] = useState(null);
+
+//   useEffect(()=>{
+//     onAuthStateChanged(auth, (user)=>{
+//         if(user){
+//             setAuthUser(user)
+            
+//         } else {
+//             setAuthUser(null)
+//         }
+//     })
+// },[])
 
 
   const db = getDatabase(app);
@@ -57,7 +70,7 @@ function DisplayFolder({uid}){
         <h1 className='my-2 text-xl'>Your Folders:</h1>
         <div className={`${styles.folderListContainer} justify-start `}>
         
-      
+        
         {folder.map((folderItem, index)=>(
           folder.length>0 ? (
               <div onClick={(e)=>handleClick(folderItem.name,e)} className={styles.card}>

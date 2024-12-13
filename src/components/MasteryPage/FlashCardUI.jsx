@@ -7,15 +7,15 @@ import styles from './FlashCardsPage.module.css'
 import { useParams } from "react-router-dom";
 
 
-import EditFlashCardBtn from './EditFlashCardBtn'
-import SetToPublic from "./SetToPublic";
+// import EditFlashCardBtn from './EditFlashCardBtn'
+// import SetToPublic from "./SetToPublic";
 
 
 function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
-    const {fileName} = useParams();
+    const {publicKeyCredential} = useParams();
 
     const [flashCards, setFlashCards] = useState([]);
 
@@ -49,22 +49,37 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     },[])
 
     const fetchFlashCards = useCallback(()=>{
-        if (authUser) {
-            const fileDocRef = ref(db, `QuizletsFolders/${authUser.uid}/${fileName}`);
+        if (authUser || !authUser) {
+            const fileDocRef = ref(db, `PublicFolder/${publicKeyCredential}`);
     
             const unsubscribe = onValue(fileDocRef, (snapshot) => {
                 const data = snapshot.val();
                 // console.log("Snapshot:",data);
 
                 if(data){
-                    const descriptionUID = Object.keys(data);
-                    const flashCardDocRef = ref(db, `QuizletsFolders/${authUser.uid}/${fileName}/${descriptionUID}/Flashcards`);
+                    const userName = Object.keys(data);
+                    
+                    console.log(userName);
+                    const descriptionUIDDocRef = ref(db, `PublicFolder/${publicKeyCredential}/${userName}`);
 
-                    const secondUnsubscribe = onValue(flashCardDocRef, (snapshot)=>{
+                    const secondUnsubscribe = onValue(descriptionUIDDocRef, (snapshot)=>{
                         const secondData = snapshot.val()
-                        setFlashCards(()=>{
-                            return secondData});
-                        console.log("Second Snapshot:", secondData)
+                        if(secondData){
+                            const descriptionUID = Object.keys(secondData);
+                            // console.log("Description UID: ", descriptionUID);
+                            const flashCardsDocRef = ref(db, `PublicFolder/${publicKeyCredential}/${userName}/${descriptionUID}/Flashcards`);
+                            const thirdUnsubscribe = onValue(flashCardsDocRef, (snapshot)=>{
+                                const thirdData = snapshot.val();
+                                // console.log("Third Data: ", thirdData)
+                                setFlashCards(()=>{
+                                    return thirdData});
+
+                            })
+                            return () => thirdUnsubscribe;
+                        }
+                        
+                        
+ 
 
                     },(error)=>{
                         console.error("Database read error:", error)
@@ -83,7 +98,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     
             return () => unsubscribe();
         }
-    }, [authUser, fileName, db])
+    }, [authUser, publicKeyCredential, db])
 
 
     
@@ -198,12 +213,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
     return(
         <>
             {/* maybe put the buttons in a seperate component */}
-            <div className={styles.buttonsOptionsContainer}>
-                <EditFlashCardBtn
+            <div>
+                {/* <EditFlashCardBtn
                     fileName = {fileName}
-                />
-                <SetToPublic />
-                
+                /> */}
+                {/* <SetToPublic /> */}
             </div>
             
             

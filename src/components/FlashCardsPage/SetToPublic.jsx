@@ -6,136 +6,119 @@ import { useParams } from "react-router-dom";
 import { onValue } from "firebase/database";
 import UserName from "../auth/UserName";
 
-function SetToPublic(){
-
+function SetToPublic() {
     const [authUser, setAuthUser] = useState(null);
     const [isPublic, setIsPublic] = useState(false);
+    const { fileName } = useParams();
 
-    const { fileName } = useParams()
-
-    useEffect(()=>{
-        const unsubscribe = onAuthStateChanged(auth, (user)=>{
-            if(user){
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (user) => {
+            if (user) {
                 setAuthUser(user);
+                // Check if the file is public when component mounts
+                checkIfPublic(user);
             } else {
                 setAuthUser(null);
             }
-        })
-        return ()=>unsubscribe();
-
-
-    },[])
+        });
+        return () => unsubscribe();
+    }, [fileName]);
 
     const flashCardFileName = (fullPath) => {
         let currentIndex = fullPath.length - 1;
-        let fileName = "";
-    
-        // Create an array to store characters in the correct order
         let tempArray = [];
-    
-        // Loop backward until you find the slash
+        
         while (fullPath[currentIndex] !== "/") {
-            // Add characters to the array
             tempArray.unshift(fullPath[currentIndex]); 
             currentIndex--;
         }
-    
-        // Join the array to form the correct file name
-        fileName = tempArray.join("");
-    
-        return fileName;
+        
+        return tempArray.join("");
     };
 
-    const flashCardFolderName = (fileName)=>{
+    const flashCardFolderName = (fileName) => {
         let currentIndex = 0;
-
         let folderName = "";
 
-        while(fileName[currentIndex] !== "/"){
+        while (fileName[currentIndex] !== "/") {
             folderName += fileName[currentIndex];
             currentIndex++;
         }
         return folderName;
-    }
+    };
 
-    
-    let userName = "";
-
-    if(authUser){
-        const userEmail = authUser.email;
-        let currentIndex = 0
-        while(userEmail[currentIndex] !== "." && userEmail[currentIndex] !== "@"){
+    const getUserName = (userEmail) => {
+        let userName = "";
+        let currentIndex = 0;
+        while (userEmail[currentIndex] !== "." && userEmail[currentIndex] !== "@") {
             userName += userEmail[currentIndex];
             currentIndex += 1;
-    }
-    }
-        
-    
-
-    const handleOnClick = ()=>{
-
-        if(!isPublic){
-            
-
-            if(authUser){
-
-                const db = getDatabase(app);
-                const folderRef = ref(db, `QuizletsFolders/${authUser.uid}/${fileName}`);
-
-                const unsubscribe = onValue(folderRef, (snapshot)=>{
-                    const data = snapshot.val();
-                    if(data){
-                        const theActualFileName = `${flashCardFileName(fileName)}_${flashCardFolderName(fileName)}`;
-                        const fileID = `${theActualFileName}_${authUser.uid}`;
-                        const publicRef = ref(db, `PublicFolder/${fileID}/${userName}`)
-                        set(publicRef, data)
-                        .then(()=>{
-                            setIsPublic(true)
-
-                        })
-                        .catch((err)=>{
-                            console.error('Error setting data:', err)
-                        })
-                    }
-                })
-
-                return ()=>unsubscribe;
-    
-            }
-         
-           
-
-        } else {
-            if(authUser){
-                const folderName = flashCardFolderName(fileName);
-                const db = getDatabase(app);
-                const folderRef = ref(db, `PublicFolder/${authUser.uid}_${folderName}`);
-                remove(folderRef).then(()=>{
-                    console.log("Set to private");
-                    setIsPublic(false);
-                }
-                ).catch((error)=>{
-                    console.error("Unsuccessful set to private", error);
-                })
-
-
-            }
-
         }
-    }
+        return userName;
+    };
 
-    // useEffect(()=>{
-        
-    
-    // },[isPublic])
-    
+    // New function to check if file is already public
+    const checkIfPublic = (user) => {
+        if (!user) return;
+
+        const db = getDatabase(app);
+        const theActualFileName = `${flashCardFileName(fileName)}_${flashCardFolderName(fileName)}`;
+        const fileID = `${theActualFileName}_${user.uid}`;
+        const userName = getUserName(user.email);
+        const publicRef = ref(db, `PublicFolder/${fileID}/${userName}`);
+
+        onValue(publicRef, (snapshot) => {
+            setIsPublic(snapshot.exists());
+        });
+    };
+
+    const handleOnClick = () => {
+        if (!authUser) return;
+
+        const db = getDatabase(app);
+        const theActualFileName = `${flashCardFileName(fileName)}_${flashCardFolderName(fileName)}`;
+        const fileID = `${theActualFileName}_${authUser.uid}`;
+        const userName = getUserName(authUser.email);
+        const publicRef = ref(db, `PublicFolder/${fileID}/${userName}`);
+
+        if (!isPublic) {
+            // Setting to public
+            const folderRef = ref(db, `QuizletsFolders/${authUser.uid}/${fileName}`);
+            
+            onValue(folderRef, (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    set(publicRef, data)
+                        .then(() => {
+                            setIsPublic(true);
+                            console.log("Successfully set to public");
+                        })
+                        .catch((err) => {
+                            console.error('Error setting data:', err);
+                        });
+                }
+            }, { onlyOnce: true }); // Only read once
+        } else {
+            // Setting to private
+            remove(publicRef)
+                .then(() => {
+                    console.log("Successfully set to private");
+                    setIsPublic(false);
+                })
+                .catch((error) => {
+                    console.error("Unsuccessful set to private", error);
+                });
+        }
+    };
 
     return (
         <>
-            <button onClick={handleOnClick} className="btn btn-primary">{isPublic ? "Set to Private" : "Set to Public"}</button>
-
+            <button onClick={handleOnClick} className="btn btn-primary">
+                {isPublic ? "Set to Private" : "Set to Public"}
+            </button>
+            {isPublic? <i class="fa-solid fa-link"></i> : ""}
         </>
-    )
+    );
 }
 
 export default SetToPublic;
