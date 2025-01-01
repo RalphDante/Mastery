@@ -116,7 +116,7 @@ function SetToPublic() {
             <button onClick={handleOnClick} className="btn btn-primary">
                 {isPublic ? "Set to Private" : "Set to Public"}
             </button>
-            {isPublic? <i class="fa-solid fa-link"></i> : ""}
+            {isPublic? <i class="fa-solid fa-link text-3xl"></i> : ""}
         </>
     );
 }
