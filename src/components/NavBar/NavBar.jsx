@@ -20,6 +20,7 @@ function NavBar() {
 
     return (
         <nav className="navbar navbar-expand-lg navbar-dark">
+            <h1>HiIIIIIII</h1>
             <div className="container-fluid">
                 <a className="navbar-brand custom-navbar-brand" href="#" onClick={(e) => { e.preventDefault(); navigate('/mastery'); closeNavbar(); }}>Mastery</a>
                 
