@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { auth } from "../../firebase";
 import { onValue } from "firebase/database";
 
-import 'bootstrap';
+// import 'bootstrap';
 
 
 // FILE IMPORTS

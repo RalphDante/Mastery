@@ -4,7 +4,7 @@ export default {
 
     "./src/**/*.{js,jsx,ts,tsx}",
     // ^ GLOBAL ^
-    "!./src/components/NavBar/NavBar.jsx",
+
 
   
   ],
@@ -14,6 +14,9 @@ export default {
       maxWidth: {
         'fwidth': '1034px'
       },
+      fontFamily: {
+        poppins: ['Poppins', 'sans-serif'],
+      }
     },
   },
   plugins: [],

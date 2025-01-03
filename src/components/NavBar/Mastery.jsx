@@ -20,7 +20,7 @@ function Mastery(){
     },[])
 
     return (
-        <div className="flex flex-column justify-center max-w-fwidth  mx-auto">
+        <div className="flex-row flex-column justify-center max-w-fwidth  mx-auto">
             <h1 className='my-2 text-xl min-l-500'>What others have made: </h1>
             <DisplayFilesFromOtherUser />
             
