@@ -17,3 +17,17 @@ h1, h2, h3, h4, h5, h6{
 
 }
 
+.btn {
+    @apply px-4 py-2 font-medium rounded-md transition-all duration-200;
+  }
+  
+  /* Primary button styles */
+  .btn-primary {
+    @apply bg-blue-500 text-white hover:bg-blue-600;
+  }
+  
+  /* Secondary button styles */
+  .btn-secondary {
+    @apply bg-gray-500 text-white hover:bg-gray-600;
+  }
+

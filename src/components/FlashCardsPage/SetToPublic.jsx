@@ -10,6 +10,7 @@ function SetToPublic() {
     const [authUser, setAuthUser] = useState(null);
     const [isPublic, setIsPublic] = useState(false);
     const { fileName } = useParams();
+    const [copied, setCopied] = useState("");
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -57,7 +58,21 @@ function SetToPublic() {
         return userName;
     };
 
-    // New function to check if file is already public
+
+    const copyToClipBoard = () => {
+        navigator.clipboard.writeText(copied).then(() => {
+            alert("Copied! Go share it with your friends!")
+            
+            setTimeout(() => setCopied(""), 2000); 
+        })
+        .catch((error) => {
+            console.error('Failed to copy text: ', error);
+        });
+        
+
+    }
+
+    
     const checkIfPublic = (user) => {
         if (!user) return;
 
@@ -66,6 +81,8 @@ function SetToPublic() {
         const fileID = `${theActualFileName}_${user.uid}`;
         const userName = getUserName(user.email);
         const publicRef = ref(db, `PublicFolder/${fileID}/${userName}`);
+
+        setCopied(`https://mastery-innovate.web.app/publicFlashCards/${fileID}`)
 
         onValue(publicRef, (snapshot) => {
             setIsPublic(snapshot.exists());
@@ -80,6 +97,7 @@ function SetToPublic() {
         const fileID = `${theActualFileName}_${authUser.uid}`;
         const userName = getUserName(authUser.email);
         const publicRef = ref(db, `PublicFolder/${fileID}/${userName}`);
+        
 
         if (!isPublic) {
             // Setting to public
@@ -88,6 +106,7 @@ function SetToPublic() {
             onValue(folderRef, (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
+                    
                     set(publicRef, data)
                         .then(() => {
                             setIsPublic(true);
@@ -113,10 +132,10 @@ function SetToPublic() {
 
     return (
         <>
-            <button onClick={handleOnClick} className="btn btn-primary">
+            <button onClick={handleOnClick} className={`btn  ${isPublic ? "bg-red-800" : " bg-green-700"}`}>
                 {isPublic ? "Set to Private" : "Set to Public"}
             </button>
-            {isPublic? <i class="fa-solid fa-link text-3xl"></i> : ""}
+            {isPublic? <i class="fa-solid fa-link text-3xl hover:cursor-pointer" onClick={()=>{copyToClipBoard()}}></i> : ""}
         </>
     );
 }
