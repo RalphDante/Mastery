@@ -55,7 +55,7 @@ function DisplayFilesFromOtherUsers({uid}){
   return (
     
     <div>
-        <div className={`${styles.folderListContainer} justify-start`}>
+        <div className={`${styles.folderListContainer} flex flex-wrap justify-center gap-3`}>
             {folder.map((folderItem, index) => (
                 folder.length > 0 ? (
                     <div 

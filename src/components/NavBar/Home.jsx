@@ -34,12 +34,17 @@ function Home() {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
-    <div className={`${styles.homeContainer} flex flex-col justify-center max-w-fwidth`}>
+    <div className={`${styles.homeContainer} w-auto mx-8`}>
 
-
+    {/* flex flex-col justify-center max-w-fwidth */}
+    <h1 className='my-2 text-xl'>Your Folders:</h1>
 
 
     <DisplayFolders uid={authUser.uid}/>
+
+
+    
+    
 
     {/* <CreateBtn /> */}
 

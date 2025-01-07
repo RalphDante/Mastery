@@ -1,4 +1,4 @@
-.flashCardsPageContainer {
+/* .flashCardsPageContainer {
     display: flex;
     padding: 0 50px;
     max-width: 1400px;
@@ -10,7 +10,7 @@
     align-content: flex-start;
     gap: 1rem;
 
-}
+} */
 
 .leftSideFlashCardsPageContainer {
     width: 800px;

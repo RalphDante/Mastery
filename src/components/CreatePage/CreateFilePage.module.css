@@ -271,19 +271,19 @@
 
 /* DISPLAY FOLDER PAGE */
 
-.folderListContainer {
+/* .folderListContainer {
   width: 100%;
   min-height: 100px;
   display: flex;
   flex-wrap: wrap;
-
+  background-color: #2eb533;
+  
 
   margin: auto;
-  /* margin-left: 30px;
-  margin-right: auto; */
+   
   align-content: flex-start;
   gap: 1rem;
-}
+} */
 
 .folderList {
   list-style: none;

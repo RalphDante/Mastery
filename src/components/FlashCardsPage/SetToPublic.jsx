@@ -60,10 +60,11 @@ function SetToPublic() {
 
 
     const copyToClipBoard = () => {
-        navigator.clipboard.writeText(copied).then(() => {
+        const replacedSpaces = copied.replaceAll(" ", "%20") //replaces the " " into "%20"
+        navigator.clipboard.writeText(replacedSpaces).then(() => {
             alert("Copied! Go share it with your friends!")
             
-            setTimeout(() => setCopied(""), 2000); 
+            // setTimeout(() => setCopied(""), 2000); 
         })
         .catch((error) => {
             console.error('Failed to copy text: ', error);
