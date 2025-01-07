@@ -7,6 +7,7 @@ import DisplayFolders from '../CreatePage/DisplayFolders.jsx';
 import UserName from '../auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
+import AutoFlashCards from '../AutoFlashCards/AutoFlashCards.jsx';
 
 
 function Home() {
@@ -34,13 +35,15 @@ function Home() {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
-    <div className={`${styles.homeContainer} w-auto mx-8`}>
+    <div className={`${styles.homeContainer} w-auto mx-8 block`}>
 
     {/* flex flex-col justify-center max-w-fwidth */}
     <h1 className='my-2 text-xl'>Your Folders:</h1>
 
 
     <DisplayFolders uid={authUser.uid}/>
+
+    <AutoFlashCards />
 
 
     
