@@ -1,4 +1,5 @@
 import styles from "./AutoFlashCards.module.css";
+import FileUpload from "./FileUpload.jsx";
 
 function AutoFlashCards(){
 
@@ -10,7 +11,11 @@ function AutoFlashCards(){
             
             <input className={`${styles.inputField} min-h-20`}></input>
             <button className='btn btn-primary' style={{maxWidth: '8rem'}}>Upload a file</button>
+            <button className='btn btn-primary' style={{maxWidth: '8rem'}}>Paste Notes</button>
+
+            <FileUpload />
         </div>
+        
     )
 }
 

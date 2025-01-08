@@ -136,9 +136,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     }}
                                     placeholder='Answer'
                                     onInput={autoResize}
-
-                                    
-                                
                                     ></textarea>
 
                                 )}
