@@ -1,6 +1,6 @@
 import styles from "./AutoFlashCards.module.css";
 
-function InputField(){
+function AutoFlashCards(){
 
 
 
@@ -15,4 +15,4 @@ function InputField(){
 }
 
 
-export default InputField;
+export default AutoFlashCards;
