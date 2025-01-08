@@ -60,7 +60,7 @@ function PublicKeyCredentialFlashCardsPage() {
                     />
 
                 </div>
-                <div className={styles.rightSideFlashCardsPageContainer}>
+                <div className={`${styles.rightSideFlashCardsPageContainer}`}>
                     {/* <h1>Right side</h1> */}
                     <h1>Correct: {knowAnswer}</h1>
                     <h1>Wrong: {dontKnowAnswer}</h1>
