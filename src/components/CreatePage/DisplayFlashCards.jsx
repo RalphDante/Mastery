@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styles from './CreateFilePage.module.css'
 import {app, auth} from '../../firebase'
 import {getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged } from 'firebase/auth';
+import { useDropzone } from "react-dropzone";
 
 
 
@@ -14,7 +15,20 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
     const [draggingOverStates, setDraggingOverStates] = useState({});
 
-    const textareaRefs = useRef([]);
+    const textareaRefs = useRef([])
+
+
+    // const onDrop = useCallback(acceptedFiles => {
+    //     console.log(acceptedFiles.name)
+    //   }, [])
+
+    const {getRootProps, getInputProps, isDragActive} = useDropzone({
+        onDrop: (acceptedFiles) => {
+            acceptedFiles.forEach((file)=>{console.log(file.name)})
+
+        }
+    
+    })
 
 
     useEffect(()=>{
@@ -90,7 +104,8 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         }
     }
 
-    const handleClickToAddImage = () => {
+    const handleClickToAddImage = (file) => {
+    
         alert("click to add image")
     }
 
@@ -123,7 +138,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     ></textarea>
                                     )
                                 }
-                                <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" onClick={()=>handleClickToAddImage()} ></i>
+                              
+                                    <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" onClick={()=>handleClickToAddImage("question")} ></i>
+
+                       
 
 
 
@@ -153,8 +171,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     
 
                                 )}
-                                <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
-
+                                    
+                                        
+                                        <i {...getRootProps()} class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
+                                        <input {...getInputProps()} />
                                 
                             </div>
 
@@ -171,7 +191,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                     </li>
     
                 ))}
-            
         </ul>
         
         </>
