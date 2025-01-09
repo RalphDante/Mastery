@@ -90,6 +90,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         }
     }
 
+    const handleClickToAddImage = () => {
+        alert("click to add image")
+    }
+
     return(
 
         <>
@@ -100,6 +104,8 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                          
                         <div className={`${styles.innerDisplayFlashCardsContainer} md:flex md:flex-wrap`}>
                             <div className={`${styles.questionContainer} md:w-1/2 w-full`}>
+                                
+
                                 {flashCard.question.startsWith('https://firebasestorage.googleapis.com') ? (
                                     <img src={flashCard.question} alt="Question" className={styles.flashCardImage} />
                                 ) : (
@@ -117,10 +123,16 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     ></textarea>
                                     )
                                 }
-                                
+                                <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" onClick={()=>handleClickToAddImage()} ></i>
+
+
 
                             </div>
+                            
                             <div className={`${styles.answerContainer} md:w-1/2 w-full`}>
+
+                                
+
                                 {flashCard.answer.startsWith('https://firebasestorage.googleapis.com') ? (
                                     <img src={flashCard.answer} alt='Answer' className={styles.flashCardImage} />
                                 ) : (
@@ -136,19 +148,21 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     }}
                                     placeholder='Answer'
                                     onInput={autoResize}
-
-                                    
-                                
+            
                                     ></textarea>
+                                    
 
                                 )}
-                                   
+                                <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
+
+                                
                             </div>
 
                                 
                         </div>
                         <div>
                             <button className={`${styles.btn} ml-auto`} onClick={()=>onDelete(index)}>Delete</button>
+                            
 
                         </div>
 
