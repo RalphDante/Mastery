@@ -11,11 +11,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
     const [authUser, setAuthUser] = useState(null);
 
-    const [chosenIndex, setChosenIndex] = useState(null)
 
-    const [chosenField, setChosenField] = useState(null)
-
-    const [image, setImage] = useState(null);
 
     const [draggingOverStates, setDraggingOverStates] = useState({});
 
@@ -40,15 +36,6 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         );
     };
     
-
-    const {getRootProps, getInputProps, isDragActive} = useDropzone({
-        onDrop: (acceptedFiles) => {
-            handleImageClick(acceptedFiles[0], chosenField, chosenIndex)
-
-
-        }
-    
-    })
 
 
     useEffect(()=>{
@@ -150,10 +137,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
         }
     }
 
-    const handleClickToAddImage = (file) => {
-    
-        alert("click to add image")
-    }
+
 
     return(
 
