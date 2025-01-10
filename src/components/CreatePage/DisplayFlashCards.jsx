@@ -11,6 +11,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
     const [authUser, setAuthUser] = useState(null);
 
+    const [chosenIndex, setChosenIndex] = useState(null)
+
+    const [chosenField, setChosenField] = useState(null)
+
     const [image, setImage] = useState(null);
 
     const [draggingOverStates, setDraggingOverStates] = useState({});
@@ -24,7 +28,8 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
     const {getRootProps, getInputProps, isDragActive} = useDropzone({
         onDrop: (acceptedFiles) => {
-            acceptedFiles.forEach((file)=>{console.log(file.name)})
+            handleImageClick(acceptedFiles[0], chosenField, chosenIndex)
+
 
         }
     
@@ -76,6 +81,32 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
 
     }
+
+    const handleImageClick = async (file, field, index)=>{
+
+        if(file && file.type.startsWith('image/') && authUser){
+            try {
+                const storage = getStorage(app)
+
+                const imageRef = storageRef(storage, `flashcard-images/${authUser.uid}/${file.name}`)
+
+                await uploadBytes(imageRef, file)
+
+                const downloadURL = await getDownloadURL(imageRef);
+
+                const updatedFlashCards = [...flashCards];
+                updatedFlashCards[index][field] = downloadURL;
+                setFlashCards(updatedFlashCards)
+             
+            } catch (error) {
+                console.error("Error uploading image: ", error);
+                alert("Error uploading file, please try again");
+            } 
+        } else {
+            alert("Drop an image file")
+        }
+    }
+
 
     const handleDrop = async (e, field, index)=>{
         e.preventDefault();
@@ -139,7 +170,10 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                                     )
                                 }
                               
-                                    <i class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" onClick={()=>handleClickToAddImage("question")} ></i>
+                                    <div {...getRootProps()}> 
+                                        <i  onClick={()=>(setChosenIndex(index),setChosenField('question'))} class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
+                                        <input {...getInputProps() } />
+                                    </div>
 
                        
 
@@ -172,9 +206,11 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
 
                                 )}
                                     
+                                        <div {...getRootProps()}> 
+                                            <i  onClick={()=>(setChosenIndex(index),setChosenField('answer'))} class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
+                                            <input {...getInputProps() } />
+                                        </div>
                                         
-                                        <i {...getRootProps()} class="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500" ></i>
-                                        <input {...getInputProps()} />
                                 
                             </div>
 
