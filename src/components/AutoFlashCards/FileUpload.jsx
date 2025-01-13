@@ -1,26 +1,38 @@
 import { useDropzone } from "react-dropzone";
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.js`;
 
 function FileUpload(){
 
-    const handleDrop = (files) => {
-        files.forEach((file)=>{
-            console.log(file.name);
-        })
-    }
-
+  
 
     const {getRootProps, getInputProps} = useDropzone({
         accept: ".pdf,.docx,.pptx",
+        multiple: false,
         onDrop: (acceptedFiles) => {
-            handleDrop(acceptedFiles);
+            const fileType = acceptedFiles[0].type;
+
+            if(fileType === 'application/pdf'){
+                readPDF(acceptedFiles);
+            }
         }
     })
 
+    const readPDF = (file) => {
+        const doSumshit = file;
+        console.log(doSumshit[0].type, "test")
+    }
+
     return(
-        <div {...getRootProps()} className="w-full h-10 bg-white">
+        <div className="w-full h-10 ">
             
-            <input {...getInputProps()} >
-            </input>  
+    
+            <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Upload a file</button>
+            <input {...getInputProps()} ></input>
+
+
+
            
         </div>
         
