@@ -1,6 +1,7 @@
 import styles from "./AutoFlashCards.module.css";
 import FileUpload from "./FileUpload.jsx";
 
+
 function AutoFlashCards(){
 
 
@@ -13,6 +14,7 @@ function AutoFlashCards(){
 
             <FileUpload />
         </div>
+        
         
     )
 }
