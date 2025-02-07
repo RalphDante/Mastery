@@ -11,7 +11,7 @@ import EditFlashCardBtn from './EditFlashCardBtn'
 import SetToPublic from "./SetToPublic";
 
 
-function FlashCardUI({knowAnswer, dontKnowAnswer}){
+function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
 
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
@@ -121,7 +121,12 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
             setShowAnswer(false)
             setTimeout(()=>{
                 setCurrentIndex(currentIndex+1)
-                knowAnswer(prev => prev + 1)
+                knowAnswer(prev => {
+                    let newKnowAnswer =  prev + 1;
+                    percent(prev => prev = Math.floor((newKnowAnswer/flashCards.length)*100));
+                    return newKnowAnswer;
+                
+                })
                 setAnswers([...answers, true])
                 setProcessing(false)
             },  200)             
@@ -205,8 +210,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
                 <SetToPublic />
                 
             </div>
-            
-            
             <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
                     <div className={styles.flipCardFront}>
