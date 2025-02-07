@@ -34,7 +34,7 @@ function FileUpload(){
             }
 
             console.log('Extracted PDF Text:', text);
-            //sendToAI(text);
+            sendToAI(text);
 
 
         }
@@ -43,8 +43,39 @@ function FileUpload(){
         reader.readAsArrayBuffer(file)
     }
 
+    
+    const sendToAI = async (text) => {
+        try {
+            const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBzq2AFwxW3rAvIR6M81MAMrj9JvaA5eg8', {
+            method: 'POST',
+            headers: {
+            'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+            contents: [{
+                parts: [{
+                text: `Generate 5 flashcards from this text. 
+                Format as JSON: [{"question":"...", "answer":"..."}]
+                
+                Text: ${text}`
+                }]
+            }]
+            })
+        });
 
-    return (
+            const data = await response.json();
+            const flashCards = data.candidates[0].content.parts[0].text;
+            const parsedFlashCards = JSON.parse(flashCards);
+            console.log(parsedFlashCards);
+
+        } catch(error) {
+            console.log(alert("hi"), error)
+        }
+        
+};
+
+
+return (
         <div className="w-full h-10">
             
             <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Upload a file</button>

@@ -11,7 +11,7 @@ import EditFlashCardBtn from './EditFlashCardBtn'
 import SetToPublic from "./SetToPublic";
 
 
-function FlashCardUI({knowAnswer, dontKnowAnswer}){
+function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
 
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
@@ -109,6 +109,9 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
         setCurrentIndex(0)
         knowAnswer(0);
         dontKnowAnswer(0);
+
+        percent(0);
+        
         setAnswers([]);
     }
 
@@ -121,7 +124,14 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
             setShowAnswer(false)
             setTimeout(()=>{
                 setCurrentIndex(currentIndex+1)
-                knowAnswer(prev => prev + 1)
+                knowAnswer(prev => {
+                    const newKnowAnswer = prev + 1;
+                    percent(Math.round((newKnowAnswer/flashCards.length)*100));
+                    return newKnowAnswer;
+                })
+
+               
+
                 setAnswers([...answers, true])
                 setProcessing(false)
             },  200)             
@@ -131,8 +141,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
 
         
     }
-
-
+    
     const handleDontKnow = ()=>{
 
         setProcessing(true)
@@ -169,7 +178,14 @@ function FlashCardUI({knowAnswer, dontKnowAnswer}){
             setTimeout(()=>{
                 const lastAnswer = answers[currentIndex-1]
                 if(lastAnswer){
-                    knowAnswer(knowAnswer=>  knowAnswer -1)
+                    knowAnswer(knowAnswer=>  {
+                        let newKnowAnswer = knowAnswer -1;
+                        percent(Math.round((newKnowAnswer/flashCards.length)*100));
+                        return newKnowAnswer
+
+                    
+                    })
+                    
                 }else{
                     dontKnowAnswer(dontKnowAnswer => dontKnowAnswer -1)
                 }
