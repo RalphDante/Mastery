@@ -35,6 +35,8 @@ function FlashCardsPage() {
         return () => unsubscribe();
     }, []);
 
+  
+
  
     
 
@@ -66,8 +68,9 @@ function FlashCardsPage() {
                     {/* <h1>Right side</h1> */}
                     <h1>Correct: {knowAnswer}</h1>
                     <h1>Wrong: {dontKnowAnswer}</h1>
-
                     <h1>Percentage: {percent}%</h1>
+                    
+               
                 </div>
             </div>
             
