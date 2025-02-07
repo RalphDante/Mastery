@@ -110,6 +110,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
         knowAnswer(0);
         dontKnowAnswer(0);
         setAnswers([]);
+        percent(0);
     }
 
 
@@ -123,7 +124,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
                 setCurrentIndex(currentIndex+1)
                 knowAnswer(prev => {
                     let newKnowAnswer =  prev + 1;
-                    percent(prev => prev = Math.floor((newKnowAnswer/flashCards.length)*100));
+                    percent(Math.floor((newKnowAnswer/flashCards.length)*100));
                     return newKnowAnswer;
                 
                 })
@@ -174,9 +175,17 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
             setTimeout(()=>{
                 const lastAnswer = answers[currentIndex-1]
                 if(lastAnswer){
-                    knowAnswer(knowAnswer=>  knowAnswer -1)
+                    knowAnswer(knowAnswer=> {
+                        let newKnowAnswer = knowAnswer - 1;
+                        percent(Math.floor((newKnowAnswer/flashCards.length)*100));
+                        return newKnowAnswer;
+                    })
                 }else{
-                    dontKnowAnswer(dontKnowAnswer => dontKnowAnswer -1)
+                    dontKnowAnswer(dontKnowAnswer => {
+                        let newDontKnowAnswer = dontKnowAnswer - 1;
+                        // percent(Math.floor((newDontKnowAnswer/flashCards.length)*100));
+                        return newDontKnowAnswer;
+                    })
                 }
                 setCurrentIndex(currentIndex-1)
                 setAnswers(answers.slice(0, -1));
