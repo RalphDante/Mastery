@@ -25,6 +25,7 @@ function FlashCardsPage() {
     
     const [knowAnswer, setKnowAnswer] = useState(0);
     const [dontKnowAnswer, setDontKnowAnswer] = useState(0);
+    const [percent, setPercent] = useState(0);
 
  
     useEffect(() => {
@@ -56,6 +57,7 @@ function FlashCardsPage() {
               
                         knowAnswer = {setKnowAnswer}
                         dontKnowAnswer={setDontKnowAnswer}
+                        percent = {setPercent}
                 
                     />
 
@@ -64,6 +66,7 @@ function FlashCardsPage() {
                     {/* <h1>Right side</h1> */}
                     <h1>Correct: {knowAnswer}</h1>
                     <h1>Wrong: {dontKnowAnswer}</h1>
+                    <h1>Percentage: {percent}%</h1>
                 </div>
             </div>
             
