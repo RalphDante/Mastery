@@ -293,17 +293,36 @@
   
 }
 
-/* From Uiverse.io by Tiagoadag */ 
-.card {
-  width: 190px;
-  height: 100px;
-  border-radius: 20px;
-  transition: all .3s;
-  position: relative;
-  overflow: hidden;
-
+/* Container background (optional) */
+.folderListContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  padding: 20px;
+  /* background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); */
 }
 
+
+/* Card Wrapper */
+.card {
+  position: relative;
+  width: 280px;
+  height: 120px;
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  perspective: 1000px;
+}
+
+
+.card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0px 0px 30px 1px #000446;
+  cursor: pointer;
+}
+
+/* Animated Gradient Border Layer */
 .card::before {
   content: '';
   position: absolute;
@@ -312,51 +331,193 @@
   right: 0;
   bottom: 0;
   background-image: linear-gradient(163deg, #3a43e7 0%, #6b71eb 100%);
-  /* linear-gradient(to bottom, #1b1c3f, #6b71eb) */
   opacity: 0;
-  transition: opacity .3s;
-}
-
-.card2 {
-  width: 100%;
-  height: 100%;
-  background-color: rgb(44, 44, 44);
+  transition: opacity 0.3s;
   border-radius: 20px;
-  transition: all .2s;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  
-}
-
-.card2 a {
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
-  max-height: 100%;
+  z-index: 0;
 }
 
 .card:hover::before {
   opacity: 1;
 }
 
-.card:hover .card2 {
-  transform: scale(0.98);
+/* Card Content */
+.card2 {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, 
+    rgba(139, 69, 255, 0.15) 0%, 
+    rgba(88, 86, 214, 0.12) 50%, 
+    rgba(45, 55, 72, 0.2) 100%
+  );
+  border: 1px solid rgba(139, 69, 255, 0.3);
   border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(139, 69, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.card:hover {
-  box-shadow: 0px 0px 30px 1px #000446;
-  cursor: pointer;
+/* Gradient Glow Border Effect */
+.card2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent,
+    rgba(139, 69, 255, 0.4),
+    transparent,
+    rgba(88, 86, 214, 0.4),
+    transparent
+  );
+  background-size: 400% 400%;
+  opacity: 0;
+  border-radius: 20px;
+  transition: opacity 0.3s ease;
+  animation: borderGlow 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
 }
+
+.card:hover .card2::before {
+  opacity: 1;
+}
+
+@keyframes borderGlow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Shimmer effect */
+.card2::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(139, 69, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(88, 86, 214, 0.1) 0%, transparent 50%);
+  transition: left 0.5s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover .card2::after {
+  left: 100%;
+}
+
+/* Card Link/Text */
+.card2 a {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  width: 100%;
+  text-align: center;
+  color: #e2e8f0;
+  font-weight: 600;
+  font-size: 16px;
+  text-decoration: none !important;
+  line-height: 1.4;
+  font-family: -apple-system,BlinkMacSystemFont,"Segoe UI","Roboto","Oxygen","Ubuntu","Cantarell","Fira Sans","Droid Sans","Helvetica Neue",sans-serif;
+  position: relative;
+  z-index: 2;
+  transition: all 0.3s ease;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  max-height: 100%;
+}
+
+.card:hover .card2 a {
+  color: #ffffff;
+  transform: scale(1.05);
+  text-shadow: 0 0 20px rgba(139, 69, 255, 0.6);
+}
+
+/* Sparkle effect on hover */
+.card2:hover {
+  animation: sparkle 0.6s ease-in-out;
+  border-color: rgba(139, 69, 255, 0.5);
+  box-shadow: 
+    0 12px 40px rgba(139, 69, 255, 0.3),
+    0 0 0 1px rgba(139, 69, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  background: linear-gradient(135deg, 
+    rgba(139, 69, 255, 0.2) 0%, 
+    rgba(88, 86, 214, 0.18) 50%, 
+    rgba(45, 55, 72, 0.25) 100%
+  );
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.1) saturate(1.2);
+  }
+}
+
+/* Responsive tweaks */
+@media (max-width: 768px) {
+  .card {
+    width: 260px;
+    height: 110px;
+  }
+
+  .card2 {
+    padding: 16px;
+  }
+
+  .card2 a {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 100%;
+    max-width: 300px;
+    height: 100px;
+  }
+
+  .card2 {
+    padding: 14px;
+  }
+
+  .card2 a {
+    font-size: 13px;
+  }
+}
+
+
+
+
+
+
 
 /* DISPLAY FILES */
 
