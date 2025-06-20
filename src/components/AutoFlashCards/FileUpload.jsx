@@ -69,7 +69,7 @@ function FileUpload(){
             console.log(parsedFlashCards);
 
         } catch(error) {
-            console.log(alert("hi"), error)
+            console.log(alert("There was an error"), error)
         }
         
 };

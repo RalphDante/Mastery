@@ -11,7 +11,8 @@ import { useEffect } from 'react';
 import CreateFlashCards from './CreateFlashCards';
 
 function CreateFile(){
-
+    
+    const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
     const [fileName, setFileName] = useState("");
     const [fileDescription, setFileDescription] = useState("");
     const [flashCards, setFlashCards] = useState([{question: "", answer: ""},{question: "", answer: ""},{question: "", answer: ""}]);
@@ -70,6 +71,7 @@ function CreateFile(){
    
 
     const saveData = () => {
+    
     const isEmpty = checkEmpty()
     if (isEmpty) {
         alert("There is an empty question or answer")
@@ -83,7 +85,8 @@ function CreateFile(){
         alert("Please add at least 3 flashcards")
         return;
     }
-    
+    setShowFlashCardAmount(false)
+
     const uid = authUser.uid
     const db = getDatabase(app);
     const newFileRef = ref(db, `QuizletsFolders/${uid}/${folderName}/${fileName}`);
@@ -140,6 +143,10 @@ function CreateFile(){
             <div style={{height: '1px', backgroundColor: 'rgb(135, 207, 235, 0.186)', width: '100%', marginBottom: '20px', marginTop: '20px'}}></div>
 
 
+            {showFlashCardAmount ? <h1>Flashcards: {flashCards.length}</h1> : ""}
+            
+            
+
             <CreateFlashCards onAddFlashCard={addFlashCard} 
             autoResize={autoResize}/>
 
@@ -150,7 +157,7 @@ function CreateFile(){
 
             </div>
 
-
+            
 
         </div>
     )

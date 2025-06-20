@@ -21,10 +21,14 @@ function CreateFile({fileNameDirectory}){
 
     
 
-
+    const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
     const [fileDescription, setFileDescription] = useState("");
     const [flashCards, setFlashCards] = useState([]);
     const [authUser, setAuthUser] = useState(null);
+
+    const [flashCardsCount, setFlashCardsCount] = useState(0);
+
+
 
 
     const navigate = useNavigate(); 
@@ -95,6 +99,7 @@ function CreateFile({fileNameDirectory}){
         setFlashCards([...flashCards, flashcard])
     };
 
+  
 
    
 
@@ -117,6 +122,7 @@ function CreateFile({fileNameDirectory}){
    
 
     const saveData = async () => {
+
     const isEmpty = checkEmpty()
     if (isEmpty) {
         alert("There is an empty question or answer")
@@ -130,6 +136,9 @@ function CreateFile({fileNameDirectory}){
         alert("Please add at least 3 flashcards")
         return;
     }
+    
+    setShowFlashCardAmount(false);
+
 
     let folderName = fileNameDirectory;
     const firstSlashIndex = folderName.lastIndexOf("/");
@@ -170,7 +179,8 @@ function CreateFile({fileNameDirectory}){
 
     return(
         <div className={styles.createFilePage}>
-            <h3>Name the file:</h3>
+            {/* <h3>Name the file:</h3> */}
+            
 
             <input className={styles.fileNameInput} type="text" value={fileName}
             onChange={(e) => setFileName(e.target.value)} 
@@ -186,7 +196,7 @@ function CreateFile({fileNameDirectory}){
             onInput={autoResize}
             ></textarea>
 
-            <h4 style={{marginBottom: '10px'}}>Your Juicy Flash Cards</h4>
+            <h4 style={{marginBottom: '10px'}}>Your Flash Cards</h4>
 
 
 
@@ -205,9 +215,8 @@ function CreateFile({fileNameDirectory}){
             />
 
             <div style={{height: '1px', backgroundColor: 'rgb(135, 207, 235, 0.186)', width: '100%', marginBottom: '20px', marginTop: '20px'}}></div>
-
-
-
+            
+            {showFlashCardAmount ? <h1>Flashcards: {flashCards.length}</h1> : ""}
 
             <CreateFlashCards onAddFlashCard={addFlashCard} 
             autoResize={autoResize}/>
@@ -218,6 +227,7 @@ function CreateFile({fileNameDirectory}){
                 <button className={styles.saveBtn} onClick={saveData} >Save</button>
 
             </div>
+
 
 
 

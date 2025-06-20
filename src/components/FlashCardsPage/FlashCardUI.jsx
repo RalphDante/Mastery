@@ -113,6 +113,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
         percent(0);
         
         setAnswers([]);
+        percent(0);
     }
 
 
@@ -125,13 +126,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
             setTimeout(()=>{
                 setCurrentIndex(currentIndex+1)
                 knowAnswer(prev => {
-                    const newKnowAnswer = prev + 1;
-                    percent(Math.round((newKnowAnswer/flashCards.length)*100));
+                    let newKnowAnswer =  prev + 1;
+                    percent(Math.floor((newKnowAnswer/flashCards.length)*100));
                     return newKnowAnswer;
+                
                 })
-
-               
-
                 setAnswers([...answers, true])
                 setProcessing(false)
             },  200)             
@@ -178,16 +177,17 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
             setTimeout(()=>{
                 const lastAnswer = answers[currentIndex-1]
                 if(lastAnswer){
-                    knowAnswer(knowAnswer=>  {
-                        let newKnowAnswer = knowAnswer -1;
-                        percent(Math.round((newKnowAnswer/flashCards.length)*100));
-                        return newKnowAnswer
-
-                    
+                    knowAnswer(knowAnswer=> {
+                        let newKnowAnswer = knowAnswer - 1;
+                        percent(Math.floor((newKnowAnswer/flashCards.length)*100));
+                        return newKnowAnswer;
                     })
-                    
                 }else{
-                    dontKnowAnswer(dontKnowAnswer => dontKnowAnswer -1)
+                    dontKnowAnswer(dontKnowAnswer => {
+                        let newDontKnowAnswer = dontKnowAnswer - 1;
+                        // percent(Math.floor((newDontKnowAnswer/flashCards.length)*100));
+                        return newDontKnowAnswer;
+                    })
                 }
                 setCurrentIndex(currentIndex-1)
                 setAnswers(answers.slice(0, -1));
@@ -221,8 +221,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
                 <SetToPublic />
                 
             </div>
-            
-            
             <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
                     <div className={styles.flipCardFront}>

@@ -5,6 +5,8 @@ import {getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'fireb
 import { onAuthStateChanged } from 'firebase/auth';
 import { getDatabase, onValue, ref } from 'firebase/database';
 import { useLocation } from 'react-router-dom';
+import { useDropzone } from "react-dropzone";
+
 
 
 
@@ -12,14 +14,54 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
 
     const [authUser, setAuthUser] = useState(null);
 
-    const [image, setImage] = useState(null);
-
     const [draggingOverStates, setDraggingOverStates] = useState({});
 
     const textareaRefs = useRef([]);
 
 
     const location = useLocation();
+
+    const ImageUploader = ({onImageUpload, index, field}) => {
+        const {getRootProps, getInputProps} = useDropzone({
+            onDrop: (acceptedFiles) => {
+                onImageUpload(acceptedFiles[0], field, index);
+            }
+        }) 
+        return (
+
+            <div className='bg-blend-darken'> 
+                <i  {...getRootProps()} className="fa-sharp fa-regular fa-image text-2xl cursor-pointer hover:text-green-500"></i>
+                <input {...getInputProps()} />
+            </div>
+   
+        )
+    }
+
+    const handleImageClick = async (file, field, index)=>{
+
+        if(file && file.type.startsWith('image/') && authUser){
+            try {
+                const storage = getStorage(app)
+
+                const imageRef = storageRef(storage, `flashcard-images/${authUser.uid}/${file.name}`)
+
+                await uploadBytes(imageRef, file)
+
+                const downloadURL = await getDownloadURL(imageRef);
+
+                const updatedFlashCards = [...flashCards];
+                updatedFlashCards[index][field] = downloadURL;
+                setFlashCards(updatedFlashCards)
+             
+            } catch (error) {
+                console.error("Error uploading image: ", error);
+                alert("Error uploading file, please try again");
+            } 
+        } else {
+            alert("Drop an image file")
+        }
+    }
+
 
 
     useEffect(()=>{
@@ -141,18 +183,26 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
                             {flashCard.question.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={flashCard.question} alt="Question" className={styles.flashCardImage} />
                             ) : (
+                                <>
                                 <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-question`]? styles.dragOver : ''} `} value={flashCard.question}
-                                ref={el => textareaRefs.current[index * 2] = el}
-                                onDragOver={(e)=>handleDragOver(e, 'question', index)}
-                                onDrop={(e)=>handleDrop(e, 'question', index)}
-                                onDragLeave={(e)=>handleDragLeave(e, 'question', index)}
-                                onChange={(e)=>{
-                                    onEdit(index, 'question', e.target.value)
-                                    autoResize(e)
-                                }}
-                                placeholder='Question'
-                                onInput={autoResize}
+                                    ref={el => textareaRefs.current[index * 2] = el}
+                                    onDragOver={(e)=>handleDragOver(e, 'question', index)}
+                                    onDrop={(e)=>handleDrop(e, 'question', index)}
+                                    onDragLeave={(e)=>handleDragLeave(e, 'question', index)}
+                                    onChange={(e)=>{
+                                        onEdit(index, 'question', e.target.value)
+                                        autoResize(e)
+                                    }}
+                                    placeholder='Question'
+                                    onInput={autoResize}
                                 ></textarea>
+                                <ImageUploader 
+                                    onImageUpload={handleImageClick}
+                                    index={index}
+                                    field="question"
+                                />
+                                </>
+                                
                                 )
                             }
                             
@@ -162,6 +212,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
                             {flashCard.answer.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={flashCard.answer} alt='Answer' className={styles.flashCardImage} />
                             ) : (
+                                <>
                                 <textarea className={`${styles.flashCardInput} ${draggingOverStates[`${index}-answer`] ? styles.dragOver : ''}`} value={flashCard.answer}
                                 ref={el => textareaRefs.current[index * 2 + 1] = el}
                                 onDragOver={(e)=>handleDragOver(e, 'answer', index)}
@@ -174,8 +225,16 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize, fil
                                 }}
                                 placeholder='Answer'
                                 onInput={autoResize}
-                            
                                 ></textarea>
+                                <ImageUploader 
+                                    onImageUpload={handleImageClick}
+                                    index={index}
+                                    field="answer"
+                                />
+
+                                </>
+                                
+                               
 
                             )}
                             
