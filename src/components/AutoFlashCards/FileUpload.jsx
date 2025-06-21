@@ -50,7 +50,7 @@ function FileUpload(){
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Generate 5 flashcards from this text. 
+                            text: `Generate 25 flashcards from this text. 
                             Format as JSON: [{"question":"...", "answer":"..."}]
                             
                             Text: ${text}`
@@ -100,7 +100,7 @@ function FileUpload(){
 
     return (
         <div className="w-full h-10">
-            <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Upload a file</button>
+            <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Create with AI</button>
             <input {...getInputProps()} />
         </div>
     )
