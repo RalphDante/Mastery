@@ -13,6 +13,8 @@ import FolderModalStep1 from '../AutoFlashCards/FolderModal/FolderModalStep1.jsx
 
 function Home() {
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   const [authUser, setAuthUser] = useState(null);
 
   const navigate = useNavigate();
@@ -44,7 +46,23 @@ function Home() {
 
     <DisplayFolders uid={authUser.uid}/>
 
-    <FolderModalStep1 uid={authUser.uid} />
+
+    
+    <div className="text-center">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="px-6 py-3 bg-purple-600 rounded-lg text-lg font-semibold hover:bg-purple-500 transition-colors"
+        >
+          Create with AI
+        </button>
+    </div>
+
+    <FolderModalStep1 
+      uid={authUser.uid} 
+      onClose = {() => setIsModalOpen(false)}
+      isOpen={isModalOpen}
+    />
+
 
     <AutoFlashCards />
 

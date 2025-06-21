@@ -5,13 +5,21 @@ import FolderModalStep2 from "./FolderModalStep2";
 
 
 
-function FolderModalStep1({uid}) {
+function FolderModalStep1({uid, onClose, isOpen}) {
+
+
+    const [step, setStep] = useState(1); // 1: Choose folder, 2: Upload file, 3: Processing, 4: Success
+  const [newFolderName, setNewFolderName] = useState('');
+  const [isCreatingNewFolder, setIsCreatingNewFolder] = useState(false);
+  const [flashcards, setFlashcards] = useState([]);
+  const [deckName, setDeckName] = useState('');
 
     const [folder, setFolder] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [selectedFolder, setSelectedFolder] = useState("");
     const [createNew, setCreateNew] = useState(false);
     const [showStep2, setShowStep2] = useState(false);
+
 
 
 
@@ -40,88 +48,161 @@ function FolderModalStep1({uid}) {
         })
     },[uid])
 
+    if (!isOpen) return null;
 
 
-    if (showStep2) {
-        return <FolderModalStep2 selectedFolder={selectedFolder} createNew={createNew} />;
-    }
+
+    const handleFolderSelection = () => {
+        if (isCreatingNewFolder && !newFolderName.trim()) {
+          alert('Please enter a folder name');
+          return;
+        }
+        if (!isCreatingNewFolder && !selectedFolder) {
+          alert('Please select a folder');
+          return;
+        }
+        setStep(2);
+      };
+
 
     return (
-    <>
-        <button
-        className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-        onClick={() => setShowModal(true)}
-        >
-        Create AI Flashcards
-        </button>
-
-        {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 p-6 rounded-lg w-full max-w-md shadow-xl">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4 text-white">
+        
+        {/* Step 1: Choose Folder */}
+        {step === 1 && (
+          <>
             <h2 className="text-xl font-bold mb-4">Create AI Flashcards</h2>
-            <p className="mb-2">Where would you like to save your new deck?</p>
-
-            <div className="mb-4 space-y-2">
-                <label className="flex items-center">
-                <input
+            <p className="text-gray-300 mb-4">Where would you like to save your new deck?</p>
+            
+            <div className="space-y-3">
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
                     type="radio"
-                    checked={!createNew}
-                    onChange={() => setCreateNew(false)}
-                    className="mr-2"
-                />
-                Use existing folder
+                    name="folderChoice"
+                    checked={!isCreatingNewFolder}
+                    onChange={() => setIsCreatingNewFolder(false)}
+                    className="text-blue-500"
+                  />
+                  <span>Use existing folder</span>
                 </label>
-
-                {!createNew && (
-                <select
-                    className="w-full mt-1 p-2 bg-gray-700 rounded"
-                    value={selectedFolder}
+                
+                {!isCreatingNewFolder && (
+                  <select 
+                    value={selectedFolder} 
                     onChange={(e) => setSelectedFolder(e.target.value)}
-                >
-                   {folder.map((folderItem) => (
+                    className="w-full mt-2 p-2 bg-gray-700 rounded border border-gray-600"
+                  >
+                    <option value="">Select a folder...</option>
+                    {folder.map((folderItem) => (
                     <option key={folderItem.name} value={folderItem.name}>
                         {folderItem.name}
                     </option>
                     ))}
-                </select>
+                  </select>
                 )}
+              </div>
 
-                <label className="flex items-center mt-2">
-                <input
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
                     type="radio"
-                    checked={createNew}
-                    onChange={() => setCreateNew(true)}
-                    className="mr-2"
-                />
-                Create new folder
+                    name="folderChoice"
+                    checked={isCreatingNewFolder}
+                    onChange={() => setIsCreatingNewFolder(true)}
+                    className="text-blue-500"
+                  />
+                  <span>Create new folder</span>
                 </label>
+                
+                {isCreatingNewFolder && (
+                  <input
+                    type="text"
+                    placeholder="Enter folder name..."
+                    value={newFolderName}
+                    onChange={(e) => setNewFolderName(e.target.value)}
+                    className="w-full mt-2 p-2 bg-gray-700 rounded border border-gray-600"
+                  />
+                )}
+              </div>
             </div>
 
-            <div className="flex justify-end space-x-2">
-                <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700"
-                >
+            <div className="flex justify-between mt-6">
+              <button onClick={onClose} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">
                 Cancel
-                </button>
-                <button
-                onClick={() => {
-                    // Handle next step logic here
-                   
-                    setShowModal(false);
-                    setShowStep2(true);
-                   
-                }}
-                className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
-                >
+              </button>
+              <button onClick={handleFolderSelection} className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-500">
                 Next
-                </button>
+              </button>
             </div>
-            </div>
-        </div>
+          </>
         )}
 
-    </>
+        {/* Step 2: Upload File */}
+        {step === 2 && (
+          <>
+            <h2 className="text-xl font-bold mb-4">Upload Your PDF</h2>
+            <p className="text-gray-300 mb-4">
+              Saving to: <span className="text-blue-400 font-semibold">
+                {isCreatingNewFolder ? newFolderName : selectedFolder}
+              </span>
+            </p>
+            
+            {/* <FileUploadComponent onFlashcardsGenerated={handleFileUpload} /> */}
+
+            <div className="flex justify-between mt-6">
+              <button onClick={() => setStep(1)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">
+                Back
+              </button>
+              <button onClick={onClose} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">
+                Cancel
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* Step 4: Success & Name Deck */}
+        {step === 4 && (
+          <>
+            <h2 className="text-xl font-bold mb-4">✅ Flashcards Generated!</h2>
+            <p className="text-gray-300 mb-4">
+              Created {flashcards.length} flashcards. Give your deck a name:
+            </p>
+            
+            <input
+              type="text"
+              placeholder="Deck name (optional)"
+              value={deckName}
+              onChange={(e) => setDeckName(e.target.value)}
+              className="w-full p-2 bg-gray-700 rounded border border-gray-600 mb-4"
+            />
+
+            <div className="max-h-40 overflow-y-auto mb-4 bg-gray-700 p-3 rounded">
+              <h4 className="text-sm font-semibold mb-2">Preview:</h4>
+              {flashcards.slice(0, 2).map((card, index) => (
+                <div key={index} className="text-xs mb-2 p-2 bg-gray-600 rounded">
+                  <div><strong>Q:</strong> {card.question}</div>
+                  <div><strong>A:</strong> {card.answer}</div>
+                </div>
+              ))}
+              {flashcards.length > 2 && (
+                <div className="text-xs text-gray-400">...and {flashcards.length - 2} more</div>
+              )}
+            </div>
+
+            <div className="flex justify-between">
+              <button onClick={() => setStep(2)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">
+                Back
+              </button>
+              <button onClick={handleSaveDeck} className="px-4 py-2 bg-green-600 rounded hover:bg-green-500">
+                Save Deck
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
         
     );
     }
