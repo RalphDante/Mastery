@@ -8,6 +8,7 @@ import UserName from '../auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
 import AutoFlashCards from '../AutoFlashCards/AutoFlashCards.jsx';
+import FolderModalStep1 from '../AutoFlashCards/FolderModal/FolderModalStep1.jsx';
 
 
 function Home() {
@@ -42,6 +43,8 @@ function Home() {
 
 
     <DisplayFolders uid={authUser.uid}/>
+
+    <FolderModalStep1 uid={authUser.uid} />
 
     <AutoFlashCards />
 

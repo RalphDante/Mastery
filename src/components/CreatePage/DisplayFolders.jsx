@@ -29,8 +29,7 @@ function DisplayFolder({uid}){
 // },[])
 
 
-  const db = getDatabase(app);
-  const folderRef = ref(db, `QuizletsFolders/${uid}`)
+ 
 
   const handleClick = (folderName,e)=>{
     e.preventDefault();
@@ -43,6 +42,8 @@ function DisplayFolder({uid}){
     navigate("/createfolder")
   }
 
+  const db = getDatabase(app);
+  const folderRef = ref(db, `QuizletsFolders/${uid}`)
 
   useEffect(()=>{
       const onSnapshot = onValue(folderRef, (snapshot)=>{
