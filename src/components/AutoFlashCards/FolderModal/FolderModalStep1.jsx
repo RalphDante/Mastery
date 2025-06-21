@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import {ref, getDatabase, onValue} from 'firebase/database';
 import { app } from "../../../firebase"
 import AutoFlashCards from "../AutoFlashCards";
+import FileUpload from "../FileUpload";
+
 
 
 
@@ -63,7 +65,10 @@ function FolderModalStep1({uid, onClose, isOpen}) {
         }
         setStep(2);
       };
-
+    
+    const handleSaveDeck = () => {
+        
+    }
 
     return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -149,7 +154,12 @@ function FolderModalStep1({uid, onClose, isOpen}) {
               </span>
             </p>
 
-            <AutoFlashCards />
+            <FileUpload 
+                onSuccess = {()=>{
+                    setStep(4);
+                }}
+            
+            />
             
             {/* <FileUploadComponent onFlashcardsGenerated={handleFileUpload} /> */}
 

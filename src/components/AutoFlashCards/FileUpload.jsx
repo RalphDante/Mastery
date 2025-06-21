@@ -1,9 +1,13 @@
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 
+import {useState} from 'react';
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-function FileUpload(){
+function FileUpload({onSuccess}){
+
+    const [loading, setLoading] = useState(false);
 
     const {getRootProps, getInputProps} = useDropzone({
         multiple: false,
@@ -87,6 +91,8 @@ function FileUpload(){
             };
 
             const cleanJSON = extractJSON(flashCardsText);
+
+            if(cleanJSON) onSuccess();
             console.log('Cleaned JSON:', cleanJSON);
             
             const parsedFlashCards = JSON.parse(cleanJSON);
@@ -100,7 +106,7 @@ function FileUpload(){
 
     return (
         <div className="w-full h-10">
-            <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Create with AI</button>
+            <button {...getRootProps()} className='btn btn-primary' style={{maxWidth: '8rem'}}>Choose a file</button>
             <input {...getInputProps()} />
         </div>
     )
