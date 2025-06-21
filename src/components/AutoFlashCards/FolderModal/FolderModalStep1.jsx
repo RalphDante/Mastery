@@ -1,6 +1,7 @@
-    import { useState, useEffect } from "react";
-    import {ref, getDatabase, onValue} from 'firebase/database';
-    import { app } from "../../../firebase"
+import { useState, useEffect } from "react";
+import {ref, getDatabase, onValue} from 'firebase/database';
+import { app } from "../../../firebase"
+import FolderModalStep2 from "./FolderModalStep2";
 
 
 
@@ -8,8 +9,10 @@ function FolderModalStep1({uid}) {
 
     const [folder, setFolder] = useState([]);
     const [showModal, setShowModal] = useState(false);
-    const [selectedFolder, setSelectedFolder] = useState("EDITED FOLDER PART 2");
+    const [selectedFolder, setSelectedFolder] = useState("");
     const [createNew, setCreateNew] = useState(false);
+    const [showStep2, setShowStep2] = useState(false);
+
 
 
     const db = getDatabase(app);
@@ -39,13 +42,9 @@ function FolderModalStep1({uid}) {
 
 
 
-    const folders = [
-    "AEF",
-    "EDITED",
-    "EDITED FOLDER PART 2",
-    "FOAEHFAEF",
-    "IMAGE TEST 3",
-    ];
+    if (showStep2) {
+        return <FolderModalStep2 selectedFolder={selectedFolder} createNew={createNew} />;
+    }
 
     return (
     <>
@@ -108,7 +107,10 @@ function FolderModalStep1({uid}) {
                 <button
                 onClick={() => {
                     // Handle next step logic here
+                   
                     setShowModal(false);
+                    setShowStep2(true);
+                   
                 }}
                 className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700"
                 >
