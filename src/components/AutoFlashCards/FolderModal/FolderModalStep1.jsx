@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import {ref, getDatabase, onValue} from 'firebase/database';
 import { app } from "../../../firebase"
 import FolderModalStep2 from "./FolderModalStep2";
+import AutoFlashCards from "../AutoFlashCards";
 
 
 
@@ -148,6 +149,8 @@ function FolderModalStep1({uid, onClose, isOpen}) {
                 {isCreatingNewFolder ? newFolderName : selectedFolder}
               </span>
             </p>
+
+            <AutoFlashCards />
             
             {/* <FileUploadComponent onFlashcardsGenerated={handleFileUpload} /> */}
 
