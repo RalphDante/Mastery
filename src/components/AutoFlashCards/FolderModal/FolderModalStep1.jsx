@@ -1,29 +1,45 @@
 import { useState, useEffect } from "react";
-import {ref, getDatabase, onValue} from 'firebase/database';
-import { app } from "../../../firebase"
+import {ref, getDatabase, onValue, set, push} from 'firebase/database';
+import { app, auth } from "../../../firebase"
 import AutoFlashCards from "../AutoFlashCards";
 import FileUpload from "../FileUpload";
+import { onAuthStateChanged } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
 
 
 
 
 function FolderModalStep1({uid, onClose, isOpen}) {
 
-
-    const [step, setStep] = useState(1); // 1: Choose folder, 2: Upload file, 3: Processing, 4: Success
+  const navigate = useNavigate();
+  
+  const [step, setStep] = useState(1); // 1: Choose folder, 2: Upload file, 3: Processing, 4: Success
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingNewFolder, setIsCreatingNewFolder] = useState(false);
   const [flashcards, setFlashcards] = useState([]);
   const [deckName, setDeckName] = useState('');
 
-    const [folder, setFolder] = useState([]);
-    const [showModal, setShowModal] = useState(false);
-    const [selectedFolder, setSelectedFolder] = useState("");
-    const [createNew, setCreateNew] = useState(false);
-    const [showStep2, setShowStep2] = useState(false);
+  const [folder, setFolder] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState("");
+
+
+  const [authUser, setAuthUser] = useState(null);
+
+    useEffect(()=>{
+      onAuthStateChanged(auth, (user) =>{
+          if(user){
+              setAuthUser(user);
+          } else {
+              setAuthUser(null);
+          }
+      })
+
+    },[]);
 
 
 
+    // List of folders in modal segment
 
     const db = getDatabase(app);
     const folderRef = ref(db, `QuizletsFolders/${uid}`)
@@ -67,7 +83,23 @@ function FolderModalStep1({uid, onClose, isOpen}) {
       };
     
     const handleSaveDeck = () => {
-        
+        // first we gotta save the thing
+
+        const uid = authUser.uid
+        const db = getDatabase(app);
+        const newFileRef = ref(db, `QuizletsFolders/${uid}/${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`);
+        const newDocRef = push(newFileRef);
+
+    set(newDocRef, {
+            Description: "",
+            Flashcards: flashcards
+        }).then(()=>{
+            navigate(`/flashcards/${encodeURIComponent(`${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`)}`);
+            // alert("Saved Successfuly")
+        }
+        )
+
+        // then we go to the right page
     }
 
     return (
@@ -155,7 +187,8 @@ function FolderModalStep1({uid, onClose, isOpen}) {
             </p>
 
             <FileUpload 
-                onSuccess = {()=>{
+                onSuccess = {(generatedFlashcards)=>{
+                    setFlashcards(generatedFlashcards);
                     setStep(4);
                 }}
             
@@ -184,7 +217,7 @@ function FolderModalStep1({uid, onClose, isOpen}) {
             
             <input
               type="text"
-              placeholder="Deck name (optional)"
+              placeholder="Deck name"
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
               className="w-full p-2 bg-gray-700 rounded border border-gray-600 mb-4"

@@ -44,10 +44,6 @@ function Home() {
     <h1 className='my-2 text-xl'>Your Folders:</h1>
 
 
-    <DisplayFolders uid={authUser.uid}/>
-
-
-    
     <div className="text-center">
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -63,6 +59,12 @@ function Home() {
       isOpen={isModalOpen}
     />
 
+
+    <DisplayFolders uid={authUser.uid}/>
+
+
+    
+    
 
     <AutoFlashCards />
 

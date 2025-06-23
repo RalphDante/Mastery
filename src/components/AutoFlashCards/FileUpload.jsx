@@ -92,11 +92,16 @@ function FileUpload({onSuccess}){
 
             const cleanJSON = extractJSON(flashCardsText);
 
-            if(cleanJSON) onSuccess();
+         
             console.log('Cleaned JSON:', cleanJSON);
             
             const parsedFlashCards = JSON.parse(cleanJSON);
             console.log('Parsed flashcards:', parsedFlashCards);
+
+            if(parsedFlashCards && parsedFlashCards.length > 0) {
+                onSuccess(parsedFlashCards);
+            }
+
 
         } catch(error) {
             console.error("There was an error:", error);
