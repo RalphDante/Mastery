@@ -1,22 +1,82 @@
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
-import * as mammoth from 'mammoth';
-import { useState } from 'react';
+// mammoth will be loaded from CDN
+import { useState, useEffect } from 'react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 function FileUpload({ onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('');
+    const [showCamera, setShowCamera] = useState(false);
+    const [stream, setStream] = useState(null);
+
+    const loadTesseract = () => {
+        return new Promise((resolve, reject) => {
+            if (typeof window.Tesseract !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
+            script.onload = () => {
+                console.log('Tesseract.js loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load Tesseract.js'));
+            };
+            document.head.appendChild(script);
+        });
+    };
+
+    // OCR function using Tesseract.js
+    const performOCR = async (imageFile) => {
+        try {
+            console.log('Starting Tesseract OCR for:', imageFile.name || 'captured image');
+            
+            // Ensure Tesseract is loaded
+            setStatus('Loading OCR library...');
+            await loadTesseract();
+            
+            setStatus('Initializing OCR...');
+            
+            console.log('Starting Tesseract recognition...');
+            setStatus('Reading text from image...');
+            
+            const { data: { text, confidence } } = await window.Tesseract.recognize(
+                imageFile,
+                'eng',
+                {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
+                            setStatus(`Processing text... ${Math.round(m.progress * 100)}%`);
+                        }
+                    }
+                }
+            );
+            
+            console.log('OCR completed with confidence:', confidence);
+            console.log('Extracted text preview:', text.substring(0, 200) + '...');
+            
+            if (text && text.trim().length > 10) {
+                return text.trim();
+            } else {
+                return 'No readable text found in image. Please ensure the image is clear and well-lit.';
+            }
+            
+        } catch (error) {
+            console.error('Tesseract OCR error:', error);
+            throw new Error(`OCR processing failed: ${error.message}`);
+        }
+    };
 
     const { getRootProps, getInputProps } = useDropzone({
         multiple: false,
         accept: {
             'application/pdf': ['.pdf'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
-            'application/msword': ['.doc'],
-            'application/vnd.ms-powerpoint': ['.ppt'],
             'text/plain': ['.txt'],
             'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
         },
@@ -47,6 +107,7 @@ function FileUpload({ onSuccess }) {
                 }
                 
                 if (extractedText.trim()) {
+                    console.log('Final extracted text being sent to AI:', extractedText); // Debug log
                     setStatus('Generating flashcards...');
                     await sendToAI(extractedText);
                 } else {
@@ -130,18 +191,34 @@ function FileUpload({ onSuccess }) {
 
     const readDOCX = async (file) => {
         return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const arrayBuffer = event.target.result;
-                    const result = await mammoth.extractRawText({ arrayBuffer });
-                    resolve(result.value);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
+            // Check if mammoth is available from CDN
+            if (typeof window.mammoth === 'undefined') {
+                // Load mammoth from CDN if not available
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js';
+                script.onload = () => {
+                    processDOCX();
+                };
+                script.onerror = () => reject(new Error('Failed to load mammoth library'));
+                document.head.appendChild(script);
+            } else {
+                processDOCX();
+            }
+            
+            function processDOCX() {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const arrayBuffer = event.target.result;
+                        const result = await window.mammoth.extractRawText({ arrayBuffer });
+                        resolve(result.value);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            }
         });
     };
 
@@ -175,52 +252,79 @@ function FileUpload({ onSuccess }) {
         });
     };
 
-    const performOCR = async (imageFile) => {
-        // Using Google Vision API for OCR
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const base64Image = event.target.result.split(',')[1];
-                    
-                    const response = await fetch(`https://vision.googleapis.com/v1/images:annotate?key=AIzaSyBzq2AFwxW3rAvIR6M81MAMrj9JvaA5eg8`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            requests: [{
-                                image: {
-                                    content: base64Image
-                                },
-                                features: [{
-                                    type: 'TEXT_DETECTION',
-                                    maxResults: 1
-                                }]
-                            }]
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (data.responses && data.responses[0] && data.responses[0].textAnnotations) {
-                        const extractedText = data.responses[0].textAnnotations[0].description;
-                        resolve(extractedText);
-                    } else {
-                        resolve('No text found in image');
-                    }
-                } catch (error) {
-                    console.error('OCR Error:', error);
-                    reject(error);
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsDataURL(imageFile);
-        });
+    const startCamera = async () => {
+        try {
+            setStatus('Starting camera...');
+            const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: 'environment', // Use back camera on mobile
+                    width: { ideal: 1920 },
+                    height: { ideal: 1080 }
+                } 
+            });
+            setStream(mediaStream);
+            setShowCamera(true);
+            setStatus('');
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            alert('Could not access camera. Please check permissions.');
+            setStatus('');
+        }
     };
+
+    const stopCamera = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            setStream(null);
+        }
+        setShowCamera(false);
+    };
+
+    const capturePhoto = () => {
+        const video = document.getElementById('camera-video');
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0);
+        
+        canvas.toBlob(async (blob) => {
+            setLoading(true);
+            setStatus('Processing photo...');
+            stopCamera();
+            
+            try {
+                const extractedText = await performOCR(blob);
+                if (extractedText.trim()) {
+                    setStatus('Generating flashcards...');
+                    await sendToAI(extractedText);
+                } else {
+                    throw new Error('No text could be extracted from the photo');
+                }
+            } catch (error) {
+                console.error('Error processing photo:', error);
+                alert(`Error processing photo: ${error.message}`);
+            } finally {
+                setLoading(false);
+                setStatus('');
+            }
+        }, 'image/jpeg', 0.8);
+    };
+
+    // Cleanup camera when component unmounts
+    useEffect(() => {
+        return () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        };
+    }, [stream]);
 
     const sendToAI = async (text) => {
         try {
+            console.log('Text being sent to AI:', text.substring(0, 500) + '...'); // Debug log (first 500 chars)
+            
             const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBzq2AFwxW3rAvIR6M81MAMrj9JvaA5eg8', {
                 method: 'POST',
                 headers: {
@@ -279,29 +383,89 @@ function FileUpload({ onSuccess }) {
 
     return (
         <div className="w-full">
-            <div className="flex flex-col items-center gap-4">
-                <button 
-                    {...getRootProps()} 
-                    className={`btn ${loading ? 'btn-disabled' : 'btn-primary'} px-6 py-3`}
-                    disabled={loading}
-                >
-                    {loading ? 'Processing...' : 'Choose File'}
-                </button>
-                <input {...getInputProps()} />
-                
-                {status && (
-                    <div className="text-sm text-gray-600 flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                        {status}
+            {!showCamera ? (
+                <div className="flex flex-col items-center gap-4">
+                    <div className="flex gap-3">
+                        <button 
+                            {...getRootProps()} 
+                            className={`btn ${loading ? 'btn-disabled' : 'btn-primary'} px-6 py-3`}
+                            disabled={loading}
+                        >
+                            {loading ? 'Processing...' : 'Choose File'}
+                        </button>
+                        
+                        <button 
+                            onClick={startCamera}
+                            className={`btn ${loading ? 'btn-disabled' : 'btn-secondary'} px-6 py-3 flex items-center gap-2`}
+                            disabled={loading}
+                        >
+                            📸 Take Photo
+                        </button>
                     </div>
-                )}
-                
-                <div className="text-xs text-gray-500 text-center max-w-md">
-                    Supports: PDF (with OCR), DOCX, PPTX, TXT, and Images (PNG, JPG, etc.)
-                    <br />
-                    Will automatically perform OCR on image-based content
+                    <input {...getInputProps()} />
+                    
+                    {status && (
+                        <div className="text-sm text-gray-600 flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                            {status}
+                        </div>
+                    )}
+                    
+                    <div className="text-xs text-gray-500 text-center max-w-md">
+                        Supports: PDF (with OCR), DOCX, PPTX, TXT, and Images (PNG, JPG, etc.)
+                        <br />
+                        📸 Or take a photo of your notes with the camera!
+                        <br />
+                        Will automatically perform OCR on image-based content using Tesseract.js
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className="flex flex-col items-center gap-4">
+                    <div className="relative">
+                        <video
+                            id="camera-video"
+                            ref={(video) => {
+                                if (video && stream) {
+                                    video.srcObject = stream;
+                                    video.play();
+                                }
+                            }}
+                            className="max-w-full max-h-96 rounded-lg border-2 border-gray-300"
+                            autoPlay
+                            playsInline
+                        />
+                        
+                        {/* Camera overlay for better UX */}
+                        <div className="absolute inset-0 pointer-events-none">
+                            <div className="absolute top-4 left-4 right-4 text-white bg-black bg-opacity-50 p-2 rounded text-sm text-center">
+                                Position your notes clearly in the frame
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={capturePhoto}
+                            className="btn btn-primary px-8 py-3 text-lg flex items-center gap-2"
+                            disabled={loading}
+                        >
+                            📸 Capture
+                        </button>
+                        
+                        <button 
+                            onClick={stopCamera}
+                            className="btn btn-outline px-6 py-3"
+                            disabled={loading}
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                    
+                    <div className="text-xs text-gray-500 text-center max-w-md">
+                        Make sure your notes are well-lit and clearly visible for best OCR results
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
