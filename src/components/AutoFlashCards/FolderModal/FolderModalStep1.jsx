@@ -85,18 +85,23 @@ function FolderModalStep1({uid, onClose, isOpen}) {
     const handleSaveDeck = () => {
         // first we gotta save the thing
 
+        if(!deckName){
+          alert("Please enter a deck name")
+          return
+        }
+
         const uid = authUser.uid
         const db = getDatabase(app);
         const newFileRef = ref(db, `QuizletsFolders/${uid}/${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`);
         const newDocRef = push(newFileRef);
 
-    set(newDocRef, {
-            Description: "",
-            Flashcards: flashcards
-        }).then(()=>{
-            navigate(`/flashcards/${encodeURIComponent(`${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`)}`);
-            // alert("Saved Successfuly")
-        }
+        set(newDocRef, {
+                Description: "",
+                Flashcards: flashcards
+            }).then(()=>{
+                navigate(`/flashcards/${encodeURIComponent(`${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`)}`);
+                // alert("Saved Successfuly")
+            }
         )
 
         // then we go to the right page

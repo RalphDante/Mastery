@@ -66,7 +66,7 @@ function Home() {
     
     
 
-    <AutoFlashCards />
+    {/* <AutoFlashCards /> */}
 
 
     
