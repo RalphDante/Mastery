@@ -1,5 +1,5 @@
 import {useState} from 'react'; //might need to import 'React' as well
-import { getDatabase, ref, set, push} from 'firebase/database';
+import { getDatabase, ref, set, push, onValue} from 'firebase/database';
 import { app } from '../../firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
 import DisplayFlashCards from './DisplayFlashCards';
@@ -17,6 +17,9 @@ function CreateFile(){
     const [fileDescription, setFileDescription] = useState("");
     const [flashCards, setFlashCards] = useState([{question: "", answer: ""},{question: "", answer: ""},{question: "", answer: ""}]);
     const [authUser, setAuthUser] = useState(null);
+
+
+    const [fileList, setFileList] = useState([]);
 
 
     
@@ -42,8 +45,37 @@ function CreateFile(){
 
     },[]);
 
+   
+
+
+    // Folder Name
+
     const location = useLocation();
     const { folderName } = location.state;
+
+
+     // checking for fileName duplicate
+
+     useEffect(() => {
+        if (!authUser) return;
+    
+        const uid = authUser.uid;
+        const db = getDatabase(app);
+        const folderRef = ref(db, `QuizletsFolders/${uid}/${folderName}`);
+    
+        const unsubscribe = onValue(folderRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const firstInnerKey = Object.keys(data).map(key => ({
+                    name: key,
+                    ...data[key]
+                }));
+                setFileList(firstInnerKey);
+            }
+        });
+    
+        return () => unsubscribe();
+    }, [authUser]);
 
     const addFlashCard = (flashcard) => {
         setFlashCards([...flashCards, flashcard])
@@ -75,6 +107,11 @@ function CreateFile(){
     const isEmpty = checkEmpty()
     if (isEmpty) {
         alert("There is an empty question or answer")
+        return;
+    }
+
+    if (fileList.some(file => file.name === fileName)) {
+        alert(`You already have a file named ${fileName}. Please make another name.`);
         return;
     }
     
