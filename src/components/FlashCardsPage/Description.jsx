@@ -40,7 +40,9 @@ function ModuleDescription({db, fileName, authUser}){
 
     return(
         <>
-            {description ? <h3 style={{color: '#b3b3b3', marginTop: '0px'}}>Description: {description.Description}</h3> : <h3>Description: loading...</h3>}
+            {description ? <p className="text-gray-400 text-sm mb-4">{`Description: ${description.Description}`}</p> : <p className="text-gray-400 text-sm mb-4">{`Description: No Description`}</p>}
+                
+              
         </>
     )
 }

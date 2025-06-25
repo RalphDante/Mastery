@@ -11,7 +11,9 @@ import EditFlashCardBtn from './EditFlashCardBtn'
 import SetToPublic from "./SetToPublic";
 
 
-function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
+function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck}){
+
+    
 
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
@@ -115,6 +117,13 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
         setAnswers([]);
         percent(0);
     }
+
+    useEffect(() => {
+        if (redoDeck) {
+            handleShuffle();
+            setRedoDeck(false);
+        }
+    }, [redoDeck, setRedoDeck]);
 
 
     const handleKnow = ()=>{
@@ -222,7 +231,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
                 
             </div>
             <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
-                <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''}`}>
+                <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''} `}>
                     <div className={styles.flipCardFront}>
                         {currentQuestion ? (currentQuestion.startsWith('https://firebasestorage.googleapis.com') ? (
                             <img src={currentQuestion} alt="question" className={styles.questionImage}/>
@@ -246,12 +255,12 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent}){
             
             <div className={styles.buttonsContainer}>
                 <button className={styles.outerFlashCardButtons} disabled={processing} onClick={()=>handleGoBack()}><i class="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i></button>
-                <button className={styles.innerFlashCardButtons} disabled={processing} onClick={()=>handleDontKnow()}><i class="fa-solid fa-xmark" id="wrongButton"></i></button>
+                <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={processing} onClick={()=>handleDontKnow()}><i class="fa-solid fa-xmark" id="wrongButton"></i></button>
                 <div className={styles.scoreContainer}>
                     <h2 style={{margin: '0px'}}>{currentIndex < flashCards.length? `${currentIndex+1}/${flashCards.length}`: `${flashCards.length}/${flashCards.length}`}</h2>
                 </div>
-                <button className={styles.innerFlashCardButtons} disabled={processing} onClick={()=>handleKnow()}><i class="fa-solid fa-check" id="checkButton"></i></button>
-                <button className={styles.outerFlashCardButtons} onClick={()=>handleShuffle()}><i class="fa-solid fa-repeat"></i></button>
+                <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={processing} onClick={()=>handleKnow()} style={{padding: '10px 13px'}}><i class="fa-solid fa-check" id="checkButton"></i></button>
+                <button className={`${styles.outerFlashCardButtons}`} onClick={()=>handleShuffle()}><i class="fa-solid fa-repeat"></i></button>
             </div>
             
         </>

@@ -96,7 +96,7 @@ function FolderModalStep1({uid, onClose, isOpen}) {
         const newDocRef = push(newFileRef);
 
         set(newDocRef, {
-                Description: "",
+                Description: "No description",
                 Flashcards: flashcards
             }).then(()=>{
                 navigate(`/flashcards/${encodeURIComponent(`${isCreatingNewFolder ? newFolderName : selectedFolder}/${deckName}`)}`);
