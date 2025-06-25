@@ -25,7 +25,6 @@ import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFl
 
 
 import "tailwindcss/tailwind.css";
-import FlashcardApp from './components/FlashCardsPage/BetterFlashCardsPage.jsx';
 
 
 function App(){
@@ -53,7 +52,6 @@ function App(){
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
                   <Route path='/publicFlashCards/:publicKeyCredential' element={<PublicKeyCredentialFlashCardsPage />} />
-                  <Route path='/betterFlashCards' element={<FlashcardApp />} />
 
                   {/* Try to understand what the ":folderName" does again */}
                   {/* Last part we left off was at the integration of a new publicFlashCard Page */}
