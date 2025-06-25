@@ -1,12 +1,14 @@
 import React, {useState, useEffect} from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { getDatabase, ref, set, push} from 'firebase/database'
+import { getDatabase, ref, set, push, onValue} from 'firebase/database'
 import { app } from '../../firebase';
 import AuthDetails from '../auth/AuthDetails'
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../firebase'
 
 import styles from "./CreateFilePage.module.css"
+
+
 
 
 function CreateFolder (){
@@ -31,15 +33,52 @@ function CreateFolder (){
 
     const [folderName, setFolderName] = useState("");
     const [folderDescription, setFolderDescription] = useState("");
+
+    const [folderList, setFolderList] = useState([]);
     
+    
+
+    useEffect(() => {
+        if (!authUser) return;
+    
+        const uid = authUser.uid;
+        const db = getDatabase(app);
+        const folderRef = ref(db, `QuizletsFolders/${uid}`);
+    
+        const unsubscribe = onValue(folderRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                const firstInnerKey = Object.keys(data).map(key => ({
+                    name: key,
+                    ...data[key]
+                }));
+                setFolderList(firstInnerKey);
+            }
+        });
+    
+        return () => unsubscribe();
+    }, [authUser]);
+
+    
+
 
     const saveData = () => {
         if (folderName === "" || folderDescription === "") {
             alert("Please enter your Folder Name and Folder Description");
             return;
         }
+
+        // if there already exists a folder name then we alert that there is already a folder name like that, please use a different folder name to avoid confusion
+
+        
+        if (folderList.some(folder => folder.name === folderName)) {
+            alert(`You already have a folder named ${folderName}. Please make another name.`);
+            return;
+        }
+
+
         if(authUser){
-            const uid = authUser.uid
+            const uid = authUser.uid;
             const db = getDatabase(app);
             const newFolderRef = ref(db, `QuizletsFolders/${uid}/${folderName}`);
             const newDocRef = push(newFolderRef);
