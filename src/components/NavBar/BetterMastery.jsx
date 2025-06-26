@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
+import FolderModalStep1 from '../AutoFlashCards/FolderModal/FolderModalStep1';
+
 const MasteryLanding = () => {
+
+  const [showModal, setShowModal] = useState(false);
+    
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [count, setCount] = useState(0);
@@ -61,6 +66,8 @@ const MasteryLanding = () => {
     { name: "@notesgirl", text: "My parents think I'm a genius now lol", verified: false }
   ];
 
+
+
   useEffect(() => {
     setIsVisible(true);
     const interval = setInterval(() => {
@@ -77,7 +84,9 @@ const MasteryLanding = () => {
   }, []);
 
   return (
+
     <div className="min-h-screen bg-gradient-to-br bg-black text-white overflow-hidden">
+        {showModal && <FolderModalStep1 />}
       {/* Animated Background */}
       {/* <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 animate-pulse"></div>
@@ -127,7 +136,10 @@ const MasteryLanding = () => {
 
           {/* CTA Buttons */}
           <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <button className="group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2">
+            <button 
+                className="group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+                onClick={()=>setShowModal(true)}    
+            >
               <div className="group-hover:animate-bounce"><Camera /></div>
               <span>Generate Now</span>
               <div className="group-hover:translate-x-1 transition-transform"><ArrowRight /></div>
