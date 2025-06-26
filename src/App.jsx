@@ -25,6 +25,7 @@ import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFl
 
 
 import "tailwindcss/tailwind.css";
+import MasteryLanding from './components/NavBar/BetterMastery.jsx';
 
 
 function App(){
@@ -55,6 +56,11 @@ function App(){
 
                   {/* Try to understand what the ":folderName" does again */}
                   {/* Last part we left off was at the integration of a new publicFlashCard Page */}
+
+                  <Route path='/try-now' element={<MasteryLanding />} />
+
+
+                  
               </Routes>
 
               
