@@ -41,7 +41,7 @@ function Home() {
     <div className={`${styles.homeContainer} w-auto mx-8 block`}>
 
     {/* flex flex-col justify-center max-w-fwidth */}
-    <h1 className='my-2 text-xl'>Your Folders:</h1>
+    {/* <h1 className='my-2 text-xl'>Your Folders:</h1> */}
 
 
     <div className="text-center">

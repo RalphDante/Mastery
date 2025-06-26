@@ -21,7 +21,7 @@ function Mastery(){
 
     return (
         <div className="mx-8 w-auto">
-            <h1 className='my-2 text-xl'>What others have made: </h1>
+            <h1 className='my-2 text-xl'>Make Flashcards with AI</h1>
             <DisplayFilesFromOtherUser />
             
         </div>
