@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import FolderModalStep1 from '../AutoFlashCards/FolderModal/FolderModalStep1';
+import FolderModalStep1 from './FolderModalStep1';
 
 const MasteryLanding = () => {
 
@@ -86,7 +86,12 @@ const MasteryLanding = () => {
   return (
 
     <div className="min-h-screen bg-gradient-to-br bg-black text-white overflow-hidden">
-        {showModal && <FolderModalStep1 />}
+      {showModal && (
+        <FolderModalStep1
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+        />
+      )}
       {/* Animated Background */}
       {/* <div className="absolute inset-0 opacity-20">
         <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 animate-pulse"></div>
