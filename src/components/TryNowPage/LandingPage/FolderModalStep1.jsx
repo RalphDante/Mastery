@@ -126,6 +126,10 @@ function FolderModalStep1({onClose, isOpen}) {
                 onSuccess = {(generatedFlashcards)=>{
                     setFlashcards(generatedFlashcards);
                     // Navigation to flashcard page
+
+                    navigate('/flashcards-demo', {
+                      state: {flashcards: generatedFlashcards}
+                    })
                     // setStep(4);
                 }}
             

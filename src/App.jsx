@@ -26,6 +26,7 @@ import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFl
 
 import "tailwindcss/tailwind.css";
 import MasteryLanding from './components/TryNowPage/LandingPage/TryNowPage.jsx';
+import FlashCardsPage from './components/TryNowPage/FlashCardsDemo/FlashCardsPage.jsx';
 
 
 function App(){
@@ -58,6 +59,9 @@ function App(){
                   {/* Last part we left off was at the integration of a new publicFlashCard Page */}
 
                   <Route path='/try-now' element={<MasteryLanding />} />
+
+                  <Route path='/flashcards-demo' element={<FlashCardsPage />} />
+
 
 
                   
