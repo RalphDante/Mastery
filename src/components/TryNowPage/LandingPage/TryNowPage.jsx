@@ -118,13 +118,13 @@ const MasteryLanding = () => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 pt-5 pb-32">
         <div className="text-center">
           {/* Viral Hook */}
-          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-6 py-2 mb-8">
+          {/* <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-6 py-2 mb-8">
             <TrendingUp />
             <span className="text-sm font-medium">
               <span className="text-violet-400">{count.toLocaleString()}</span> students got A's this week
             </span>
             <div className="animate-pulse"><Sparkles /></div>
-          </div>
+          </div> */}
 
           <h1 className={`text-6xl md:text-8xl font-black mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             Turn Your

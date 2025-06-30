@@ -25,7 +25,7 @@ import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFl
 
 
 import "tailwindcss/tailwind.css";
-import MasteryLanding from './components/TryNowPage/TryNowPage.jsx';
+import MasteryLanding from './components/TryNowPage/LandingPage/TryNowPage.jsx';
 
 
 function App(){
