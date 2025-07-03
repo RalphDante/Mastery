@@ -12,6 +12,8 @@ dist
 dist-ssr
 *.local
 
+
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,3 +25,12 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+.env.*
+
+# Firebase Admin Cleanup Scripts
+firebase-admin-scripts/
+email_users_backup.json
+serviceAccountKey.json
+
+
