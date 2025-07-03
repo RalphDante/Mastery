@@ -324,8 +324,8 @@ function FileUpload({ onSuccess }) {
     const sendToAI = async (text) => {
         try {
             console.log('Text being sent to AI:', text.substring(0, 500) + '...'); // Debug log (first 500 chars)
-            
-            const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyBzq2AFwxW3rAvIR6M81MAMrj9JvaA5eg8', {
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
