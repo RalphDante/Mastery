@@ -27,6 +27,7 @@ import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFl
 import "tailwindcss/tailwind.css";
 import MasteryLanding from './components/TryNowPage/LandingPage/TryNowPage.jsx';
 import FlashCardsPage from './components/TryNowPage/FlashCardsDemo/FlashCardsPage.jsx';
+import GoPremium from './components/GoPremium/GoPremium.jsx';
 
 
 function App(){
@@ -41,8 +42,8 @@ function App(){
               </ShowNavBar>
        
               <Routes>
-                  <Route path="/signin" element={<SignIn />} />
-                  <Route path="/signup" element={<SignUp />} />
+                  {/* <Route path="/signin" element={<SignIn />} />
+                  <Route path="/signup" element={<SignUp />} /> */}
                   <Route path="/authdetails" element={<AuthDetails />} />
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
@@ -61,6 +62,7 @@ function App(){
                   <Route path='/try-now' element={<MasteryLanding />} />
 
                   <Route path='/flashcards-demo' element={<FlashCardsPage />} />
+                  <Route path='/go-premium' element={<GoPremium />} />
 
 
 

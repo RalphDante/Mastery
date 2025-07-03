@@ -5,6 +5,7 @@ import CreateBtn from '../CreateQuizlet/QuizletBtn/QuizletBtn';
 import UserName from '../auth/UserName';
 
 import './NavBar.css';
+import SignUpBtn from '../TryNowPage/LandingPage/SignUpBtn';
 
 function NavBar() {
     const navigate = useNavigate();
@@ -32,7 +33,9 @@ function NavBar() {
                 <div className="flex items-center space-x-5">
                     <div onClick={closeNavbar}><CreateBtn /></div>
                     <div onClick={closeNavbar}><UserName /></div>
-                    <div onClick={closeNavbar} title="log out"><SignOutBtn /></div>
+                    {/* <div onClick={closeNavbar} title="log out"><SignOutBtn /></div> */}
+                    <div onClick={closeNavbar} title="log out"><SignUpBtn /></div>
+
                     
                 </div>
             </div>
@@ -46,7 +49,8 @@ function NavBar() {
                     <div className="flex items-center space-x-5">
                         <div onClick={closeNavbar}><CreateBtn /></div>
                         <div onClick={closeNavbar}><UserName /></div>
-                        <div onClick={closeNavbar} title="log out"><SignOutBtn /></div>
+                        {/* <div onClick={closeNavbar} title="log out"><SignOutBtn /></div> */}
+                        <div onClick={closeNavbar} title="log out"><SignUpBtn /></div>
                     
                     </div>
                     <div className={`h-0.5 w-full bg-white mt-2 transition-opacity duration-700 ${menuOpen ? 'opacity-10' : 'opacity-0'}`}></div>

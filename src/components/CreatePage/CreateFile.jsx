@@ -115,13 +115,16 @@ function CreateFile(){
         return;
     }
     
-    if(fileName === "" || fileDescription === ""){
-        alert("Please enter your File Name and its Description")
+    if(fileName === ""){
+        alert("Please enter your File Name")
         return;
     } else if(flashCards.length < 3){
         alert("Please add at least 3 flashcards")
         return;
     }
+
+    const finalDescription = fileDescription === "" ? "No Description" : fileDescription;
+    
     setShowFlashCardAmount(false)
 
     const uid = authUser.uid
@@ -130,7 +133,7 @@ function CreateFile(){
     const newDocRef = push(newFileRef);
 
     set(newDocRef, {
-        Description: fileDescription,
+        Description: finalDescription,
         Flashcards: flashCards
     }).then(()=>{
         navigate(`/flashcards/${encodeURIComponent(`${folderName}/${fileName}`)}`);

@@ -259,8 +259,8 @@ function FileUpload({ onSuccess }) {
             const mediaStream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: 'environment', // Use back camera on mobile
-                    width: { ideal: 1920 },
-                    height: { ideal: 1080 }
+                    width: { ideal: 2560 },
+                    height: { ideal: 1440 }
                 } 
             });
             setStream(mediaStream);
@@ -466,9 +466,9 @@ function FileUpload({ onSuccess }) {
                         </button>
                     </div>
                     
-                    <div className="text-xs text-gray-500 text-center max-w-md">
+                    {/* <div className="text-xs text-gray-500 text-center max-w-md">
                         Make sure your notes are well-lit and clearly visible for best OCR results
-                    </div>
+                    </div> */}
                 </div>
             )}
         </div>

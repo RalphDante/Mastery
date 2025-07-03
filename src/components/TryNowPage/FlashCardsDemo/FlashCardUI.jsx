@@ -439,13 +439,14 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 </button>
                 
                 {/* Debug info - remove this in production */}
-                <div style={{fontSize: '12px', marginTop: '5px', color: '#666'}}>
+                
+                {/* <div style={{fontSize: '12px', marginTop: '5px', color: '#666'}}>
                     Debug: {debugInfo}
                     <br />
                     User: {authUser ? authUser.email : 'Not signed in'}
                     <br />
                     Pending: {pendingSave ? 'Yes' : 'No'}
-                </div>
+                </div> */}
             </div>
             <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''} `}>

@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 import FolderModalStep1 from './FolderModalStep1';
+import SignUpBtn from './SignUpBtn';
+
+
 
 const MasteryLanding = () => {
 
@@ -66,6 +69,12 @@ const MasteryLanding = () => {
     { name: "@notesgirl", text: "My parents think I'm a genius now lol", verified: false }
   ];
 
+  // Sign in Button
+
+  const handleSignIn = ()=>{
+
+  }
+
 
 
   useEffect(() => {
@@ -92,26 +101,23 @@ const MasteryLanding = () => {
           onClose={() => setShowModal(false)}
         />
       )}
-      {/* Animated Background */}
-      {/* <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-violet-500/20 to-purple-500/20 animate-pulse"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-r from-violet-500/10 to-purple-500/10 rounded-full blur-3xl animate-bounce"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-gradient-to-r from-violet-500/10 to-indigo-500/10 rounded-full blur-3xl animate-pulse"></div>
-      </div> */}
+      
 
       {/* Navigation */}
       <nav className="relative z-10 flex justify-between items-center p-3 max-w-7xl mx-auto">
         <div className="flex items-center space-x-2">
-          <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl flex items-center justify-center">
-            <Brain />
-          </div>
+          <img 
+            src="../../brain-21.svg" 
+            alt="Mastery Logo"
+            className="w-9 h-9" // Adjust size as needed
+          />
           <span className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
             Mastery
           </span>
         </div>
-        <button className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-3 rounded-full font-semibold hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300 transform hover:scale-105">
-          Try Free Now
-        </button>
+
+        <SignUpBtn />
+        
       </nav>
 
       {/* Hero Section */}
@@ -201,7 +207,7 @@ const MasteryLanding = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
+          {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20">
             <div className="text-center">
               <div className="text-4xl font-black text-violet-400 mb-2">2M+</div>
               <div className="text-gray-400">Flashcards Created</div>
@@ -218,14 +224,21 @@ const MasteryLanding = () => {
               <div className="text-4xl font-black text-violet-300 mb-2">500K+</div>
               <div className="text-gray-400">Happy Students</div>
             </div>
-          </div>
+          </div> */}
 
           {/* Final CTA */}
           <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm rounded-3xl p-8 border border-violet-500/30">
             <h2 className="text-4xl font-bold mb-4">Ready to Become a Study Legend?</h2>
             <p className="text-xl text-gray-300 mb-6">Join thousands of students who've transformed their grades with AI-powered flashcards</p>
-            <button className="bg-gradient-to-r from-violet-500 to-purple-600 px-10 py-5 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 mx-auto">
-              <Camera />
+            <button 
+              className="bg-gradient-to-r from-violet-500 to-purple-600 px-10 py-5 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 mx-auto"
+              onClick={()=>{
+                setShowModal(true);
+
+                }
+              }
+            >
+              {/* <Camera /> */}
               <span>Start Your Transformation</span>
               <Zap />
             </button>
@@ -234,11 +247,11 @@ const MasteryLanding = () => {
       </div>
 
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 right-6 z-50">
+      {/* <div className="fixed bottom-6 right-6 z-50">
         <button className="bg-gradient-to-r from-pink-500 to-purple-600 w-16 h-16 rounded-full flex items-center justify-center shadow-2xl shadow-pink-500/50 hover:shadow-pink-500/75 transition-all duration-300 transform hover:scale-110 animate-bounce">
           <Camera className="w-8 h-8" />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

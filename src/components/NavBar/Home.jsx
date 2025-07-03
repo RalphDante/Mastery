@@ -25,7 +25,7 @@ function Home() {
         setAuthUser(user);
       } else {
         setAuthUser(null);
-        navigate('/mastery');
+        navigate('/try-now');
       }
     });
 

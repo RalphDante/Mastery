@@ -68,17 +68,7 @@ function FolderModalStep1({onClose, isOpen}) {
 
 
 
-    const handleFolderSelection = () => {
-        if (isCreatingNewFolder && !newFolderName.trim()) {
-          alert('Please enter a folder name');
-          return;
-        }
-        if (!isCreatingNewFolder && !selectedFolder) {
-          alert('Please select a folder');
-          return;
-        }
-        setStep(2);
-      };
+
     
     // const handleSaveDeck = () => {
     //     // first we gotta save the thing

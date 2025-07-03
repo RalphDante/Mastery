@@ -129,13 +129,15 @@ function CreateFile({fileNameDirectory}){
         return;
     }
     
-    if(fileName === "" || fileDescription === ""){
-        alert("Please enter your File Name and its Description")
+    if(fileName === ""){
+        alert("Please enter your File Name")
         return;
     } else if(flashCards.length < 3){
         alert("Please add at least 3 flashcards")
         return;
-    }
+    } 
+
+    const finalDescription = fileDescription === "" ? "No Description" : fileDescription;
     
     setShowFlashCardAmount(false);
 
@@ -161,7 +163,7 @@ function CreateFile({fileNameDirectory}){
     try {
         await remove(oldFileRef);
         await set(newDocRef, {
-          Description: fileDescription,
+          Description: finalDescription,
           Flashcards: flashCards
         });
             console.log('Before navigation');
