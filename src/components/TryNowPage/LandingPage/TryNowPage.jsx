@@ -107,7 +107,7 @@ const MasteryLanding = () => {
       <nav className="relative z-10 flex justify-between items-center p-3 max-w-7xl mx-auto">
         <div className="flex items-center space-x-2">
           <img 
-            src="../../brain-21.svg" 
+            src="/brain-21.svg" 
             alt="Mastery Logo"
             className="w-9 h-9" // Adjust size as needed
           />
