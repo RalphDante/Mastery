@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {ref, getDatabase, onValue} from 'firebase/database';
-import {app, auth} from '../../firebase';
-import DisplayFiles from './DisplayFiles'
+import {app, auth} from '../../api/firebase';
+import DisplayFiles from '../../pages/DisplayFilesPage/DisplayFiles'
 import { useNavigate, useLocation } from 'react-router-dom';
 import styles from './CreateFilePage.module.css'
 

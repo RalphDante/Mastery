@@ -1,5 +1,5 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "../../firebase";
+import { auth } from "../../api/firebase";
 import { useEffect, useState } from "react";
 import DisplayFilesFromOtherUser from "../MasteryPage/DisplayFilesByOtherUsers.jsx";
 

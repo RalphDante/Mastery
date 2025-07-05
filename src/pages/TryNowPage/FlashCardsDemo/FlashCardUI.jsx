@@ -14,7 +14,7 @@ import {
     getRedirectResult,
     GoogleAuthProvider 
 } from "firebase/auth";
-import { app, auth } from "../../../firebase";
+import { app, auth } from "../../../api/firebase";
 
 import EditFlashCardBtn from './EditFlashCardBtn'
 import SetToPublic from "./SetToPublic";

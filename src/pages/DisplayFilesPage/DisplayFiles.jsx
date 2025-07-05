@@ -1,9 +1,9 @@
 import { getDatabase, ref, remove, set } from "firebase/database";
 import { useLocation, useNavigate } from "react-router-dom";
-import { app } from "../../firebase";
+import { app } from "../../api/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
-import { auth } from "../../firebase";
+import { auth } from "../../api/firebase";
 import { onValue } from "firebase/database";
 
 // import 'bootstrap';

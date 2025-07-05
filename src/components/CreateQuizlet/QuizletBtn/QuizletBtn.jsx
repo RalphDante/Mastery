@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './Btn.module.css';
 import { useState } from 'react';
-import { auth } from '../../../firebase';
+import { auth } from '../../../api/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 

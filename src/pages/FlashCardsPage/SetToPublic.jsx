@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { getDatabase, ref, set, remove } from "firebase/database";
-import { app, auth } from "../../firebase";
+import { app, auth } from "../../api/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useParams } from "react-router-dom";
 import { onValue } from "firebase/database";
-import UserName from "../auth/UserName";
 
 function SetToPublic() {
     const [authUser, setAuthUser] = useState(null);

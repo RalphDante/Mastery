@@ -5,7 +5,7 @@ import CreateBtn from '../CreateQuizlet/QuizletBtn/QuizletBtn';
 import UserName from '../auth/UserName';
 
 import './NavBar.css';
-import SignUpBtn from '../TryNowPage/LandingPage/SignUpBtn';
+import SignUpBtn from '../../pages/TryNowPage/LandingPage/SignUpBtn';
 
 function NavBar() {
     const navigate = useNavigate();

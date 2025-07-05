@@ -1,6 +1,6 @@
 import { ref, getDatabase } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth, app } from "../../firebase";
+import { auth, app } from "../../api/firebase";
 import { onValue } from "firebase/database";
 import { useState, useEffect } from "react";
 

@@ -1,8 +1,8 @@
 import React, {useState, useEffect} from 'react';
 import {ref, getDatabase, onValue} from 'firebase/database';
-import {app} from '../../firebase';
+import {app} from '../../api/firebase';
 import { useNavigate, useLocation } from 'react-router-dom';
-import styles from '../CreatePage/CreateFilePage.module.css'
+import styles from './CreateFilePage.module.css'
 
 
 

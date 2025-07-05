@@ -1,15 +1,13 @@
 import Footer from '../../Footer.jsx'
-import CreateBtn from '../CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
+import CreateBtn from '../../components/CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
 import { onAuthStateChanged } from 'firebase/auth';
-import {auth} from '../../firebase'
+import {auth} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
-import DisplayFolders from '../CreatePage/DisplayFolders.jsx';
-import UserName from '../auth/UserName.jsx';
+import DisplayFolders from './DisplayFolders.jsx';
+import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
-import AutoFlashCards from '../AutoFlashCards/AutoFlashCards.jsx';
-import FolderModalStep1 from '../AutoFlashCards/FolderModal/FolderModalStep1.jsx';
-
+import FolderModalStep1 from '../TryNowPage/LandingPage/FolderModalStep1.jsx';
 
 function Home() {
 

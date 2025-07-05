@@ -10,24 +10,47 @@ import NavBar from './components/NavBar/NavBar.jsx';
 import SignIn from './components/auth/Signin.jsx';
 import SignUp from './components/auth/Signup.jsx';
 import AuthDetails from './components/auth/AuthDetails.jsx';
-import Home from './components/NavBar/Home.jsx';
-import About from './components/NavBar/About.jsx';
 import ShowNavBar from './components/showNavBar/showNavBar.jsx'
+
+
+//pages
+
+//HomePage
+import Home from './pages/HomePage/Home.jsx';
+
+//AboutPage
+import About from './pages/AboutPage/About.jsx';
+
+//ContactMePage
+import ContactMe from './pages/ContactMePage/ContactMe.jsx';
+
+//MasteryPage
+import Mastery from './pages/MasteryPage/Mastery.jsx';
+import PublicKeyCredentialFlashCardsPage from './pages/MasteryPage/PublicFlashCardsPage.jsx';
+
+
+//FlashCardsPage
+import FlashCardsPage from './pages/FlashcardsPage/FlashCardsPage.jsx';
+
+//CreateFilePage
+import DisplayFlashCardsPage from './pages/CreateFilePage/DisplayFlashCards.jsx';
+
+//TryNowPage
+import MasteryLanding from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
+
+
+
+
+
 import SignOutBtn from './components/SignOutBtn/SignOutBtn.jsx'
-import CreateFolder from './components/CreatePage/CreateFolder.jsx'
-import CreateFile from './components/CreatePage/CreateFile.jsx'
-import DisplayFiles from './components/CreatePage/DisplayFiles.jsx';
-import DisplayFlashCardsPage from './components/FlashCardsPage/FlashCardsPage.jsx';
-import EditFlashCardPage from './components/EditFlashCardPage/EditFlashCardPage.jsx';
-import ContactMe from './components/NavBar/ContactMe.jsx';
-import Mastery from './components/NavBar/Mastery.jsx';
-import PublicKeyCredentialFlashCardsPage from './components/MasteryPage/PublicFlashCardsPage.jsx';
+import CreateFolder from './pages/CreateFolderPage/CreateFolder.jsx'
+import CreateFile from './pages/CreateFilePage/CreateFile.jsx'
+import DisplayFiles from './pages/DisplayFilesPage/DisplayFiles.jsx';
+import EditFlashCardPage from './pages/EditFlashCardPage/EditFlashCardPage.jsx';
 
 
 import "tailwindcss/tailwind.css";
-import MasteryLanding from './components/TryNowPage/LandingPage/TryNowPage.jsx';
-import FlashCardsPage from './components/TryNowPage/FlashCardsDemo/FlashCardsPage.jsx';
-import GoPremium from './components/GoPremium/GoPremium.jsx';
+import GoPremium from './pages/GoPremium/GoPremium.jsx';
 
 
 function App(){

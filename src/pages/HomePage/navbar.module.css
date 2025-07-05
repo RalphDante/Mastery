@@ -1,0 +1,85 @@
+/* NAVBAR */
+
+.navBar {
+    background-color: #171717;
+    padding: 10px 0; /* Remove side padding */
+    border-bottom: 1px solid #2a2a2a;
+}
+
+header {
+    width: 100%;
+    background-color: blue;
+}
+
+.navContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0 auto; /* Center the nav container */
+    padding: 0 30px; /* Add 30px padding on the sides */
+}
+
+.leftNavContainer {
+    display: flex;
+    align-items: center;
+}
+
+.navList {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+}
+
+.navItem {
+    margin: 0 15px;
+}
+
+.navItem a {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    transition: color 0.3s;
+    font-family: 'Montserrat';
+    padding: 5px 15px;
+    transition: background-color 0.3s;
+    border-radius: 5px;
+}
+
+.navItem a:hover {
+    background-color: #333; /* Darken background on hover */
+}
+
+.rightNavContainer {
+    display: flex;
+    align-items: center;
+    margin-left: auto;
+}
+
+.navBarTitle {
+    margin: 0;
+    margin-right: 20px;
+    color: white;
+    font-family: 'Montserrat';
+    
+}
+
+h1 {
+    color: #fff;
+    font-family: 'Montserrat', sans-serif;
+}
+
+
+/* HOME PAGE CONTAINER */
+/* .homeContainer {
+    padding: 0 10px;
+    box-sizing: border-box;
+    margin-left: auto;
+    margin-right: auto;
+
+    
+} */
+
+
+
+

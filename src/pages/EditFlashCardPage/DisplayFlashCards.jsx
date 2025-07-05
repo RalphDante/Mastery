@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './CreateFilePage.module.css'
-import {app, auth} from '../../firebase'
+import {app, auth} from '../../api/firebase'
 import {getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { onAuthStateChanged } from 'firebase/auth';
 import { getDatabase, onValue, ref } from 'firebase/database';
