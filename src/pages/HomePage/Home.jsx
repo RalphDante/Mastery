@@ -3,7 +3,7 @@ import CreateBtn from '../../components/CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
-import DisplayFolders from './DisplayFolders.jsx';
+import FolderList from './FolderList.jsx';
 import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
@@ -58,7 +58,7 @@ function Home() {
     />
 
 
-    <DisplayFolders uid={authUser.uid}/>
+    <FolderList uid={authUser.uid}/>
 
 
     

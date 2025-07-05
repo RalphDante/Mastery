@@ -39,6 +39,9 @@ import DisplayFlashCardsPage from './pages/CreateFilePage/DisplayFlashCards.jsx'
 import MasteryLanding from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
 
+//TestingPages
+import NewHomePage from './pages/HomePage/NewHomePage.jsx';
+
 
 
 
@@ -85,7 +88,16 @@ function App(){
                   <Route path='/try-now' element={<MasteryLanding />} />
 
                   <Route path='/flashcards-demo' element={<FlashCardsPage />} />
+
+
+                  {/* Test Phases */}
+
                   <Route path='/go-premium' element={<GoPremium />} />
+                  <Route path='/newhome' element={<NewHomePage />} />
+
+
+
+
 
 
 
