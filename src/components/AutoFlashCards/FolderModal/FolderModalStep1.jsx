@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import {ref, getDatabase, onValue, set, push} from 'firebase/database';
 import { app, auth } from "../../../api/firebase"
-import AutoFlashCards from "../AutoFlashCards";
 import FileUpload from "../FileUpload";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";

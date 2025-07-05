@@ -1,21 +1,22 @@
-import React from 'react';
+//imports
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import Footer from './Footer.jsx';
 
 
-
 // Components
-
 import NavBar from './components/NavBar/NavBar.jsx';
 import SignIn from './components/auth/Signin.jsx';
 import SignUp from './components/auth/Signup.jsx';
 import AuthDetails from './components/auth/AuthDetails.jsx';
 import ShowNavBar from './components/showNavBar/showNavBar.jsx'
 
+// Modal Components
+import CreateFolderModal from './components/Modals/CreateFolderModal.jsx';
+import CreateDeckModal from './components/Modals/CreateDeckModal.jsx';
 
-//pages
-
-//HomePage
+// Pages
+// HomePage
 import Home from './pages/HomePage/Home.jsx';
 
 //AboutPage
@@ -28,42 +29,87 @@ import ContactMe from './pages/ContactMePage/ContactMe.jsx';
 import Mastery from './pages/MasteryPage/Mastery.jsx';
 import PublicKeyCredentialFlashCardsPage from './pages/MasteryPage/PublicFlashCardsPage.jsx';
 
-
 //FlashCardsPage
 import FlashCardsPage from './pages/FlashcardsPage/FlashCardsPage.jsx';
 
 //CreateFilePage
-import DisplayFlashCardsPage from './pages/CreateFilePage/DisplayFlashCards.jsx';
+import CreateDeck from './pages/CreateDeckPage/CreateDeck.jsx';
+import DisplayFlashCardsPage from './pages/CreateDeckPage/DisplayFlashCards.jsx';
 
 //TryNowPage
 import MasteryLanding from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
-
 //TestingPages
 import NewHomePage from './pages/HomePage/NewHomePage.jsx';
 
-
+import GoPremium from './pages/GoPremium/GoPremium.jsx';
 
 
 import SignOutBtn from './components/SignOutBtn/SignOutBtn.jsx'
 import CreateFolder from './pages/CreateFolderPage/CreateFolder.jsx'
-import CreateFile from './pages/CreateFilePage/CreateFile.jsx'
+import CreateFile from './pages/CreateDeckPage/CreateDeck.jsx'
 import DisplayFiles from './pages/DisplayFilesPage/DisplayFiles.jsx';
 import EditFlashCardPage from './pages/EditFlashCardPage/EditFlashCardPage.jsx';
 
-
 import "tailwindcss/tailwind.css";
-import GoPremium from './pages/GoPremium/GoPremium.jsx';
+
+
+// auth
+import { auth } from './api/firebase.js';
+import { onAuthStateChanged } from 'firebase/auth';
 
 
 function App(){
-  
+  // Global modal state
+  const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
+  const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null); // You'll need to set this from auth
+
+  // Folder Modal handlers
+  const handleShowCreateFolderModal = () => {
+    setIsFolderModalOpen(true);
+  };
+
+  const handleFolderCreated = (folderId, folderName, folderData) => {
+    console.log('Folder created:', { folderId, folderName, folderData });
+    setIsFolderModalOpen(false);
+    
+    // Handle the new folder (refresh list, update state, etc.)
+    // You might want to trigger a refresh of folders list here
+    // or update some global state that tracks folders
+  };
+
+  const handleFolderModalClose = () => {
+    setIsFolderModalOpen(false);
+  };
+
+  // Deck Modal handlers
+  const handleShowCreateDeckModal = () => {
+    setIsDeckModalOpen(true);
+  };
+
+  const handleDeckModalClose = () => {
+    setIsDeckModalOpen(false);
+  };
+
+
+  useEffect(()=>{
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            setCurrentUserId(user.uid);
+        } else {
+            setCurrentUserId(null);
+        }
+    });
+  }, []);
 
   return (
       <Router>
-
               <ShowNavBar>
-                <NavBar />
+                <NavBar 
+                  onCreateFolderClick={handleShowCreateFolderModal}
+                  onCreateDeckClick={handleShowCreateDeckModal}
+                />
                 {/* <SignOutBtn /> */}
               </ShowNavBar>
        
@@ -74,9 +120,9 @@ function App(){
                   <Route path="/" element={<Home />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />
-                  <Route path="/createfile" element={<CreateFile />} />
+                  <Route path="/create-deck" element={<CreateDeck />} />
                   <Route path="/displayfiles" element={<DisplayFiles />} />
-                  <Route path="/flashcards/:fileName" element={<DisplayFlashCardsPage />}/>
+                  <Route path="/flashcards/:deckId" element={<FlashCardsPage />}/>
                   <Route path="/editflashcard" element={<EditFlashCardPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
@@ -89,28 +135,25 @@ function App(){
 
                   <Route path='/flashcards-demo' element={<FlashCardsPage />} />
 
-
                   {/* Test Phases */}
-
                   <Route path='/go-premium' element={<GoPremium />} />
                   <Route path='/newhome' element={<NewHomePage />} />
-
-
-
-
-
-
-
-                  
               </Routes>
 
-              
+              {/* Global Modals - These will render at the root level and center properly */}
+              <CreateFolderModal 
+                  isOpen={isFolderModalOpen}
+                  onClose={handleFolderModalClose}
+                  onFolderCreated={handleFolderCreated}
+              />
 
-
-            
+              <CreateDeckModal 
+                  uid={currentUserId}
+                  isOpen={isDeckModalOpen}
+                  onClose={handleDeckModalClose}
+              />
       </Router>
   );
 }
-
 
 export default App;

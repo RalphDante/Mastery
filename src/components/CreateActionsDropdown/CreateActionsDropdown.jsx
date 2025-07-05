@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-
 function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null); // Ref for the dropdown container
+    const dropdownRef = useRef(null);
 
     // Handle dropdown toggle
     const toggleDropdown = useCallback((event) => {
-        event.stopPropagation(); // Prevent document click from immediately closing
+        event.stopPropagation();
         setIsDropdownOpen(prev => !prev);
     }, []);
 
@@ -26,21 +25,44 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onGener
 
     // Handle clicks on dropdown items
     const handleItemClick = (callback, event) => {
-        setIsDropdownOpen(false); // Close dropdown
+        event.preventDefault();
+        setIsDropdownOpen(false);
         if (callback) {
-            callback(event); // Call the specific action callback
+            callback(event);
         }
     };
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <button onClick={toggleDropdown} className="bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm">
+            <button 
+                onClick={toggleDropdown} 
+                className="bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm"
+            >
                 Create
             </button>
+            
             <div className={`${isDropdownOpen ? 'block' : 'hidden'} absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5`}>
-                <a href="#" onClick={(e) => handleItemClick(onCreateFolderClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create New Folder</a>
-                <a href="#" onClick={(e) => handleItemClick(onCreateDeckClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create New Deck</a>
-                <a href="#" onClick={(e) => handleItemClick(onGenerateAIClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create with AI</a>
+                <a 
+                    href="#" 
+                    onClick={(e) => handleItemClick(onCreateFolderClick, e)} 
+                    className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
+                >
+                    Create New Folder
+                </a>
+                <a 
+                    href="#" 
+                    onClick={(e) => handleItemClick(onCreateDeckClick, e)} 
+                    className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
+                >
+                    Create New Deck
+                </a>
+                <a 
+                    href="#" 
+                    onClick={(e) => handleItemClick(onGenerateAIClick, e)} 
+                    className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
+                >
+                    Create with AI
+                </a>
             </div>
         </div>
     );

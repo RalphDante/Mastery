@@ -7,7 +7,7 @@ import FolderList from './FolderList.jsx';
 import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
-import FolderModalStep1 from '../TryNowPage/LandingPage/FolderModalStep1.jsx';
+import FolderModalStep1 from '../../components/AutoFlashCards/FolderModal/FolderModalStep1.jsx';
 
 function Home() {
 

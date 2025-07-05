@@ -118,44 +118,45 @@ function FoldersList(){
     }, [navigate]);
 
     return (
-        <div className="container mx-auto p-4 max-w-4xl">
-            <CustomMessage message={message} type={messageType} onClose={closeCustomMessage} />
+        <></>
+        // <div className="container mx-auto p-4 max-w-4xl">
+        //     <CustomMessage message={message} type={messageType} onClose={closeCustomMessage} />
 
-            <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">My Folders</h1>
+        //     <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">My Folders</h1>
             
-            {loading ? (
-                <div className="text-center text-gray-600 text-lg">Loading folders...</div>
-            ) : (
-                <div className={`${styles.folderListContainer} flex justify-center flex-wrap gap-4`}>
-                    {folders.length > 0 ? (
-                        folders.map((folderItem) => (
-                            <div 
-                                key={folderItem.id} // Use Firestore document ID as key
-                                onClick={(e) => handleClick(folderItem.id, folderItem.name, e)} 
-                                className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer p-6 flex flex-col items-center justify-center text-center w-48 h-48 border border-gray-200"
-                            >
-                                <i className="fa-solid fa-folder text-6xl text-blue-500 mb-3"></i>
-                                <h2 className="text-lg font-semibold text-gray-800 truncate w-full">{folderItem.name}</h2>
-                                <p className="text-sm text-gray-500 mt-1">{folderItem.deckCount} decks</p>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center text-gray-600 text-lg col-span-full">
-                            No folders found. Click the '+' button to create your first folder!
-                        </div>
-                    )}
+        //     {loading ? (
+        //         <div className="text-center text-gray-600 text-lg">Loading folders...</div>
+        //     ) : (
+        //         <div className={`${styles.folderListContainer} flex justify-center flex-wrap gap-4`}>
+        //             {folders.length > 0 ? (
+        //                 folders.map((folderItem) => (
+        //                     <div 
+        //                         key={folderItem.id} // Use Firestore document ID as key
+        //                         onClick={(e) => handleClick(folderItem.id, folderItem.name, e)} 
+        //                         className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer p-6 flex flex-col items-center justify-center text-center w-48 h-48 border border-gray-200"
+        //                     >
+        //                         <i className="fa-solid fa-folder text-6xl text-blue-500 mb-3"></i>
+        //                         <h2 className="text-lg font-semibold text-gray-800 truncate w-full">{folderItem.name}</h2>
+        //                         <p className="text-sm text-gray-500 mt-1">{folderItem.deckCount} decks</p>
+        //                     </div>
+        //                 ))
+        //             ) : (
+        //                 <div className="text-center text-gray-600 text-lg col-span-full">
+        //                     No folders found. Click the '+' button to create your first folder!
+        //                 </div>
+        //             )}
 
-                    {/* Button to create a new folder */}
-                    <div 
-                        onClick={handleCreate} 
-                        className="bg-gray-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer p-6 flex flex-col items-center justify-center text-center w-48 h-48 border-2 border-dashed border-gray-300 hover:border-blue-400"
-                    >
-                        <i className="fa fa-plus text-6xl text-gray-400 mb-3"></i>
-                        <h2 className="text-lg font-semibold text-gray-600">Create New Folder</h2>
-                    </div>
-                </div>
-            )}
-        </div>
+        //             {/* Button to create a new folder */}
+        //             <div 
+        //                 onClick={handleCreate} 
+        //                 className="bg-gray-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 cursor-pointer p-6 flex flex-col items-center justify-center text-center w-48 h-48 border-2 border-dashed border-gray-300 hover:border-blue-400"
+        //             >
+        //                 <i className="fa fa-plus text-6xl text-gray-400 mb-3"></i>
+        //                 <h2 className="text-lg font-semibold text-gray-600">Create New Folder</h2>
+        //             </div>
+        //         </div>
+        //     )}
+        // </div>
     );
 }
 

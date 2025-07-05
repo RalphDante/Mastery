@@ -4,49 +4,10 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { db, auth } from '../../api/firebase';
 import SignUpBtn from '../../pages/TryNowPage/LandingPage/SignUpBtn';
 import { useNavigate } from 'react-router-dom';
+import CreateActionsDropdown from '../CreateActionsDropdown/CreateActionsDropdown';
 
-// Reusable component for the Create dropdown button
-function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick }) {
-    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-    const dropdownRef = useRef(null);
 
-    const toggleDropdown = useCallback((event) => {
-        event.stopPropagation();
-        setIsDropdownOpen(prev => !prev);
-    }, []);
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsDropdownOpen(false);
-            }
-        };
-        document.addEventListener('click', handleClickOutside);
-        return () => {
-            document.removeEventListener('click', handleClickOutside);
-        };
-    }, []);
-
-    const handleItemClick = (callback, event) => {
-        setIsDropdownOpen(false);
-        if (callback) {
-            callback(event);
-        }
-    };
-
-    return (
-        <div className="relative" ref={dropdownRef}>
-            <button onClick={toggleDropdown} className="bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm">
-                Create
-            </button>
-            <div className={`${isDropdownOpen ? 'block' : 'hidden'} absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5`}>
-                <a href="#" onClick={(e) => handleItemClick(onCreateFolderClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create New Folder</a>
-                <a href="#" onClick={(e) => handleItemClick(onCreateDeckClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create New Deck</a>
-                <a href="#" onClick={(e) => handleItemClick(onGenerateAIClick, e)} className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700">Create with AI</a>
-            </div>
-        </div>
-    );
-}
 
 // NavBar component
 function NavBar({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick, onSignOutClick }) {
@@ -117,10 +78,9 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick, onS
             
             <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden bg-gray-800 border-t border-gray-700 py-4`}>
                 <div className="flex flex-col space-y-3 px-4">
-                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={() => setIsMobileMenuOpen(false)}>Home</a>
-                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={() => setIsMobileMenuOpen(false)}>About</a>
-                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={() => setIsMobileMenuOpen(false)}>Contact Me</a>
-                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={() => setIsMobileMenuOpen(false)}>Mastery Page</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/'); setIsMobileMenuOpen(false)}}>Home</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/about'); setIsMobileMenuOpen(false)}}>About</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/contactme'); setIsMobileMenuOpen(false)}}>Contact Me</a>
                     <div className="flex items-center space-x-2 border-t border-gray-700 pt-3 mt-3">
                         <span className="text-slate-300 font-medium">{userName}</span>
                         <SignUpBtn />
