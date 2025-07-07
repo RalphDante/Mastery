@@ -110,7 +110,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
           <i className="fa-solid fa-xmark text-2xl"></i>
         </button>
         
-        <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Create AI Flashcards</h2>
+        <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Create New Deck</h2>
         <p className="text-slate-300 mb-6 text-center">Where would you like to save your new deck?</p>
         
         <div className="space-y-4">

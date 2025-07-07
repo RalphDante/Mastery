@@ -1,4 +1,4 @@
-import { getDatabase, ref, onValue } from "firebase/database";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
 import { useLocation } from "react-router-dom";
 import { app, auth } from '../../api/firebase';
 import { onAuthStateChanged } from "firebase/auth";
@@ -13,14 +13,21 @@ function FlashCardsPage() {
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
     const location = useLocation();
-    const { fileName } = useParams();
+    const { deckId } = useParams();
+    
+    // Get additional data from navigation state if available
+    const { deckTitle, folderId, folderName } = location.state || {};
 
     const [authUser, setAuthUser] = useState(null);
-    const db = getDatabase(app);
+    const db = getFirestore(app); // Changed from getDatabase to getFirestore
     
     const [knowAnswer, setKnowAnswer] = useState(0);
     const [dontKnowAnswer, setDontKnowAnswer] = useState(0);
     const [percent, setPercent] = useState(0);
+    
+    // Deck information from Firestore
+    const [deckData, setDeckData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     // Communication with FlashCardUI
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,6 +38,35 @@ function FlashCardsPage() {
         });
         return () => unsubscribe();
     }, []);
+
+    // Fetch deck data from Firestore
+    useEffect(() => {
+        const fetchDeckData = async () => {
+            if (!deckId) {
+                setLoading(false);
+                return;
+            }
+
+            try {
+                const deckRef = doc(db, 'decks', deckId);
+                const deckSnap = await getDoc(deckRef);
+                
+                if (deckSnap.exists()) {
+                    setDeckData(deckSnap.data());
+                } else {
+                    console.error("Deck not found");
+                    setDeckData(null);
+                }
+            } catch (error) {
+                console.error("Error fetching deck:", error);
+                setDeckData(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDeckData();
+    }, [deckId, db]);
 
     const handleStudyModeToggle = () => {
         if (currentIndex > 0) {
@@ -53,23 +89,41 @@ function FlashCardsPage() {
         setRedoDeck(true);
     };
 
+    // Show loading state
+    if (loading) {
+        return (
+            <div className={`${styles.flashCardsPageContainer}`}>
+                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
+                    <h1 className="text-3xl font-bold text-white mb-2">Loading...</h1>
+                </div>
+            </div>
+        );
+    }
+
+    // Get the display name for the deck
+    const displayName = deckTitle || deckData?.title || "Unknown Deck";
+
     return (
         <>  
             <div className={`${styles.flashCardsPageContainer}`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                    {fileName ? (
+                    {displayName ? (
                         <div className="mb-4">
-                            <h1 className="text-3xl font-bold text-white mb-2 break-words">{fileName}</h1>
+                            <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
+                            {deckData?.description && deckData.description !== "No Description" && (
+                                <p className="text-gray-400 mb-4">{deckData.description}</p>
+                            )}
                         </div>
                     ) : (
-                        <h1 className="text-3xl font-bold text-white mb-2">No File Name</h1>
+                        <h1 className="text-3xl font-bold text-white mb-2">No Deck Found</h1>
                     )}
 
-                    <ModuleDescription 
+                    {/* <ModuleDescription 
                         db={db}
-                        fileName={fileName}
+                        deckId={deckId} // Changed from fileName to deckId
+                        deckData={deckData} // Pass the deck data
                         authUser={authUser}
-                    />
+                    /> */}
 
                     <FlashCardUI 
                         knowAnswer={setKnowAnswer}
@@ -81,6 +135,8 @@ function FlashCardsPage() {
                         onStudyModeChange={handleStudyModeToggle}
                         currentIndex={currentIndex}
                         setCurrentIndex={setCurrentIndex}
+                        deckId={deckId} // Pass deckId to FlashCardUI
+                        db={db} // Pass Firestore instance
                     />
                 </div>
                 
@@ -101,6 +157,12 @@ function FlashCardsPage() {
                                 <span className="text-gray-400">Percentage:</span>
                                 <span className="font-bold text-lg text-violet-400">{percent}%</span>
                             </div>
+                            {deckData?.cardCount && (
+                                <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                                    <span className="text-gray-400">Total Cards:</span>
+                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
+                                </div>
+                            )}
                         </div>
 
                         {/* Progress Bar */}

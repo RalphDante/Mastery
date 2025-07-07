@@ -7,7 +7,8 @@ import FolderList from './FolderList.jsx';
 import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
-import FolderModalStep1 from '../../components/AutoFlashCards/FolderModal/FolderModalStep1.jsx';
+import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
+import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 
 function Home() {
 
@@ -36,12 +37,20 @@ function Home() {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
-    <div className={`${styles.homeContainer} w-auto mx-8 block`}>
+    <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="space-y-12">
+          <LearningHubSection />
+
+        </div>
+
+
+      </main>
 
     {/* flex flex-col justify-center max-w-fwidth */}
     {/* <h1 className='my-2 text-xl'>Your Folders:</h1> */}
 
-
+{/* 
     <div className="text-center">
         <button 
           onClick={() => setIsModalOpen(true)}
@@ -49,13 +58,13 @@ function Home() {
         >
           Create with AI
         </button>
-    </div>
+    </div> */}
 
-    <FolderModalStep1 
+    {/* <CreateWithAIModal 
       uid={authUser.uid} 
       onClose = {() => setIsModalOpen(false)}
       isOpen={isModalOpen}
-    />
+    /> */}
 
 
     <FolderList uid={authUser.uid}/>

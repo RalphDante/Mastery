@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick }) {
+function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalClick }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
 
@@ -58,7 +58,7 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onGener
                 </a>
                 <a 
                     href="#" 
-                    onClick={(e) => handleItemClick(onGenerateAIClick, e)} 
+                    onClick={(e) => handleItemClick(onCreateWithAIModalClick, e)} 
                     className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
                     Create with AI

@@ -12,7 +12,7 @@ import styles from './FlashCardsPage.module.css'
 
 
 
-function FlashCardsPage() {
+function FlashCardsDemoPage() {
 
     const [redoDeck, setRedoDeck] = useState(false);
     const location = useLocation();
@@ -114,4 +114,4 @@ function FlashCardsPage() {
     );
 }
 
-export default FlashCardsPage;
+export default FlashCardsDemoPage;

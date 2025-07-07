@@ -1,18 +1,18 @@
 import { useNavigate } from "react-router-dom";
 
-function EditFlashCardBtn({fileName}){
+function EditFlashCardBtn({deckId}){
 
     const navigate = useNavigate();
 
     const handleEditFlashCard = ()=>{
-        navigate("/editflashcard", {state: {fileName : fileName}});
+        navigate(`/edit-deck/${deckId}`);
         
     }
 
     return(
 
         <div>
-            <button className="btn btn-primary" onClick={handleEditFlashCard}>Edit Flash Card</button>            
+            <button className="btn btn-primary" onClick={handleEditFlashCard}>Edit Flash Card</button>           
 
         </div>
     )

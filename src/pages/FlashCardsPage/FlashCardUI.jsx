@@ -6,6 +6,10 @@ import { useLocation } from "react-router-dom";
 import styles from './FlashCardsPage.module.css';
 import { useParams } from "react-router-dom";
 
+// Add Cloudinary imports
+import { Cloudinary } from '@cloudinary/url-gen';
+import { AdvancedImage } from '@cloudinary/react';
+
 import EditFlashCardBtn from './EditFlashCardBtn';
 import SetToPublic from "./SetToPublic";
 
@@ -22,12 +26,14 @@ function FlashCardUI({
 }) {
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
-    const { deckId } = useParams(); // Changed from fileName to deckId
+    const { deckId } = useParams();
 
     const [flashCards, setFlashCards] = useState([]);
-    const [deck, setDeck] = useState(null); // Store deck metadata
+    const [deck, setDeck] = useState(null);
     const [currentQuestion, setCurrentQuestion] = useState();
     const [currentAnswer, setCurrentAnswer] = useState();
+    const [currentQuestionType, setCurrentQuestionType] = useState('text');
+    const [currentAnswerType, setCurrentAnswerType] = useState('text');
     const [showAnswer, setShowAnswer] = useState(false);
     const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false);
@@ -35,6 +41,32 @@ function FlashCardUI({
     const [error, setError] = useState(null);
 
     const db = getFirestore(app);
+
+    // Initialize Cloudinary
+    const cld = new Cloudinary({ cloud: { cloudName: 'dph28fehb' } });
+
+    // Helper function to create optimized Cloudinary image
+    const createOptimizedImage = (publicId) => {
+        return cld
+            .image(publicId)
+            .format('auto')
+            .quality('auto');
+    };
+
+    // Helper function to render content based on type
+    const renderContent = (content, type, className) => {
+        if (type === 'image' && content) {
+            return (
+                <AdvancedImage 
+                    cldImg={createOptimizedImage(content)} 
+                    className={className}
+                />
+            );
+        } else if (type === 'text' && content) {
+            return <h2>{content}</h2>;
+        }
+        return <h2>Content not available</h2>;
+    };
 
     // Auth state listener
     useEffect(() => {
@@ -214,11 +246,15 @@ function FlashCardUI({
         }
     };
 
+    // Updated useEffect to handle the new data structure
     useEffect(() => {
         console.log("flashCards:", flashCards);
-        if (flashCards.length > 0) {
-            setCurrentQuestion(flashCards[currentIndex]?.question);
-            setCurrentAnswer(flashCards[currentIndex]?.answer);
+        if (flashCards.length > 0 && currentIndex < flashCards.length) {
+            const currentCard = flashCards[currentIndex];
+            setCurrentQuestion(currentCard?.question);
+            setCurrentAnswer(currentCard?.answer);
+            setCurrentQuestionType(currentCard?.question_type || 'text');
+            setCurrentAnswerType(currentCard?.answer_type || 'text');
         }
     }, [flashCards, currentIndex]);
 
@@ -307,7 +343,7 @@ function FlashCardUI({
     return (
         <>
             <div className={styles.buttonsOptionsContainer}>
-                <EditFlashCardBtn deckId={deckId} /> {/* Pass deckId instead of fileName */}
+                <EditFlashCardBtn deckId={deckId} /> 
                 <SetToPublic deckId={deckId} deck={deck} />
                 
                 {/* Study Mode Toggle Button */}
@@ -336,19 +372,17 @@ function FlashCardUI({
             <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
                     <div className={styles.flipCardFront}>
-                        {currentQuestion ? (currentQuestion.startsWith('https://firebasestorage.googleapis.com') ? (
-                            <img src={currentQuestion} alt="question" className={styles.questionImage} />
+                        {currentIndex < flashCards.length ? (
+                            renderContent(currentQuestion, currentQuestionType, styles.questionImage)
                         ) : (
-                            <h2>{currentIndex !== flashCards.length ? currentQuestion : "You completed it!!!"}</h2>
-                        )) : <h2>YOU FINISHED IT!</h2>}
+                            <h2>You completed it!!!</h2>
+                        )}
                     </div>
                     <div className={styles.flipCardBack}>
-                        {currentAnswer ? currentAnswer.startsWith('https://firebasestorage.googleapis.com') ? (
-                            <img src={currentAnswer} alt="answer" className={styles.questionImage} />
+                        {currentIndex < flashCards.length ? (
+                            renderContent(currentAnswer, currentAnswerType, styles.questionImage)
                         ) : (
-                            <h2>{currentIndex !== flashCards.length ? currentAnswer : "You completed it!!!"}</h2>
-                        ) : (
-                            <h2>YOU FINISHED IT!</h2>
+                            <h2>You completed it!!!</h2>
                         )}
                     </div>
                 </div>

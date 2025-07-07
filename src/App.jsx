@@ -30,7 +30,7 @@ import Mastery from './pages/MasteryPage/Mastery.jsx';
 import PublicKeyCredentialFlashCardsPage from './pages/MasteryPage/PublicFlashCardsPage.jsx';
 
 //FlashCardsPage
-import FlashCardsPage from './pages/FlashcardsPage/FlashCardsPage.jsx';
+import FlashCardsPage from './pages/FlashCardsPage/FlashCardsPage.jsx';
 
 //CreateFilePage
 import CreateDeck from './pages/CreateDeckPage/CreateDeck.jsx';
@@ -59,10 +59,16 @@ import { auth } from './api/firebase.js';
 import { onAuthStateChanged } from 'firebase/auth';
 
 
+// Try Now page
+import FlashCardsDemoPage from './pages/TryNowPage/FlashCardsDemo/FlashCardsDemoPage.jsx';
+import CreateWithAIModal from './components/Modals/CreateWithAIModal.jsx';
+
+
 function App(){
   // Global modal state
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
+  const [isCreateWithAIModalOpen, setIsCreateWithAIModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null); // You'll need to set this from auth
 
   // Folder Modal handlers
@@ -92,6 +98,14 @@ function App(){
     setIsDeckModalOpen(false);
   };
 
+  const handleShowCreateWithAIModalClick = () => {
+    setIsCreateWithAIModalOpen(true);
+  }
+
+  const handleCreateWithAIModalClose = () => {
+    setIsCreateWithAIModalOpen(false)
+  }
+
 
   useEffect(()=>{
     onAuthStateChanged(auth, (user) => {
@@ -109,6 +123,7 @@ function App(){
                 <NavBar 
                   onCreateFolderClick={handleShowCreateFolderModal}
                   onCreateDeckClick={handleShowCreateDeckModal}
+                  onCreateWithAIModalClick={handleShowCreateWithAIModalClick}
                 />
                 {/* <SignOutBtn /> */}
               </ShowNavBar>
@@ -121,9 +136,10 @@ function App(){
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />
                   <Route path="/create-deck" element={<CreateDeck />} />
+                  <Route path="/edit-deck/:deckId" element={<CreateDeck />}/>
+
                   <Route path="/displayfiles" element={<DisplayFiles />} />
                   <Route path="/flashcards/:deckId" element={<FlashCardsPage />}/>
-                  <Route path="/editflashcard" element={<EditFlashCardPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
                   <Route path='/publicFlashCards/:publicKeyCredential' element={<PublicKeyCredentialFlashCardsPage />} />
@@ -133,7 +149,7 @@ function App(){
 
                   <Route path='/try-now' element={<MasteryLanding />} />
 
-                  <Route path='/flashcards-demo' element={<FlashCardsPage />} />
+                  <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
                   {/* Test Phases */}
                   <Route path='/go-premium' element={<GoPremium />} />
@@ -151,6 +167,11 @@ function App(){
                   uid={currentUserId}
                   isOpen={isDeckModalOpen}
                   onClose={handleDeckModalClose}
+              />
+
+              <CreateWithAIModal 
+                  onClose={handleCreateWithAIModalClose}
+                  isOpen={isCreateWithAIModalOpen}
               />
       </Router>
   );

@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import styles from './CreateFilePage.module.css';
 
-
 function CreateFlashCards({onAddFlashCard}){
 
     const textareaRefs = useRef([]);
@@ -11,12 +10,16 @@ function CreateFlashCards({onAddFlashCard}){
 
     const addAsFlashCard = (e) => {
         e.preventDefault();
-        onAddFlashCard({question, answer})
+        onAddFlashCard({
+            question, 
+            answer, 
+            question_type: "text", 
+            answer_type: "text"
+        });
         setQuestion("");
         setAnswer("");
         resetSizes()
     }
-
 
     const resetSizes = ()=>{
         textareaRefs.current.forEach((textarea)=>{
@@ -24,17 +27,11 @@ function CreateFlashCards({onAddFlashCard}){
         })
     }
 
-    
-
     return(
-            
         <div className={styles.addNewFlashCardBtnContainer}>
             <button className={styles.addCardBtn} onClick={addAsFlashCard}>ADD CARD</button>
-                
         </div>
-
     )
-
 }
 
 export default CreateFlashCards;

@@ -10,7 +10,7 @@ import CreateActionsDropdown from '../CreateActionsDropdown/CreateActionsDropdow
 
 
 // NavBar component
-function NavBar({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick, onSignOutClick }) {
+function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalClick, onSignOutClick }) {
 
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -57,7 +57,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onGenerateAIClick, onS
                         <CreateActionsDropdown 
                             onCreateFolderClick={onCreateFolderClick}
                             onCreateDeckClick={onCreateDeckClick}
-                            onGenerateAIClick={onGenerateAIClick}
+                            onCreateWithAIModalClick={onCreateWithAIModalClick}
                         />
                         <div className="hidden md:flex items-center space-x-2">
                              <span className="hidden sm:inline text-slate-300 font-medium">{userName}</span>
