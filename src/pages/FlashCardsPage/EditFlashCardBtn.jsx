@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-function EditFlashCardBtn({deckId}){
+function EditDeckBtn({deckId}){
 
     const navigate = useNavigate();
 
@@ -12,10 +12,10 @@ function EditFlashCardBtn({deckId}){
     return(
 
         <div>
-            <button className="btn btn-primary" onClick={handleEditFlashCard}>Edit Flash Card</button>           
+            <button className="btn btn-primary" onClick={handleEditFlashCard}>Edit Deck</button>           
 
         </div>
     )
 }
 
-export default EditFlashCardBtn;
+export default EditDeckBtn;

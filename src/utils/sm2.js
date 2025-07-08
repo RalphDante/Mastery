@@ -34,9 +34,10 @@ export const calculateSM2 = (quality, currentEaseFactor = 2.5, currentInterval =
     }
 
     const nextReviewDate = new Date();
-    // Set the date to the beginning of the day to avoid timezone issues with review dates
-    nextReviewDate.setDate(nextReviewDate.getDate() + interval);
-    nextReviewDate.setHours(0, 0, 0, 0); 
+    // FOR DEBUGGING: Set the date to 1 minute from now
+    // IMPORTANT: Remember to change this back to `nextReviewDate.setDate(nextReviewDate.getDate() + interval);`
+    // and `nextReviewDate.setHours(0, 0, 0, 0);` for production.
+    nextReviewDate.setMinutes(nextReviewDate.getMinutes() + 1); 
 
     return {
         easeFactor,

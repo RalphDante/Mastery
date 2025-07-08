@@ -158,7 +158,12 @@ function CreateWithAIModal({ onClose, isOpen }) {
       }
 
       alert("Deck and flashcards saved successfully!");
-      navigate(`/flashcards/${newDeckRef.id}`);
+      navigate(`/flashcards/${newDeckRef.id}`, {state: {
+        deckId: newDeckRef.id,
+        folderId: currentFolderId,
+        folderName: newFolderName || selectedFolder.name,
+  
+      }});
       onClose();
     } catch (error) {
       console.error("Error saving deck and flashcards: ", error);
