@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 
-function Home() {
+function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -40,7 +40,10 @@ function Home() {
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-12">
-          <LearningHubSection />
+          <LearningHubSection 
+            onCreateDeckClick={onCreateDeckClick}
+            onCreateWithAIModalClick={onCreateWithAIModalClick}
+          />
 
         </div>
 

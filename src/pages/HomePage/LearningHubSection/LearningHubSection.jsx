@@ -13,7 +13,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../api/firebase'; // Adjust path as needed
 import { useNavigate } from "react-router-dom";
 
-function LearningHubSection() {
+function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const [user, loading, error] = useAuthState(auth);
     const [folders, setFolders] = useState([]);
     const [newFolderName, setNewFolderName] = useState("");
@@ -202,6 +202,14 @@ function LearningHubSection() {
     const desiredMaxHeight = (3 * MAX_FOLDER_HEIGHT_PX) + (2 * GRID_GAP_PX);
     const showScrollbar = folders.length > 9;
 
+
+    // Handle Quick Actions Click
+
+    const handleQuickActionsClick = (callback, e)=>{
+        e.preventDefault()
+        callback(e);
+    }
+
     return (
         <section id="learning-hub-section" className="p-6 bg-gray-900 min-h-screen">
             <div className="mb-8">
@@ -345,7 +353,12 @@ function LearningHubSection() {
                                     <h3 className="text-xl font-semibold text-slate-100">{currentFolder.name}</h3>
                                 </div>
                                 <button
-                                    onClick={() => {/* Add create deck functionality */}}
+                                    onClick={() => {navigate(`/create-deck`, {state: {
+                                        folderName: currentFolder.name, 
+                                        folderId: currentFolder.id,
+                                        isNewFolder: false,
+                                        // uid: authUser.uid
+                                    }})}}
                                     className="text-sm font-medium text-violet-400 hover:text-violet-300 bg-violet-400/10 px-3 py-1 rounded-lg hover:bg-violet-400/20 transition-colors"
                                 >
                                     + New Deck
@@ -441,7 +454,10 @@ function LearningHubSection() {
                                     <i className="fa-solid fa-folder-plus text-violet-400 text-xl"></i>
                                     <span className="font-semibold text-slate-200">Create New Folder</span>
                                 </button>
-                                <button className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg">
+                                <button 
+                                    className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
+                                    onClick={(e)=>{handleQuickActionsClick(onCreateDeckClick, e)}}
+                                >
                                     <i className="fa-solid fa-pen-to-square text-violet-400 text-xl"></i>
                                     <span className="font-semibold text-slate-200">Create New Deck</span>
                                 </button>
@@ -449,7 +465,12 @@ function LearningHubSection() {
                         ) : (
                             <>
                                 <button
-                                    onClick={() => {/* Add create deck in current folder */}}
+                                    onClick={() => {navigate(`/create-deck`, {state: {
+                                        folderName: currentFolder.name, 
+                                        folderId: currentFolder.id,
+                                        isNewFolder: false,
+                                        // uid: authUser.uid
+                                    }})}}
                                     className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
                                 >
                                     <i className="fa-solid fa-pen-to-square text-violet-400 text-xl"></i>
@@ -464,7 +485,11 @@ function LearningHubSection() {
                                 </button>
                             </>
                         )}
-                        <button className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg">
+                        <button 
+                            className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
+                            onClick={(e)=>{handleQuickActionsClick(onCreateWithAIModalClick, e)}}
+                            
+                        >
                             <i className="fa-solid fa-wand-magic-sparkles text-violet-400 text-xl"></i>
                             <span className="font-semibold text-slate-200">Generate with AI</span>
                         </button>

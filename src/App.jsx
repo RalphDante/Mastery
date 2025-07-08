@@ -132,7 +132,7 @@ function App(){
                   {/* <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} /> */}
                   <Route path="/authdetails" element={<AuthDetails />} />
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Home onCreateDeckClick={handleShowCreateDeckModal} onCreateWithAIModalClick={handleShowCreateWithAIModalClick}/>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />
                   <Route path="/create-deck" element={<CreateDeck />} />
