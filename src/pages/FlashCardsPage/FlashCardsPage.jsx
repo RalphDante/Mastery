@@ -12,6 +12,7 @@ import styles from './FlashCardsPage.module.css'
 function FlashCardsPage() {
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
+    const [autoSwitchedToSpaced, setAutoSwitchedToSpaced] = useState(false); // Track if we auto-switched
     const location = useLocation();
     // Rename deckId from useParams to paramDeckId to avoid confusion with global mode
     const { deckId: paramDeckId } = useParams(); 
@@ -30,6 +31,7 @@ function FlashCardsPage() {
     // Deck information from Firestore (metadata for current deck context)
     const [deckData, setDeckData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [dueCardsCount, setDueCardsCount] = useState(0); // Track due cards count
 
     // Communication with FlashCardUI for current card index
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -42,6 +44,48 @@ function FlashCardsPage() {
         return () => unsubscribe();
     }, []);
 
+    // --- Check for due cards and auto-switch to spaced mode ---
+    const checkDueCardsAndAutoSwitch = useCallback(async () => {
+        if (!authUser) return;
+
+        try {
+            let dueCardsQuery;
+            
+            if (paramDeckId) {
+                // Check due cards for specific deck
+                dueCardsQuery = query(
+                    collection(db, 'cardProgress'),
+                    where('userId', '==', authUser.uid),
+                    where('deckId', '==', paramDeckId),
+                    where('nextReviewDate', '<=', new Date().toISOString())
+                );
+            } else {
+                // Check due cards across all decks
+                dueCardsQuery = query(
+                    collection(db, 'cardProgress'),
+                    where('userId', '==', authUser.uid),
+                    where('nextReviewDate', '<=', new Date().toISOString())
+                );
+            }
+
+            const dueCardsSnapshot = await getDocs(dueCardsQuery);
+            const dueCount = dueCardsSnapshot.size;
+            setDueCardsCount(dueCount);
+
+            // Auto-switch to spaced mode if there are due cards and we haven't manually switched modes
+            if (dueCount > 0 && studyMode === 'cramming' && !autoSwitchedToSpaced) {
+                setStudyMode('spaced');
+                setAutoSwitchedToSpaced(true);
+                setRedoDeck(true); // Trigger re-fetch in FlashCardUI
+                
+                // Optional: Show a notification to the user
+                console.log(`Auto-switched to spaced repetition mode - ${dueCount} cards due for review!`);
+            }
+        } catch (error) {
+            console.error("Error checking due cards:", error);
+        }
+    }, [authUser, db, paramDeckId, studyMode, autoSwitchedToSpaced]);
+
     // --- Fetch deck metadata based on paramDeckId (if exists) and studyMode ---
     useEffect(() => {
         const fetchDeckMetadata = async () => {
@@ -49,6 +93,9 @@ function FlashCardsPage() {
                 setLoading(false);
                 return;
             }
+
+            // Check for due cards first
+            await checkDueCardsAndAutoSwitch();
 
             // If we are on a specific deck page (paramDeckId exists), fetch its metadata
             if (paramDeckId) {
@@ -79,7 +126,7 @@ function FlashCardsPage() {
         };
 
         fetchDeckMetadata();
-    }, [paramDeckId, db, authUser, studyMode]); // Re-run if these dependencies change
+    }, [paramDeckId, db, authUser, checkDueCardsAndAutoSwitch]); // Re-run if these dependencies change
 
     // This function will now be called by StudyModeSelector internally
     // and will only manage the local state for FlashCardsPage.
@@ -96,6 +143,9 @@ function FlashCardsPage() {
         setKnowAnswer(0);
         setDontKnowAnswer(0);
         setPercent(0);
+        
+        // Mark that user manually changed modes (disable auto-switching)
+        setAutoSwitchedToSpaced(true);
         
         setStudyMode(newMode); // Use newMode from the selector
         setRedoDeck(true); // Trigger a re-fetch in FlashCardUI
@@ -128,6 +178,15 @@ function FlashCardsPage() {
                         <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
                             <p className="text-gray-400 mb-4">{deckData.description}</p>
+                        )}
+                        
+                        {/* Show notification if auto-switched to spaced mode */}
+                        {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
+                            <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
+                                <p className="text-blue-200 text-sm">
+                                    🎯 Automatically switched to spaced repetition - you have {dueCardsCount} cards due for review!
+                                </p>
+                            </div>
                         )}
                     </div>
 
@@ -163,6 +222,15 @@ function FlashCardsPage() {
                                 <span className="text-gray-400">Percentage:</span>
                                 <span className="font-bold text-lg text-violet-400">{percent}%</span>
                             </div>
+                            
+                            {/* Show due cards count in spaced mode */}
+                            {studyMode === 'spaced' && dueCardsCount > 0 && (
+                                <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                                    <span className="text-gray-400">Cards Due:</span>
+                                    <span className="font-bold text-lg text-yellow-400">{dueCardsCount}</span>
+                                </div>
+                            )}
+                            
                             {/* Only show total cards count for 'cramming' mode on a specific deck */}
                             {deckData?.cardCount && studyMode === 'cramming' && ( 
                                 <div className="flex justify-between items-center py-3 border-b border-gray-800">
@@ -170,7 +238,6 @@ function FlashCardsPage() {
                                     <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
                                 </div>
                             )}
-                            {/* In spaced mode, you might want to show "Cards due today: X" (would come from FlashCardUI state) */}
                         </div>
 
                         {/* Progress Bar */}
@@ -194,7 +261,18 @@ function FlashCardsPage() {
                                         🔄 Redo Deck
                                     </button>
                                 )}
-                                {/* Consider adding a dedicated button or navigation to "Review All Due Cards" if not on a specific deck page */}
+                                
+                                {/* Show priority indicator for spaced mode */}
+                                {studyMode === 'spaced' && dueCardsCount > 0 && (
+                                    <div className="w-full bg-blue-600/20 border border-blue-600 px-4 py-3 rounded-lg">
+                                        <div className="text-blue-300 text-sm font-medium">
+                                            🎯 Priority: Spaced Review
+                                        </div>
+                                        <div className="text-blue-400 text-xs mt-1">
+                                            Focus on due cards for optimal learning
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

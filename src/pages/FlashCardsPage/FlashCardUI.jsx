@@ -523,7 +523,7 @@ function FlashCardUI({
         <>  
             <div className={styles.buttonsOptionsContainer}>
                 {deckId && <EditDeckBtn deckId={deckId} />} 
-                {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />} 
+                {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
 
                 {/* This is where we integrate StudyModeSelector properly */}
                 {authUser && ( // Only show if user is authenticated
