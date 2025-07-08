@@ -44,6 +44,16 @@ function FlashCardsPage() {
         return () => unsubscribe();
     }, []);
 
+    // Effect to calculate percentage when knowAnswer or dontKnowAnswer changes
+    useEffect(() => {
+        const totalAttempted = knowAnswer + dontKnowAnswer;
+        if (totalAttempted > 0) {
+            setPercent(Math.floor((knowAnswer / totalAttempted) * 100));
+        } else {
+            setPercent(0); // If no cards attempted, percentage is 0
+        }
+    }, [knowAnswer, dontKnowAnswer]); // Dependencies: recalculate when these values change
+
     // --- Check for due cards and auto-switch to spaced mode ---
     const checkDueCardsAndAutoSwitch = useCallback(async () => {
         if (!authUser) return;
@@ -142,9 +152,9 @@ function FlashCardsPage() {
         setCurrentIndex(0);
         setKnowAnswer(0);
         setDontKnowAnswer(0);
-        setPercent(0);
+        setPercent(0); // Ensure percent is reset here too
         
-        // Mark that user manually changed modes (disable auto-switching)
+        // Mark that user manually changed modes (disable auto-switching for this session)
         setAutoSwitchedToSpaced(true);
         
         setStudyMode(newMode); // Use newMode from the selector
@@ -184,7 +194,7 @@ function FlashCardsPage() {
                         {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
                             <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
                                 <p className="text-blue-200 text-sm">
-                                    🎯 Automatically switched to spaced repetition - you have {dueCardsCount} cards due for review!
+                                    🎯 Automatically switched to spaced repetition - {dueCardsCount} cards due for review!
                                 </p>
                             </div>
                         )}
@@ -193,7 +203,7 @@ function FlashCardsPage() {
                     <FlashCardUI 
                         knowAnswer={setKnowAnswer}
                         dontKnowAnswer={setDontKnowAnswer}
-                        percent={setPercent}
+                        // percent is no longer passed as a setter to FlashCardUI as FlashCardsPage calculates it
                         redoDeck={redoDeck}
                         setRedoDeck={setRedoDeck}
                         studyMode={studyMode}

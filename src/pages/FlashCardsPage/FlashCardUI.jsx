@@ -15,7 +15,7 @@ import StudyModeSelector from "./StudyModeSelector"; // Ensure this import is co
 function FlashCardUI({
     knowAnswer, 
     dontKnowAnswer, 
-    percent, 
+    // percent is no longer passed as a prop from FlashCardsPage
     redoDeck, 
     setRedoDeck, 
     studyMode, 
@@ -37,7 +37,13 @@ function FlashCardUI({
     const [processing, setProcessing] = useState(false); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [dueCardsCount, setDueCardsCount] = useState(0); // NEW: State to hold due cards count for selector
+    const [dueCardsCount, setDueCardsCount] = useState(0); // State to hold due cards count for selector
+
+    // Cramming mode tracking states
+    const [originalDeckSize, setOriginalDeckSize] = useState(0);
+    const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
+    const [reviewPhase, setReviewPhase] = useState('initial'); // 'initial' or 'reviewing'
+    const [phaseOneComplete, setPhaseOneComplete] = useState(false);
 
     // Initialize Cloudinary
     const cld = new Cloudinary({ cloud: { cloudName: 'dph28fehb' } });
@@ -85,10 +91,16 @@ function FlashCardUI({
         setCurrentIndex(0); 
         knowAnswer(0); 
         dontKnowAnswer(0); 
-        percent(0); 
+        // Removed: percent(0); // Percent is now managed by FlashCardsPage
         setAnswers([]);
         setShowAnswer(false);
         setDueCardsCount(0); // Reset due cards count on new fetch
+        
+        // Reset cramming mode tracking
+        setOriginalDeckSize(0);
+        setUniqueCardsAttempted(new Set());
+        setReviewPhase('initial');
+        setPhaseOneComplete(false);
     
         try {
             if (studyMode === 'spaced') {
@@ -159,8 +171,6 @@ function FlashCardUI({
                     const cardsRef = collection(db, 'decks', deckId, 'cards');
                     const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
                     
-                    // Use onSnapshot for real-time updates in cramming mode, if desired.
-                    // If you only want to fetch once, use getDocs instead of onSnapshot.
                     const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
                         const cardsData = [];
                         snapshot.forEach((doc) => {
@@ -180,6 +190,7 @@ function FlashCardUI({
                             flashCardsCopy.splice(randomNum, 1);
                         }
                         setFlashCards(shuffledFlashCards);
+                        setOriginalDeckSize(shuffledFlashCards.length); // Set original deck size
                         setLoading(false);
                     }, (error) => {
                         console.error("Error fetching cards:", error);
@@ -197,7 +208,7 @@ function FlashCardUI({
             setError('Failed to load data');
             setLoading(false);
         }
-    }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer, percent]);
+    }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer]);
 
     // Effect to trigger data fetching when dependencies change
     useEffect(() => {
@@ -238,15 +249,19 @@ function FlashCardUI({
                 flashCardsCopy.splice(randomNum, 1);
             }
             setFlashCards(shuffledFlashCards);
+            setOriginalDeckSize(shuffledFlashCards.length); // Reset original deck size
+            setUniqueCardsAttempted(new Set()); // Reset unique cards tracking
+            setReviewPhase('initial'); // Reset to initial phase
+            setPhaseOneComplete(false); // Reset phase completion
         }
         setShowAnswer(false);
         setCurrentIndex(0);
         knowAnswer(0); 
         dontKnowAnswer(0); 
-        percent(0); 
+        // Removed: percent(0); // Percent is now managed by FlashCardsPage
         setAnswers([]);
         setProcessing(false);
-    }, [flashCards, knowAnswer, dontKnowAnswer, percent, setCurrentIndex, studyMode, fetchDeckAndCards]);
+    }, [flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, studyMode, fetchDeckAndCards]);
 
     // --- NEW: Handle card rating for SM-2 (ONLY FOR SPACED MODE) ---
     const handleSpacedCardRating = useCallback(async (quality) => {
@@ -299,16 +314,12 @@ function FlashCardUI({
 
             // Update local stats
             if (quality >= 3) {
-                knowAnswer(prev => {
-                    let newKnow = prev + 1;
-                    percent(Math.floor((newKnow / flashCards.length) * 100)); 
-                    return newKnow;
-                });
-                setAnswers(prev => [...prev, true]);
+                knowAnswer(prev => prev + 1);
             } else {
                 dontKnowAnswer(prev => prev + 1);
-                setAnswers(prev => [...prev, false]);
             }
+            // Removed: percent(Math.floor(((quality >= 3 ? knowAnswer() + 1 : knowAnswer()) / flashCards.length) * 100)); // Percent is now managed by FlashCardsPage
+            setAnswers(prev => [...prev, quality >= 3]); // Record answer for history
 
             setTimeout(() => {
                 const newIndex = currentIndex + 1;
@@ -321,7 +332,7 @@ function FlashCardUI({
             setError("Failed to update card progress.");
             setProcessing(false);
         }
-    }, [currentIndex, flashCards, authUser, db, knowAnswer, dontKnowAnswer, percent, setCurrentIndex, processing]);
+    }, [currentIndex, flashCards, authUser, db, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
 
     // --- NEW: Handle card progression for CRAMMING MODE ---
     const handleCrammingResponse = useCallback((isCorrect) => {
@@ -331,35 +342,58 @@ function FlashCardUI({
         setShowAnswer(false);
 
         const currentCard = flashCards[currentIndex];
+        const currentCardId = currentCard.id;
+
+        // Track that we've attempted this unique card
+        const newUniqueAttempted = new Set([...uniqueCardsAttempted, currentCardId]);
+        setUniqueCardsAttempted(newUniqueAttempted);
+
+        // Check if we've now seen all original cards for the first time
+        const shouldCompletePhaseOne = newUniqueAttempted.size === originalDeckSize && !phaseOneComplete;
 
         if (isCorrect) {
-            knowAnswer(prev => {
-                let newKnow = prev + 1;
-                percent(Math.floor((newKnow / flashCards.length) * 100));
-                return newKnow;
-            });
-            setAnswers(prev => [...prev, true]); // Record true for history
+            // Only increment counters if we're still in phase 1 or this is a new unique card
+            if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCardId)) {
+                knowAnswer(prev => prev + 1);
+            }
+            
+            setAnswers(prev => [...prev, true]);
             
             // Move to next card
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
                 setProcessing(false);
+                
+                if (shouldCompletePhaseOne) {
+                    setPhaseOneComplete(true);
+                    setReviewPhase('reviewing');
+                }
             }, 200);
 
         } else { // Incorrect
-            dontKnowAnswer(prev => prev + 1);
-            setAnswers(prev => [...prev, false]); // Record false for history
+            // Only increment wrong counter if we're still in phase 1 or this is a new unique card
+            if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCardId)) {
+                dontKnowAnswer(prev => prev + 1);
+            }
+            
+            setAnswers(prev => [...prev, false]);
 
-            // Re-add card to the end of the deck
+            // Re-add card to the end of the deck for review
             setFlashCards(prevCards => [...prevCards, currentCard]);
 
-            // Move to next card (which is the next unique card, the current one will reappear later)
+            // Move to next card
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
                 setProcessing(false);
+                
+                if (shouldCompletePhaseOne) {
+                    setPhaseOneComplete(true);
+                    setReviewPhase('reviewing');
+                }
             }, 200);
         }
-    }, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, percent, setCurrentIndex, processing]);
+    }, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, processing, 
+        originalDeckSize, uniqueCardsAttempted, phaseOneComplete]);
 
 
     const handleShowAnswer = () => {
@@ -375,19 +409,9 @@ function FlashCardUI({
             setTimeout(() => {
                 const lastAnswerWasCorrect = answers[currentIndex - 1];
                 if (lastAnswerWasCorrect) {
-                    knowAnswer(prev => {
-                        let newKnowAnswer = prev - 1;
-                        percent(Math.floor((newKnowAnswer / flashCards.length) * 100)); 
-                        return newKnowAnswer;
-                    });
+                    knowAnswer(prev => prev - 1);
                 } else {
                     dontKnowAnswer(prev => prev - 1);
-                    // For cramming mode, if the last card was wrong, and we "go back", 
-                    // we need to remove it from the end of the deck if it was re-added.
-                    // This can get complex with multiple "wrong" answers. 
-                    // A simpler approach for "Go Back" in cramming might just be to go to the previous card
-                    // without trying to "undo" the re-addition or score.
-                    // For now, let's just decrement local score.
                 }
                 setCurrentIndex(currentIndex - 1);
                 setAnswers(answers.slice(0, -1)); 
@@ -396,7 +420,7 @@ function FlashCardUI({
         } else {
             setProcessing(false);
         }
-    }, [currentIndex, answers, knowAnswer, dontKnowAnswer, percent, flashCards.length, setCurrentIndex]);
+    }, [currentIndex, answers, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
 
     // Update current question/answer when flashCards or currentIndex changes
     useEffect(() => {
@@ -523,7 +547,7 @@ function FlashCardUI({
         <>  
             <div className={styles.buttonsOptionsContainer}>
                 {deckId && <EditDeckBtn deckId={deckId} />} 
-                {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
+                {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />} 
 
                 {/* This is where we integrate StudyModeSelector properly */}
                 {authUser && ( // Only show if user is authenticated
