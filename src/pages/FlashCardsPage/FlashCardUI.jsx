@@ -241,7 +241,13 @@ function FlashCardUI({
             // For spaced mode, 'redo deck' means re-fetching due cards, not re-shuffling what's currently loaded
             fetchDeckAndCards(); 
         } else { // Cramming mode shuffle
-            let flashCardsCopy = [...flashCards];
+            // Remove duplicates before shuffling by using a Set based on card IDs
+            const uniqueCards = flashCards.filter((card, index, self) => 
+                index === self.findIndex(c => c.id === card.id)
+            );
+            
+            // Shuffle the unique cards
+            let flashCardsCopy = [...uniqueCards];
             let shuffledFlashCards = [];
             while (flashCardsCopy.length !== 0) {
                 let randomNum = Math.floor(Math.random() * flashCardsCopy.length);
@@ -249,7 +255,7 @@ function FlashCardUI({
                 flashCardsCopy.splice(randomNum, 1);
             }
             setFlashCards(shuffledFlashCards);
-            setOriginalDeckSize(shuffledFlashCards.length); // Reset original deck size
+            setOriginalDeckSize(shuffledFlashCards.length); // Set to the correct unique card count
             setUniqueCardsAttempted(new Set()); // Reset unique cards tracking
             setReviewPhase('initial'); // Reset to initial phase
             setPhaseOneComplete(false); // Reset phase completion
@@ -258,7 +264,6 @@ function FlashCardUI({
         setCurrentIndex(0);
         knowAnswer(0); 
         dontKnowAnswer(0); 
-        // Removed: percent(0); // Percent is now managed by FlashCardsPage
         setAnswers([]);
         setProcessing(false);
     }, [flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, studyMode, fetchDeckAndCards]);
@@ -445,6 +450,66 @@ function FlashCardUI({
         return `${approxInterval}d`;
     };
 
+    // Render Score Container
+    const renderScoreContainer = () => {
+        if (studyMode === 'cramming') {
+            const remainingCards = flashCards.length - currentIndex;
+            const progressThroughOriginal = Math.min(currentIndex + 1, originalDeckSize);
+            
+            return (
+                <div className={styles.scoreContainer}>
+                    <div style={{ margin: '0px', textAlign: 'center' }}>
+                        {/* Main progress indicator */}
+                        {/* <h2 style={{ margin: '0px', fontSize: '1.1rem' }}>
+                            {currentIndex < flashCards.length ? 
+                                `${currentIndex + 1}/${flashCards.length}` : 
+                                `${flashCards.length}/${flashCards.length}`
+                            }
+                        </h2> */}
+                        
+                        {/* Additional context - show original deck progress */}
+                        <div style={{ 
+                            fontSize: '1rem', 
+                            color: '#9CA3AF', 
+                            marginTop: '2px',
+                            lineHeight: '1.2'
+                        }}>
+                            {phaseOneComplete ? (
+                                <>
+                                    <span>Review Phase</span>
+                                    <div style={{ 
+                                        fontSize: '0.7rem', 
+                                        color: '#F59E0B', 
+                                        marginTop: '1px'
+                                    }}>
+                                        {remainingCards} left
+                                    </div>
+                                </>
+                                
+                            ) : (
+                                <h2>{progressThroughOriginal}/{originalDeckSize}</h2>
+                            )}
+                        </div>
+                        
+                       
+                    </div>
+                </div>
+            );
+        } else {
+            // Spaced mode - simpler display
+            return (
+                <div className={styles.scoreContainer}>
+                    <h2 style={{ margin: '0px' }}>
+                        {currentIndex < flashCards.length ? 
+                            `${currentIndex + 1}/${flashCards.length}` : 
+                            `${flashCards.length}/${flashCards.length}`
+                        }
+                    </h2>
+                </div>
+            );
+        }
+    };
+
     // Render different button sets based on study mode
     const renderStudyButtons = () => {
         const isDisabled = processing || flashCards.length === 0 || currentIndex >= flashCards.length;
@@ -484,9 +549,7 @@ function FlashCardUI({
                         <i className="fa-solid fa-xmark" id="wrongButton"></i>
                     </button>
                     <div className={styles.scoreContainer}>
-                        <h2 style={{ margin: '0px' }}>
-                            {currentIndex < flashCards.length ? `${currentIndex + 1}/${flashCards.length}` : `${flashCards.length}/${flashCards.length}`}
-                        </h2>
+                        {renderScoreContainer()}
                     </div>
                     <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(true)} style={{ padding: '10px 13px' }}> 
                         <i className="fa-solid fa-check" id="checkButton"></i>
