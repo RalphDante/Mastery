@@ -179,8 +179,37 @@ function CreateDeck() {
         setFlashCards([...flashCards, flashcard])
     };
 
-    const deleteFlashCard = (index) => {
-        const newFlashCard = flashCards.filter((element, idx) => idx !== index);
+    const deleteFlashCard = async (index) => {
+        
+        // Get the card object to be deleted using the index
+        const cardToDelete = flashCards[index];
+
+        // Check if the card has an ID (meaning it's an existing card from Firestore)
+        if (cardToDelete && cardToDelete.id) {
+            const cardId = cardToDelete.id; // Get the cardId
+
+            const progressQuery = query(
+                collection(db, 'cardProgress'),
+                where('cardId', '==', cardId),
+                where('userId', '==', authUser.uid) // It's good practice to filter by user as well
+            );
+            const progressSnap = await getDocs(progressQuery);
+
+            if (progressSnap.size > 0) {
+                const confirmed = window.confirm(
+                    `This card has study progress data. Deleting it will remove all progress history for this card. Are you sure you want to continue?`
+                );
+                if (!confirmed) return;
+
+                // If confirmed, you would also need to delete the cardProgress documents
+                // This is better handled in a Cloud Function for transactional consistency,
+                // but for a client-side deletion, you'd add batch.delete operations here.
+                // Example of how you might add them to the batch (though updateExistingDeck's batch is separate)
+                // For now, you just prevent deletion if not confirmed.
+            }
+        }
+
+    const newFlashCard = flashCards.filter((element, idx) => idx !== index);
         setFlashCards(newFlashCard)
     }
 

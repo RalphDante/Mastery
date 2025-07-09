@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { auth, app } from '../../api/firebase';
-import { getFirestore, doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, where, getDocs } from 'firebase/firestore'; 
+import { getFirestore, doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, where, getDocs, deleteDoc } from 'firebase/firestore'; 
 import { onAuthStateChanged } from "firebase/auth";
 import styles from './FlashCardsPage.module.css';
 
@@ -10,12 +10,11 @@ import { AdvancedImage } from '@cloudinary/react';
 import SetToPublic from "./SetToPublic";
 import { calculateSM2 } from '../../utils/sm2'; 
 import EditDeckBtn from "./EditFlashCardBtn";
-import StudyModeSelector from "./StudyModeSelector"; // Ensure this import is correct
+import StudyModeSelector from "./StudyModeSelector";
 
 function FlashCardUI({
     knowAnswer, 
     dontKnowAnswer, 
-    // percent is no longer passed as a prop from FlashCardsPage
     redoDeck, 
     setRedoDeck, 
     studyMode, 
@@ -33,16 +32,17 @@ function FlashCardUI({
     const [currentQuestionType, setCurrentQuestionType] = useState('text');
     const [currentAnswerType, setCurrentAnswerType] = useState('text');
     const [showAnswer, setShowAnswer] = useState(false);
-    const [answers, setAnswers] = useState([]); // To track local session progress (for 'Go Back' and percentage calc)
+    const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false); 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [dueCardsCount, setDueCardsCount] = useState(0); // State to hold due cards count for selector
+    const [dueCardsCount, setDueCardsCount] = useState(0);
+    const [orphanedProgressCount, setOrphanedProgressCount] = useState(0);
 
     // Cramming mode tracking states
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
-    const [reviewPhase, setReviewPhase] = useState('initial'); // 'initial' or 'reviewing'
+    const [reviewPhase, setReviewPhase] = useState('initial');
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
 
     // Initialize Cloudinary
@@ -79,35 +79,149 @@ function FlashCardUI({
         return () => unsubscribe();
     }, []);
 
-    // --- Fetch deck and flashcards from Firestore based on study mode ---
+    // --- NEW: Clean up orphaned progress documents ---
+    const cleanupOrphanedProgress = useCallback(async (progressDocuments) => {
+        if (!authUser) return [];
+
+        const validCards = [];
+        const orphanedProgressIds = [];
+
+        for (const progressDoc of progressDocuments) {
+            const progress = progressDoc.data();
+            try {
+                const cardDoc = await getDoc(doc(db, 'decks', progress.deckId, 'cards', progress.cardId));
+                if (cardDoc.exists()) {
+                    validCards.push({
+                        id: cardDoc.id,
+                        ...cardDoc.data(),
+                        deckId: progress.deckId,
+                        progress: progress
+                    });
+                } else {
+                    // Card doesn't exist anymore, mark progress for deletion
+                    orphanedProgressIds.push(progressDoc.id);
+                }
+            } catch (error) {
+                console.error(`Error checking card ${progress.cardId}:`, error);
+                // If there's an error accessing the card, also mark for deletion
+                orphanedProgressIds.push(progressDoc.id);
+            }
+        }
+
+        // Clean up orphaned progress documents
+        if (orphanedProgressIds.length > 0) {
+            console.log(`Found ${orphanedProgressIds.length} orphaned progress documents. Cleaning up...`);
+            setOrphanedProgressCount(orphanedProgressIds.length);
+            
+            const deletePromises = orphanedProgressIds.map(progressId => 
+                deleteDoc(doc(db, 'cardProgress', progressId))
+            );
+            
+            try {
+                await Promise.all(deletePromises);
+                console.log(`Successfully cleaned up ${orphanedProgressIds.length} orphaned progress documents.`);
+            } catch (error) {
+                console.error("Error cleaning up orphaned progress:", error);
+            }
+        } else {
+            setOrphanedProgressCount(0);
+        }
+
+        return validCards;
+    }, [authUser, db]);
+
+    // New Cards Handling
+    const initializeNewCardsProgress = useCallback(async (deckId) => {
+        if (!authUser || !deckId) return;
+        
+        try {
+            // Get all cards in the deck
+            const cardsRef = collection(db, 'decks', deckId, 'cards');
+            const cardsSnapshot = await getDocs(cardsRef);
+            
+            // Get existing progress for this deck
+            const progressQuery = query(
+                collection(db, 'cardProgress'),
+                where('userId', '==', authUser.uid),
+                where('deckId', '==', deckId)
+            );
+            const progressSnapshot = await getDocs(progressQuery);
+            
+            // Create a Set of card IDs that already have progress
+            const existingProgressCardIds = new Set();
+            progressSnapshot.forEach(doc => {
+                const progress = doc.data();
+                existingProgressCardIds.add(progress.cardId);
+            });
+            
+            // Find cards without progress and initialize them
+            const newCardsToInitialize = [];
+            cardsSnapshot.forEach(cardDoc => {
+                if (!existingProgressCardIds.has(cardDoc.id)) {
+                    newCardsToInitialize.push(cardDoc.id);
+                }
+            });
+            
+            // Initialize progress for new cards (mark them as due immediately)
+            const initPromises = newCardsToInitialize.map(cardId => {
+                const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
+                return setDoc(progressDocRef, {
+                    userId: authUser.uid,
+                    cardId: cardId,
+                    deckId: deckId,
+                    easeFactor: 2.5,
+                    interval: 0,
+                    repetitions: 0,
+                    nextReviewDate: new Date().toISOString(), // Due immediately
+                    lastReviewDate: null,
+                    totalReviews: 0,
+                    correctStreak: 0
+                });
+            });
+            
+            if (initPromises.length > 0) {
+                await Promise.all(initPromises);
+                console.log(`Initialized progress for ${initPromises.length} new cards`);
+            }
+            
+        } catch (error) {
+            console.error("Error initializing new cards progress:", error);
+        }
+    }, [authUser, db]);
+
+    // --- Enhanced fetch function with cleanup ---
+    // --- Enhanced fetch function with cleanup ---
     const fetchDeckAndCards = useCallback(async () => {
         if (!authUser) {
             setLoading(false);
             return;
         }
-    
+
         setLoading(true);
         setError(null);
         setCurrentIndex(0); 
         knowAnswer(0); 
         dontKnowAnswer(0); 
-        // Removed: percent(0); // Percent is now managed by FlashCardsPage
         setAnswers([]);
         setShowAnswer(false);
-        setDueCardsCount(0); // Reset due cards count on new fetch
+        setDueCardsCount(0);
+        setOrphanedProgressCount(0);
         
         // Reset cramming mode tracking
         setOriginalDeckSize(0);
         setUniqueCardsAttempted(new Set());
         setReviewPhase('initial');
         setPhaseOneComplete(false);
-    
+
         try {
             if (studyMode === 'spaced') {
                 let progressQuery;
                 
                 if (deckId) {
-                    // Fetch cards due for review from specific deck
+                    // Initialize new flashcards first
+                    await initializeNewCardsProgress(deckId);
+                    
+                    // Then create the query for this specific deck
                     progressQuery = query(
                         collection(db, 'cardProgress'),
                         where('userId', '==', authUser.uid),
@@ -126,31 +240,18 @@ function FlashCardUI({
                 }
                 
                 const progressSnapshot = await getDocs(progressQuery);
-                setDueCardsCount(progressSnapshot.size); // Set the count for display in StudyModeSelector
-                const cardLookupPromises = [];
-    
-                progressSnapshot.forEach(docSnap => {
-                    const progress = docSnap.data();
-                    cardLookupPromises.push(
-                        getDoc(doc(db, 'decks', progress.deckId, 'cards', progress.cardId))
-                            .then(cardSnap => {
-                                if (cardSnap.exists()) {
-                                    return { 
-                                        id: cardSnap.id, 
-                                        ...cardSnap.data(), 
-                                        deckId: progress.deckId, // Ensure deckId is always present
-                                        progress: progress // Attach progress data
-                                    };
-                                }
-                                return null;
-                            })
-                    );
+                const progressDocuments = [];
+                progressSnapshot.forEach(doc => {
+                    progressDocuments.push(doc);
                 });
-    
-                const fetchedCards = (await Promise.all(cardLookupPromises)).filter(Boolean);
-                setFlashCards(fetchedCards); 
+
+                // Clean up orphaned progress and get valid cards
+                const validCards = await cleanupOrphanedProgress(progressDocuments);
+                
+                setDueCardsCount(validCards.length); // Set the actual count after cleanup
+                setFlashCards(validCards); 
                 setLoading(false);
-    
+
             } else { // 'cramming' mode (specific deck)
                 if (deckId) { 
                     const deckDoc = await getDoc(doc(db, 'decks', deckId));
@@ -167,7 +268,7 @@ function FlashCardUI({
                         return;
                     }
                     setDeck(deckData);
-    
+
                     const cardsRef = collection(db, 'decks', deckId, 'cards');
                     const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
                     
@@ -190,7 +291,7 @@ function FlashCardUI({
                             flashCardsCopy.splice(randomNum, 1);
                         }
                         setFlashCards(shuffledFlashCards);
-                        setOriginalDeckSize(shuffledFlashCards.length); // Set original deck size
+                        setOriginalDeckSize(shuffledFlashCards.length);
                         setLoading(false);
                     }, (error) => {
                         console.error("Error fetching cards:", error);
@@ -208,7 +309,7 @@ function FlashCardUI({
             setError('Failed to load data');
             setLoading(false);
         }
-    }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer]);
+    }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer, cleanupOrphanedProgress, initializeNewCardsProgress]);
 
     // Effect to trigger data fetching when dependencies change
     useEffect(() => {
@@ -255,10 +356,10 @@ function FlashCardUI({
                 flashCardsCopy.splice(randomNum, 1);
             }
             setFlashCards(shuffledFlashCards);
-            setOriginalDeckSize(shuffledFlashCards.length); // Set to the correct unique card count
-            setUniqueCardsAttempted(new Set()); // Reset unique cards tracking
-            setReviewPhase('initial'); // Reset to initial phase
-            setPhaseOneComplete(false); // Reset phase completion
+            setOriginalDeckSize(shuffledFlashCards.length);
+            setUniqueCardsAttempted(new Set());
+            setReviewPhase('initial');
+            setPhaseOneComplete(false);
         }
         setShowAnswer(false);
         setCurrentIndex(0);
@@ -268,7 +369,7 @@ function FlashCardUI({
         setProcessing(false);
     }, [flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, studyMode, fetchDeckAndCards]);
 
-    // --- NEW: Handle card rating for SM-2 (ONLY FOR SPACED MODE) ---
+    // --- Handle card rating for SM-2 (ONLY FOR SPACED MODE) ---
     const handleSpacedCardRating = useCallback(async (quality) => {
         if (processing || currentIndex >= flashCards.length) return; 
 
@@ -277,7 +378,7 @@ function FlashCardUI({
 
         const currentCard = flashCards[currentIndex];
         const cardId = currentCard.id;
-        const currentDeckId = currentCard.deckId; // Should always be present for spaced review cards
+        const currentDeckId = currentCard.deckId;
 
         let currentProgress = {};
         const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
@@ -323,8 +424,7 @@ function FlashCardUI({
             } else {
                 dontKnowAnswer(prev => prev + 1);
             }
-            // Removed: percent(Math.floor(((quality >= 3 ? knowAnswer() + 1 : knowAnswer()) / flashCards.length) * 100)); // Percent is now managed by FlashCardsPage
-            setAnswers(prev => [...prev, quality >= 3]); // Record answer for history
+            setAnswers(prev => [...prev, quality >= 3]);
 
             setTimeout(() => {
                 const newIndex = currentIndex + 1;
@@ -339,7 +439,7 @@ function FlashCardUI({
         }
     }, [currentIndex, flashCards, authUser, db, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
 
-    // --- NEW: Handle card progression for CRAMMING MODE ---
+    // --- Handle card progression for CRAMMING MODE ---
     const handleCrammingResponse = useCallback((isCorrect) => {
         if (processing || currentIndex >= flashCards.length) return;
 
@@ -400,13 +500,10 @@ function FlashCardUI({
     }, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, processing, 
         originalDeckSize, uniqueCardsAttempted, phaseOneComplete]);
 
-
     const handleShowAnswer = () => {
         setShowAnswer(!showAnswer);
     };
 
-    // handleGoBack needs to be refactored to work correctly with the new cramming logic
-    // For spaced mode, it's generally best not to undo SM2 progress, just local UI state.
     const handleGoBack = useCallback(() => {
         setProcessing(true);
         if (currentIndex > 0) {
@@ -459,39 +556,20 @@ function FlashCardUI({
             return (
                 <div className={styles.scoreContainer}>
                     <div style={{ margin: '0px', textAlign: 'center' }}>
-                        {/* Main progress indicator */}
-                        {/* <h2 style={{ margin: '0px', fontSize: '1.1rem' }}>
-                            {currentIndex < flashCards.length ? 
-                                `${currentIndex + 1}/${flashCards.length}` : 
-                                `${flashCards.length}/${flashCards.length}`
-                            }
-                        </h2> */}
-                        
-                        {/* Additional context - show original deck progress */}
-                        <div style={{ 
-                            fontSize: '1rem', 
-                            color: '#9CA3AF', 
-                            marginTop: '2px',
-                            lineHeight: '1.2'
-                        }}>
-                            {phaseOneComplete ? (
-                                <>
-                                    <span>Review Phase</span>
-                                    <div style={{ 
-                                        fontSize: '0.7rem', 
-                                        color: '#F59E0B', 
-                                        marginTop: '1px'
-                                    }}>
-                                        {remainingCards} left
-                                    </div>
-                                </>
-                                
-                            ) : (
-                                <h2>{progressThroughOriginal}/{originalDeckSize}</h2>
-                            )}
-                        </div>
-                        
-                       
+                        {phaseOneComplete ? (
+                            <>
+                                <span>Review Phase</span>
+                                <div style={{ 
+                                    fontSize: '0.7rem', 
+                                    color: '#F59E0B', 
+                                    marginTop: '1px'
+                                }}>
+                                    {remainingCards} left
+                                </div>
+                            </>
+                        ) : (
+                            <h2>{progressThroughOriginal}/{originalDeckSize}</h2>
+                        )}
                     </div>
                 </div>
             );
@@ -517,10 +595,6 @@ function FlashCardUI({
         if (studyMode === 'spaced') {
             return (
                 <div className={styles.buttonsContainer}>
-                    <button className={styles.outerFlashCardButtons} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
-                        <i className="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i>
-                    </button>
-                    
                     <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(0)}>
                         Again <br/> {getApproximateNextInterval(0)} 
                     </button>
@@ -532,10 +606,6 @@ function FlashCardUI({
                     </button>
                     <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(5)}>
                         Easy <br/> {getApproximateNextInterval(5)}
-                    </button>
-                    
-                    <button className={`${styles.outerFlashCardButtons}`} disabled={isDisabled} onClick={handleShuffle}>
-                        <i className="fa-solid fa-repeat"></i>
                     </button>
                 </div>
             );
@@ -567,6 +637,11 @@ function FlashCardUI({
         return (
             <div className={styles.loadingContainer}>
                 <h2>Loading flashcards...</h2>
+                {orphanedProgressCount > 0 && (
+                    <p className="text-yellow-400 text-sm mt-2">
+                        Cleaning up {orphanedProgressCount} orphaned progress records...
+                    </p>
+                )}
             </div>
         );
     }
@@ -595,6 +670,11 @@ function FlashCardUI({
                 <div className={styles.emptyContainer}>
                     <h2>You have no cards due for review today! 🎉</h2>
                     <p className="text-gray-400 mt-2">Check back later or try "Quick Study" mode to drill your decks.</p>
+                    {orphanedProgressCount > 0 && (
+                        <p className="text-green-400 text-sm mt-2">
+                            ✅ Cleaned up {orphanedProgressCount} orphaned progress records.
+                        </p>
+                    )}
                 </div>
             );
         } else {
@@ -607,23 +687,31 @@ function FlashCardUI({
     }
 
     return (
-        <>  
+        <>  
             <div className={styles.buttonsOptionsContainer}>
                 {deckId && <EditDeckBtn deckId={deckId} />} 
                 {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />} 
 
-                {/* This is where we integrate StudyModeSelector properly */}
-                {authUser && ( // Only show if user is authenticated
+                {authUser && (
                     <StudyModeSelector 
                         deckId={deckId} 
                         db={db} 
                         authUser={authUser} 
                         currentMode={studyMode} 
                         onModeChange={onStudyModeChange} 
-                        dueCardsCount={dueCardsCount} // Pass the fetched due cards count
+                        dueCardsCount={dueCardsCount}
                     />
                 )}
             </div>
+
+            {/* Show cleanup notification if orphaned progress was found */}
+            {orphanedProgressCount > 0 && (
+                <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
+                    <p className="text-green-200 text-sm">
+                        ✅ Cleaned up {orphanedProgressCount} orphaned progress records from deleted cards.
+                    </p>
+                </div>
+            )}
             
             <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>

@@ -203,6 +203,13 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const showScrollbar = folders.length > 9;
 
 
+    // Handle Delete Deck Click
+
+    const handleDeleteDeck = (deckId)=>{
+        // we will get the deckId first then go to the card
+    }
+
+
     // Handle Quick Actions Click
 
     const handleQuickActionsClick = (callback, e)=>{
@@ -397,7 +404,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        // Add delete deck functionality
+                                                        handleDeleteDeck();
                                                     }}
                                                     className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
                                                 >
