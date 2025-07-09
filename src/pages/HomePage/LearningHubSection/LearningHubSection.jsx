@@ -8,6 +8,10 @@ import {
     deleteDoc,
     doc,
     serverTimestamp,
+    getDocs,
+    runTransaction,
+    increment,
+    getDoc
 } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../../api/firebase'; // Adjust path as needed
@@ -135,12 +139,109 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
     const handleDeleteFolder = async (folderId) => {
         if (!user) return;
-
+    
         try {
+            // Step 1: Get all decks in this folder
+            const decksQuery = query(
+                collection(db, 'decks'),
+                where('folderId', '==', folderId),
+                where('ownerId', '==', user.uid)
+            );
+            const decksSnapshot = await getDocs(decksQuery);
+            
             const folderRef = doc(db, 'folders', folderId);
+            const folderSnap = await getDoc(folderRef);
+            const folderName = folderSnap.data()?.name || 'Unknown Folder';
+    
+            if (!decksSnapshot.empty) {
+                const deckCount = decksSnapshot.size;
+                const message = `Are you sure you want to delete "${folderName}"?\n\nThis folder contains ${deckCount} deck(s). All decks and their cards will be permanently deleted, including any spaced repetition progress. This action cannot be undone.`;
+                
+                if (!window.confirm(message)) return;
+    
+                // Delete all decks in the folder WITHOUT showing individual confirmations
+                for (const deckDoc of decksSnapshot.docs) {
+                    await deleteDeckWithoutConfirmation(deckDoc.id);
+                }
+            } else {
+                // Empty folder, just confirm deletion
+                if (!window.confirm(`Are you sure you want to delete "${folderName}"?`)) return;
+            }
+    
+            // Finally delete the folder
             await deleteDoc(folderRef);
+            
         } catch (error) {
             console.error('Error deleting folder:', error);
+            alert('Failed to delete folder. Please try again.');
+        }
+    };
+
+    const deleteDeckWithoutConfirmation = async (deckId) => {
+        if (!user) return;
+    
+        try {
+            // Step 1: Get deck information
+            const deckRef = doc(db, 'decks', deckId);
+            const deckSnap = await getDocs(query(collection(db, 'decks'), where('__name__', '==', deckId)));
+            
+            if (deckSnap.empty) {
+                console.error('Deck not found');
+                return;
+            }
+    
+            const deckData = deckSnap.docs[0].data();
+    
+            // Step 2: Get all cards in this deck
+            const cardsRef = collection(db, 'decks', deckId, 'cards');
+            const cardsSnapshot = await getDocs(cardsRef);
+            
+            if (cardsSnapshot.empty) {
+                // No cards, safe to delete deck directly
+                await deleteDoc(deckRef);
+                return;
+            }
+    
+            // Step 3: Delete everything using a batch operation
+            const cardIds = cardsSnapshot.docs.map(doc => doc.id);
+            
+            await runTransaction(db, async (transaction) => {
+                // Delete all card progress entries
+                for (const cardId of cardIds) {
+                    const progressQuery = query(
+                        collection(db, 'cardProgress'), 
+                        where('cardId', '==', cardId)
+                    );
+                    const progressSnapshot = await getDocs(progressQuery);
+                    
+                    progressSnapshot.docs.forEach(progressDoc => {
+                        transaction.delete(progressDoc.ref);
+                    });
+                }
+    
+                // Delete all cards
+                cardsSnapshot.docs.forEach(cardDoc => {
+                    transaction.delete(cardDoc.ref);
+                });
+    
+                // Delete the deck itself
+                transaction.delete(deckRef);
+    
+                // Update folder's deckCount (denormalized data)
+                if (deckData.folderId) {
+                    const folderRef = doc(db, 'folders', deckData.folderId);
+                    transaction.update(folderRef, {
+                        deckCount: increment(-1),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            });
+    
+            console.log('Deck deleted successfully');
+            
+        } catch (error) {
+            console.error('Error deleting deck:', error);
+            throw error; // Re-throw to let the folder deletion handle it
         }
     };
 
@@ -205,9 +306,105 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
     // Handle Delete Deck Click
 
-    const handleDeleteDeck = (deckId)=>{
-        // we will get the deckId first then go to the card
-    }
+    const handleDeleteDeck = async (deckId) => {
+        if (!user) return;
+    
+        try {
+            // Step 1: Get deck information
+            const deckRef = doc(db, 'decks', deckId);
+            const deckSnap = await getDocs(query(collection(db, 'decks'), where('__name__', '==', deckId)));
+            
+            if (deckSnap.empty) {
+                console.error('Deck not found');
+                return;
+            }
+    
+            const deckData = deckSnap.docs[0].data();
+            const deckTitle = deckData.title;
+    
+            // Step 2: Get all cards in this deck
+            const cardsRef = collection(db, 'decks', deckId, 'cards');
+            const cardsSnapshot = await getDocs(cardsRef);
+            
+            if (cardsSnapshot.empty) {
+                // No cards, safe to delete deck directly
+                await deleteDoc(deckRef);
+                return;
+            }
+    
+            // Step 3: Check for card progress
+            const cardIds = cardsSnapshot.docs.map(doc => doc.id);
+            const progressQueries = cardIds.map(cardId => 
+                query(collection(db, 'cardProgress'), where('cardId', '==', cardId))
+            );
+    
+            // Check if any progress exists
+            let hasProgress = false;
+            let progressCount = 0;
+            
+            for (const progressQuery of progressQueries) {
+                const progressSnapshot = await getDocs(progressQuery);
+                if (!progressSnapshot.empty) {
+                    hasProgress = true;
+                    progressCount += progressSnapshot.size;
+                }
+            }
+    
+            // Step 4: Show confirmation dialog
+            let shouldDelete = false;
+            
+            if (hasProgress) {
+                const message = `Are you sure you want to delete "${deckTitle}"?\n\nThis deck contains ${cardIds.length} cards with ${progressCount} spaced repetition progress entries. This action cannot be undone.`;
+                shouldDelete = window.confirm(message);
+            } else {
+                const message = `Are you sure you want to delete "${deckTitle}"?\n\nThis deck contains ${cardIds.length} cards. This action cannot be undone.`;
+                shouldDelete = window.confirm(message);
+            }
+    
+            if (!shouldDelete) return;
+    
+            // Step 5: Delete everything using a batch operation
+            await runTransaction(db, async (transaction) => {
+                // Delete all card progress entries
+                for (const cardId of cardIds) {
+                    const progressQuery = query(
+                        collection(db, 'cardProgress'), 
+                        where('cardId', '==', cardId)
+                    );
+                    const progressSnapshot = await getDocs(progressQuery);
+                    
+                    progressSnapshot.docs.forEach(progressDoc => {
+                        transaction.delete(progressDoc.ref);
+                    });
+                }
+    
+                // Delete all cards
+                cardsSnapshot.docs.forEach(cardDoc => {
+                    transaction.delete(cardDoc.ref);
+                });
+    
+                // Delete the deck itself
+                transaction.delete(deckRef);
+    
+                // Update folder's deckCount (denormalized data)
+                if (deckData.folderId) {
+                    const folderRef = doc(db, 'folders', deckData.folderId);
+                    transaction.update(folderRef, {
+                        deckCount: increment(-1),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            });
+    
+            console.log('Deck deleted successfully');
+            
+        } catch (error) {
+            console.error('Error deleting deck:', error);
+            // You might want to show a user-friendly error message here
+            alert('Failed to delete deck. Please try again.');
+        }
+    };
+    
 
 
     // Handle Quick Actions Click
@@ -404,7 +601,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                                     onClick={(e) => {
                                                         e.preventDefault();
                                                         e.stopPropagation();
-                                                        handleDeleteDeck();
+                                                        handleDeleteDeck(deck.id);
                                                     }}
                                                     className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
                                                 >

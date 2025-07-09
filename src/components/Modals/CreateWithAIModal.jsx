@@ -157,7 +157,6 @@ function CreateWithAIModal({ onClose, isOpen }) {
         });
       }
 
-      alert("Deck and flashcards saved successfully!");
       navigate(`/flashcards/${newDeckRef.id}`, {state: {
         deckId: newDeckRef.id,
         folderId: currentFolderId,

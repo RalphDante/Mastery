@@ -182,7 +182,7 @@ function FlashCardsPage() {
 
     return (
         <>  
-            <div className={`${styles.flashCardsPageContainer}`}>
+            <div className={`${styles.flashCardsPageContainer} bg-slate-900`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                     <div className="mb-4">
                         <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
