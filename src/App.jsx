@@ -64,6 +64,9 @@ import FlashCardsDemoPage from './pages/TryNowPage/FlashCardsDemo/FlashCardsDemo
 import CreateWithAIModal from './components/Modals/CreateWithAIModal.jsx';
 
 
+
+
+
 function App(){
   // Global modal state
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -154,7 +157,11 @@ function App(){
                   {/* Test Phases */}
                   <Route path='/go-premium' element={<GoPremium />} />
                   <Route path='/newhome' element={<NewHomePage />} />
+
+
               </Routes>
+
+
 
               {/* Global Modals - These will render at the root level and center properly */}
               <CreateFolderModal 

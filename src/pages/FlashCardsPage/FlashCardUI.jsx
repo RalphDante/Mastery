@@ -690,7 +690,7 @@ function FlashCardUI({
         <>  
             <div className={styles.buttonsOptionsContainer}>
                 {deckId && <EditDeckBtn deckId={deckId} />} 
-                {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />} 
+                {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
 
                 {authUser && (
                     <StudyModeSelector 
@@ -715,14 +715,14 @@ function FlashCardUI({
             
             <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={styles.flipCardFront}>
+                    <div className={`${styles.flipCardFront} bg-gray-800 border-gray-700`}>
                         {currentIndex < flashCards.length ? (
                             renderContent(currentQuestion, currentQuestionType, styles.questionImage)
                         ) : (
                             <h2>You completed it!!!</h2>
                         )}
                     </div>
-                    <div className={styles.flipCardBack}>
+                    <div className={`${styles.flipCardBack} bg-gray-800 border-gray-700`}>
                         {currentIndex < flashCards.length ? (
                             renderContent(currentAnswer, currentAnswerType, styles.questionImage)
                         ) : (

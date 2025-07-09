@@ -182,14 +182,14 @@ function FlashCardsPage() {
 
     return (
         <>  
-            <div className={`${styles.flashCardsPageContainer} bg-slate-900`}>
+            <div className={`${styles.flashCardsPageContainer}`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                     <div className="mb-4">
-                        <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
+                        {/* <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
                             <p className="text-gray-400 mb-4">{deckData.description}</p>
                         )}
-                        
+                         */}
                         {/* Show notification if auto-switched to spaced mode */}
                         {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
                             <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
@@ -216,26 +216,29 @@ function FlashCardsPage() {
                 </div>
                 
                 <div className={styles.rightSideFlashCardsPageContainer}>
-                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit mt-4">
-                        <h3 className="text-xl font-bold mb-6 text-white">📊 Study Progress</h3>
+                    <div className="bg-gray-800 border-gray-700 rounded-2xl p-6 h-fit mt-4">
+                        <h3 className="text-xl font-bold mb-1 text-white">{displayName}</h3>
+                        {showDescription && deckData?.description && deckData.description !== "No Description" && (
+                            <p className="text-gray-400 mb-4">{deckData.description}</p>
+                        )}
                         
                         <div className="space-y-4">
-                            <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Correct:</span>
                                 <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
                             </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Wrong:</span>
                                 <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                             </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Percentage:</span>
                                 <span className="font-bold text-lg text-violet-400">{percent}%</span>
                             </div>
                             
                             {/* Show due cards count in spaced mode */}
                             {studyMode === 'spaced' && dueCardsCount > 0 && (
-                                <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                     <span className="text-gray-400">Cards Due:</span>
                                     <span className="font-bold text-lg text-yellow-400">{dueCardsCount}</span>
                                 </div>
@@ -243,7 +246,7 @@ function FlashCardsPage() {
                             
                             {/* Only show total cards count for 'cramming' mode on a specific deck */}
                             {deckData?.cardCount && studyMode === 'cramming' && ( 
-                                <div className="flex justify-between items-center py-3 border-b border-gray-800">
+                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                     <span className="text-gray-400">Total Cards:</span>
                                     <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
                                 </div>
