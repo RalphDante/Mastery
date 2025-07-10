@@ -612,20 +612,20 @@ function FlashCardUI({
         } else { // 'cramming' mode buttons
             return (
                 <div className={styles.buttonsContainer}>
-                    <button className={styles.outerFlashCardButtons} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
-                        <i className="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i>
+                    <button className={`${styles.outerFlashCardButtons} border-slate-700`} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
+                        <i class="fas fa-arrow-left"></i>
                     </button>
                     <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(false)}> 
-                        <i className="fa-solid fa-xmark" id="wrongButton"></i>
+                        <i className="fa-solid fa-xmark " id="wrongButton"></i>
                     </button>
-                    <div className={styles.scoreContainer}>
+                    <div >
                         {renderScoreContainer()}
                     </div>
                     <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(true)} style={{ padding: '10px 13px' }}> 
                         <i className="fa-solid fa-check" id="checkButton"></i>
                     </button>
                     <button className={`${styles.outerFlashCardButtons}`} disabled={isDisabled} onClick={handleShuffle}>
-                        <i className="fa-solid fa-repeat"></i>
+                        <i class="fas fa-random"></i>
                     </button>
                 </div>
             );
@@ -688,20 +688,25 @@ function FlashCardUI({
 
     return (
         <>  
-            <div className={styles.buttonsOptionsContainer}>
-                {deckId && <EditDeckBtn deckId={deckId} />} 
-                {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
-
-                {authUser && (
-                    <StudyModeSelector 
-                        deckId={deckId} 
-                        db={db} 
-                        authUser={authUser} 
-                        currentMode={studyMode} 
-                        onModeChange={onStudyModeChange} 
-                        dueCardsCount={dueCardsCount}
-                    />
-                )}
+            <div className={`flex justify-between mb-1`}>
+                <div>
+                    {deckId && <EditDeckBtn deckId={deckId} />} 
+                    {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
+                </div>
+             
+                <div>
+                    {authUser && (
+                        <StudyModeSelector 
+                            deckId={deckId} 
+                            db={db} 
+                            authUser={authUser} 
+                            currentMode={studyMode} 
+                            onModeChange={onStudyModeChange} 
+                            dueCardsCount={dueCardsCount}
+                        />
+                    )}
+                </div>
+                
             </div>
 
             {/* Show cleanup notification if orphaned progress was found */}

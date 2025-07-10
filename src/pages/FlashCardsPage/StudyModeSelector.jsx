@@ -101,17 +101,17 @@ function StudyModeSelector({
     };
     
     return (
-        <div className="flex items-center gap-3 mb-4">
-            <span className="text-gray-400 text-sm">Study Mode:</span>
+        <div className="flex items-center gap-3">
+            {/* <span className="text-gray-400 text-sm">Study Mode:</span> */}
             
-            <div className="flex bg-gray-800 rounded-lg p-1">
+            <div className="flex bg-gray-700 rounded-lg p-1">
                 <button
                     onClick={() => handleModeSwitch('cramming')}
                     disabled={isLoading}
-                    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                    className={`px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
                         currentMode === 'cramming' 
                             ? 'bg-violet-600 text-white shadow-lg' 
-                            : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-600'
                     }`}
                 >
                     <i className="fa-solid fa-bolt"></i>
@@ -124,7 +124,7 @@ function StudyModeSelector({
                     className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
                         currentMode === 'spaced' 
                             ? 'bg-emerald-600 text-white shadow-lg' 
-                            : 'text-gray-400 hover:text-white hover:bg-gray-700'
+                            : 'text-gray-400 hover:text-white hover:bg-gray-600'
                     }`}
                 >
                     <i className="fa-solid fa-brain"></i>
