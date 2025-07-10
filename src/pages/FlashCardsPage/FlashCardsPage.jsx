@@ -191,13 +191,13 @@ function FlashCardsPage() {
                         )}
                          */}
                         {/* Show notification if auto-switched to spaced mode */}
-                        {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
+                        {/* {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
                             <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
                                 <p className="text-blue-200 text-sm">
                                     🎯 Automatically switched to spaced repetition - {dueCardsCount} cards due for review!
                                 </p>
                             </div>
-                        )}
+                        )} */}
                     </div>
 
                     <FlashCardUI 
@@ -216,13 +216,38 @@ function FlashCardsPage() {
                 </div>
                 
                 <div className={styles.rightSideFlashCardsPageContainer}>
-                    <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 h-fit mt-4">
-                        <h3 className="text-xl font-bold mb-1 text-white">{displayName}</h3>
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit mt-4">
+                        {/* Show notification if auto-switched to spaced mode */}
+
+                        {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
+                            <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
+                                <p className="text-blue-200 text-sm">
+                                    🎯 Automatically switched to spaced repetition - {dueCardsCount} cards due for review!
+                                </p>
+                            </div>
+                        )}
+                        <div className="text-2xl font-bold mb-1 text-purple-400">{displayName}</div>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
                             <p className="text-gray-400 mb-4">{deckData.description}</p>
                         )}
                         
                         <div className="space-y-4">
+                            {/* Only show total cards count for 'cramming' mode on a specific deck */}
+                            {deckData?.cardCount && studyMode === 'cramming' && ( 
+                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                    <span className="text-gray-400">Total Cards:</span>
+                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
+                                </div>
+                            )}
+
+                            {/* Show due cards count in spaced mode */}
+                            {studyMode === 'spaced' && dueCardsCount > 0 && (
+                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                    <span className="text-gray-400">Cards Due:</span>
+                                    <span className="font-bold text-lg text-yellow-400">{dueCardsCount}</span>
+                                </div>
+                            )}
+
                             <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Correct:</span>
                                 <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
@@ -232,25 +257,13 @@ function FlashCardsPage() {
                                 <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                             </div>
                             <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Percentage:</span>
+                                <span className="text-gray-400">Accuracy:</span>
                                 <span className="font-bold text-lg text-violet-400">{percent}%</span>
                             </div>
                             
-                            {/* Show due cards count in spaced mode */}
-                            {studyMode === 'spaced' && dueCardsCount > 0 && (
-                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                    <span className="text-gray-400">Cards Due:</span>
-                                    <span className="font-bold text-lg text-yellow-400">{dueCardsCount}</span>
-                                </div>
-                            )}
                             
-                            {/* Only show total cards count for 'cramming' mode on a specific deck */}
-                            {deckData?.cardCount && studyMode === 'cramming' && ( 
-                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                    <span className="text-gray-400">Total Cards:</span>
-                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
-                                </div>
-                            )}
+                            
+                            
                         </div>
 
                         {/* Progress Bar */}

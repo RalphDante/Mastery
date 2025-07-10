@@ -554,21 +554,23 @@ function FlashCardUI({
             const progressThroughOriginal = Math.min(currentIndex + 1, originalDeckSize);
             
             return (
-                <div className={styles.scoreContainer}>
+                <div className={`${styles.scoreContainer}`}>
                     <div style={{ margin: '0px', textAlign: 'center' }}>
                         {phaseOneComplete ? (
                             <>
-                                <span>Review Phase</span>
+                                <span className="text-white/70 text-sm">Review Phase</span>
                                 <div style={{ 
                                     fontSize: '0.7rem', 
                                     color: '#F59E0B', 
-                                    marginTop: '1px'
+                                    marginTop: '0.5px'
                                 }}>
                                     {remainingCards} left
                                 </div>
                             </>
                         ) : (
-                            <h2>{progressThroughOriginal}/{originalDeckSize}</h2>
+                            <div className="text-center text-white/70 text-sm my-3">
+                                Card {progressThroughOriginal} of {originalDeckSize}
+                            </div>
                         )}
                     </div>
                 </div>
@@ -577,12 +579,12 @@ function FlashCardUI({
             // Spaced mode - simpler display
             return (
                 <div className={styles.scoreContainer}>
-                    <h2 style={{ margin: '0px' }}>
+                    <div className="text-center text-white/70 text-sm my-3">
                         {currentIndex < flashCards.length ? 
-                            `${currentIndex + 1}/${flashCards.length}` : 
-                            `${flashCards.length}/${flashCards.length}`
+                            `Card ${currentIndex + 1} of ${flashCards.length}` : 
+                            `Card ${flashCards.length} of ${flashCards.length}`
                         }
-                    </h2>
+                    </div>
                 </div>
             );
         }
@@ -630,22 +632,69 @@ function FlashCardUI({
             );
         } else { // 'cramming' mode buttons
             return (
-                <div className={styles.buttonsContainer}>
-                    <button className={`${styles.outerFlashCardButtons} border-slate-700`} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
+                <div className={`${styles.buttonsContainer} gap-4`}>
+                    {/* <button className={`${styles.outerFlashCardButtons} border-slate-700`} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
                         <i class="fas fa-arrow-left"></i>
+                    </button> */}
+                    <button 
+                        className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                        disabled={isDisabled || currentIndex === 0} 
+                        onClick={handleGoBack}
+                    >
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        Previous Card
+                        </div>
+                        ←
                     </button>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(false)}> 
-                        <i className="fa-solid fa-xmark " id="wrongButton"></i>
-                    </button>
-                    <div >
-                        {renderScoreContainer()}
+
+
+                    <div className="flex gap-2">
+                        <button 
+                            className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
+                            disabled={isDisabled}
+                            onClick={()=>{handleCrammingResponse(false)}}
+                        >
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Mark as Incorrect
+                            </div>
+                            ✕ Incorrect
+                        </button>
+                        {/* <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(false)}> 
+                            <i className="fa-solid fa-xmark " id="wrongButton"></i>
+                        </button> */}
+                    
+
+
+                        {/* <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(true)} style={{ padding: '10px 13px' }}> 
+                            <i className="fa-solid fa-check" id="checkButton"></i>
+                        </button> */}
+                        <button 
+                            className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
+                            disabled={isDisabled}
+                            onClick={()=>{handleCrammingResponse(true)}}
+                        >
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Mark as Correct
+                            </div>
+                            ✓ Correct
+                        </button>
                     </div>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(true)} style={{ padding: '10px 13px' }}> 
-                        <i className="fa-solid fa-check" id="checkButton"></i>
-                    </button>
+                    
+                        <button 
+                            className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                            disabled={isDisabled} 
+                            onClick={handleShuffle}
+                        >
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Shuffle Deck
+                            </div>
+                            🔀
+                        </button>
+                    
+{/*                     
                     <button className={`${styles.outerFlashCardButtons}`} disabled={isDisabled} onClick={handleShuffle}>
                         <i class="fas fa-random"></i>
-                    </button>
+                    </button> */}
                 </div>
             );
         }
@@ -728,6 +777,10 @@ function FlashCardUI({
                 
             </div>
 
+            <div >
+                {renderScoreContainer()}
+            </div>
+
             {/* Show cleanup notification if orphaned progress was found */}
             {orphanedProgressCount > 0 && (
                 <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
@@ -739,14 +792,14 @@ function FlashCardUI({
             
             <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={`${styles.flipCardFront} bg-gray-800 border-gray-700`}>
+                    <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
                         {currentIndex < flashCards.length ? (
                             renderContent(currentQuestion, currentQuestionType, styles.questionImage)
                         ) : (
                             <h2>You completed it!!!</h2>
                         )}
                     </div>
-                    <div className={`${styles.flipCardBack} bg-gray-800 border-gray-700`}>
+                    <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
                         {currentIndex < flashCards.length ? (
                             renderContent(currentAnswer, currentAnswerType, styles.questionImage)
                         ) : (
