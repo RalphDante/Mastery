@@ -594,18 +594,37 @@ function FlashCardUI({
 
         if (studyMode === 'spaced') {
             return (
-                <div className={styles.buttonsContainer}>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(0)}>
-                        Again <br/> {getApproximateNextInterval(0)} 
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
+                    <button
+                        className="w-full py-2 px-4 bg-red-600 text-white border-2 border-red-600 rounded-full font-semibold shadow-sm hover:bg-red-700 hover:border-red-700 transition-all duration-150 disabled:opacity-50"
+                        disabled={isDisabled}
+                        onClick={() => handleSpacedCardRating(0)}
+                    >
+                        Again
                     </button>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-orange-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(3)}>
-                        Hard <br/> {getApproximateNextInterval(3)}
+
+                    <button
+                        className="w-full py-2 px-4 bg-orange-600 text-white border-2 border-orange-600 rounded-full font-semibold shadow-sm hover:bg-orange-700 hover:border-orange-700 transition-all duration-150 disabled:opacity-50"
+                        disabled={isDisabled}
+                        onClick={() => handleSpacedCardRating(3)}
+                    >
+                        Hard
                     </button>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-blue-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(4)}>
-                        Good <br/> {getApproximateNextInterval(4)}
+
+                    <button
+                        className="w-full py-2 px-4 bg-blue-600 text-white border-2 border-blue-600 rounded-full font-semibold shadow-sm hover:bg-blue-700 hover:border-blue-700 transition-all duration-150 disabled:opacity-50"
+                        disabled={isDisabled}
+                        onClick={() => handleSpacedCardRating(4)}
+                    >
+                        Good
                     </button>
-                    <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleSpacedCardRating(5)}>
-                        Easy <br/> {getApproximateNextInterval(5)}
+
+                    <button
+                        className="w-full py-2 px-4 bg-green-600 text-white border-2 border-green-600 rounded-full font-semibold shadow-sm hover:bg-green-700 hover:border-green-700 transition-all duration-150 disabled:opacity-50"
+                        disabled={isDisabled}
+                        onClick={() => handleSpacedCardRating(5)}
+                    >
+                        Easy
                     </button>
                 </div>
             );

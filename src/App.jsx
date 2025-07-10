@@ -39,10 +39,7 @@ import DisplayFlashCardsPage from './pages/CreateDeckPage/DisplayFlashCards.jsx'
 //TryNowPage
 import MasteryLanding from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
-//TestingPages
-import NewHomePage from './pages/HomePage/NewHomePage.jsx';
 
-import GoPremium from './pages/GoPremium/GoPremium.jsx';
 
 
 import SignOutBtn from './components/SignOutBtn/SignOutBtn.jsx'
@@ -62,6 +59,12 @@ import { onAuthStateChanged } from 'firebase/auth';
 // Try Now page
 import FlashCardsDemoPage from './pages/TryNowPage/FlashCardsDemo/FlashCardsDemoPage.jsx';
 import CreateWithAIModal from './components/Modals/CreateWithAIModal.jsx';
+
+//TestingPages
+import NewHomePage from './pages/HomePage/NewHomePage.jsx';
+
+import GoPremium from './pages/GoPremium/GoPremium.jsx';
+import NewFlashCardUI from './pages/FlashCardsPage/NewFlashCardUI.jsx';
 
 
 
@@ -157,6 +160,8 @@ function App(){
                   {/* Test Phases */}
                   <Route path='/go-premium' element={<GoPremium />} />
                   <Route path='/newhome' element={<NewHomePage />} />
+                  <Route path='/newflashcardui' element={<NewFlashCardUI />} />
+
 
 
               </Routes>
