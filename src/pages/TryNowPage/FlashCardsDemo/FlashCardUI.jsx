@@ -24,6 +24,24 @@ const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+// Sign-in card component
+const SignInCard = ({ handleSaveDeck }) => (
+    <div className="bg-gradient-to-r from-emerald-500/20 to-emerald-600/20 border border-emerald-500/30 p-6 rounded-xl mb-8 relative z-10">
+        <h3 className="text-emerald-400 text-xl font-semibold mb-2">
+            Don't lose your progress!
+        </h3>
+        <p className="text-white/90 mb-4">
+            Sign in to save your study session and track your learning over time.
+        </p>
+        <button 
+            onClick={handleSaveDeck}
+            className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+        >
+            Sign In to Save Cards
+        </button>
+    </div>
+);
+
 function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck}){
 
     const location = useLocation();
@@ -42,13 +60,18 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     const [showAnswer, setShowAnswer] = useState(false);
     const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false);
-
+    const [showEmphasisToSignUp, setShowEmphasisToSignUp] = useState(false);
+ 
     // Quick Study Mode state variables
     const [isReviewMode, setIsReviewMode] = useState(false);
     const [wrongCards, setWrongCards] = useState([]);
     const [reviewAnswers, setReviewAnswers] = useState([]);
     const [reviewIndex, setReviewIndex] = useState(0);
     const [showReviewComplete, setShowReviewComplete] = useState(false);
+
+    const [studySessionCompleted, setStudySessionCompleted] = useState(false); // New state to manage overall completion
+
+    const [hasWrongAnswer, setHasWrongAnswer] = useState(false);
 
     useEffect(() => {
         if (location.state?.flashcards) {
@@ -332,6 +355,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     }, [fetchFlashCards]);
 
     const handleShuffle = ()=>{
+        setShowEmphasisToSignUp(false);
         setProcessing(false)
         let flashCardsCopy = [...flashCards];
         let shuffledFlashCards = [];
@@ -360,6 +384,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     useEffect(() => {
         if (redoDeck) {
+            setShowEmphasisToSignUp(false)
             handleShuffle();
             setRedoDeck(false);
         }
@@ -367,6 +392,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     // Start Quick Study Mode
     const startQuickStudy = () => {
+        setHasWrongAnswer(false);
         // Filter out the cards that were answered incorrectly
         const incorrectCards = flashCards.filter((card, index) => answers[index] === false);
         
@@ -442,6 +468,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     };
     
     const handleDontKnow = () => {
+        setHasWrongAnswer(true);
         setProcessing(true);
    
         if (currentIndex < flashCards.length) {
@@ -458,6 +485,10 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     };
 
     const handleShowAnswer = () => {
+        // Don't allow flipping if we're finished and not authenticated
+        if (isFinished && !authUser) {
+            return;
+        }
         setShowAnswer(!showAnswer);
     };
 
@@ -534,6 +565,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     const cardContent = getCurrentCardContent();
 
+    // Check if we're in a finished state
+    const isFinished = cardContent.isFinished;
+    const isMainModeFinished = !isReviewMode && currentIndex >= flashCards.length;
+    const isReviewModeFinished = isReviewMode && reviewIndex >= wrongCards.length;
+
     useEffect(() => {
         const finishedInitialRun = !isReviewMode && currentIndex >= flashCards.length;
         const hasIncorrectAnswers = answers.some(answer => answer === false);
@@ -557,35 +593,76 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         }
     }, [flashCards, currentIndex, reviewIndex, isReviewMode]);
 
+    const currentMode = "cramming"
+
+    // Helper function to get content for finished state
+    const getFinishedContent = () => {
+        if (!authUser && !hasWrongAnswer) {
+
+            return <SignInCard handleSaveDeck={handleSaveDeck} />;
+        } else {
+            return (
+                <h2>
+                    {isReviewMode ? "Review Complete!" : "You completed it!!!"}
+                </h2>
+            );
+        }
+    };
+
+    const giveEmphasisOnSignUp = ()=>{
+        
+    }
+    useEffect(() => {
+        if (isFinished && !authUser && !hasWrongAnswer) {
+            setShowEmphasisToSignUp(true);
+        }
+    }, [isFinished, authUser, hasWrongAnswer]);
+
     return (
         <>
-            <div className="flex justify-between mt-4 mb-1">
+            <div className="flex justify-between mb-1">
                 <button
                     onClick={handleSaveDeck} 
-                    className="px-4 py-2 bg-green-600 rounded hover:bg-green-500"
+                    className={showEmphasisToSignUp ? `px-4 py-2  bg-green-500 rounded hover:bg-green-700` : `px-4 py-2  bg-green-700 rounded hover:bg-green-700` }
                     disabled={authLoading}
                 >
-                    {authLoading ? 'Loading...' : authUser ? 'Save Deck' : 'Sign In & Save'}
+                    {authLoading ? 'Loading...' : authUser ? 'Save Deck' : 'Save Progress'}
+                </button>
+
+                <div className="flex bg-gray-700 rounded-lg p-1">
+                <button
+                    // onClick={() => handleModeSwitch('cramming')}
+                    // disabled={isLoading}
+                    className={`px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                        currentMode === 'cramming' 
+                            ? 'bg-violet-800 text-white shadow-lg' 
+                            : 'text-gray-400 hover:text-white hover:bg-gray-600'
+                    }`}
+                >
+                    <span className="opacity-60">
+                    <i className="fa-solid fa-bolt"></i>
+                        Quick Study
+                    </span>
                 </button>
                 
-                {/* Review Mode Indicator */}
-                {isReviewMode && (
-                    <div className="px-4 py-2 bg-blue-600 text-white rounded">
-                        Quick Study Mode - Reviewing Wrong Answers
+                <button
+                    onClick={() => handleModeSwitch('spaced')}
+                    className={`group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                        currentMode === 'spaced' 
+                            ? 'bg-emerald-600 text-white shadow-lg' 
+                            : 'bg-gray-600 text-gray-500 hover:text-white hover:bg-gray-600'
+                    }`}
+                >
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                        Sign In To Use This
                     </div>
-                )}
-            </div>
 
-            {/* Progress indicator */}
-            {/* <div className="text-center mb-4">
-                <div className="text-white/60 text-sm">
-                    {isReviewMode ? (
-                        <span>Review: {Math.min(reviewIndex + 1, wrongCards.length)}/{wrongCards.length}</span>
-                    ) : (
-                        <span>Card {Math.min(currentIndex + 1, flashCards.length)} of {flashCards.length}</span>
-                    )}
-                </div>
-            </div> */}
+                    <i className="fa-solid fa-brain"></i>
+                    Smart Review
+                </button>
+            </div>
+            </div>
 
             <div className={`${styles.scoreContainer}`}>
                 <div style={{ margin: '0px', textAlign: 'center' }}>
@@ -608,57 +685,32 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 </div>
             </div>
 
-            {/* Review Complete Message */}
-            {/* {showReviewComplete && (
-                <div className="text-center my-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
-                    <h3 className="text-green-400 font-medium mb-2">Review Complete!</h3>
-                    <p className="text-white/80">
-                        You've finished reviewing your incorrect answers. Great job studying!
-                    </p>
-                    <button 
-                        onClick={() => {
-                            setShowReviewComplete(false);
-                            setIsReviewMode(false);
-                        }}
-                        className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
-                    >
-                        Continue
-                    </button>
-                </div>
-            )} */}
-
             <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
                     <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
-                        {cardContent.question ? (
+                        {isFinished ? (
+                            getFinishedContent()
+                        ) : cardContent.question ? (
                             cardContent.question.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={cardContent.question} alt="question" className={styles.questionImage} />
                             ) : (
-                                <h2>
-                                    {cardContent.isFinished ? 
-                                        (isReviewMode ? "Review Complete!" : "You completed it!!!") : 
-                                        cardContent.question
-                                    }
-                                </h2>   
+                                <h2>{cardContent.question}</h2>   
                             )
                         ) : (
-                            <h2>{isReviewMode ? "Review Complete!" : "YOU FINISHED IT!"}</h2>
+                            <h2>Loading...</h2>
                         )}
                     </div>
                     <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
-                        {cardContent.answer ? (
+                        {isFinished ? (
+                            getFinishedContent()
+                        ) : cardContent.answer ? (
                             cardContent.answer.startsWith('https://firebasestorage.googleapis.com') ? (
                                 <img src={cardContent.answer} alt="answer" className={styles.questionImage} />
                             ) : (
-                                <h2>
-                                    {cardContent.isFinished ? 
-                                        (isReviewMode ? "Review Complete!" : "You completed it!!!") : 
-                                        cardContent.answer
-                                    }
-                                </h2>
+                                <h2>{cardContent.answer}</h2>
                             )
                         ) : (
-                            <h2>{isReviewMode ? "Review Complete!" : "YOU FINISHED IT!"}</h2>
+                            <h2>Loading...</h2>
                         )}
                     </div>
                 </div>
@@ -678,8 +730,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
                 <div className="flex gap-2">
                     <button 
-                        className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
-                        disabled={processing || cardContent.isFinished}
+                        className={showEmphasisToSignUp ? 
+                            "group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 opacity-40 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2" :
+                            "group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2" 
+                        }
+                        disabled={processing || isFinished}
                         onClick={isReviewMode ? handleReviewDontKnow : handleDontKnow}
                     >
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -690,7 +745,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
                     <button 
                         className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
-                        disabled={processing || cardContent.isFinished}
+                        disabled={processing || isFinished}
                         onClick={isReviewMode ? handleReviewKnow : handleKnow}
                     >
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -706,13 +761,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     onClick={handleShuffle}
                 >
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        'Shuffle Deck'
+                        Shuffle Deck
                     </div>
                     🔀
                 </button>
             </div>
-
-            
         </>
     );
 }

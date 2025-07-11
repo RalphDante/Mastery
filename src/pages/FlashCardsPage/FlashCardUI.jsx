@@ -757,7 +757,7 @@ function FlashCardUI({
     return (
         <>  
             {/* Buttons */}
-            <div className={`flex justify-between mt-4 mb-1`}>
+            <div className={`flex justify-between mb-1`}>
                 <div>
                     {deckId && <EditDeckBtn deckId={deckId} />} 
                     {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}

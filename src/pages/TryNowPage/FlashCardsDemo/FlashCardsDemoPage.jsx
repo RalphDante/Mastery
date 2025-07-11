@@ -36,10 +36,10 @@ function FlashCardsDemoPage() {
 
     return (
         <>  
-            <div className={`${styles.flashCardsPageContainer}`}>
+            <div className={`${styles.flashCardsPageContainer} mt-10`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                     {/* <h1>Display Flash Cards</h1> */}
-                    {/* {fileName ?  <h1 className="text-3xl font-bold text-white mb-2 break-words">{fileName}</h1> : <h1 className="text-3xl font-bold text-white mb-2">No File Name</h1>} */}
+                    {/* {fileName ?  <h1 className="text-3xl font-bold tex10-white mb-2 break-words">{fileName}</h1> : <h1 className="text-3xl font-bold text-white mb-2">No File Name</h1>} */}
 
                     
 
@@ -61,7 +61,7 @@ function FlashCardsDemoPage() {
                     {/* <h1>Correct: {knowAnswer}</h1>
                     <h1>Wrong: {dontKnowAnswer}</h1>
                     <h1>Percentage: {percent}%</h1> */}
-                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit mt-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
                     <h3 className="text-xl font-bold mb-6 text-white">📊 Study Progress</h3>
                     
                     <div className="space-y-4">
@@ -74,7 +74,7 @@ function FlashCardsDemoPage() {
                         <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                         </div>
                         <div className="flex justify-between items-center py-3 border-b border-gray-800">
-                        <span className="text-gray-400">Percentage:</span>
+                        <span className="text-gray-400">Accuracy:</span>
                         <span className="font-bold text-lg text-violet-400">{percent}%</span>
                         </div>
                     </div>

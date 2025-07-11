@@ -1,5 +1,7 @@
+import { ArrowLeft } from 'lucide-react';
+
 import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs } from "firebase/firestore"; 
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { app, auth } from '../../api/firebase';
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState, useCallback } from "react"; 
@@ -10,6 +12,7 @@ import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
 
 function FlashCardsPage() {
+    const navigate = useNavigate();
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
     const [autoSwitchedToSpaced, setAutoSwitchedToSpaced] = useState(false); // Track if we auto-switched
@@ -182,8 +185,19 @@ function FlashCardsPage() {
 
     return (
         <>  
-            <div className={`${styles.flashCardsPageContainer}`}>
+        
+            <div className={`${styles.flashCardsPageContainer} mt-16`}>
+            <button
+            onClick={() => navigate('/')}
+            className="absolute top-4 left-4 sm:top-5 sm:left-6 md:top-6 md:left-12 flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+
+        >
+            <ArrowLeft className="w-4 h-4" />
+        </button>
+           
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
+                
+
                     <div className="">
                         {/* <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
@@ -216,7 +230,7 @@ function FlashCardsPage() {
                 </div>
                 
                 <div className={styles.rightSideFlashCardsPageContainer}>
-                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit mt-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
                         {/* Show notification if auto-switched to spaced mode */}
 
                         {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
