@@ -184,7 +184,7 @@ function FlashCardsPage() {
         <>  
             <div className={`${styles.flashCardsPageContainer}`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                    <div className="mb-4">
+                    <div className="">
                         {/* <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
                             <p className="text-gray-400 mb-4">{deckData.description}</p>

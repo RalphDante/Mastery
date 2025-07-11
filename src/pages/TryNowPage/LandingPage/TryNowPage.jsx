@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 import FolderModalStep1 from './FolderModalStep1';
 import SignUpBtn from './SignUpBtn';
+import CreateWithAIDemoModal from './CreateWithAIDemoModal';
 
 
 
@@ -95,10 +96,17 @@ const MasteryLanding = () => {
   return (
 
     <div className="min-h-screen bg-gradient-to-br bg-black text-white overflow-hidden">
-      {showModal && (
+      {/* {showModal && (
         <FolderModalStep1
           isOpen={showModal}
           onClose={() => setShowModal(false)}
+        />
+      )} */}
+
+      {showModal && (
+        <CreateWithAIDemoModal 
+          onClose = {()=>setShowModal(false)}
+          isOpen = {showModal}
         />
       )}
       

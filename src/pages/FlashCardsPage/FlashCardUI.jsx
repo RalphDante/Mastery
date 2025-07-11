@@ -651,7 +651,7 @@ function FlashCardUI({
                     <div className="flex gap-2">
                         <button 
                             className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
-                            disabled={isDisabled}
+                            // disabled={isDisabled}
                             onClick={()=>{handleCrammingResponse(false)}}
                         >
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -756,7 +756,8 @@ function FlashCardUI({
 
     return (
         <>  
-            <div className={`flex justify-between mb-1`}>
+            {/* Buttons */}
+            <div className={`flex justify-between mt-4 mb-1`}>
                 <div>
                     {deckId && <EditDeckBtn deckId={deckId} />} 
                     {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}

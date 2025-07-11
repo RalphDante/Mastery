@@ -84,10 +84,10 @@
     transition: background-color 1s ease-in-out;
     transition: border-color 0.3s ease;
 }
-.flipCardFront:hover {
+/* .flipCardFront:hover {
     background-color: rgb(31 41 55 / var(--tw-bg-opacity, 1));
     border-color: rgb(124 58 237 / var(--tw-border-opacity, 1));
-}
+} */
 
 .flipCardBack {
     background-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));

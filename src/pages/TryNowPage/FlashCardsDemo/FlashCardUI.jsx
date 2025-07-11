@@ -43,6 +43,13 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false);
 
+    // Quick Study Mode state variables
+    const [isReviewMode, setIsReviewMode] = useState(false);
+    const [wrongCards, setWrongCards] = useState([]);
+    const [reviewAnswers, setReviewAnswers] = useState([]);
+    const [reviewIndex, setReviewIndex] = useState(0);
+    const [showReviewComplete, setShowReviewComplete] = useState(false);
+
     useEffect(() => {
         if (location.state?.flashcards) {
           setFlashCards(location.state.flashcards);
@@ -339,11 +346,16 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         setCurrentIndex(0)
         knowAnswer(0);
         dontKnowAnswer(0);
-
         percent(0);
         
         setAnswers([]);
-        percent(0);
+        
+        // Reset review mode
+        setIsReviewMode(false);
+        setWrongCards([]);
+        setReviewAnswers([]);
+        setReviewIndex(0);
+        setShowReviewComplete(false);
     }
 
     useEffect(() => {
@@ -353,84 +365,202 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         }
     }, [redoDeck, setRedoDeck]);
 
-    const handleKnow = ()=>{
-        setProcessing(true)
-
-        if(currentIndex < flashCards.length){
-            setShowAnswer(false)
-            setTimeout(()=>{
-                setCurrentIndex(currentIndex+1)
-                knowAnswer(prev => {
-                    let newKnowAnswer =  prev + 1;
-                    percent(Math.floor((newKnowAnswer/flashCards.length)*100));
-                    return newKnowAnswer;
-                })
-                setAnswers([...answers, true])
-                setProcessing(false)
-            },  200)             
-        } else {
-            setProcessing(false)
+    // Start Quick Study Mode
+    const startQuickStudy = () => {
+        // Filter out the cards that were answered incorrectly
+        const incorrectCards = flashCards.filter((card, index) => answers[index] === false);
+        
+        if (incorrectCards.length === 0) {
+            alert('Great job! You got all cards correct. No need for review!');
+            return;
         }
-    }
+
+        setWrongCards(incorrectCards);
+        setIsReviewMode(true);
+        setReviewIndex(0);
+        setReviewAnswers([]);
+        setShowAnswer(false);
+        setShowReviewComplete(false);
+    };
+
+    // Handle review mode responses (these don't increment main counters)
+    const handleReviewKnow = () => {
+        setProcessing(true);
+        
+        if (reviewIndex < wrongCards.length) {
+            setShowAnswer(false);
+            setTimeout(() => {
+                setWrongCards(prev => prev.filter((_, idx) => idx !== reviewIndex));
+                setReviewAnswers(prev => [...prev, true]);
     
-    const handleDontKnow = ()=>{
-        setProcessing(true)
-   
-        if(currentIndex < flashCards.length){
-            setShowAnswer(false)
-            setTimeout(()=>{
-                setCurrentIndex(currentIndex+1)
-                dontKnowAnswer(prev => prev+1)
-                setAnswers([...answers, false])
-                setProcessing(false)
-            },200)
+                // Don't increment if we removed the last card
+                setReviewIndex(prev => Math.max(0, Math.min(prev, wrongCards.length - 2)));
+                setProcessing(false);
+            }, 200);
         } else {
             setProcessing(false);
         }
-    }
-
-    const handleShowAnswer = ()=>{
-        setShowAnswer(!showAnswer);
-    }
-
-    const handleGoBack = ()=>{
-        setProcessing(true)
-        if(currentIndex > 0){
-            setShowAnswer(false)
-            setTimeout(()=>{
-                const lastAnswer = answers[currentIndex-1]
-                if(lastAnswer){
-                    knowAnswer(knowAnswer=> {
-                        let newKnowAnswer = knowAnswer - 1;
-                        percent(Math.floor((newKnowAnswer/flashCards.length)*100));
-                        return newKnowAnswer;
-                    })
-                }else{
-                    dontKnowAnswer(dontKnowAnswer => {
-                        let newDontKnowAnswer = dontKnowAnswer - 1;
-                        return newDontKnowAnswer;
-                    })
-                }
-                setCurrentIndex(currentIndex-1)
-                setAnswers(answers.slice(0, -1));
-                setProcessing(false)
-            },200)
+    };
+    const handleReviewDontKnow = () => {
+        setProcessing(true);
+        
+        if (reviewIndex < wrongCards.length) {
+            setShowAnswer(false);
+            setTimeout(() => {
+                const currentCard = wrongCards[reviewIndex];
+                // Re-add the card to the end of the deck
+                setWrongCards(prev => [...prev.slice(0, reviewIndex), ...prev.slice(reviewIndex + 1), currentCard]);
+                setReviewAnswers(prev => [...prev, false]);
+    
+                // Don't increment reviewIndex, just move to the next one in the updated list
+                setProcessing(false);
+            }, 200);
         } else {
-            setProcessing(false)
+            setProcessing(false);
         }
-    }
+    };
 
-    useEffect(()=>{
-        if(flashCards && flashCards.length > 0){
-            setCurrentQuestion(flashCards[currentIndex]?.question);
-            setCurrentAnswer(flashCards[currentIndex]?.answer);
+    // Handle main mode responses (these increment counters)
+    const handleKnow = () => {
+        setProcessing(true);
+
+        if (currentIndex < flashCards.length) {
+            setShowAnswer(false);
+            setTimeout(() => {
+                setCurrentIndex(currentIndex + 1);
+                knowAnswer(prev => {
+                    let newKnowAnswer = prev + 1;
+                    percent(Math.floor((newKnowAnswer / flashCards.length) * 100));
+                    return newKnowAnswer;
+                });
+                setAnswers([...answers, true]);
+                setProcessing(false);
+            }, 200);
+        } else {
+            setProcessing(false);
         }
-    },[flashCards, currentIndex])
+    };
+    
+    const handleDontKnow = () => {
+        setProcessing(true);
+   
+        if (currentIndex < flashCards.length) {
+            setShowAnswer(false);
+            setTimeout(() => {
+                setCurrentIndex(currentIndex + 1);
+                dontKnowAnswer(prev => prev + 1);
+                setAnswers([...answers, false]);
+                setProcessing(false);
+            }, 200);
+        } else {
+            setProcessing(false);
+        }
+    };
 
-    return(
+    const handleShowAnswer = () => {
+        setShowAnswer(!showAnswer);
+    };
+
+    const handleGoBack = () => {
+        setProcessing(true);
+        
+        if (isReviewMode) {
+            // Review mode go back
+            if (reviewIndex > 0) {
+                setShowAnswer(false);
+                setTimeout(() => {
+                    setReviewIndex(reviewIndex - 1);
+                    setReviewAnswers(reviewAnswers.slice(0, -1));
+                    setProcessing(false);
+                }, 200);
+            } else {
+                setProcessing(false);
+            }
+        } else {
+            // Main mode go back
+            if (currentIndex > 0) {
+                setShowAnswer(false);
+                setTimeout(() => {
+                    const lastAnswer = answers[currentIndex - 1];
+                    if (lastAnswer) {
+                        knowAnswer(knowAnswer => {
+                            let newKnowAnswer = knowAnswer - 1;
+                            percent(Math.floor((newKnowAnswer / flashCards.length) * 100));
+                            return newKnowAnswer;
+                        });
+                    } else {
+                        dontKnowAnswer(dontKnowAnswer => {
+                            let newDontKnowAnswer = dontKnowAnswer - 1;
+                            return newDontKnowAnswer;
+                        });
+                    }
+                    setCurrentIndex(currentIndex - 1);
+                    setAnswers(answers.slice(0, -1));
+                    setProcessing(false);
+                }, 200);
+            } else {
+                setProcessing(false);
+            }
+        }
+    };
+
+    // Exit review mode
+    const exitReviewMode = () => {
+        setIsReviewMode(false);
+        setShowReviewComplete(true);
+    };
+
+    // Get current card content based on mode
+    const getCurrentCardContent = () => {
+        if (isReviewMode) {
+            const card = wrongCards[reviewIndex];
+            return {
+                question: card?.question,
+                answer: card?.answer,
+                currentIndex: reviewIndex,
+                totalCards: wrongCards.length,
+                isFinished: reviewIndex >= wrongCards.length
+            };
+        } else {
+            return {
+                question: flashCards[currentIndex]?.question,
+                answer: flashCards[currentIndex]?.answer,
+                currentIndex: currentIndex,
+                totalCards: flashCards.length,
+                isFinished: currentIndex >= flashCards.length
+            };
+        }
+    };
+
+    const cardContent = getCurrentCardContent();
+
+    useEffect(() => {
+        const finishedInitialRun = !isReviewMode && currentIndex >= flashCards.length;
+        const hasIncorrectAnswers = answers.some(answer => answer === false);
+    
+        if (finishedInitialRun && hasIncorrectAnswers) {
+            startQuickStudy();
+        }
+    }, [currentIndex, isReviewMode, answers]);
+
+    // Check if review is complete
+    useEffect(() => {
+        if (isReviewMode && reviewIndex >= wrongCards.length) {
+            setShowReviewComplete(true);
+        }
+    }, [isReviewMode, reviewIndex, wrongCards.length]);
+
+    useEffect(() => {
+        if (flashCards && flashCards.length > 0) {
+            setCurrentQuestion(cardContent.question);
+            setCurrentAnswer(cardContent.answer);
+        }
+    }, [flashCards, currentIndex, reviewIndex, isReviewMode]);
+
+    return (
         <>
-            <div className={styles.buttonsOptionsContainer}>
-                <button 
+            <div className="flex justify-between mt-4 mb-1">
+                <button
                     onClick={handleSaveDeck} 
                     className="px-4 py-2 bg-green-600 rounded hover:bg-green-500"
                     disabled={authLoading}
@@ -438,48 +568,153 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     {authLoading ? 'Loading...' : authUser ? 'Save Deck' : 'Sign In & Save'}
                 </button>
                 
-                {/* Debug info - remove this in production */}
-                
-                {/* <div style={{fontSize: '12px', marginTop: '5px', color: '#666'}}>
-                    Debug: {debugInfo}
-                    <br />
-                    User: {authUser ? authUser.email : 'Not signed in'}
-                    <br />
-                    Pending: {pendingSave ? 'Yes' : 'No'}
-                </div> */}
-            </div>
-            <div className={`${styles.flashCardTextContainer} `} onClick={handleShowAnswer}>
-                <div className={`${styles.flipCardInner} ${showAnswer? styles.flipped : ''} `}>
-                    <div className={styles.flipCardFront}>
-                        {currentQuestion ? (currentQuestion.startsWith('https://firebasestorage.googleapis.com') ? (
-                            <img src={currentQuestion} alt="question" className={styles.questionImage}/>
-                        ) : (
-                            <h2>{currentIndex != flashCards.length? currentQuestion: "You completed it!!!"}</h2>
-                        )) : <h2>YOU FINISHED IT!</h2>}
+                {/* Review Mode Indicator */}
+                {isReviewMode && (
+                    <div className="px-4 py-2 bg-blue-600 text-white rounded">
+                        Quick Study Mode - Reviewing Wrong Answers
                     </div>
-                    <div className={styles.flipCardBack}>
-                        {currentAnswer ? currentAnswer.startsWith('https://firebasestorage.googleapis.com') ? (
-                            <img src={currentAnswer} alt="answer" className={styles.questionImage} />
+                )}
+            </div>
+
+            {/* Progress indicator */}
+            {/* <div className="text-center mb-4">
+                <div className="text-white/60 text-sm">
+                    {isReviewMode ? (
+                        <span>Review: {Math.min(reviewIndex + 1, wrongCards.length)}/{wrongCards.length}</span>
+                    ) : (
+                        <span>Card {Math.min(currentIndex + 1, flashCards.length)} of {flashCards.length}</span>
+                    )}
+                </div>
+            </div> */}
+
+            <div className={`${styles.scoreContainer}`}>
+                <div style={{ margin: '0px', textAlign: 'center' }}>
+                    {isReviewMode ? (
+                        <>
+                            <span className="text-white/70 text-sm">Review Phase</span>
+                            <div style={{ 
+                                fontSize: '0.7rem', 
+                                color: '#F59E0B', 
+                                marginTop: '0.5px'
+                            }}>
+                                {wrongCards.length - reviewIndex} left
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-center text-white/70 text-sm my-3">
+                            Card {Math.min(currentIndex + 1, flashCards.length)} of {flashCards.length}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Review Complete Message */}
+            {/* {showReviewComplete && (
+                <div className="text-center my-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                    <h3 className="text-green-400 font-medium mb-2">Review Complete!</h3>
+                    <p className="text-white/80">
+                        You've finished reviewing your incorrect answers. Great job studying!
+                    </p>
+                    <button 
+                        onClick={() => {
+                            setShowReviewComplete(false);
+                            setIsReviewMode(false);
+                        }}
+                        className="mt-3 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded"
+                    >
+                        Continue
+                    </button>
+                </div>
+            )} */}
+
+            <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
+                <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
+                    <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
+                        {cardContent.question ? (
+                            cardContent.question.startsWith('https://firebasestorage.googleapis.com') ? (
+                                <img src={cardContent.question} alt="question" className={styles.questionImage} />
+                            ) : (
+                                <h2>
+                                    {cardContent.isFinished ? 
+                                        (isReviewMode ? "Review Complete!" : "You completed it!!!") : 
+                                        cardContent.question
+                                    }
+                                </h2>   
+                            )
                         ) : (
-                            <h2>{currentIndex != flashCards.length? currentAnswer: "You completed it!!!"}</h2>
+                            <h2>{isReviewMode ? "Review Complete!" : "YOU FINISHED IT!"}</h2>
+                        )}
+                    </div>
+                    <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
+                        {cardContent.answer ? (
+                            cardContent.answer.startsWith('https://firebasestorage.googleapis.com') ? (
+                                <img src={cardContent.answer} alt="answer" className={styles.questionImage} />
+                            ) : (
+                                <h2>
+                                    {cardContent.isFinished ? 
+                                        (isReviewMode ? "Review Complete!" : "You completed it!!!") : 
+                                        cardContent.answer
+                                    }
+                                </h2>
+                            )
                         ) : (
-                            <h2>YOU FINISHED IT!</h2>
+                            <h2>{isReviewMode ? "Review Complete!" : "YOU FINISHED IT!"}</h2>
                         )}
                     </div>
                 </div>
             </div>
-            
-            <div className={styles.buttonsContainer}>
-                <button className={styles.outerFlashCardButtons} disabled={processing} onClick={()=>handleGoBack()}><i className="fa-solid fa-arrow-rotate-right fa-flip-horizontal"></i></button>
-                <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={processing} onClick={()=>handleDontKnow()}><i className="fa-solid fa-xmark" id="wrongButton"></i></button>
-                <div className={styles.scoreContainer}>
-                    <h2 style={{margin: '0px'}}>{currentIndex < flashCards.length? `${currentIndex+1}/${flashCards.length}`: `${flashCards.length}/${flashCards.length}`}</h2>
+
+            <div className={`${styles.buttonsContainer} gap-4`}>
+                <button 
+                    className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                    disabled={processing || (isReviewMode ? reviewIndex === 0 : currentIndex === 0)}
+                    onClick={handleGoBack}
+                >
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        Previous Card
+                    </div>
+                    ←
+                </button>
+
+                <div className="flex gap-2">
+                    <button 
+                        className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
+                        disabled={processing || cardContent.isFinished}
+                        onClick={isReviewMode ? handleReviewDontKnow : handleDontKnow}
+                    >
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Mark as Incorrect
+                        </div>
+                        ✕ Incorrect
+                    </button>
+
+                    <button 
+                        className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
+                        disabled={processing || cardContent.isFinished}
+                        onClick={isReviewMode ? handleReviewKnow : handleKnow}
+                    >
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Mark as Correct
+                        </div>
+                        ✓ Correct
+                    </button>
                 </div>
-                <button className={`${styles.innerFlashCardButtons} hover:bg-emerald-600 transition-all duration-200`} disabled={processing} onClick={()=>handleKnow()} style={{padding: '10px 13px'}}><i className="fa-solid fa-check" id="checkButton"></i></button>
-                <button className={`${styles.outerFlashCardButtons}`} onClick={()=>handleShuffle()}><i className="fa-solid fa-repeat"></i></button>
+                
+                <button 
+                    className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                    disabled={processing} 
+                    onClick={handleShuffle}
+                >
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        'Shuffle Deck'
+                    </div>
+                    🔀
+                </button>
             </div>
+
+            
         </>
-    )
+    );
 }
 
 export default FlashCardUI;
