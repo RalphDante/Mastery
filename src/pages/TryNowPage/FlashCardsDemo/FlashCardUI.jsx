@@ -1,3 +1,16 @@
+// Firestore
+
+import { 
+    getFirestore, 
+    collection, 
+    doc, 
+    setDoc, 
+    addDoc, 
+    writeBatch, 
+    serverTimestamp,
+    increment 
+} from 'firebase/firestore';
+
 import { useEffect, useState, useCallback } from "react";
 
 // Saving
@@ -93,21 +106,94 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 throw new Error('No flashcards to save');
             }
             
-            const db = getDatabase(app);
-
-            const now = new Date();
-            const deckName = `Deck ${now.toLocaleDateString().replace(/\//g, '-')} ${now.toLocaleTimeString()}`;
-
-            const newFileRef = ref(db, `QuizletsFolders/${uid}/First Folder/${deckName}`);
-            const newDocRef = push(newFileRef);
-    
-            await set(newDocRef, {
-                Description: "Add a description",
-                Flashcards: flashCards
+            const db = getFirestore();
+            const batch = writeBatch(db);
+            
+            // Step 1: Ensure user document exists
+            const userRef = doc(db, 'users', uid);
+            batch.set(userRef, {
+                email: user.email,
+                displayName: user.displayName || 'Anonymous User',
+                createdAt: serverTimestamp(),
+                lastActiveAt: serverTimestamp(),
+                stats: {
+                    totalReviews: 0,
+                    weeklyReviews: 0,
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    totalDecks: 0,
+                    totalCards: 0
+                },
+                subscription: {
+                    tier: "free",
+                    expiresAt: null
+                }
+            }, { merge: true }); // merge: true prevents overwriting existing data
+            
+            // Step 2: Create or ensure "First Folder" exists
+            const folderRef = doc(collection(db, 'folders'));
+            const folderName = "First Folder";
+            
+            batch.set(folderRef, {
+                name: folderName,
+                ownerId: uid,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                subscriptionTier: "free",
+                isPublic: false,
+                deckCount: 0
             });
             
+            // Step 3: Create the deck
+            const deckRef = doc(collection(db, 'decks'));
+            const now = new Date();
+            const deckTitle = `Deck ${now.toLocaleDateString().replace(/\//g, '-')} ${now.toLocaleTimeString()}`;
+            
+            batch.set(deckRef, {
+                title: deckTitle,
+                description: "Add a description",
+                ownerId: uid,
+                folderId: folderRef.id,
+                isPublic: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                cardCount: flashCards.length,
+                tags: []
+            });
+            
+            // Step 4: Add all flashcards to the deck's cards subcollection
+            flashCards.forEach((card, index) => {
+                const cardRef = doc(collection(db, 'decks', deckRef.id, 'cards'));
+                batch.set(cardRef, {
+                    question: card.question || card.front || '',
+                    answer: card.answer || card.back || '',
+                    question_type: "text",
+                    answer_type: "text",
+                    createdAt: serverTimestamp(),
+                    order: index + 1 // Simple ordering for now
+                });
+            });
+            
+            // Step 5: Update user stats (increment totals)
+            batch.update(userRef, {
+                'stats.totalDecks': increment(1),
+                'stats.totalCards': increment(flashCards.length),
+                lastActiveAt: serverTimestamp()
+            });
+            
+            // Step 6: Update folder deck count
+            batch.update(folderRef, {
+                deckCount: increment(1),
+                updatedAt: serverTimestamp()
+            });
+            
+            // Execute all operations atomically
+            await batch.commit();
+            
             console.log('Deck saved successfully, navigating...');
-            navigate(`/flashcards/${encodeURIComponent(`First Folder/${deckName}`)}`);
+            
+            // Navigate to the flashcards page with the new deck ID
+            navigate(`/flashcards/${deckRef.id}`);
             alert('Deck saved successfully!');
             
         } catch (error) {
