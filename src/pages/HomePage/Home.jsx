@@ -3,12 +3,14 @@ import CreateBtn from '../../components/CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
-import FolderList from './FolderList.jsx';
 import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
 import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
+
+
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
+import WelcomeSection from './Welcome & Quick Stats/WelcomeSection.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -40,6 +42,9 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-12">
+          <WelcomeSection 
+          
+          />
           <LearningHubSection 
             onCreateDeckClick={onCreateDeckClick}
             onCreateWithAIModalClick={onCreateWithAIModalClick}
@@ -70,7 +75,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     /> */}
 
 
-    <FolderList uid={authUser.uid}/>
 
 
     
