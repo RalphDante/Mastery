@@ -388,7 +388,7 @@ function FileUpload({ onSuccess }) {
 
         } catch (error) {
             console.error("There was an error:", error);
-            alert("There was an error generating flashcards");
+            alert("There was an error generating flashcards. Please try again.");
         }
     };
 

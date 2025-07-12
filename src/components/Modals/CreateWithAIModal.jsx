@@ -18,6 +18,8 @@ function CreateWithAIModal({ onClose, isOpen }) {
   const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   // Firestore instance
   const db = getFirestore(app);
 
@@ -89,22 +91,25 @@ function CreateWithAIModal({ onClose, isOpen }) {
   };
 
   const handleSaveDeck = async () => {
+    if (isSaving) return; // prevent double submission
+  
     if (!deckName.trim()) {
       alert("Please enter a deck name");
       return;
     }
-
+  
     if (!authUser) {
       alert("User not authenticated. Please log in.");
       return;
     }
-
+  
+    setIsSaving(true); // 🔒 Lock the button
+  
     try {
       const ownerIdRef = `${authUser.uid}`;
       let currentFolderId = selectedFolder;
-
+  
       if (isCreatingNewFolder) {
-        // Create new folder in Firestore
         const newFolderRef = await addDoc(collection(db, 'folders'), {
           name: newFolderName,
           ownerId: ownerIdRef,
@@ -114,8 +119,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
         });
         currentFolderId = newFolderRef.id;
       }
-
-      // Now create the new deck
+  
       const newDeckRef = await addDoc(collection(db, 'decks'), {
         title: deckName,
         description: "No description",
@@ -126,13 +130,11 @@ function CreateWithAIModal({ onClose, isOpen }) {
         updatedAt: new Date(),
         cardCount: flashcards.length,
         tags: []
-
       });
-
-      // Add flashcards as a subcollection to the new deck
+  
       const cardsCollectionRef = collection(db, 'decks', newDeckRef.id, 'cards');
-      const batch = writeBatch(db); // Use writeBatch instead of db.batch()
-
+      const batch = writeBatch(db);
+  
       flashcards.forEach((card, index) => {
         const newCardRef = doc(cardsCollectionRef);
         batch.set(newCardRef, {
@@ -142,13 +144,11 @@ function CreateWithAIModal({ onClose, isOpen }) {
           createdAt: new Date(),
           answer_type: "text",
           question_type: "text"
-
         });
       });
-
+  
       await batch.commit();
-
-      // Increment deckCount for the folder
+  
       if (isCreatingNewFolder || selectedFolder) {
         const folderDocRef = doc(db, 'folders', currentFolderId);
         await updateDoc(folderDocRef, {
@@ -156,19 +156,24 @@ function CreateWithAIModal({ onClose, isOpen }) {
           updatedAt: new Date(),
         });
       }
-
-      navigate(`/flashcards/${newDeckRef.id}`, {state: {
-        deckId: newDeckRef.id,
-        folderId: currentFolderId,
-        folderName: newFolderName || selectedFolder.name,
   
-      }});
+      navigate(`/flashcards/${newDeckRef.id}`, {
+        state: {
+          deckId: newDeckRef.id,
+          folderId: currentFolderId,
+          folderName: newFolderName || folders.find(f => f.id === selectedFolder)?.name,
+        }
+      });
+  
       onClose();
     } catch (error) {
       console.error("Error saving deck and flashcards: ", error);
       alert("Failed to save deck and flashcards. Please try again.");
+    } finally {
+      setIsSaving(false); // Optional: you can keep it disabled permanently if you don't want retry
     }
   };
+  
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
@@ -334,6 +339,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
                 Back
               </button>
               <button 
+                disabled={isSaving}
                 onClick={handleSaveDeck} 
                 className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 font-semibold"
               >
