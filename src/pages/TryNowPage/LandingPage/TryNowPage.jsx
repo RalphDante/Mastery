@@ -95,7 +95,7 @@ const MasteryLanding = () => {
 
   return (
 
-    <div className="min-h-screen bg-gradient-to-br bg-black text-white overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br text-white overflow-hidden">
       {/* {showModal && (
         <FolderModalStep1
           isOpen={showModal}
@@ -129,7 +129,7 @@ const MasteryLanding = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-5 pb-32">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 pt-1 pb-32">
         <div className="text-center">
           {/* Viral Hook */}
           {/* <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-6 py-2 mb-8">
@@ -140,9 +140,9 @@ const MasteryLanding = () => {
             <div className="animate-pulse"><Sparkles /></div>
           </div> */}
 
-          <h1 className={`text-6xl md:text-8xl font-black mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <h1 className={`text-6xl opacity-90 md:text-8xl font-black mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             Turn Your
-            <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse py-2">
+            <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse py-4">
               Long Notes
             </span>
             Into Flash Cards

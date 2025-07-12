@@ -46,7 +46,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
             <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center space-x-8">
-                        <a href="#" className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 text-transparent bg-clip-text" onClick={(e)=>{e.preventDefault(); navigate('/mastery')}}>Mastery</a>
+                        <a href="#" className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 text-transparent bg-clip-text" onClick={(e)=>{e.preventDefault(); navigate('/')}}>Mastery</a>
                         <div className="hidden md:flex space-x-6">
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/')}}>Home</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/about')}}>About</a>

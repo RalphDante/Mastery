@@ -9,6 +9,8 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [cameraIsOpen, setCameraIsOpen] = useState(false);
+
   // Reset form when modal opens/closes
   useState(() => {
     if (!isOpen) {
@@ -48,18 +50,23 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
             <p className="text-slate-300 mb-6 text-center">
               Upload any PDF, image, or document to generate flashcards instantly
             </p>
-
-            <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-4 rounded-lg border border-violet-500/30 mb-6">
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl">✨</span>
-                <span className="text-slate-100 font-semibold">No signup required</span>
-              </div>
-              <p className="text-slate-300 text-sm">
-                Test our AI-powered flashcard generator risk-free. Sign up later to save your decks!
-              </p>
-            </div>
+            {cameraIsOpen ? 
+              ""
+              :
+               <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-4 rounded-lg border border-violet-500/30 mb-6">
+               <div className="flex items-center gap-3 mb-2">
+                 <span className="text-2xl">✨</span>
+                 <span className="text-slate-100 font-semibold">No signup required</span>
+               </div>
+               <p className="text-slate-300 text-sm">
+                 Test our AI-powered flashcard generator risk-free. Sign up later to save your decks!
+               </p>
+             </div>
+            }
+            
 
             <FileUpload
+              cameraIsOpen={setCameraIsOpen}
               onSuccess={(generatedFlashcards) => {
                 setFlashcards(generatedFlashcards);
                 setStep(2);
