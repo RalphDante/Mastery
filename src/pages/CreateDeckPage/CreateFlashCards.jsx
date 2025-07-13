@@ -28,7 +28,7 @@ function CreateFlashCards({onAddFlashCard}){
     }
 
     return(
-        <div className={styles.addNewFlashCardBtnContainer}>
+        <div className={`${styles.addNewFlashCardBtnContainer} bg-gray-800 shadow-lg border border-gray-700`}>
             <button className={styles.addCardBtn} onClick={addAsFlashCard}>ADD CARD</button>
         </div>
     )

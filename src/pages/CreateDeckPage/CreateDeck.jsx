@@ -452,12 +452,12 @@ function CreateDeck() {
             </h1>
             <h3>Name the file:</h3>
 
-            <input className={styles.fileNameInput} type="text" value={fileName}
+            <input className={`${styles.fileNameInput} bg-gray-800  rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
                 placeholder='Enter Deck Name'
             ></input>
             <br></br>
-            <textarea className={styles.fileNameInput} type="text" value={fileDescription}
+            <textarea className={`${styles.fileNameInput} bg-gray-800  rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileDescription}
                 onChange={(e) => {
                     setFileDescription(e.target.value)
                     autoResize(e)
@@ -466,7 +466,7 @@ function CreateDeck() {
                 onInput={autoResize}
             ></textarea>
 
-            <h4 style={{ marginBottom: '10px' }}>Your Juicy Flash Cards</h4>
+            <h4 style={{ marginBottom: '10px' }}>Your Flash Cards</h4>
 
             <DisplayFlashCards
                 flashCards={flashCards}

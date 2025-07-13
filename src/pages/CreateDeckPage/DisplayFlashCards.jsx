@@ -195,7 +195,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
             {flashCards.map((flashCard, index)=>(
                 <li className={styles.listItem} key={index}>
                     <div className={`${styles.innerDisplayFlashCardsContainer} md:flex md:flex-wrap`}>
-                        <div className={`${styles.questionContainer} md:w-1/2 w-full`}>
+                        <div className={`${styles.questionContainer}  md:w-1/2 w-full`}>
                             {isCloudinaryImage(flashCard.question, 'question', index) ? (
                                 <div className="relative">
                                     <AdvancedImage 
@@ -218,7 +218,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                             ) : (
                                 <>
                                     <textarea 
-                                        className={`${styles.flashCardInput} ${draggingOverStates[`${index}-question`]? styles.dragOver : ''}`} 
+                                        className={`${styles.flashCardInput} bg-gray-800 shadow-lg border border-gray-700 ${draggingOverStates[`${index}-question`]? styles.dragOver : ''}`} 
                                         value={flashCard.question}
                                         ref={el => textareaRefs.current[index * 2] = el}
                                         onDragOver={(e)=>handleDragOver(e, 'question', index)}
@@ -268,7 +268,7 @@ function DisplayFlashCards({flashCards, setFlashCards, onDelete, autoResize}){
                             ) : (
                                 <>
                                     <textarea 
-                                        className={`${styles.flashCardInput} ${draggingOverStates[`${index}-answer`] ? styles.dragOver : ''}`} 
+                                        className={`${styles.flashCardInput} bg-gray-800 shadow-lg border border-gray-700 ${draggingOverStates[`${index}-answer`] ? styles.dragOver : ''}`} 
                                         value={flashCard.answer}
                                         ref={el => textareaRefs.current[index * 2 + 1] = el}
                                         onDragOver={(e)=>handleDragOver(e, 'answer', index)}

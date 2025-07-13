@@ -5,7 +5,7 @@ import { db, auth } from '../../api/firebase';
 import SignUpBtn from '../../pages/TryNowPage/LandingPage/SignUpBtn';
 import { useNavigate } from 'react-router-dom';
 import CreateActionsDropdown from '../CreateActionsDropdown/CreateActionsDropdown';
-
+import Profile from './Profile';
 
 
 
@@ -60,8 +60,9 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                             onCreateWithAIModalClick={onCreateWithAIModalClick}
                         />
                         <div className="hidden md:flex items-center space-x-2">
-                             <span className="hidden sm:inline text-slate-300 font-medium">{userName}</span>
-                             <SignUpBtn />
+                            <span className="hidden sm:inline text-slate-300 font-medium">{userName}</span>
+                            <Profile />
+
 
                         </div>
                         <div className="md:hidden flex items-center">
