@@ -10,7 +10,7 @@ import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
 
 
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
-import WelcomeSection from './Welcome & Quick Stats/WelcomeSection.jsx';
+import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 

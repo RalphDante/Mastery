@@ -145,7 +145,7 @@ function App(){
                   <Route path="/edit-deck/:deckId" element={<CreateDeck />}/>
 
                   <Route path="/displayfiles" element={<DisplayFiles />} />
-                  <Route path="/flashcards/:deckId" element={<FlashCardsPage />}/>
+                  <Route path="/flashcards/:deckId?" element={<FlashCardsPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
                   <Route path='/publicFlashCards/:publicKeyCredential' element={<PublicKeyCredentialFlashCardsPage />} />

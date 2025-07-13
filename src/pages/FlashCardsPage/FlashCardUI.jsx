@@ -8,9 +8,18 @@ import { Cloudinary } from '@cloudinary/url-gen';
 import { AdvancedImage } from '@cloudinary/react';
 
 import SetToPublic from "./SetToPublic";
-import { calculateSM2 } from '../../utils/sm2'; 
 import EditDeckBtn from "./EditFlashCardBtn";
 import StudyModeSelector from "./StudyModeSelector";
+
+// Utils
+import { updateFlashCardUIStreaks } from '../../utils/streakUtils';
+import { calculateSM2 } from '../../utils/sm2'; 
+
+
+// FiresStore
+
+import { Timestamp } from 'firebase/firestore';
+import { getCurrentTimestamp, getImmediateReviewTimestamp } from '../../utils/sm2'; 
 
 function FlashCardUI({
     knowAnswer, 
@@ -172,7 +181,7 @@ function FlashCardUI({
                     easeFactor: 2.5,
                     interval: 0,
                     repetitions: 0,
-                    nextReviewDate: new Date().toISOString(), // Due immediately
+                    nextReviewDate: getImmediateReviewTimestamp(), // Due immediately
                     lastReviewDate: null,
                     totalReviews: 0,
                     correctStreak: 0
@@ -226,7 +235,7 @@ function FlashCardUI({
                         collection(db, 'cardProgress'),
                         where('userId', '==', authUser.uid),
                         where('deckId', '==', deckId),
-                        where('nextReviewDate', '<=', new Date().toISOString()),
+                        where('nextReviewDate', '<=', getCurrentTimestamp()),
                         orderBy('nextReviewDate', 'asc')
                     );
                 } else {
@@ -234,7 +243,7 @@ function FlashCardUI({
                     progressQuery = query(
                         collection(db, 'cardProgress'),
                         where('userId', '==', authUser.uid),
-                        where('nextReviewDate', '<=', new Date().toISOString()),
+                       where('nextReviewDate', '<=', getCurrentTimestamp()),
                         orderBy('nextReviewDate', 'asc')
                     );
                 }
@@ -372,17 +381,18 @@ function FlashCardUI({
     // --- Handle card rating for SM-2 (ONLY FOR SPACED MODE) ---
     const handleSpacedCardRating = useCallback(async (quality) => {
         if (processing || currentIndex >= flashCards.length) return; 
-
+    
         setProcessing(true);
         setShowAnswer(false); 
-
+    
         const currentCard = flashCards[currentIndex];
         const cardId = currentCard.id;
         const currentDeckId = currentCard.deckId;
-
+        const isCorrect = quality >= 3; // Consider 3+ as correct for streak purposes
+    
         let currentProgress = {};
         const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
-
+    
         try {
             const progressSnap = await getDoc(progressDocRef);
             if (progressSnap.exists()) {
@@ -397,14 +407,15 @@ function FlashCardUI({
                     correctStreak: 0
                 };
             }
-
+    
             const { easeFactor: newEaseFactor, interval: newInterval, repetitions: newRepetitions, nextReviewDate } = calculateSM2(
                 quality,
                 currentProgress.easeFactor,
                 currentProgress.interval,
                 currentProgress.repetitions
             );
-
+    
+            // Update card progress
             await setDoc(progressDocRef, {
                 userId: authUser.uid,
                 cardId: cardId,
@@ -412,12 +423,21 @@ function FlashCardUI({
                 easeFactor: newEaseFactor,
                 interval: newInterval,
                 repetitions: newRepetitions,
-                nextReviewDate: nextReviewDate, 
-                lastReviewDate: new Date().toISOString(),
+                nextReviewDate: nextReviewDate,     
+                lastReviewDate: getCurrentTimestamp(),
                 totalReviews: (currentProgress.totalReviews || 0) + 1,
                 correctStreak: quality >= 3 ? (currentProgress.correctStreak || 0) + 1 : 0
             }, { merge: true });
-
+    
+            // Update streak system (NEW)
+            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect);
+            
+            if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
+                // Optional: Show streak notification
+                console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+                // You could set a state here to show a toast notification
+            }
+    
             // Update local stats
             if (quality >= 3) {
                 knowAnswer(prev => prev + 1);
@@ -425,13 +445,13 @@ function FlashCardUI({
                 dontKnowAnswer(prev => prev + 1);
             }
             setAnswers(prev => [...prev, quality >= 3]);
-
+    
             setTimeout(() => {
                 const newIndex = currentIndex + 1;
                 setCurrentIndex(newIndex);
                 setProcessing(false);
             }, 200);
-
+    
         } catch (error) {
             console.error("Error updating card progress:", error);
             setError("Failed to update card progress.");
@@ -440,31 +460,36 @@ function FlashCardUI({
     }, [currentIndex, flashCards, authUser, db, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
 
     // --- Handle card progression for CRAMMING MODE ---
-    const handleCrammingResponse = useCallback((isCorrect) => {
-        if (processing || currentIndex >= flashCards.length) return;
+    const handleCrammingResponse = useCallback(async (isCorrect) => {
+    if (processing || currentIndex >= flashCards.length) return;
 
-        setProcessing(true);
-        setShowAnswer(false);
+    setProcessing(true);
+    setShowAnswer(false);
 
-        const currentCard = flashCards[currentIndex];
-        const currentCardId = currentCard.id;
+    const currentCard = flashCards[currentIndex];
+    const currentCardId = currentCard.id;
 
-        // Track that we've attempted this unique card
+    try {
+        // Track streak for cramming mode too (NEW)
+        const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect);
+        
+        if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
+            console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+        }
+
+        // Rest of your existing cramming logic...
         const newUniqueAttempted = new Set([...uniqueCardsAttempted, currentCardId]);
         setUniqueCardsAttempted(newUniqueAttempted);
 
-        // Check if we've now seen all original cards for the first time
         const shouldCompletePhaseOne = newUniqueAttempted.size === originalDeckSize && !phaseOneComplete;
 
         if (isCorrect) {
-            // Only increment counters if we're still in phase 1 or this is a new unique card
             if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCardId)) {
                 knowAnswer(prev => prev + 1);
             }
             
             setAnswers(prev => [...prev, true]);
             
-            // Move to next card
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
                 setProcessing(false);
@@ -475,18 +500,14 @@ function FlashCardUI({
                 }
             }, 200);
 
-        } else { // Incorrect
-            // Only increment wrong counter if we're still in phase 1 or this is a new unique card
+        } else {
             if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCardId)) {
                 dontKnowAnswer(prev => prev + 1);
             }
             
             setAnswers(prev => [...prev, false]);
-
-            // Re-add card to the end of the deck for review
             setFlashCards(prevCards => [...prevCards, currentCard]);
 
-            // Move to next card
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
                 setProcessing(false);
@@ -497,8 +518,13 @@ function FlashCardUI({
                 }
             }, 200);
         }
-    }, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, processing, 
-        originalDeckSize, uniqueCardsAttempted, phaseOneComplete]);
+    } catch (error) {
+        console.error("Error in cramming response:", error);
+        setProcessing(false);
+    }
+}, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, processing, 
+    originalDeckSize, uniqueCardsAttempted, phaseOneComplete, db, authUser]);
+
 
     const handleShowAnswer = () => {
         setShowAnswer(!showAnswer);

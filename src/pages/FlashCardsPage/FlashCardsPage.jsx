@@ -7,6 +7,9 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState, useCallback } from "react"; 
 import { useParams } from "react-router-dom";
 
+import { Timestamp } from "firebase/firestore";
+
+
 import FlashCardUI from "./FlashCardUI";
 import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
@@ -60,9 +63,12 @@ function FlashCardsPage() {
     // --- Check for due cards and auto-switch to spaced mode ---
     const checkDueCardsAndAutoSwitch = useCallback(async () => {
         if (!authUser) return;
-
+    
         try {
             let dueCardsQuery;
+            
+            // Create current timestamp for comparison
+            const now = Timestamp.now();
             
             if (paramDeckId) {
                 // Check due cards for specific deck
@@ -70,21 +76,21 @@ function FlashCardsPage() {
                     collection(db, 'cardProgress'),
                     where('userId', '==', authUser.uid),
                     where('deckId', '==', paramDeckId),
-                    where('nextReviewDate', '<=', new Date().toISOString())
+                    where('nextReviewDate', '<=', now)
                 );
             } else {
                 // Check due cards across all decks
                 dueCardsQuery = query(
                     collection(db, 'cardProgress'),
                     where('userId', '==', authUser.uid),
-                    where('nextReviewDate', '<=', new Date().toISOString())
+                    where('nextReviewDate', '<=', now)
                 );
             }
-
+    
             const dueCardsSnapshot = await getDocs(dueCardsQuery);
             const dueCount = dueCardsSnapshot.size;
             setDueCardsCount(dueCount);
-
+    
             // Auto-switch to spaced mode if there are due cards and we haven't manually switched modes
             if (dueCount > 0 && studyMode === 'cramming' && !autoSwitchedToSpaced) {
                 setStudyMode('spaced');

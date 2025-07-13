@@ -140,14 +140,14 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
             </div>
 
             {/* Sign up prompt */}
-            <div className="mt-4 text-center">
+            {/* <div className="mt-4 text-center">
               <p className="text-slate-400 text-sm">
                 Want to save these flashcards? 
                 <button className="text-violet-400 hover:text-violet-300 ml-1 underline">
                   Sign up free
                 </button>
               </p>
-            </div>
+            </div> */}
           </>
         )}
       </div>

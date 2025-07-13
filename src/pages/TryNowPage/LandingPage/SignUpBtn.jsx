@@ -30,6 +30,7 @@ function SignUpBtn() {
                 displayName: user.displayName || "New User",
                 createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date(),
                 lastActiveAt: new Date(),
+                lastStudyDate: null,
                 stats: {
                     totalReviews: 0,
                     weeklyReviews: 0,

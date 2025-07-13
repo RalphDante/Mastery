@@ -1,0 +1,204 @@
+// utils/streakUtils.js
+import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+
+/**
+ * Calculates streak information based on last study date
+ * @param {Date} lastStudyDate - The last date user studied
+ * @param {number} currentStreak - Current streak count
+ * @param {number} longestStreak - Longest streak ever
+ * @returns {object} - Updated streak information
+ */
+export const calculateStreakUpdate = (lastStudyDate, currentStreak = 0, longestStreak = 0) => {
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  if (!lastStudyDate) {
+    // First time studying - start streak at 1
+    return {
+      currentStreak: 1,
+      longestStreak: Math.max(1, longestStreak),
+      lastStudyDate: todayStart,
+      studiedToday: true
+    };
+  }
+
+  const lastStudyStart = new Date(
+    lastStudyDate.getFullYear(), 
+    lastStudyDate.getMonth(), 
+    lastStudyDate.getDate()
+  );
+  
+  const daysDifference = Math.floor((todayStart - lastStudyStart) / (1000 * 60 * 60 * 24));
+  
+  if (daysDifference === 0) {
+    // Already studied today - no change to streak
+    return {
+      currentStreak,
+      longestStreak,
+      lastStudyDate: lastStudyDate,
+      studiedToday: true
+    };
+  } else if (daysDifference === 1) {
+    // Studied yesterday - continue streak
+    const newCurrentStreak = currentStreak + 1;
+    return {
+      currentStreak: newCurrentStreak,
+      longestStreak: Math.max(newCurrentStreak, longestStreak),
+      lastStudyDate: todayStart,
+      studiedToday: true
+    };
+  } else {
+    // Missed days - reset streak
+    return {
+      currentStreak: 1,
+      longestStreak: longestStreak, // Keep longest streak
+      lastStudyDate: todayStart,
+      studiedToday: true
+    };
+  }
+};
+
+/**
+ * Updates user streak in Firestore after completing a card review
+ * @param {object} db - Firestore database instance
+ * @param {string} userId - User ID
+ * @returns {Promise<object>} - Updated streak data
+ */
+export const updateUserStreak = async (db, userId) => {
+  const userDocRef = doc(db, 'users', userId);
+  
+  try {
+    const userDoc = await getDoc(userDocRef);
+    const userData = userDoc.exists() ? userDoc.data() : {};
+    
+    const currentStats = userData.stats || {};
+    const lastStudyDate = userData.lastStudyDate?.toDate() || null;
+    
+    const streakUpdate = calculateStreakUpdate(
+      lastStudyDate,
+      currentStats.currentStreak || 0,
+      currentStats.longestStreak || 0
+    );
+    
+    // Only update if this is the first study session today
+    if (streakUpdate.studiedToday) {
+      const updatedStats = {
+        ...currentStats,
+        currentStreak: streakUpdate.currentStreak,
+        longestStreak: streakUpdate.longestStreak,
+        totalReviews: (currentStats.totalReviews || 0) + 1,
+        weeklyReviews: (currentStats.weeklyReviews || 0) + 1, // You might want to calculate this properly
+      };
+      
+      await setDoc(userDocRef, {
+        ...userData,
+        stats: updatedStats,
+        lastStudyDate: Timestamp.fromDate(streakUpdate.lastStudyDate),
+        lastActiveAt: Timestamp.now()
+      }, { merge: true });
+      
+      return {
+        currentStreak: streakUpdate.currentStreak,
+        longestStreak: streakUpdate.longestStreak,
+        isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0)
+      };
+    }
+    
+    return {
+      currentStreak: streakUpdate.currentStreak,
+      longestStreak: streakUpdate.longestStreak,
+      isNewStreak: false
+    };
+    
+  } catch (error) {
+    console.error('Error updating user streak:', error);
+    throw error;
+  }
+};
+
+/**
+ * Checks if user has studied today (useful for UI)
+ * @param {Date} lastStudyDate - Last study date
+ * @returns {boolean} - Whether user has studied today
+ */
+export const hasStudiedToday = (lastStudyDate) => {
+  if (!lastStudyDate) return false;
+  
+  const today = new Date();
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const lastStudyStart = new Date(
+    lastStudyDate.getFullYear(), 
+    lastStudyDate.getMonth(), 
+    lastStudyDate.getDate()
+  );
+  
+  return todayStart.getTime() === lastStudyStart.getTime();
+};
+
+// Enhanced version that tracks daily review sessions
+export const trackDailySession = async (db, userId, sessionData) => {
+  const today = new Date();
+  const dateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  
+  const sessionDocRef = doc(db, 'users', userId, 'dailySessions', dateKey);
+  
+  try {
+    const sessionDoc = await getDoc(sessionDocRef);
+    const existingSession = sessionDoc.exists() ? sessionDoc.data() : null;
+    
+    if (!existingSession) {
+      // First session of the day - update streak
+      const streakUpdate = await updateUserStreak(db, userId);
+      
+      // Create daily session record
+      await setDoc(sessionDocRef, {
+        date: Timestamp.fromDate(today),
+        cardsReviewed: sessionData.cardsReviewed || 1,
+        cardsCorrect: sessionData.cardsCorrect || 0,
+        accuracy: sessionData.accuracy || 0,
+        sessions: 1,
+        firstSessionAt: Timestamp.now(),
+        lastSessionAt: Timestamp.now()
+      });
+      
+      return { ...streakUpdate, isFirstSessionToday: true };
+    } else {
+      // Additional session today - just update session data
+      await setDoc(sessionDocRef, {
+        ...existingSession,
+        cardsReviewed: existingSession.cardsReviewed + (sessionData.cardsReviewed || 1),
+        cardsCorrect: existingSession.cardsCorrect + (sessionData.cardsCorrect || 0),
+        sessions: existingSession.sessions + 1,
+        lastSessionAt: Timestamp.now(),
+        accuracy: existingSession.cardsReviewed > 0 ? 
+          existingSession.cardsCorrect / existingSession.cardsReviewed : 0
+      });
+      
+      return { isFirstSessionToday: false };
+    }
+  } catch (error) {
+    console.error('Error tracking daily session:', error);
+    throw error;
+  }
+};
+
+// Updated FlashCardUI integration code
+export const updateFlashCardUIStreaks = async (db, userId, isCorrect) => {
+  try {
+    const streakResult = await trackDailySession(db, userId, {
+      cardsReviewed: 1,
+      cardsCorrect: isCorrect ? 1 : 0,
+      accuracy: isCorrect ? 1 : 0
+    });
+    
+    if (streakResult.isFirstSessionToday && streakResult.isNewStreak) {
+      // Show streak notification or update UI
+      console.log(`🔥 New streak! ${streakResult.currentStreak} days`);
+    }
+    
+    return streakResult;
+  } catch (error) {
+    console.error('Error updating streak in FlashCardUI:', error);
+    return null;
+  }
+};

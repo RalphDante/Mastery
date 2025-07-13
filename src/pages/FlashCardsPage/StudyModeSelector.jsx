@@ -32,7 +32,7 @@ function StudyModeSelector({
                     easeFactor: 2.5,
                     interval: 0,
                     repetitions: 0,
-                    nextReviewDate: new Date().toISOString(), // Set for immediate review
+                    nextReviewDate: getImmediateReviewTimestamp(), // Set for immediate review
                     lastReviewDate: null,
                     totalReviews: 0,
                     correctStreak: 0

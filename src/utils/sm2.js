@@ -37,9 +37,12 @@ export const calculateSM2 = (quality, currentEaseFactor = 2.5, currentInterval =
 
     const nextReviewDate = new Date();
     // FOR DEBUGGING: Set the date to 1 minute from now
-    // IMPORTANT: Remember to change this back to `nextReviewDate.setDate(nextReviewDate.getDate() + interval);`
-    // and `nextReviewDate.setHours(0, 0, 0, 0);` for production.
+    // IMPORTANT: Remember to change this back to production settings
     nextReviewDate.setMinutes(nextReviewDate.getMinutes() + 1);
+    
+    // FOR PRODUCTION: Use this instead
+    // nextReviewDate.setDate(nextReviewDate.getDate() + interval);
+    // nextReviewDate.setHours(0, 0, 0, 0);
 
     return {
         easeFactor,
@@ -47,4 +50,14 @@ export const calculateSM2 = (quality, currentEaseFactor = 2.5, currentInterval =
         repetitions,
         nextReviewDate: Timestamp.fromDate(nextReviewDate), // Return as Firestore Timestamp
     };
+};
+
+// Helper function to get current timestamp for queries
+export const getCurrentTimestamp = () => {
+    return Timestamp.now();
+};
+
+// Helper function to create a timestamp for immediate review
+export const getImmediateReviewTimestamp = () => {
+    return Timestamp.fromDate(new Date());
 };

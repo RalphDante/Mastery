@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { db, auth } from '../../../api/firebase'; // Adjust import path as needed
 import { collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
+import { useNavigate } from 'react-router-dom';
 
 function WelcomeSection() {
   const [user, loading, error] = useAuthState(auth);
@@ -10,6 +11,8 @@ function WelcomeSection() {
   const [reviewProgress, setReviewProgress] = useState({ reviewed: 0, total: 0 });
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState(null);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (user) {
@@ -106,8 +109,8 @@ function WelcomeSection() {
 
   const handleStartReview = () => {
     // Navigate to review page - implement your routing logic here
+    navigate('/flashcards');
     console.log("Starting review session...");
-    // Example: navigate('/review') or window.location.href = '/review'
   };
 
   if (loading || dataLoading) {
@@ -218,7 +221,7 @@ function WelcomeSection() {
       </div>
 
       {/* Additional Stats Row */}
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
           <p className="text-sm text-slate-400">Total Reviews</p>
           <p className="text-2xl font-bold text-slate-200">{userData?.stats?.totalReviews || 0}</p>
@@ -235,7 +238,7 @@ function WelcomeSection() {
           <p className="text-sm text-slate-400">Total Cards</p>
           <p className="text-2xl font-bold text-slate-200">{userData?.stats?.totalCards || 0}</p>
         </div>
-      </div>
+      </div> */}
     </section>
   );
 }

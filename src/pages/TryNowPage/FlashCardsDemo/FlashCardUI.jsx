@@ -89,7 +89,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     useEffect(() => {
         if (location.state?.flashcards) {
           setFlashCards(location.state.flashcards);
-          setShowEmphasisToSignUp(false)
         }
     }, [location.state]);
 
@@ -117,6 +116,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 displayName: user.displayName || 'Anonymous User',
                 createdAt: serverTimestamp(),
                 lastActiveAt: serverTimestamp(),
+                lastStudyDate: null,
                 stats: {
                     totalReviews: 0,
                     weeklyReviews: 0,
@@ -653,7 +653,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     const cardContent = getCurrentCardContent();
 
     // Check if we're in a finished state
-    const isFinished = cardContent.isFinished;
+    const isFinished = flashCards.length > 0 && cardContent.isFinished;;
     const isMainModeFinished = !isReviewMode && currentIndex >= flashCards.length;
     const isReviewModeFinished = isReviewMode && reviewIndex >= wrongCards.length;
 
