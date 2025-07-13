@@ -49,24 +49,41 @@ function WelcomeSection() {
   const fetchCardsDue = async () => {
     try {
       const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today
+      
       console.log('Fetching cards due for user:', user.uid);
       
       // Query cardProgress collection for cards due for review
       const cardProgressRef = collection(db, 'cardProgress');
       const cardProgressQuery = query(
         cardProgressRef,
-        where('userId', '==', user.uid) // Fixed: Remove 'users/' prefix
+        where('userId', '==', user.uid)
       );
       
       const cardProgressSnapshot = await getDocs(cardProgressQuery);
       console.log('Total card progress documents:', cardProgressSnapshot.docs.length);
       
       const allCards = cardProgressSnapshot.docs;
+      let reviewedToday = 0;
+      
       const dueCards = allCards.filter(doc => {
         const cardData = doc.data();
-        console.log('Card data:', cardData); // Debug log
         
-        // Check if nextReviewDate exists and is valid
+        // Count cards reviewed today
+        if (cardData.lastReviewDate) {
+          try {
+            const lastReviewDate = cardData.lastReviewDate.toDate();
+            const lastReviewDay = new Date(lastReviewDate.getFullYear(), lastReviewDate.getMonth(), lastReviewDate.getDate());
+            
+            if (lastReviewDay.getTime() === today.getTime()) {
+              reviewedToday++;
+            }
+          } catch (error) {
+            console.error('Error processing lastReviewDate for card:', doc.id, error);
+          }
+        }
+        
+        // Check if card is due for review
         if (!cardData.nextReviewDate) {
           console.log('No nextReviewDate for card:', doc.id);
           return false;
@@ -84,14 +101,12 @@ function WelcomeSection() {
       });
       
       console.log('Cards due for review:', dueCards.length);
-      setCardsDue(dueCards.length);
+      console.log('Cards reviewed today:', reviewedToday);
       
-      // Calculate review progress for today
-      // For now, setting reviewed to 0 - you'll need to implement logic to track today's reviews
-      const reviewedToday = 0; // TODO: Implement logic to count today's completed reviews
+      setCardsDue(dueCards.length);
       setReviewProgress({
         reviewed: reviewedToday,
-        total: dueCards.length
+        total: dueCards.length + reviewedToday // Total includes both due and already reviewed today
       });
       
     } catch (err) {
