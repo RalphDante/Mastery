@@ -361,9 +361,20 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         };
     }, [stream]);
 
+    const retryWithBackoff = async (fn, maxRetries = 3) => {
+        for (let i = 0; i < maxRetries; i++) {
+            try {
+                return await fn();
+            } catch (error) {
+                if (i === maxRetries - 1) throw error;
+                await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            }
+        }
+    };
+
     const sendToAI = async (text) => {
-        try {
-            console.log('Text being sent to AI:', text.substring(0, 500) + '...'); // Debug log (first 500 chars)
+        const makeAPICall = async () => {
+            console.log('Text being sent to AI:', text.substring(0, 500) + '...');
             
             // Check if API key is available
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
@@ -379,59 +390,166 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `Generate 25 flashcards from this text. 
-                            Format as JSON: [{"question":"...", "answer":"..."}]
+                            text: `You are a flashcard generator. Create exactly 25 flashcards from the provided text.
+    
+                            CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
                             
-                            Text: ${text}`
+                            Format: [{"question":"Your question here","answer":"Your answer here"}]
+                            
+                            Requirements:
+                            - Questions should be clear and specific
+                            - Answers should be concise but complete
+                            - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
+                            - No line breaks within strings
+                            - Exactly 25 flashcards
+                            - Double quotes only, no single quotes
+                            
+                            Text to process: ${text}`
                         }]
                     }]
                 })
             });
-
+    
             if (!response.ok) {
                 throw new Error(`API request failed: ${response.status} ${response.statusText}`);
             }
-
+    
             const data = await response.json();
             
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
                 throw new Error('Invalid response from AI service');
             }
             
-            const flashCardsText = data.candidates[0].content.parts[0].text;
+            return data.candidates[0].content.parts[0].text;
+        };
+    
+        try {
+            // Use retry with backoff for API calls
+            const flashCardsText = await retryWithBackoff(makeAPICall);
+            console.log('Raw AI response:', flashCardsText);
             
-            // Extract JSON from markdown code blocks
-            const extractJSON = (text) => {
-                const jsonMatch = text.match(/```json\s*([\s\S]*?)\s*```/);
+            // Improved JSON extraction and cleaning
+            const extractAndCleanJSON = (text) => {
+                let jsonText = text;
+                
+                // Remove markdown code blocks
+                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
                 if (jsonMatch) {
-                    return jsonMatch[1].trim();
+                    jsonText = jsonMatch[1].trim();
                 }
                 
-                const codeMatch = text.match(/```\s*([\s\S]*?)\s*```/);
-                if (codeMatch) {
-                    return codeMatch[1].trim();
+                // Find JSON array bounds
+                const startIndex = jsonText.indexOf('[');
+                const lastIndex = jsonText.lastIndexOf(']');
+                
+                if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+                    jsonText = jsonText.substring(startIndex, lastIndex + 1);
                 }
                 
-                const arrayMatch = text.match(/\[[\s\S]*\]/);
-                if (arrayMatch) {
-                    return arrayMatch[0];
-                }
+                // Clean up common issues
+                jsonText = jsonText
+                    // Fix common escape sequence issues
+                    .replace(/\\(?!["\\/bfnrt])/g, '\\\\') // Escape lone backslashes
+                    .replace(/\\\\_/g, '_') // Fix underscore escapes
+                    .replace(/\\'/g, "'") // Fix single quote escapes
+                    .replace(/\n/g, ' ') // Replace newlines with spaces
+                    .replace(/\r/g, ' ') // Replace carriage returns
+                    .replace(/\t/g, ' ') // Replace tabs
+                    .replace(/\s+/g, ' ') // Normalize whitespace
+                    .trim();
                 
-                return text.trim();
+                return jsonText;
             };
-
-            const cleanJSON = extractJSON(flashCardsText);
+    
+            const cleanJSON = extractAndCleanJSON(flashCardsText);
             console.log('Cleaned JSON:', cleanJSON);
             
-            const parsedFlashCards = JSON.parse(cleanJSON);
-            console.log('Parsed flashcards:', parsedFlashCards);
-
-            if (parsedFlashCards && parsedFlashCards.length > 0) {
-                onSuccess(parsedFlashCards);
-            } else {
-                throw new Error('No flashcards were generated');
+            // Try parsing with better error handling
+            let parsedFlashCards;
+            try {
+                parsedFlashCards = JSON.parse(cleanJSON);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                console.error('Problematic JSON:', cleanJSON);
+                
+                // Try to fix common JSON issues and parse again
+                let fixedJSON = cleanJSON;
+                
+                // Fix trailing commas
+                fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
+                
+                // Fix missing commas between objects - CORRECTED REGEX
+                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
+                
+                // Fix missing commas between array elements
+                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
+                
+                // Remove any double commas
+                fixedJSON = fixedJSON.replace(/,,+/g, ',');
+                
+                try {
+                    parsedFlashCards = JSON.parse(fixedJSON);
+                    console.log('Successfully parsed after fixes');
+                } catch (secondParseError) {
+                    console.error('Second parse attempt failed:', secondParseError);
+                    
+                    // Last resort: try to extract individual flashcards manually
+                    try {
+                        const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
+                        if (flashcardMatches && flashcardMatches.length > 0) {
+                            parsedFlashCards = flashcardMatches.map(match => {
+                                try {
+                                    return JSON.parse(match);
+                                } catch (e) {
+                                    return null;
+                                }
+                            }).filter(card => card !== null);
+                            console.log('Successfully extracted flashcards manually');
+                        } else {
+                            throw new Error('Could not extract flashcards from response');
+                        }
+                    } catch (manualParseError) {
+                        // Create a fallback response
+                        parsedFlashCards = [
+                            {
+                                question: "Please try again",
+                                answer: "The AI response couldn't be parsed. Please upload your file again for better results."
+                            }
+                        ];
+                        
+                        console.error('Unable to parse AI response. Raw response:', flashCardsText);
+                        alert(`JSON parsing failed. Raw response: ${flashCardsText.substring(0, 200)}...`);
+                    }
+                }
             }
-
+    
+            // Validate the result
+            if (!Array.isArray(parsedFlashCards)) {
+                throw new Error('AI response is not an array of flashcards');
+            }
+    
+            // Enhanced validation function
+            const validateFlashcard = (card) => {
+                return card && 
+                       typeof card === 'object' && 
+                       card.question && 
+                       card.answer &&
+                       typeof card.question === 'string' &&
+                       typeof card.answer === 'string' &&
+                       card.question.trim().length > 0 &&
+                       card.answer.trim().length > 0;
+            };
+    
+            // Filter out invalid flashcards
+            const validFlashCards = parsedFlashCards.filter(validateFlashcard);
+    
+            if (validFlashCards.length === 0) {
+                throw new Error('No valid flashcards were generated');
+            }
+    
+            console.log(`Generated ${validFlashCards.length} valid flashcards`);
+            onSuccess(validFlashCards);
+    
         } catch (error) {
             console.error("There was an error:", error);
             alert(`There was an error generating flashcards: ${error.message}`);

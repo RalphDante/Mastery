@@ -20,6 +20,9 @@ function CreateWithAIModal({ onClose, isOpen }) {
 
   const [isSaving, setIsSaving] = useState(false);
 
+  const [cameraIsOpen, setCameraIsOpen] = useState(false);
+
+
   // Firestore instance
   const db = getFirestore(app);
 
@@ -279,6 +282,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
             </p>
 
             <FileUpload
+              cameraIsOpen={setCameraIsOpen}
               onSuccess={(generatedFlashcards) => {
                 setFlashcards(generatedFlashcards);
                 setStep(4);
