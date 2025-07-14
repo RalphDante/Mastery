@@ -140,6 +140,14 @@ const MasteryLanding = () => {
             <div className="animate-pulse"><Sparkles /></div>
           </div> */}
 
+          <div className="inline-flex items-center space-x-2 bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm border border-violet-500/30 rounded-full px-6 py-2 mb-8">
+            {/* <TrendingUp /> */}
+            <span className="text-sm font-medium">
+              67/100 slots left
+            </span>
+            <div className="animate-pulse"><Sparkles /></div>
+          </div>
+
           <h1 className={`text-6xl opacity-90 md:text-8xl font-black mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             Turn Your
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse py-4">

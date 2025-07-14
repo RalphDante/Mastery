@@ -1,6 +1,5 @@
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
-// mammoth will be loaded from CDN
 import { useState, useEffect, useRef } from 'react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -27,6 +26,26 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             };
             script.onerror = () => {
                 reject(new Error('Failed to load Tesseract.js'));
+            };
+            document.head.appendChild(script);
+        });
+    };
+
+    const loadMammoth = () => {
+        return new Promise((resolve, reject) => {
+            if (typeof window.mammoth !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js';
+            script.onload = () => {
+                console.log('Mammoth.js loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load Mammoth.js'));
             };
             document.head.appendChild(script);
         });
@@ -79,6 +98,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         accept: {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt'],
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], // Added DOCX
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'], // Added PPTX
             'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
         },
         onDrop: async (acceptedFiles) => {
@@ -89,6 +110,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             
             const file = acceptedFiles[0];
             const fileType = file.type;
+            
+            console.log('File type:', fileType, 'File name:', file.name); // Debug log
             
             try {
                 let extractedText = '';
@@ -104,8 +127,11 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 } else if (fileType.startsWith('image/')) {
                     extractedText = await performOCR(file);
                 } else {
-                    throw new Error('Unsupported file type');
+                    throw new Error(`Unsupported file type: ${fileType}`);
                 }
+                
+                console.log('Extracted text length:', extractedText.length);
+                console.log('Extracted text preview:', extractedText.substring(0, 200));
                 
                 if (extractedText.trim()) {
                     console.log('Final extracted text being sent to AI:', extractedText); // Debug log
@@ -191,36 +217,38 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     };
 
     const readDOCX = async (file) => {
-        return new Promise((resolve, reject) => {
-            // Check if mammoth is available from CDN
-            if (typeof window.mammoth === 'undefined') {
-                // Load mammoth from CDN if not available
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js';
-                script.onload = () => {
-                    processDOCX();
-                };
-                script.onerror = () => reject(new Error('Failed to load mammoth library'));
-                document.head.appendChild(script);
-            } else {
-                processDOCX();
-            }
+        try {
+            setStatus('Loading DOCX library...');
+            await loadMammoth();
             
-            function processDOCX() {
+            setStatus('Reading DOCX file...');
+            
+            return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onload = async (event) => {
                     try {
                         const arrayBuffer = event.target.result;
+                        console.log('DOCX file size:', arrayBuffer.byteLength);
+                        
                         const result = await window.mammoth.extractRawText({ arrayBuffer });
-                        resolve(result.value);
+                        console.log('DOCX extraction result:', result);
+                        
+                        if (result.value && result.value.trim()) {
+                            resolve(result.value);
+                        } else {
+                            reject(new Error('No text content found in DOCX file'));
+                        }
                     } catch (error) {
+                        console.error('DOCX processing error:', error);
                         reject(error);
                     }
                 };
                 reader.onerror = reject;
                 reader.readAsArrayBuffer(file);
-            }
-        });
+            });
+        } catch (error) {
+            throw new Error(`DOCX processing failed: ${error.message}`);
+        }
     };
 
     const readPPTX = async (file) => {
@@ -337,7 +365,12 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         try {
             console.log('Text being sent to AI:', text.substring(0, 500) + '...'); // Debug log (first 500 chars)
             
+            // Check if API key is available
             const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
+            }
+            
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
@@ -355,7 +388,16 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 })
             });
 
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            }
+
             const data = await response.json();
+            
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('Invalid response from AI service');
+            }
+            
             const flashCardsText = data.candidates[0].content.parts[0].text;
             
             // Extract JSON from markdown code blocks
@@ -386,11 +428,13 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
             if (parsedFlashCards && parsedFlashCards.length > 0) {
                 onSuccess(parsedFlashCards);
+            } else {
+                throw new Error('No flashcards were generated');
             }
 
         } catch (error) {
             console.error("There was an error:", error);
-            alert("There was an error generating flashcards. Please try again.");
+            alert(`There was an error generating flashcards: ${error.message}`);
         }
     };
 
@@ -480,10 +524,6 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             Cancel
                         </button>
                     </div>
-                    
-                    {/* <div className="text-xs text-gray-500 text-center max-w-md">
-                        Make sure your notes are well-lit and clearly visible for best OCR results
-                    </div> */}
                 </div>
             )}
         </div>
