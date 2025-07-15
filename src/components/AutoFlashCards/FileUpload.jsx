@@ -382,6 +382,16 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
             }
             
+            const estimateFlashcardCount = (textLength) => {
+                if (textLength < 500) return 15;
+                if (textLength < 1500) return 30;
+                if (textLength < 3000) return 50;
+                if (textLength < 5000) return 75;
+                return 100; // For very long texts
+            };
+            
+            const flashcardCount = estimateFlashcardCount(text.length);
+
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
@@ -390,7 +400,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `You are a flashcard generator. Create exactly 25 flashcards from the provided text.
+                            text: `You are a flashcard generator. Create exactly ${flashcardCount} flashcards from the provided text.
     
                             CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
                             
@@ -401,7 +411,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             - Answers should be concise but complete
                             - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
                             - No line breaks within strings
-                            - Exactly 25 flashcards
+                            - Exactly ${flashcardCount} flashcards
                             - Double quotes only, no single quotes
                             
                             Text to process: ${text}`
