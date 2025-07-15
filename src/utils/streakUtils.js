@@ -138,7 +138,7 @@ export const hasStudiedToday = (lastStudyDate) => {
 // Enhanced version that tracks daily review sessions
 export const trackDailySession = async (db, userId, sessionData) => {
   const today = new Date();
-  const dateKey = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const dateKey = today.toLocaleDateString('en-CA'); // YYYY-MM-DD format
   
   const sessionDocRef = doc(db, 'users', userId, 'dailySessions', dateKey);
   
