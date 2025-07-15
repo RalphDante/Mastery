@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import FileUpload from "./FileUpload";
+import FileUpload from "../../../components/AutoFlashCards/FileUpload";
 
 function CreateWithAIDemoModal({ onClose, isOpen }) {
   const navigate = useNavigate();
