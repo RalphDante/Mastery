@@ -11,6 +11,8 @@ import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
 
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
+import OverallMastery from './Overall Mastery/OverallMastery.jsx';
+import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -42,13 +44,15 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-12">
-          <WelcomeSection 
-          
-          />
+          <WelcomeSection />
+
+          <OverallMasteryV2 />
+
           <LearningHubSection 
             onCreateDeckClick={onCreateDeckClick}
             onCreateWithAIModalClick={onCreateWithAIModalClick}
           />
+
 
         </div>
 

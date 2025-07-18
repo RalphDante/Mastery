@@ -443,7 +443,7 @@ function App() {
                     
                     {/* Section 2: Your Learning Hub */}
                     <section id="learning-hub-section">
-                         <div className="mb-8">
+                        <div className="mb-8">
                             <h2 className="text-2xl font-bold text-slate-100">Your Learning Hub</h2>
                             <p className="text-md text-slate-400">Quickly jump back into your studies or create something new.</p>
                         </div>

@@ -158,9 +158,9 @@ function App(){
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
                   {/* Test Phases */}
-                  {/* <Route path='/go-premium' element={<GoPremium />} />
+                  <Route path='/go-premium' element={<GoPremium />} />
                   <Route path='/newhome' element={<NewHomePage />} />
-                  <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
+                  <Route path='/newflashcardui' element={<NewFlashCardUI />} />
 
 
 
