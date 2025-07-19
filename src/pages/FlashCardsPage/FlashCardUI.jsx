@@ -432,7 +432,8 @@ function FlashCardUI({
             }, { merge: true });
     
             // Update streak system (NEW)
-            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect);
+            const isCramming = false;
+            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
             
             if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
                 // Optional: Show streak notification
@@ -473,7 +474,8 @@ function FlashCardUI({
 
     try {
         // Track streak for cramming mode too (NEW)
-        const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect);
+        const isCramming = true;
+        const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
         
         if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
             console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);

@@ -136,7 +136,8 @@ export const hasStudiedToday = (lastStudyDate) => {
 };
 
 // Enhanced version that tracks daily review sessions
-export const trackDailySession = async (db, userId, sessionData) => {
+// Enhanced version that tracks daily review sessions
+export const trackDailySession = async (db, userId, sessionData, isCramming) => {
   const today = new Date();
   const dateKey = today.toLocaleDateString('en-CA'); // YYYY-MM-DD format
   
@@ -158,20 +159,30 @@ export const trackDailySession = async (db, userId, sessionData) => {
         accuracy: sessionData.accuracy || 0,
         sessions: 1,
         firstSessionAt: Timestamp.now(),
-        lastSessionAt: Timestamp.now()
+        lastSessionAt: Timestamp.now(),
+        crammingSessions: isCramming ? 1 : 0,
+        spacedSessions: isCramming ? 0 : 1
       });
       
       return { ...streakUpdate, isFirstSessionToday: true };
     } else {
       // Additional session today - just update session data
+      const newCardsReviewed = existingSession.cardsReviewed + (sessionData.cardsReviewed || 1);
+      const newCardsCorrect = existingSession.cardsCorrect + (sessionData.cardsCorrect || 0);
+      
       await setDoc(sessionDocRef, {
         ...existingSession,
-        cardsReviewed: existingSession.cardsReviewed + (sessionData.cardsReviewed || 1),
-        cardsCorrect: existingSession.cardsCorrect + (sessionData.cardsCorrect || 0),
-        sessions: existingSession.sessions + 1,
+        cardsReviewed: newCardsReviewed,
+        cardsCorrect: newCardsCorrect,
+        sessions: (existingSession.sessions || 1) + 1,
         lastSessionAt: Timestamp.now(),
-        accuracy: existingSession.cardsReviewed > 0 ? 
-          existingSession.cardsCorrect / existingSession.cardsReviewed : 0
+        accuracy: newCardsReviewed > 0 ? newCardsCorrect / newCardsReviewed : 0,
+        crammingSessions: isCramming ? 
+          (existingSession.crammingSessions || 0) + 1 : 
+          (existingSession.crammingSessions || 0),
+        spacedSessions: isCramming ? 
+          (existingSession.spacedSessions || 0) : 
+          (existingSession.spacedSessions || 0) + 1
       });
       
       return { isFirstSessionToday: false };
@@ -182,14 +193,15 @@ export const trackDailySession = async (db, userId, sessionData) => {
   }
 };
 
+
 // Updated FlashCardUI integration code
-export const updateFlashCardUIStreaks = async (db, userId, isCorrect) => {
+export const updateFlashCardUIStreaks = async (db, userId, isCorrect, isCramming) => {
   try {
     const streakResult = await trackDailySession(db, userId, {
       cardsReviewed: 1,
       cardsCorrect: isCorrect ? 1 : 0,
       accuracy: isCorrect ? 1 : 0
-    });
+    }, isCramming);
     
     if (streakResult.isFirstSessionToday && streakResult.isNewStreak) {
       // Show streak notification or update UI
