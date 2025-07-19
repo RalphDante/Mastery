@@ -166,6 +166,13 @@ function App(){
 
               </Routes>
 
+              {/* Footer */}
+              <footer className="bg-gray-900 mt-6 border-t border-gray-700">
+                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-400">
+                      <p>&copy; 2025 Mastery. All rights reserved.</p>
+                  </div>
+              </footer>
+
 
 
               {/* Global Modals - These will render at the root level and center properly */}

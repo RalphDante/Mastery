@@ -15,6 +15,8 @@ import StudyModeSelector from "./StudyModeSelector";
 import { updateFlashCardUIStreaks } from '../../utils/streakUtils';
 import { calculateSM2 } from '../../utils/sm2'; 
 
+import StudyTimeTracker from './StudyTimeTracker';
+
 
 // FiresStore
 
@@ -599,6 +601,12 @@ function FlashCardUI({
                             </div>
                         )}
                     </div>
+                    <StudyTimeTracker 
+                    authUser={authUser}
+                    db={db}
+                    deckId={deckId}
+                    className="mt-2"
+                    />
                 </div>
             );
         } else {
@@ -611,6 +619,12 @@ function FlashCardUI({
                             `Card ${flashCards.length} of ${flashCards.length}`
                         }
                     </div>
+                    <StudyTimeTracker 
+                    authUser={authUser}
+                    db={db}
+                    deckId={deckId}
+                    className="mt-2"
+                    />
                 </div>
             );
         }
