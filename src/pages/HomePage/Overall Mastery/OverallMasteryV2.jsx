@@ -1,24 +1,167 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react'; // Add missing imports
 import { Trophy, Flame, Target, TrendingUp, Clock, Brain, Star, Zap, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
+import { db, auth } from '../../../api/firebase';
+import { doc, getDoc, collection, getDocs, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
+
 const OverallMasteryV2 = () => {
+  // Add missing state variables
+  const [userData, setUserData] = useState(null);
+  const [weekData, setWeekData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  const [user, loadingAuth, errorAuth] = useAuthState(auth);
+  const currentUserId = user?.uid;
 
-  const weekData = [
-    { day: 'Mon', minutes: 25, spacedRep: 45, cramming: 20 },
-    { day: 'Tue', minutes: 45, spacedRep: 80, cramming: 30 },
-    { day: 'Wed', minutes: 35, spacedRep: 60, cramming: 25 },
-    { day: 'Thu', minutes: 55, spacedRep: 90, cramming: 35 },
-    { day: 'Fri', minutes: 40, spacedRep: 70, cramming: 40 },
-    { day: 'Sat', minutes: 65, spacedRep: 100, cramming: 50 },
-    { day: 'Sun', minutes: 30, spacedRep: 55, cramming: 15 }
-  ];
+  // Move useEffect inside component
+  useEffect(() => {
+    if (!currentUserId) return;
 
+    const userDocRef = doc(db, 'users', currentUserId);
+    const unsubscribe = onSnapshot(userDocRef, (doc) => {
+      if (doc.exists()) {
+        setUserData(doc.data());
+      }
+    });
+
+    // Call fetchUserData when component mounts
+    fetchUserData();
+
+    return () => unsubscribe();
+  }, [currentUserId]);
+
+  // Function to generate last 7 days including today (previous 6 + current day)
+  const generateLast7Days = () => {
+    const today = new Date();
+    const last7Days = [];
+    
+    // Mock data - in real app this would come from your database
+    const mockStudyData = {
+      // Previous 6 days with real data
+      6: { minutes: 0, spacedRep: 0, cramming: 0 },
+      5: { minutes: 0, spacedRep: 0, cramming: 0 },
+      4: { minutes: 0, spacedRep: 0, cramming: 0 },
+      3: { minutes: 0, spacedRep: 0, cramming: 0 },
+      2: { minutes: 0, spacedRep: 0, cramming: 0 },
+      1: { minutes: 0, spacedRep: 0, cramming: 0 },
+      0: { minutes: 30, spacedRep: 55, cramming: 15 } // Today - will update in real-time
+    };
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+      const isToday = i === 0;
+      
+      const dayData = mockStudyData[i] || { minutes: 0, spacedRep: 0, cramming: 0 };
+      
+      last7Days.push({
+        day: dayName,
+        minutes: dayData.minutes,
+        spacedRep: dayData.spacedRep,
+        cramming: dayData.cramming,
+        isToday
+      });
+    }
+    
+    return last7Days;
+  };
+
+  const fetchLast7DaysSessions = async () => {
+    if (!currentUserId) return [];
+    
+    const last7Days = [];
+    const today = new Date();
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(today.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+      const isToday = i === 0;
+      
+      try {
+        // Query the dailySessions subcollection based on your structure
+        const sessionDocRef = doc(db, 'users', currentUserId, 'dailySessions', dateStr);
+        const sessionDoc = await getDoc(sessionDocRef);
+        
+        let sessionData = { minutes: 0, spacedRep: 0, cramming: 0 };
+        
+        if (sessionDoc.exists()) {
+          const data = sessionDoc.data();
+          sessionData = {
+            minutes: data.minutesStudied || 0,
+            spacedRep: data.spacedSessions || 0,
+            cramming: data.crammingSessions || 0
+          };
+        }
+        
+        last7Days.push({
+          day: dayName,
+          date: dateStr,
+          minutes: Math.round(sessionData.minutes),
+          spacedRep: sessionData.spacedRep,
+          cramming: sessionData.cramming,
+          isToday
+        });
+      } catch (error) {
+        console.error(`Error fetching data for ${dateStr}:`, error);
+        // Add default data for this day
+        last7Days.push({
+          day: dayName,
+          date: dateStr,
+          minutes: 0,
+          spacedRep: 0,
+          cramming: 0,
+          isToday
+        });
+      }
+    }
+    
+    return last7Days;
+  };
+
+  const fetchUserData = async () => {
+    if (!currentUserId) {
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Get user stats from /users/{userId}
+      const userDocRef = doc(db, 'users', currentUserId);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setUserData(userData);
+      }
+  
+      // Get last 7 days of daily sessions
+      const last7DaysData = await fetchLast7DaysSessions();
+      setWeekData(last7DaysData);
+      
+    } catch (err) {
+      console.error('Error fetching user data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Use mock data if weekData is empty (fallback)
+  const displayWeekData = weekData.length > 0 ? weekData : generateLast7Days();
+  
+  // Get today's data (last item in the array)
+  const todayData = displayWeekData[displayWeekData.length - 1] || { minutes: 0, spacedRep: 0, cramming: 0 };
   const todayStats = {
-    minutesStudied: 30,
-    cardsStudied: 70, // 55 spaced + 15 cramming
-    currentStreak: 7,
-    bestStreak: 25
+    minutesStudied: Math.round(todayData.minutes),
+    cardsStudied: todayData.spacedRep + todayData.cramming,
+    currentStreak: userData?.stats?.currentStreak || 0,
+    bestStreak: userData?.stats?.longestStreak || 0
   };
 
   const stats = {
@@ -38,9 +181,15 @@ const OverallMasteryV2 = () => {
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
+      // Check if this is today's data
+      const dataPoint = displayWeekData.find(d => d.day === label);
+      const isToday = dataPoint?.isToday;
+      
       return (
         <div className="bg-slate-800 border border-slate-600 rounded-lg p-3 shadow-lg">
-          <p className="text-white font-medium">{label}</p>
+          <p className="text-white font-medium">
+            {label} {isToday && <span className="text-green-400 text-xs">(Today)</span>}
+          </p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
               {entry.name}: {entry.value}
@@ -52,123 +201,26 @@ const OverallMasteryV2 = () => {
     return null;
   };
 
-  const StreakCard = ({ current, best }) => (
-    <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-4 text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center mb-2">
-            <Flame className="w-5 h-5 mr-2" />
-            <span className="font-semibold text-sm">Current Streak</span>
-          </div>
-          <div className="text-3xl font-bold">{current}</div>
-          <div className="text-sm opacity-90">days</div>
-        </div>
-        <div className="text-right">
-          <div className="flex items-center mb-2">
-            <Trophy className="w-4 h-4 mr-1" />
-            <span className="text-xs opacity-75">Personal Best</span>
-          </div>
-          <div className="text-xl font-bold">{best}</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const CircularProgress = ({ percentage, size = 120, strokeWidth = 8, color = "#8B5CF6" }) => {
-    const radius = (size - strokeWidth) / 2;
-    const circumference = radius * 2 * Math.PI;
-    const offset = circumference - (percentage / 100) * circumference;
-    
+  // Show loading state
+  if (loading || loadingAuth) {
     return (
-      <div className="relative inline-flex items-center justify-center">
-        <svg width={size} height={size} className="transform -rotate-90">
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke="#374151"
-            strokeWidth={strokeWidth}
-            fill="none"
-            className="opacity-20"
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            className="transition-all duration-1000 ease-out"
-            strokeLinecap="round"
-          />
-        </svg>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white">{percentage}%</div>
-            <div className="text-xs text-gray-400">Mastery</div>
-          </div>
-        </div>
+      <div className="bg-slate-900 text-white rounded-lg p-6">
+        <div className="text-center">Loading...</div>
       </div>
     );
-  };
+  }
 
-  const StatCard = ({ icon: Icon, label, value, subtext, color = "#8B5CF6", trend }) => (
-    <div className="bg-slate-800 rounded-xl p-4 border border-slate-700 hover:border-slate-600 transition-all">
-      <div className="flex items-center justify-between mb-2">
-        <Icon className="w-5 h-5" style={{ color }} />
-        {trend && (
-          <div className="flex items-center text-green-400 text-xs">
-            <TrendingUp className="w-3 h-3 mr-1" />
-            {trend}
-          </div>
-        )}
+  // Show error state
+  if (error || errorAuth) {
+    return (
+      <div className="bg-slate-900 text-white rounded-lg p-6">
+        <div className="text-center text-red-400">Error: {error || errorAuth?.message}</div>
       </div>
-      <div className="text-2xl font-bold text-white mb-1">{value}</div>
-      <div className="text-sm text-gray-400">{label}</div>
-      {subtext && <div className="text-xs text-gray-500 mt-1">{subtext}</div>}
-    </div>
-  );
-
-  const StreakBadge = ({ current, longest }) => (
-    <div className="bg-gradient-to-r from-orange-500 to-red-500 rounded-xl p-4 text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center mb-2">
-            <Flame className="w-5 h-5 mr-2" />
-            <span className="font-semibold">Fire Streak</span>
-          </div>
-          <div className="text-3xl font-bold">{current}</div>
-          <div className="text-sm opacity-90">days strong</div>
-        </div>
-        <div className="text-right">
-          <div className="text-xs opacity-75">Personal Best</div>
-          <div className="text-xl font-bold">{longest}</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const LevelBadge = ({ level, rank, totalUsers }) => (
-    <div className="bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl p-4 text-white">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center mb-2">
-            <Star className="w-5 h-5 mr-2" />
-            <span className="font-semibold">{level}</span>
-          </div>
-          <div className="text-sm opacity-90">Rank #{rank} of {totalUsers}</div>
-        </div>
-        <div className="text-right">
-          <Trophy className="w-8 h-8 opacity-80" />
-        </div>
-      </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="bg-slate-900 text-white  rounded-lg">
+    <div className="bg-slate-900 text-white rounded-lg">
       <div className="mb-6">
         <h2 className="text-2xl font-bold mb-2">Overall Mastery</h2>
         <p className="text-gray-400">Your learning journey at a glance - keep up the momentum!</p>
@@ -176,11 +228,10 @@ const OverallMasteryV2 = () => {
 
       {/* Main Progress Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Mastery Progress Circle */}
         {/* Minutes Studied Today - Main Focus */}
         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700">
             <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold text-white mb-2">Mastery Progress</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Today's Progress</h3>
             </div>
             
             {/* Main Minutes Display */}
@@ -189,7 +240,7 @@ const OverallMasteryV2 = () => {
                 <Clock className="w-5 h-5 text-green-400" />
                 <span className="text-sm text-gray-400">Minutes Today</span>
               </div>
-              <div className="text-5xl font-bold text-white mb-1">30</div>
+              <div className="text-5xl font-bold text-white mb-1">{todayStats.minutesStudied}</div>
               <div className="text-sm text-gray-400">Keep it up!</div>
             </div>
 
@@ -199,7 +250,7 @@ const OverallMasteryV2 = () => {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <BookOpen className="w-4 h-4 text-purple-400" />
                 </div>
-                <div className="text-2xl font-bold text-white">70</div>
+                <div className="text-2xl font-bold text-white">{todayStats.cardsStudied}</div>
                 <div className="text-xs text-gray-400">Cards Today</div>
                 <div className="text-xs text-gray-500">Great progress!</div>
               </div>
@@ -208,25 +259,21 @@ const OverallMasteryV2 = () => {
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <Flame className="w-4 h-4 text-orange-400" />
                 </div>
-                <div className="text-2xl font-bold text-white">7</div>
+                <div className="text-2xl font-bold text-white">{todayStats.currentStreak}</div>
                 <div className="text-xs text-gray-400">Day Streak</div>
-                <div className="text-xs text-orange-400">🔥 Personal Best: 25</div>
+                <div className="text-xs text-orange-400">🔥 Personal Best: {todayStats.bestStreak}</div>
               </div>
             </div>
           </div>
-        
 
-        {/* Streak Card */}
-        
-        {/* <StreakBadge current={stats.currentStreak} longest={stats.longestStreak} /> */}
         {/* Cards Studied Chart */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Brain className="w-5 h-5 mr-2 text-purple-400" />
-            Daily Cards Reviewed
+            Last 7 Days - Cards Reviewed
           </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={weekData}>
+            <BarChart data={displayWeekData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="day" 
@@ -255,26 +302,16 @@ const OverallMasteryV2 = () => {
               />
             </BarChart>
           </ResponsiveContainer>
-          {/* <div className="flex items-center justify-center mt-4 space-x-6">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-purple-500 rounded mr-2"></div>
-              <span className="text-sm text-gray-400">Spaced Repetition</span>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-pink-500 rounded mr-2"></div>
-              <span className="text-sm text-gray-400">Cramming</span>
-            </div>
-          </div> */}
         </div>
 
         {/* Minutes Studied Chart */}
         <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
           <h3 className="text-lg font-semibold mb-4 flex items-center">
             <Clock className="w-5 h-5 mr-2 text-green-400" />
-            Daily Study Time
+            Last 7 Days - Study Time
           </h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={weekData}>
+            <LineChart data={displayWeekData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="day" 
@@ -292,71 +329,25 @@ const OverallMasteryV2 = () => {
                 dataKey="minutes" 
                 stroke="#10B981" 
                 strokeWidth={3}
-                dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, stroke: '#10B981' }}
+                dot={(props) => {
+                  const { cx, cy, payload } = props;
+                  return (
+                    <circle
+                      cx={cx}
+                      cy={cy}
+                      r={payload.isToday ? 6 : 4}
+                      fill={payload.isToday ? '#34D399' : '#10B981'}
+                      stroke={payload.isToday ? '#10B981' : '#065F46'}
+                      strokeWidth={payload.isToday ? 3 : 2}
+                    />
+                  );
+                }}
+                activeDot={{ r: 8, stroke: '#10B981' }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Level & Rank */}
-        {/* <LevelBadge 
-          level={stats.level} 
-          rank={stats.rankPosition} 
-          totalUsers={stats.totalUsers} 
-        /> */}
       </div>
-
-      {/* Stats Grid */}
-      {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard 
-          icon={Brain} 
-          label="Cards Today" 
-          value={stats.todayCards}
-          subtext="Great progress!"
-          color="#10B981"
-          trend="+12%"
-        />
-        <StatCard 
-          icon={Clock} 
-          label="This Week" 
-          value={`${stats.weeklyMinutes}m`}
-          subtext="Study time"
-          color="#F59E0B"
-        />
-        <StatCard 
-          icon={Target} 
-          label="Accuracy" 
-          value={`${stats.accuracyRate}%`}
-          subtext="Getting better!"
-          color="#EF4444"
-          trend="+3%"
-        />
-        <StatCard 
-          icon={Zap} 
-          label="Total Decks" 
-          value={stats.totalDecks}
-          subtext={`${stats.totalCards} cards`}
-          color="#8B5CF6"
-        />
-      </div> */}
-
-      {/* Achievement Banner */}
-      {/* <div className="bg-gradient-to-r from-green-600 to-blue-600 rounded-xl p-4 text-white">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Trophy className="w-6 h-6 mr-3" />
-            <div>
-              <div className="font-semibold">Achievement Unlocked!</div>
-              <div className="text-sm opacity-90">Week Warrior - 7 days of consistent study</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs opacity-75">Next Goal</div>
-            <div className="text-sm font-semibold">Study Streak: 10 days</div>
-          </div>
-        </div>
-      </div> */}
     </div>
   );
 };
