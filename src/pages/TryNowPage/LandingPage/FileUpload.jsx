@@ -251,18 +251,228 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         }
     };
 
+    
+    // Add this function to load the PPTX library
+    const loadPptxGenJs = () => {
+        return new Promise((resolve, reject) => {
+            if (typeof window.PptxGenJS !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pptxgenjs/3.12.0/pptxgen.bundle.min.js';
+            script.onload = () => {
+                console.log('PptxGenJS loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load PptxGenJS'));
+            };
+            document.head.appendChild(script);
+        });
+    };
+
+    // Alternative: Load JSZip and XML parser for manual PPTX parsing
+    const loadJSZip = () => {
+        return new Promise((resolve, reject) => {
+            if (typeof window.JSZip !== 'undefined') {
+                resolve();
+                return;
+            }
+            
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+            script.onload = () => {
+                console.log('JSZip loaded successfully');
+                resolve();
+            };
+            script.onerror = () => {
+                reject(new Error('Failed to load JSZip'));
+            };
+            document.head.appendChild(script);
+        });
+    };
+
+    // Replace your existing readPPTX function with this improved version
     const readPPTX = async (file) => {
-        // PowerPoint files are more complex - this is a simplified approach
-        // For full PowerPoint support, you'd need a more specialized library
+        try {
+            setStatus('Loading PPTX library...');
+            await loadJSZip();
+            
+            setStatus('Reading PowerPoint file...');
+            
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const arrayBuffer = event.target.result;
+                        const zip = await window.JSZip.loadAsync(arrayBuffer);
+                        
+                        let extractedText = '';
+                        
+                        // Extract text from slides
+                        const slideFiles = Object.keys(zip.files).filter(fileName => 
+                            fileName.startsWith('ppt/slides/slide') && fileName.endsWith('.xml')
+                        );
+                        
+                        console.log('Found slide files:', slideFiles);
+                        
+                        for (const slideFile of slideFiles) {
+                            const slideXml = await zip.files[slideFile].async('string');
+                            const slideText = extractTextFromSlideXML(slideXml);
+                            extractedText += slideText + '\n\n';
+                        }
+                        
+                        // Also try to extract from slide layouts and masters if slides are empty
+                        if (extractedText.trim().length < 50) {
+                            const layoutFiles = Object.keys(zip.files).filter(fileName => 
+                                fileName.startsWith('ppt/slideLayouts/') && fileName.endsWith('.xml')
+                            );
+                            
+                            for (const layoutFile of layoutFiles) {
+                                const layoutXml = await zip.files[layoutFile].async('string');
+                                const layoutText = extractTextFromSlideXML(layoutXml);
+                                extractedText += layoutText + '\n';
+                            }
+                        }
+                        
+                        console.log('PPTX extraction result length:', extractedText.length);
+                        console.log('PPTX extraction preview:', extractedText.substring(0, 300));
+                        
+                        if (extractedText && extractedText.trim()) {
+                            resolve(extractedText.trim());
+                        } else {
+                            reject(new Error('No readable text content found in PowerPoint file'));
+                        }
+                    } catch (error) {
+                        console.error('PPTX processing error:', error);
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        } catch (error) {
+            throw new Error(`PowerPoint processing failed: ${error.message}`);
+        }
+    };
+
+    // Helper function to extract text from slide XML
+    const extractTextFromSlideXML = (xmlString) => {
+        try {
+            // Create a temporary DOM element to parse XML
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+            
+            // Check for parsing errors
+            const parserError = xmlDoc.querySelector('parsererror');
+            if (parserError) {
+                console.warn('XML parsing error:', parserError.textContent);
+                return extractTextWithRegex(xmlString);
+            }
+            
+            // Extract text from <a:t> elements (actual text content)
+            const textElements = xmlDoc.querySelectorAll('t');
+            let extractedText = '';
+            
+            textElements.forEach(element => {
+                const text = element.textContent;
+                if (text && text.trim()) {
+                    extractedText += text.trim() + ' ';
+                }
+            });
+            
+            // If DOM parsing didn't work well, fall back to regex
+            if (extractedText.trim().length < 10) {
+                return extractTextWithRegex(xmlString);
+            }
+            
+            return extractedText;
+        } catch (error) {
+            console.warn('DOM parsing failed, using regex fallback:', error);
+            return extractTextWithRegex(xmlString);
+        }
+    };
+
+    // Fallback regex-based text extraction
+    const extractTextWithRegex = (xmlString) => {
+        // Extract text between <a:t> tags
+        const textMatches = xmlString.match(/<a:t[^>]*>(.*?)<\/a:t>/g);
+        let extractedText = '';
+        
+        if (textMatches) {
+            textMatches.forEach(match => {
+                // Remove the XML tags and decode HTML entities
+                const text = match.replace(/<[^>]+>/g, '');
+                if (text && text.trim()) {
+                    extractedText += decodeHtmlEntities(text.trim()) + ' ';
+                }
+            });
+        }
+        
+        // Also try alternative text patterns
+        if (extractedText.trim().length < 10) {
+            const altMatches = xmlString.match(/>([\w\s\.,!?;:'"()-]{3,})</g);
+            if (altMatches) {
+                altMatches.forEach(match => {
+                    const text = match.slice(1, -1); // Remove > and <
+                    if (text && text.trim() && !text.includes('<') && !text.includes('xml')) {
+                        extractedText += text.trim() + ' ';
+                    }
+                });
+            }
+        }
+        
+        return extractedText;
+    };
+
+    // Helper function to decode HTML entities
+    const decodeHtmlEntities = (text) => {
+        const textArea = document.createElement('textarea');
+        textArea.innerHTML = text;
+        return textArea.value;
+    };
+
+    // Alternative simpler approach if JSZip doesn't work
+    const readPPTXSimple = async (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async (event) => {
                 try {
-                    // This is a basic approach - you might want to use a specialized PPTX library
-                    const text = new TextDecoder().decode(event.target.result);
-                    // Extract readable text (this is very basic)
-                    const cleanText = text.replace(/[^\x20-\x7E]/g, ' ').replace(/\s+/g, ' ');
-                    resolve(cleanText);
+                    const arrayBuffer = event.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(uint8Array);
+                    
+                    // Look for text patterns in the PPTX structure
+                    const textMatches = text.match(/>([^<>\x00-\x1f\x7f-\x9f]{10,})</g);
+                    let extractedText = '';
+                    
+                    if (textMatches) {
+                        const uniqueTexts = new Set();
+                        textMatches.forEach(match => {
+                            const cleanText = match.slice(1, -1).trim();
+                            // Filter out XML tags, namespaces, and other non-content
+                            if (cleanText && 
+                                !cleanText.includes('xml') && 
+                                !cleanText.includes('http') &&
+                                !cleanText.includes('schemas') &&
+                                !cleanText.includes('openxmlformats') &&
+                                !cleanText.match(/^[A-Za-z]+:/) && // namespace prefixes
+                                cleanText.length > 3 &&
+                                /[a-zA-Z]/.test(cleanText)) { // contains letters
+                                uniqueTexts.add(cleanText);
+                            }
+                        });
+                        
+                        extractedText = Array.from(uniqueTexts).join(' ');
+                    }
+                    
+                    if (extractedText.trim()) {
+                        resolve(extractedText);
+                    } else {
+                        reject(new Error('No readable text found in PowerPoint file'));
+                    }
                 } catch (error) {
                     reject(error);
                 }
@@ -382,6 +592,16 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
             }
             
+            const estimateFlashcardCount = (textLength) => {
+                if (textLength < 500) return 15;
+                if (textLength < 1500) return 30;
+                if (textLength < 3000) return 50;
+                if (textLength < 5000) return 75;
+                return 100; // For very long texts
+            };
+            
+            const flashcardCount = estimateFlashcardCount(text.length);
+
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
@@ -390,7 +610,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `You are a flashcard generator. Create exactly 25 flashcards from the provided text.
+                            text: `You are a flashcard generator. Create exactly ${flashcardCount} flashcards from the provided text.
     
                             CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
                             
@@ -401,7 +621,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             - Answers should be concise but complete
                             - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
                             - No line breaks within strings
-                            - Exactly 25 flashcards
+                            - Exactly ${flashcardCount} flashcards
                             - Double quotes only, no single quotes
                             
                             Text to process: ${text}`
