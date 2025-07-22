@@ -705,43 +705,8 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     return (
         <>
-            <div className="flex justify-between mb-1">
-                <button
-                    onClick={handleSaveDeck}
-                    className={`
-                        relative
-                        px-3 py-1 
-                        bg-gradient-to-r from-emerald-500 to-emerald-600  
-                        rounded-lg
-                        hover:from-emerald-600 hover:to-emerald-700
-                        text-white font-medium
-                        transition-all duration-300
-                        shadow-lg
-                        ${authLoading ? 'opacity-75 cursor-not-allowed' : 'hover:shadow-emerald-500/40'}
-                        overflow-hidden
-                    `}
-                    disabled={authLoading}
-                >
-                    {/* Glow effect (hidden when loading) */}
-                    {!authLoading && (
-                        <span className="absolute inset-0 bg-white opacity-10 animate-pulse rounded-lg"></span>
-                    )}
-                    
-                    {/* Button content */}
-                    <span className="relative z-10 flex items-center justify-center gap-1">
-                        {authLoading ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                Loading...
-                            </>
-                        ) : (
-                            authUser ? 'Save Deck' : 'Save My Progress'
-                        )}
-                    </span>
-                </button>
+            <div className="flex justify-end">
+                
 
                 <div className="flex bg-gray-700 rounded-lg p-1">
                     <button
@@ -769,7 +734,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     >
                         {/* Tooltip */}
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                            Save Progress To Use This
+                            Sign up to use Spaced Repetition
                         </div>
 
                         <i className="fa-solid fa-brain"></i>
@@ -777,6 +742,20 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     </button>
                 </div>
             </div>
+
+            <div class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-3 rounded-lg shadow-xl border border-amber-500/50">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center space-x-3">
+                                    
+                                    <p class="font-semibold">⚠️ Warning: You'll lose these 104 cards and all progress without an account!</p>
+                                    </div>
+                                    <button class="bg-white text-orange-600 font-semibold px-5 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm shadow-md flex-shrink-0 ml-4"
+                                        onClick={handleSaveDeck}
+                                    >
+                                    Save Now
+                                    </button>
+                                </div>
+                            </div>
 
             <div className={`${styles.scoreContainer}`}>
                 <div style={{ margin: '0px', textAlign: 'center' }}>
@@ -792,9 +771,12 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                             </div>
                         </>
                     ) : (
-                        <div className="text-center text-white/70 text-sm my-3">
-                            Card {Math.min(currentIndex + 1, flashCards.length)} of {flashCards.length}
+                        <div>
+                             <div className="text-center text-white/70 text-sm my-3">
+                                Card {Math.min(currentIndex + 1, flashCards.length)} of {flashCards.length}
+                            </div>
                         </div>
+                       
                     )}
                 </div>
             </div>
