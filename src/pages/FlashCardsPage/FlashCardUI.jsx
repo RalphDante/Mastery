@@ -50,6 +50,8 @@ function FlashCardUI({
     const [dueCardsCount, setDueCardsCount] = useState(0);
     const [orphanedProgressCount, setOrphanedProgressCount] = useState(0);
 
+    const [isFinished, setIsFinished] = useState(false);
+
     // Cramming mode tracking states
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
@@ -57,7 +59,7 @@ function FlashCardUI({
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
 
     // Initialize Cloudinary
-    const cld = new Cloudinary({ cloud: { cloudName: 'dph28fehb' } });
+    const cld = new Cloudinary({ cloud: { cloudName: `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}` } });
 
     // Helper function to create optimized Cloudinary image
     const createOptimizedImage = (publicId) => {
@@ -217,6 +219,7 @@ function FlashCardUI({
         setShowAnswer(false);
         setDueCardsCount(0);
         setOrphanedProgressCount(0);
+        setIsFinished(false);
         
         // Reset cramming mode tracking
         setOriginalDeckSize(0);
@@ -378,6 +381,7 @@ function FlashCardUI({
         dontKnowAnswer(0); 
         setAnswers([]);
         setProcessing(false);
+        setIsFinished(false)
     }, [flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, studyMode, fetchDeckAndCards]);
 
     // --- Handle card rating for SM-2 (ONLY FOR SPACED MODE) ---
@@ -567,6 +571,13 @@ function FlashCardUI({
         }
     }, [flashCards, currentIndex]);
 
+    // Show if the deck is finished
+    useEffect(()=>{
+        if(!(currentIndex < flashCards.length)){
+            setIsFinished(true);
+        }
+    },[currentIndex])
+
     // Helper to calculate approximate next interval for display on buttons
     const getApproximateNextInterval = (quality) => {
         if (!flashCards[currentIndex] || !flashCards[currentIndex].progress) {
@@ -604,10 +615,10 @@ function FlashCardUI({
                         )}
                     </div>
                     <StudyTimeTracker 
-                    authUser={authUser}
-                    db={db}
-                    deckId={deckId}
-                    className="mt-2"
+                        authUser={authUser}
+                        db={db}
+                        deckId={deckId}
+                        isFinished={isFinished}
                     />
                 </div>
             );
@@ -622,10 +633,10 @@ function FlashCardUI({
                         }
                     </div>
                     <StudyTimeTracker 
-                    authUser={authUser}
-                    db={db}
-                    deckId={deckId}
-                    className="mt-2"
+                        authUser={authUser}
+                        db={db}
+                        deckId={deckId}
+                        isFinished={isFinished}
                     />
                 </div>
             );
@@ -733,10 +744,6 @@ function FlashCardUI({
                             🔀
                         </button>
                     
-{/*                     
-                    <button className={`${styles.outerFlashCardButtons}`} disabled={isDisabled} onClick={handleShuffle}>
-                        <i class="fas fa-random"></i>
-                    </button> */}
                 </div>
             );
         }
@@ -840,7 +847,8 @@ function FlashCardUI({
                             renderContent(currentQuestion, currentQuestionType, styles.questionImage)
                         ) : (
                             <h2>You completed it!!!</h2>
-                        )}
+                        )                        
+                        }
                     </div>
                     <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
                         {currentIndex < flashCards.length ? (

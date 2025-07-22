@@ -6,9 +6,9 @@ const StudyTimeTracker = ({
   authUser, 
   db, 
   deckId = null, 
+  isFinished,
   onTimeUpdate = null,
   showDisplay = true,
-  className = ""
 }) => {
   const [displayTime, setDisplayTime] = useState(0); // Total session time in seconds
   const [isActivelyStudying, setIsActivelyStudying] = useState(false);
@@ -37,9 +37,10 @@ const StudyTimeTracker = ({
 
   // --- Timer Management ---
   
+  
   // Start both timers
   const startTimers = useCallback(() => {
-    if (!authUser) return;
+    if (!authUser || isFinished) return;
     
     setIsActivelyStudying(true);
     
@@ -57,7 +58,7 @@ const StudyTimeTracker = ({
         activitySecondsRef.current += 1;
         
         // Check if user has been idle for too long
-        if (activitySecondsRef.current >= IDLE_TIMEOUT) {
+        if (activitySecondsRef.current >= IDLE_TIMEOUT)  {
           pauseTimers();
         }
       }, 1000);
@@ -74,7 +75,7 @@ const StudyTimeTracker = ({
         }
       }, SAVE_INTERVAL);
     }
-  }, [authUser]);
+  }, [authUser, isFinished]);
   
   // Pause both timers (user went idle)
   const pauseTimers = useCallback(() => {
@@ -136,13 +137,16 @@ const StudyTimeTracker = ({
   
   // Reset activity timer when user does something
   const resetActivityTimer = useCallback(() => {
+    // Don't reset activity timer if session is finished
+    if (isFinished) return;
+    
     activitySecondsRef.current = 0; // Reset activity counter
     
     // If timers are paused but user is active, resume them
     if (authUser && !isActivelyStudying) {
       startTimers();
     }
-  }, [authUser, isActivelyStudying, startTimers]);
+  }, [authUser, isActivelyStudying, isFinished, startTimers]);
 
   // --- Firebase Save Logic ---
   
@@ -229,9 +233,16 @@ const StudyTimeTracker = ({
 
   // --- Effects ---
 
+  // Stop timers when we are finished
+  useEffect(()=>{
+    if(isFinished){
+      stopAllTimers();
+    }
+  },[isFinished, stopAllTimers])
+
   // Start timers when component mounts and user is authenticated
   useEffect(() => {
-    if (authUser) {
+    if (authUser && !isFinished){
       startTimers();
     }
     
@@ -259,12 +270,21 @@ const StudyTimeTracker = ({
   if (!showDisplay) return null;
 
   return (
-    <div className={`study-time-tracker ${className}`}>
+    <div className={`study-time-tracker`}>
       <div className="flex items-center gap-2 text-sm text-white/70">
-        <div className={`w-2 h-2 rounded-full ${isActivelyStudying ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
-        <span>Study Time: {formatTime(displayTime)}</span>
-        {!isActivelyStudying && displayTime > 0 && (
-          <span className="text-xs text-yellow-400">(Paused)</span>
+        {isFinished ? (
+          <>
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span>Finished - Timer Stopped: {formatTime(displayTime)}</span>
+          </>
+        ) : (
+          <>
+            <div className={`w-2 h-2 rounded-full ${isActivelyStudying ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+            <span>Study Time: {formatTime(displayTime)}</span>
+            {!isActivelyStudying && displayTime > 0 && (
+              <span className="text-xs text-yellow-400">(Paused)</span>
+            )}
+          </>
         )}
         {isSaving && (
           <span className="text-xs text-blue-400">Saving...</span>
