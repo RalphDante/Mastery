@@ -10,49 +10,49 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
  */
 export const calculateStreakUpdate = (lastStudyDate, currentStreak = 0, longestStreak = 0) => {
   const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayDateKey = today.toLocaleDateString('en-CA'); // Use same format as trackDailySession
   
   if (!lastStudyDate) {
-    // First time studying - start streak at 1
     return {
       currentStreak: 1,
       longestStreak: Math.max(1, longestStreak),
-      lastStudyDate: todayStart,
+      lastStudyDate: new Date(), // Use current date/time
       studiedToday: true
     };
   }
 
-  const lastStudyStart = new Date(
-    lastStudyDate.getFullYear(), 
-    lastStudyDate.getMonth(), 
-    lastStudyDate.getDate()
-  );
+  const lastStudyDateKey = lastStudyDate.toLocaleDateString('en-CA');
   
-  const daysDifference = Math.floor((todayStart - lastStudyStart) / (1000 * 60 * 60 * 24));
-  
-  if (daysDifference === 0) {
-    // Already studied today - no change to streak
+  if (lastStudyDateKey === todayDateKey) {
+    // Already studied today
     return {
       currentStreak,
       longestStreak,
       lastStudyDate: lastStudyDate,
       studiedToday: true
     };
-  } else if (daysDifference === 1) {
-    // Studied yesterday - continue streak
+  }
+  
+  // Calculate days difference using date strings
+  const todayDate = new Date(todayDateKey);
+  const lastDate = new Date(lastStudyDateKey);
+  const daysDifference = Math.floor((todayDate - lastDate) / (1000 * 60 * 60 * 24));
+  
+  if (daysDifference === 1) {
+    // Consecutive day - continue streak
     const newCurrentStreak = currentStreak + 1;
     return {
       currentStreak: newCurrentStreak,
       longestStreak: Math.max(newCurrentStreak, longestStreak),
-      lastStudyDate: todayStart,
+      lastStudyDate: new Date(),
       studiedToday: true
     };
   } else {
-    // Missed days - reset streak
+    // Gap in days - reset streak
     return {
       currentStreak: 1,
-      longestStreak: longestStreak, // Keep longest streak
-      lastStudyDate: todayStart,
+      longestStreak: longestStreak,
+      lastStudyDate: new Date(),
       studiedToday: true
     };
   }
