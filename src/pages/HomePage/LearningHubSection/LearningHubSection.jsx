@@ -415,7 +415,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     }
 
     return (
-        <section id="learning-hub-section" className="bg-gray-900 min-h-screen">
+        <section id="learning-hub-section" className="min-h-screen">
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-100">Your Learning Hub</h2>
                 <p className="text-md text-slate-400">Quickly jump back into your studies or create something new.</p>
