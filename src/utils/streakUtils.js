@@ -8,9 +8,18 @@ import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
  * @param {number} longestStreak - Longest streak ever
  * @returns {object} - Updated streak information
  */
+
+const getLocalDateKey = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const calculateStreakUpdate = (lastStudyDate, currentStreak = 0, longestStreak = 0) => {
+
   const today = new Date();
-  const todayDateKey = today.toLocaleDateString('en-CA'); // Use same format as trackDailySession
+  const todayDateKey = getLocalDateKey(new Date()) // Use same format as trackDailySession
   
   if (!lastStudyDate) {
     return {
@@ -21,7 +30,7 @@ export const calculateStreakUpdate = (lastStudyDate, currentStreak = 0, longestS
     };
   }
 
-  const lastStudyDateKey = lastStudyDate.toLocaleDateString('en-CA');
+  const lastStudyDateKey = getLocalDateKey(lastStudyDate);
   
   if (lastStudyDateKey === todayDateKey) {
     // Already studied today
@@ -139,7 +148,7 @@ export const hasStudiedToday = (lastStudyDate) => {
 // Enhanced version that tracks daily review sessions
 export const trackDailySession = async (db, userId, sessionData, isCramming) => {
   const today = new Date();
-  const dateKey = today.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+  const dateKey = getLocalDateKey(today);
   
   const sessionDocRef = doc(db, 'users', userId, 'dailySessions', dateKey);
   
@@ -149,7 +158,7 @@ export const trackDailySession = async (db, userId, sessionData, isCramming) => 
     
     if (!existingSession) {
       // First session of the day - update streak
-      const streakUpdate = await updateUserStreak(db, userId);
+      const streakUpdate = await updateUserStreak(db, userId); 
       
       // Create daily session record
       await setDoc(sessionDocRef, {
