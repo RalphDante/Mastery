@@ -65,9 +65,9 @@ const MasteryLanding = () => {
   ];
 
   const testimonials = [
-    { name: "@studyqueen", text: "OMG this is actually magic 🤯", verified: true },
-    { name: "@crammaster", text: "Went from failing to A+ in 2 weeks", verified: true },
-    { name: "@notesgirl", text: "My parents think I'm a genius now lol", verified: false }
+    { name: "@studyqueen", text: "OMG this is actually magic!!!", verified: true },
+    { name: "@crammaster", text: "I wish this was there during my boards 😭.", verified: true },
+    { name: "@notesgirl", text: "It's so easy to understand!", verified: false }
   ];
 
   // Sign in Button
