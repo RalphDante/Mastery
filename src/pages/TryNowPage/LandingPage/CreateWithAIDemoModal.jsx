@@ -47,9 +47,9 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
             <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">
               Try AI Flashcards Free!
             </h2>
-            <p className="text-slate-300 mb-6 text-center">
+            {/* <p className="text-slate-300 mb-6 text-center">
               Upload any PDF, image, or document to generate flashcards instantly
-            </p>
+            </p> */}
             {cameraIsOpen ? 
               ""
               :

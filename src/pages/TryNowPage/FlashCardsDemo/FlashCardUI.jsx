@@ -8,7 +8,8 @@ import {
     addDoc, 
     writeBatch, 
     serverTimestamp,
-    increment 
+    increment,
+    getDoc 
 } from 'firebase/firestore';
 
 import { useEffect, useState, useCallback } from "react";
@@ -74,7 +75,10 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false);
     const [showEmphasisToSignUp, setShowEmphasisToSignUp] = useState(false);
- 
+    const [studyStartTime, setStudyStartTime] = useState(null);
+    const [studyElapsedTime, setStudyElapsedTime] = useState(0);
+    const [timerInterval, setTimerInterval] = useState(null);
+    
     // Quick Study Mode state variables
     const [isReviewMode, setIsReviewMode] = useState(false);
     const [wrongCards, setWrongCards] = useState([]);
@@ -92,7 +96,16 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         }
     }, [location.state]);
 
-    // Create saveDeckToDatabase with useCallback to prevent recreation on every render
+    // Helper function to format time
+    const formatTime = (seconds) => {
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    
+
+    // Optional: Even better approach would be to check if user exists first
     const saveDeckToDatabase = useCallback(async (user = authUser) => {
         try {
             console.log('Attempting to save deck...', { user: user?.email, flashCardsLength: flashCards.length });
@@ -107,31 +120,48 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
             }
             
             const db = getFirestore();
+            const userRef = doc(db, 'users', uid);
+            
+            // Check if user document exists
+            const userDoc = await getDoc(userRef);
+            const isNewUser = !userDoc.exists();
+            
+            if (isNewUser) {
+                // Create new user with default values
+                await setDoc(userRef, {
+                    email: user.email,
+                    displayName: user.displayName || 'Anonymous User',
+                    createdAt: serverTimestamp(),
+                    lastActiveAt: serverTimestamp(),
+                    lastStudyDate: null,
+                    stats: {
+                        totalReviews: 0,
+                        weeklyReviews: 0,
+                        currentStreak: 0,
+                        longestStreak: 0,
+                        totalDecks: 0,
+                        totalCards: 0
+                    },
+                    subscription: {
+                        tier: "free",
+                        expiresAt: null
+                    }
+                });
+            }
+            
+            // Now use batch for the rest of the operations
             const batch = writeBatch(db);
             
-            // Step 1: Ensure user document exists
-            const userRef = doc(db, 'users', uid);
-            batch.set(userRef, {
-                email: user.email,
-                displayName: user.displayName || 'Anonymous User',
-                createdAt: serverTimestamp(),
+            // Update user stats and last active time
+            batch.update(userRef, {
+                'stats.totalDecks': increment(1),
+                'stats.totalCards': increment(flashCards.length),
                 lastActiveAt: serverTimestamp(),
-                lastStudyDate: null,
-                stats: {
-                    totalReviews: 0,
-                    weeklyReviews: 0,
-                    currentStreak: 0,
-                    longestStreak: 0,
-                    totalDecks: 0,
-                    totalCards: 0
-                },
-                subscription: {
-                    tier: "free",
-                    expiresAt: null
-                }
-            }, { merge: true }); // merge: true prevents overwriting existing data
+                // Update display name in case it changed
+                displayName: user.displayName || 'Anonymous User'
+            });
             
-            // Step 2: Create or ensure "First Folder" exists
+            // Create folder
             const folderRef = doc(collection(db, 'folders'));
             const folderName = "First Folder";
             
@@ -142,10 +172,10 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 updatedAt: serverTimestamp(),
                 subscriptionTier: "free",
                 isPublic: false,
-                deckCount: 0
+                deckCount: 1
             });
             
-            // Step 3: Create the deck
+            // Create deck
             const deckRef = doc(collection(db, 'decks'));
             const now = new Date();
             const deckTitle = `Deck ${now.toLocaleDateString().replace(/\//g, '-')} ${now.toLocaleTimeString()}`;
@@ -162,7 +192,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 tags: []
             });
             
-            // Step 4: Add all flashcards to the deck's cards subcollection
+            // Add flashcards
             flashCards.forEach((card, index) => {
                 const cardRef = doc(collection(db, 'decks', deckRef.id, 'cards'));
                 batch.set(cardRef, {
@@ -171,29 +201,14 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     question_type: "text",
                     answer_type: "text",
                     createdAt: serverTimestamp(),
-                    order: index + 1 // Simple ordering for now
+                    order: index + 1
                 });
             });
             
-            // Step 5: Update user stats (increment totals)
-            batch.update(userRef, {
-                'stats.totalDecks': increment(1),
-                'stats.totalCards': increment(flashCards.length),
-                lastActiveAt: serverTimestamp()
-            });
-            
-            // Step 6: Update folder deck count
-            batch.update(folderRef, {
-                deckCount: increment(1),
-                updatedAt: serverTimestamp()
-            });
-            
-            // Execute all operations atomically
+            // Execute batch
             await batch.commit();
             
-            console.log('Deck saved successfully, navigating...');
-            
-            // Navigate to the flashcards page with the new deck ID
+            console.log('Deck saved successfully');
             navigate(`/flashcards/${deckRef.id}`);
             alert('Deck saved successfully!');
             
@@ -202,6 +217,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
             alert(`Error saving deck: ${error.message}`);
         }
     }, [authUser, flashCards, navigate]);
+
 
     // Enhanced onAuthStateChanged listener with better debugging
     useEffect(() => {
@@ -696,6 +712,52 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         }
     };
 
+    // useEffect to start the timer when component mounts and flashcards are loaded
+    useEffect(() => {
+        if (flashCards.length > 0 && !studyStartTime && !isFinished) {
+            const startTime = Date.now();
+            setStudyStartTime(startTime);
+            
+            // Start the interval to update elapsed time every second
+            const interval = setInterval(() => {
+                const currentTime = Date.now();
+                const elapsed = Math.floor((currentTime - startTime) / 1000);
+                setStudyElapsedTime(elapsed);
+            }, 1000);
+            
+            setTimerInterval(interval);
+        }
+        
+        // Cleanup interval on unmount
+        return () => {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        };
+    }, [flashCards.length, studyStartTime, isFinished]);
+
+    // Add this useEffect to stop the timer when study session is finished
+    useEffect(() => {
+        if (isFinished && timerInterval) {
+            clearInterval(timerInterval);
+            setTimerInterval(null);
+            console.log(`Study session completed in ${formatTime(studyElapsedTime)}`);
+        }
+    }, [isFinished, timerInterval, studyElapsedTime]);
+
+    // Add this useEffect to handle shuffle/restart - reset the timer
+    useEffect(() => {
+        if (redoDeck) {
+            // Reset timer when deck is shuffled/restarted
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            setStudyStartTime(null);
+            setStudyElapsedTime(0);
+            setTimerInterval(null);
+        }
+    }, [redoDeck, timerInterval]);
+
   
     useEffect(() => {
         if (isFinished && !authUser && !hasWrongAnswer) {
@@ -705,7 +767,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     return (
         <>
-            <div className="flex justify-end">
+            <div className="flex justify-end mb-1">
                 
 
                 <div className="flex bg-gray-700 rounded-lg p-1">
@@ -743,19 +805,18 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 </div>
             </div>
 
-            <div class="bg-gradient-to-r from-amber-600 to-orange-600 text-white px-6 py-3 rounded-lg shadow-xl border border-amber-500/50">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center space-x-3">
-                                    
-                                    <p class="font-semibold">⚠️ Warning: You'll lose these 104 cards and all progress without an account!</p>
-                                    </div>
-                                    <button class="bg-white text-orange-600 font-semibold px-5 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm shadow-md flex-shrink-0 ml-4"
-                                        onClick={handleSaveDeck}
-                                    >
-                                    Save Now
-                                    </button>
-                                </div>
-                            </div>
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-lg shadow-xl border border-purple-500/50">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <p class="font-semibold">🎉 Great progress! Save your {formatTime(studyElapsedTime)} study session & {flashCards.length} cards</p>
+                    </div>
+                    <button class="bg-white text-purple-600 font-semibold px-5 py-2 rounded-lg hover:bg-gray-100 transition-colors text-sm shadow-md flex-shrink-0 ml-4"
+                        onClick={handleSaveDeck}
+                    >
+                        Keep Progress
+                    </button>
+                </div>
+            </div>
 
             <div className={`${styles.scoreContainer}`}>
                 <div style={{ margin: '0px', textAlign: 'center' }}>
@@ -777,6 +838,21 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                             </div>
                         </div>
                        
+                    )}
+                </div>
+            </div>
+
+            <div className={`study-time-tracker`}>
+                <div className="flex items-center gap-2 text-sm text-white/70">
+                    {isFinished ? (
+                        <>
+                            <span>Finished - Timer Stopped: {formatTime(studyElapsedTime)}</span>
+                        </>
+                    ) : (
+                        <>
+                            <div className={`w-2 h-2 rounded-full bg-green-400 animate-pulse`}></div>
+                            <span>Study Time: {formatTime(studyElapsedTime)}</span>
+                        </>
                     )}
                 </div>
             </div>
@@ -862,7 +938,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                         Shuffle Deck
                     </div>
-                    🔀
+                    <i class="fas fa-shuffle"></i>
                 </button>
             </div>
         </>
