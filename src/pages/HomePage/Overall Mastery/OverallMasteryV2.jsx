@@ -16,6 +16,14 @@ const OverallMasteryV2 = () => {
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
   const currentUserId = user?.uid;
 
+  // Helper function to format date as YYYY-MM-DD in user's local timezone
+  const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   // Move useEffect inside component
   useEffect(() => {
     if (!currentUserId) return;
@@ -35,7 +43,7 @@ const OverallMasteryV2 = () => {
 
   // Function to generate last 7 days including today (previous 6 + current day)
   const generateLast7Days = () => {
-    const today = new Date();
+    const today = new Date(); // Uses user's local timezone automatically
     const last7Days = [];
     
     // Mock data - in real app this would come from your database
@@ -74,12 +82,14 @@ const OverallMasteryV2 = () => {
     if (!currentUserId) return [];
     
     const last7Days = [];
-    const today = new Date();
+    const today = new Date(); // Uses user's local timezone automatically
     
     for (let i = 6; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(today.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Use local date string instead of UTC
+      const dateStr = getLocalDateString(date);
       const dayName = date.toLocaleDateString('en', { weekday: 'short' });
       const isToday = i === 0;
       
