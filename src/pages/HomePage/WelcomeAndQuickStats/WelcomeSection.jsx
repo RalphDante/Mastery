@@ -1,134 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { db, auth } from '../../../api/firebase'; // Adjust import path as needed
-import { collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
-import { useAuthState } from 'react-firebase-hooks/auth';
+// OptimizedWelcomeSection.js
+import React from 'react';
+import { useUserData, useCardsDue, useStudyStats } from '../../../hooks/useUserData';
 import { useNavigate } from 'react-router-dom';
 
 function WelcomeSection() {
-  const [user, loading, error] = useAuthState(auth);
-  const [userData, setUserData] = useState(null);
-  const [cardsDue, setCardsDue] = useState(0);
-  const [reviewProgress, setReviewProgress] = useState({ reviewed: 0, total: 0 });
-  const [dataLoading, setDataLoading] = useState(true);
-  const [dataError, setDataError] = useState(null);
-
+  const { user, loading, error, userData } = useUserData();
+  const { cardsDue, cardsReviewedToday } = useCardsDue();
+  const { currentStreak, longestStreak } = useStudyStats();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    try {
-      setDataLoading(true);
-      setDataError(null);
-      
-      // Fetch user profile data
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDoc = await getDoc(userDocRef);
-      
-      if (userDoc.exists()) {
-        const userInfo = userDoc.data();
-        setUserData(userInfo);
-        
-        // Fetch cards due for review
-        await fetchCardsDue();
-      } else {
-        setDataError("User profile not found");
-      }
-    } catch (err) {
-      setDataError("Failed to fetch user data");
-      console.error("Error fetching user data:", err);
-    } finally {
-      setDataLoading(false);
-    }
-  };
-
-  const fetchCardsDue = async () => {
-    try {
-      const now = new Date();
-      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today
-      
-      console.log('Fetching cards due for user:', user.uid);
-      
-      // Query cardProgress collection for cards due for review
-      const cardProgressRef = collection(db, 'cardProgress');
-      const cardProgressQuery = query(
-        cardProgressRef,
-        where('userId', '==', user.uid)
-      );
-      
-      const cardProgressSnapshot = await getDocs(cardProgressQuery);
-      console.log('Total card progress documents:', cardProgressSnapshot.docs.length);
-      
-      const allCards = cardProgressSnapshot.docs;
-      let reviewedToday = 0;
-      
-      const dueCards = allCards.filter(doc => {
-        const cardData = doc.data();
-        
-        // Count cards reviewed today
-        if (cardData.lastReviewDate) {
-          try {
-            const lastReviewDate = cardData.lastReviewDate.toDate();
-            const lastReviewDay = new Date(lastReviewDate.getFullYear(), lastReviewDate.getMonth(), lastReviewDate.getDate());
-            
-            if (lastReviewDay.getTime() === today.getTime()) {
-              reviewedToday++;
-            }
-          } catch (error) {
-            console.error('Error processing lastReviewDate for card:', doc.id, error);
-          }
-        }
-        
-        // Check if card is due for review
-        if (!cardData.nextReviewDate) {
-          console.log('No nextReviewDate for card:', doc.id);
-          return false;
-        }
-        
-        try {
-          const nextReviewDate = cardData.nextReviewDate.toDate();
-          const isDue = nextReviewDate <= now;
-          console.log(`Card ${doc.id}: nextReview=${nextReviewDate}, isDue=${isDue}`);
-          return isDue;
-        } catch (error) {
-          console.error('Error processing nextReviewDate for card:', doc.id, error);
-          return false;
-        }
-      });
-      
-      console.log('Cards due for review:', dueCards.length);
-      console.log('Cards reviewed today:', reviewedToday);
-      
-      setCardsDue(dueCards.length);
-      setReviewProgress({
-        reviewed: reviewedToday,
-        total: dueCards.length + reviewedToday // Total includes both due and already reviewed today
-      });
-      
-    } catch (err) {
-      console.error("Error fetching cards due:", err);
-      setCardsDue(0);
-    }
-  };
-  
-  
-
-  const calculateProgressPercentage = () => {
-    if (reviewProgress.total === 0) return 0;
-    return (reviewProgress.reviewed / reviewProgress.total) * 100;
-  };
+  const totalCards = cardsDue + cardsReviewedToday;
+  const progressPercentage = totalCards > 0 ? (cardsReviewedToday / totalCards) * 100 : 0;
 
   const handleStartReview = () => {
-    // Navigate to review page - implement your routing logic here
     navigate('/flashcards');
-    console.log("Starting review session...");
   };
 
-  if (loading || dataLoading) {
+  if (loading) {
     return (
       <section id="welcome-section">
         <div className="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
@@ -146,17 +34,11 @@ function WelcomeSection() {
     );
   }
 
-  if (error || dataError) {
+  if (error) {
     return (
       <section id="welcome-section">
         <div className="bg-red-900/20 border border-red-500/50 p-6 rounded-2xl">
-          <p className="text-red-400">Error: {error?.message || dataError}</p>
-          <button 
-            onClick={fetchUserData}
-            className="mt-4 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition-colors"
-          >
-            Retry
-          </button>
+          <p className="text-red-400">Error: {error.message}</p>
         </div>
       </section>
     );
@@ -193,11 +75,11 @@ function WelcomeSection() {
               <div className="w-full bg-gray-700 rounded-full h-2.5 mt-3">
                 <div 
                   className="bg-violet-500 h-2.5 rounded-full transition-all duration-500" 
-                  style={{ width: `${calculateProgressPercentage()}%` }}
+                  style={{ width: `${progressPercentage}%` }}
                 ></div>
               </div>
               <p className="text-xs text-slate-400 text-right mt-1">
-                {reviewProgress.reviewed} / {reviewProgress.total} Reviewed
+                {cardsReviewedToday} / {totalCards} Reviewed
               </p>
             </div>
           </div>
@@ -206,15 +88,11 @@ function WelcomeSection() {
           <div className="flex justify-around text-center border-t md:border-t-0 md:border-l md:border-r border-gray-700 py-6 md:py-0">
             <div>
               <p className="text-sm font-medium text-slate-400">CURRENT STREAK</p>
-              <p className="text-3xl font-bold text-slate-200">
-                🔥 {userData?.stats?.currentStreak || 0}
-              </p>
+              <p className="text-3xl font-bold text-slate-200">🔥 {currentStreak}</p>
             </div>
             <div>
               <p className="text-sm font-medium text-slate-400">LONGEST STREAK</p>
-              <p className="text-3xl font-bold text-slate-200">
-                🏆 {userData?.stats?.longestStreak || 0}
-              </p>
+              <p className="text-3xl font-bold text-slate-200">🏆 {longestStreak}</p>
             </div>
           </div>
 
@@ -234,28 +112,9 @@ function WelcomeSection() {
           </div>
         </div>
       </div>
-
-      {/* Additional Stats Row */}
-      {/* <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-          <p className="text-sm text-slate-400">Total Reviews</p>
-          <p className="text-2xl font-bold text-slate-200">{userData?.stats?.totalReviews || 0}</p>
-        </div>
-        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-          <p className="text-sm text-slate-400">Weekly Reviews</p>
-          <p className="text-2xl font-bold text-slate-200">{userData?.stats?.weeklyReviews || 0}</p>
-        </div>
-        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-          <p className="text-sm text-slate-400">Total Decks</p>
-          <p className="text-2xl font-bold text-slate-200">{userData?.stats?.totalDecks || 0}</p>
-        </div>
-        <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-700">
-          <p className="text-sm text-slate-400">Total Cards</p>
-          <p className="text-2xl font-bold text-slate-200">{userData?.stats?.totalCards || 0}</p>
-        </div>
-      </div> */}
     </section>
   );
 }
+
 
 export default WelcomeSection;
