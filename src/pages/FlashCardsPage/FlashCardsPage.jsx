@@ -201,24 +201,8 @@ function FlashCardsPage() {
             <ArrowLeft className="w-4 h-4" />
         </button>
            
-                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                
+                <div className={`${styles.leftSideFlashCardsPageContainer} `}>
 
-                    <div className="">
-                        {/* <h1 className="text-3xl font-bold text-white mb-2 break-words">{displayName}</h1>
-                        {showDescription && deckData?.description && deckData.description !== "No Description" && (
-                            <p className="text-gray-400 mb-4">{deckData.description}</p>
-                        )}
-                         */}
-                        {/* Show notification if auto-switched to spaced mode */}
-                        {/* {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
-                            <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
-                                <p className="text-blue-200 text-sm">
-                                    🎯 Automatically switched to spaced repetition - {dueCardsCount} cards due for review!
-                                </p>
-                            </div>
-                        )} */}
-                    </div>
 
                     <FlashCardUI 
                         knowAnswer={setKnowAnswer}
@@ -235,7 +219,7 @@ function FlashCardsPage() {
                     />
                 </div>
                 
-                <div className={styles.rightSideFlashCardsPageContainer}>
+                <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
                     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
                         {/* Show notification if auto-switched to spaced mode */}
 

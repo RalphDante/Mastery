@@ -48,11 +48,11 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
           <UserDataProvider>
             <WelcomeSection />
+            <OverallMasteryV2 />
 
 
           </UserDataProvider>
 
-          <OverallMasteryV2 />
 
           <LearningHubSection 
             onCreateDeckClick={onCreateDeckClick}
