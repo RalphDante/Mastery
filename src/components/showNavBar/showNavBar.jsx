@@ -27,7 +27,7 @@ function ShowNavBar({children}){
     }, [location]);
 
     return(
-        <div>
+        <div className="sticky top-0 z-40">
             {showNavBar && children}
         </div>
     )

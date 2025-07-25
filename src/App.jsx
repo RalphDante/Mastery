@@ -67,7 +67,9 @@ import GoPremium from './pages/GoPremium/GoPremium.jsx';
 import NewFlashCardUI from './pages/FlashCardsPage/NewFlashCardUI.jsx';
 
 
-
+// Blog Page
+import BlogPost from './pages/BlogPage/BlogPost.jsx';
+import BlogIndex from './pages/BlogPage/BlogIndex.jsx';
 
 
 function App(){
@@ -156,6 +158,11 @@ function App(){
                   <Route path='/try-now' element={<MasteryLanding />} />
 
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
+
+
+                  {/* Blogs */}
+                  <Route path="/blog" element={<BlogIndex />} />
+                  <Route path="/blog/:slug" element={<BlogPost />} />
 
                   {/* Test Phases */}
                   <Route path='/go-premium' element={<GoPremium />} />

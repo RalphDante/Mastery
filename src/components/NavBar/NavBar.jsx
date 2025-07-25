@@ -42,7 +42,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
     }, []);
 
     return (
-        <header className="bg-gray-900/80 backdrop-blur-md shadow-sm sticky top-0 z-40 border-b border-gray-700">
+        <header className="bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-700">
             <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     <div className="flex items-center space-x-8">
@@ -51,6 +51,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/')}}>Home</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/about')}}>About</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/contactme')}}>Contact Me</a>
+                            <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/blog')}}>Blog</a>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -82,6 +83,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/'); setIsMobileMenuOpen(false)}}>Home</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/about'); setIsMobileMenuOpen(false)}}>About</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/contactme'); setIsMobileMenuOpen(false)}}>Contact Me</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/blog'); setIsMobileMenuOpen(false)}}>Blog</a>
                     <div className="flex items-center space-x-2 border-t border-gray-700 pt-3 mt-3">
                         <span className="text-slate-300 font-medium">{userName}</span>
                         <SignUpBtn />
