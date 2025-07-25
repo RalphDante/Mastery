@@ -6,7 +6,7 @@ import CreateWithAIDemoModal from './CreateWithAIDemoModal';
 
 
 
-const MasteryLanding = () => {
+const TryNowPage = () => {
 
   const [showModal, setShowModal] = useState(false);
     
@@ -272,4 +272,4 @@ const MasteryLanding = () => {
   );
 };
 
-export default MasteryLanding;
+export default TryNowPage;

@@ -29,7 +29,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
         setAuthUser(user);
       } else {
         setAuthUser(null);
-        navigate('/try-now');
+        // navigate('/try-now');
       }
     });
 

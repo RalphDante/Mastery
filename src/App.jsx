@@ -17,7 +17,8 @@ import CreateDeckModal from './components/Modals/CreateDeckModal.jsx';
 
 // Pages
 // HomePage
-import Home from './pages/HomePage/Home.jsx';
+import RootPage from './pages/RootPage/RootPage.jsx';
+
 
 //AboutPage
 import About from './pages/AboutPage/About.jsx';
@@ -37,7 +38,7 @@ import CreateDeck from './pages/CreateDeckPage/CreateDeck.jsx';
 import DisplayFlashCardsPage from './pages/CreateDeckPage/DisplayFlashCards.jsx';
 
 //TryNowPage
-import MasteryLanding from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
+import TryNowPage from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
 
 
@@ -149,8 +150,8 @@ function App(){
               <Routes>
                   {/* <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} /> */}
-                  <Route path="/authdetails" element={<AuthDetails />} />
-                  <Route path="/" element={<Home onCreateDeckClick={handleShowCreateDeckModal} onCreateWithAIModalClick={handleShowCreateWithAIModalClick}/>} />
+                  {/* <Route path="/authdetails" element={<AuthDetails />} /> */}
+                  <Route path="/" element={<RootPage onCreateDeckClick={handleShowCreateDeckModal} onCreateWithAIModalClick={handleShowCreateWithAIModalClick}/>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />
                   <Route path="/create-deck" element={<CreateDeck />} />
@@ -165,7 +166,7 @@ function App(){
                   {/* Try to understand what the ":folderName" does again */}
                   {/* Last part we left off was at the integration of a new publicFlashCard Page */}
 
-                  <Route path='/try-now' element={<MasteryLanding />} />
+                  <Route path='/try-now' element={<TryNowPage />} />
 
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
