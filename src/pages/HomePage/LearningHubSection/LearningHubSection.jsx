@@ -1,4 +1,7 @@
-import { useState, useEffect } from "react";
+// OptimizedLearningHubSection - Simplified version focusing on folders
+
+import React, { useState, useEffect } from 'react';
+import { useUserData, useFolders } from '../../../hooks/useUserData';
 import {
     collection,
     query,
@@ -13,65 +16,21 @@ import {
     increment,
     getDoc
 } from 'firebase/firestore';
-import { useAuthState } from 'react-firebase-hooks/auth';
-import { auth, db } from '../../../api/firebase'; // Adjust path as needed
+import { db } from '../../../api/firebase';
 import { useNavigate } from "react-router-dom";
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
-    const [user, loading, error] = useAuthState(auth);
-    const [folders, setFolders] = useState([]);
+    const {user, loading, error} = useUserData();
+    const folders = useFolders() || []; // Get folders array directly from context
+    const navigate = useNavigate();
+    
+    // Local state for folder creation and navigation
     const [newFolderName, setNewFolderName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
-    const [isFoldersLoading, setIsFoldersLoading] = useState(true);
-    
-    // New state for explorer-style navigation
-    const [currentView, setCurrentView] = useState('folders'); // 'folders' or 'folder-contents'
+    const [currentView, setCurrentView] = useState('folders');
     const [currentFolder, setCurrentFolder] = useState(null);
     const [folderDecks, setFolderDecks] = useState([]);
     const [isDecksLoading, setIsDecksLoading] = useState(false);
-
-
-    const navigate = useNavigate();
-
-    // Real-time listener for user's folders
-    useEffect(() => {
-        if (!user) {
-            setFolders([]);
-            setIsFoldersLoading(false);
-            return;
-        }
-
-        const foldersRef = collection(db, 'folders');
-        const q = query(
-            foldersRef,
-            where('ownerId', '==', user.uid)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedFolders = [];
-            snapshot.forEach((doc) => {
-                fetchedFolders.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-
-            // Sort folders by updatedAt on the client-side (most recent first)
-            fetchedFolders.sort((a, b) => {
-                const dateA = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
-                const dateB = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-
-            setFolders(fetchedFolders);
-            setIsFoldersLoading(false);
-        }, (err) => {
-            console.error('Error fetching folders:', err);
-            setIsFoldersLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [user]);
 
     // Real-time listener for decks in current folder
     useEffect(() => {
@@ -297,15 +256,13 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         );
     }
 
-    // Determine if scrollbar is needed
+    // Determine if scrollbar is needed - with safety check
     const MAX_FOLDER_HEIGHT_PX = 120;
     const GRID_GAP_PX = 16;
     const desiredMaxHeight = (3 * MAX_FOLDER_HEIGHT_PX) + (2 * GRID_GAP_PX);
-    const showScrollbar = folders.length > 9;
-
+    const showScrollbar = folders && folders.length > 9;
 
     // Handle Delete Deck Click
-
     const handleDeleteDeck = async (deckId) => {
         if (!user) return;
     
@@ -400,16 +357,12 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             
         } catch (error) {
             console.error('Error deleting deck:', error);
-            // You might want to show a user-friendly error message here
             alert('Failed to delete deck. Please try again.');
         }
     };
-    
-
 
     // Handle Quick Actions Click
-
-    const handleQuickActionsClick = (callback, e)=>{
+    const handleQuickActionsClick = (callback, e) => {
         e.preventDefault()
         callback(e);
     }
@@ -492,14 +445,14 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             )}
 
                             {/* Loading state for folders */}
-                            {isFoldersLoading && (
+                            {loading && (
                                 <div className="flex items-center justify-center h-32">
                                     <div className="text-slate-400">Loading folders...</div>
                                 </div>
                             )}
 
                             {/* Empty state for folders */}
-                            {!isFoldersLoading && folders.length === 0 && (
+                            {!loading && (!folders || folders.length === 0) && (
                                 <div className="flex flex-col items-center justify-center h-32 text-slate-400">
                                     <i className="fa-solid fa-folder-open text-3xl mb-2"></i>
                                     <p>No folders yet. Create your first folder to get started!</p>
@@ -507,7 +460,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             )}
 
                             {/* Folders grid */}
-                            {!isFoldersLoading && folders.length > 0 && (
+                            {!loading && folders && folders.length > 0 && (
                                 <div
                                     className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
                                     style={showScrollbar ? { maxHeight: `${desiredMaxHeight}px`, overflowY: 'auto' } : {}}
@@ -561,7 +514,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                         folderName: currentFolder.name, 
                                         folderId: currentFolder.id,
                                         isNewFolder: false,
-                                        // uid: authUser.uid
                                     }})}}
                                     className="text-sm font-medium text-violet-400 hover:text-violet-300 bg-violet-400/10 px-3 py-1 rounded-lg hover:bg-violet-400/20 transition-colors"
                                 >
@@ -673,7 +625,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                         folderName: currentFolder.name, 
                                         folderId: currentFolder.id,
                                         isNewFolder: false,
-                                        // uid: authUser.uid
                                     }})}}
                                     className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
                                 >
@@ -692,16 +643,10 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                         <button 
                             className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
                             onClick={(e)=>{handleQuickActionsClick(onCreateWithAIModalClick, e)}}
-                            
                         >
                             <i className="fa-solid fa-wand-magic-sparkles text-violet-400 text-xl"></i>
                             <span className="font-semibold text-slate-200">Generate with AI</span>
                         </button>
-                        
-                        {/* <button className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg">
-                            <i className="fa-solid fa-globe text-violet-400 text-xl"></i>
-                            <span className="font-semibold text-slate-200">Browse Public Decks</span>
-                        </button> */}
                     </div>
                 </div>
             </div>

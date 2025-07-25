@@ -49,16 +49,15 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
           <UserDataProvider>
             <WelcomeSection />
             <OverallMasteryV2 />
-
+            <LearningHubSection 
+              onCreateDeckClick={onCreateDeckClick}
+              onCreateWithAIModalClick={onCreateWithAIModalClick}
+            />
 
           </UserDataProvider>
 
 
-          <LearningHubSection 
-            onCreateDeckClick={onCreateDeckClick}
-            onCreateWithAIModalClick={onCreateWithAIModalClick}
-          />
-
+          
 
         </div>
 
