@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import CreateFreeAccBtn from '../../../components/CreateFreeAccount/CreateFreeAccBtn';
+import CreateFreeAccBtn from '../../../components/SignUpLogic/CreateFreeAccBtn';
 
 function BlogPost1() {
   // Set page title and meta description for SEO

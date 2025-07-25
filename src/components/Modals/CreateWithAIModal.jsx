@@ -4,6 +4,7 @@ import { app, auth } from "../../api/firebase"
 import FileUpload from "../AutoFlashCards/FileUpload";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import CreateWithAIDemoModal from "../../pages/TryNowPage/LandingPage/CreateWithAIDemoModal";
 
 function CreateWithAIModal({ onClose, isOpen }) {
   const navigate = useNavigate();
@@ -179,7 +180,8 @@ function CreateWithAIModal({ onClose, isOpen }) {
   
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+    <>
+      <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 
           onClick={onClose} 
@@ -354,6 +356,9 @@ function CreateWithAIModal({ onClose, isOpen }) {
         )}
       </div>
     </div>
+    
+    </>
+    
   );
 }
 

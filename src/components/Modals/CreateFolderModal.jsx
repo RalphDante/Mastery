@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../api/firebase';
+import { useAuth } from '../../hooks/useAuth';
 
 function CustomMessage({ message, type, onClose }) {
     if (!message) return null;
@@ -24,6 +25,8 @@ function CustomMessage({ message, type, onClose }) {
 }
 
 function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
+
+    const { signIn } = useAuth();
     const [folderName, setFolderName] = useState("");
     const [folderDescription, setFolderDescription] = useState("");
     const [loading, setLoading] = useState(false);
@@ -175,7 +178,14 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
                 
                 {!authLoading && !user && (
                     <p className="text-center text-sm text-slate-400 mt-4">
-                        Please sign in to create folders.
+                        Please{' '}
+                        <span 
+                            onClick={() => signIn()}
+                            className="text-blue-400 hover:text-blue-300 cursor-pointer underline"
+                        >
+                            sign in
+                        </span>
+                        {' '}to create folders.
                     </p>
                 )}
             </div>

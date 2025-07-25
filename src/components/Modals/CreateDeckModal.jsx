@@ -3,9 +3,13 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from "../../api/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
 
 function CreateDeckModal({ uid, onClose, isOpen }) {
+
+  const { signIn } = useAuth();
   const navigate = useNavigate();
+
   
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingNewFolder, setIsCreatingNewFolder] = useState(false);
@@ -13,6 +17,9 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
   const [selectedFolder, setSelectedFolder] = useState("");
   const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const isButtonDisabled = loading || !authUser;
+
 
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
@@ -170,6 +177,19 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
           </div>
         </div>
 
+        {!authUser && (
+            <p className="text-center text-sm text-slate-400 mt-4">
+                Please{' '}
+                <span 
+                    onClick={() => signIn()}
+                    className="text-blue-400 hover:text-blue-300 cursor-pointer underline"
+                >
+                    sign in
+                </span>
+                {' '}to create decks.
+            </p>
+        )}
+
         <div className="flex justify-between mt-8">
           <button 
             onClick={onClose} 
@@ -180,8 +200,8 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
           </button>
           <button 
             onClick={handleFolderSelection} 
-            className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 font-semibold disabled:opacity-50 disabled:transform-none"
-            disabled={loading}
+            className="px-6 py-3 bg-violet-600 hover:bg-violet-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            disabled={isButtonDisabled}
           >
             {loading ? 'Processing...' : 'Continue'}
           </button>

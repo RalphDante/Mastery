@@ -70,6 +70,7 @@ import NewFlashCardUI from './pages/FlashCardsPage/NewFlashCardUI.jsx';
 // Blog Page
 import BlogPost from './pages/BlogPage/BlogPost.jsx';
 import BlogIndex from './pages/BlogPage/BlogIndex.jsx';
+import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDemoModal.jsx';
 
 
 function App(){
@@ -78,6 +79,7 @@ function App(){
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isCreateWithAIModalOpen, setIsCreateWithAIModalOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null); // You'll need to set this from auth
+  const [isCreateWithAIDemoModalOpen, setIsCreateWithAIDemoModalOpen] = useState();
 
   // Folder Modal handlers
   const handleShowCreateFolderModal = () => {
@@ -107,11 +109,19 @@ function App(){
   };
 
   const handleShowCreateWithAIModalClick = () => {
+    if(!currentUserId){
+      setIsCreateWithAIDemoModalOpen(true)
+      return;
+    }
     setIsCreateWithAIModalOpen(true);
   }
 
   const handleCreateWithAIModalClose = () => {
     setIsCreateWithAIModalOpen(false)
+  }
+
+  const handleCreateWithAIDemoModalClose = () => {
+    setIsCreateWithAIDemoModalOpen(false)
   }
 
 
@@ -198,6 +208,11 @@ function App(){
               <CreateWithAIModal 
                   onClose={handleCreateWithAIModalClose}
                   isOpen={isCreateWithAIModalOpen}
+              />
+
+              <CreateWithAIDemoModal 
+                  onClose={handleCreateWithAIDemoModalClose}
+                  isOpen={isCreateWithAIDemoModalOpen}
               />
       </Router>
   );
