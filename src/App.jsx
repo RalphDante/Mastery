@@ -74,6 +74,10 @@ import BlogIndex from './pages/BlogPage/BlogIndex.jsx';
 import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDemoModal.jsx';
 
 
+// Terms of Service
+import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
+
+
 function App(){
   // Global modal state
   const [isFolderModalOpen, setIsFolderModalOpen] = useState(false);
@@ -175,10 +179,12 @@ function App(){
                   <Route path="/blog" element={<BlogIndex />} />
                   <Route path="/blog/:slug" element={<BlogPost />} />
 
+                  {/* Terms of Service */}
+                  <Route path="/terms-of-service" element={<TermsOfService />} />
+
                   {/* Test Phases */}
-                  {/* <Route path='/go-premium' element={<GoPremium />} />
-                  <Route path='/newhome' element={<NewHomePage />} />
-                  <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
+                  <Route path='/pricing' element={<GoPremium />} />
+                  {/* <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
 
 
 

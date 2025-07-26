@@ -29,7 +29,7 @@ function ShowNavBar({children}){
             location.pathname === "/createfile" || 
             location.pathname === '/signin' || 
             location.pathname === '/try-now' || 
-            location.pathname === '/go-premium' || 
+            location.pathname === '/pricing' || 
             location.pathname === '/newhome' || 
             location.pathname === '/newflashcardui' || 
             location.pathname === '/flashcards-demo' || 
