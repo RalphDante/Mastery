@@ -166,7 +166,7 @@ function App(){
                   {/* Try to understand what the ":folderName" does again */}
                   {/* Last part we left off was at the integration of a new publicFlashCard Page */}
 
-                  <Route path='/try-now' element={<TryNowPage />} />
+                  {/* <Route path='/try-now' element={<TryNowPage />} /> */}
 
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
@@ -176,9 +176,9 @@ function App(){
                   <Route path="/blog/:slug" element={<BlogPost />} />
 
                   {/* Test Phases */}
-                  <Route path='/go-premium' element={<GoPremium />} />
+                  {/* <Route path='/go-premium' element={<GoPremium />} />
                   <Route path='/newhome' element={<NewHomePage />} />
-                  <Route path='/newflashcardui' element={<NewFlashCardUI />} />
+                  <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
 
 
 
