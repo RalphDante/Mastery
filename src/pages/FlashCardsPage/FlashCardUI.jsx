@@ -1,6 +1,27 @@
 import { useEffect, useState, useCallback } from "react";
 import { auth, app } from '../../api/firebase';
-import { getFirestore, doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, where, getDocs, deleteDoc } from 'firebase/firestore'; 
+import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    collection, 
+    query, 
+    orderBy, 
+    onSnapshot, 
+    setDoc, 
+    where, 
+    getDocs, 
+    deleteDoc,
+    writeBatch,
+    serverTimestamp,
+    increment
+} from 'firebase/firestore'; 
+
+import { 
+    signInWithPopup, 
+    GoogleAuthProvider // Add this missing import
+} from "firebase/auth";
+
 import { onAuthStateChanged } from "firebase/auth";
 import styles from './FlashCardsPage.module.css';
 
@@ -57,6 +78,11 @@ function FlashCardUI({
     const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
     const [reviewPhase, setReviewPhase] = useState('initial');
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
+
+    // Public Deck states
+    const [isPublicDeck, setIsPublicDeck] = useState(false);
+    const [deckOwnerInfo, setDeckOwnerInfo] = useState(null);
+    const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
 
     // Initialize Cloudinary
     const cld = new Cloudinary({ cloud: { cloudName: `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}` } });
@@ -203,12 +229,7 @@ function FlashCardUI({
     }, [authUser, db]);
 
     // --- Enhanced fetch function with cleanup ---
-    // --- Enhanced fetch function with cleanup ---
     const fetchDeckAndCards = useCallback(async () => {
-        if (!authUser) {
-            setLoading(false);
-            return;
-        }
 
         setLoading(true);
         setError(null);
@@ -229,6 +250,13 @@ function FlashCardUI({
 
         try {
             if (studyMode === 'spaced') {
+
+                if (!authUser) {
+                    setError('Please sign in to use spaced repetition mode');
+                    setLoading(false);
+                    return;
+                }
+
                 let progressQuery;
                 
                 if (deckId) {
@@ -276,10 +304,34 @@ function FlashCardUI({
                     }
                     const deckData = { id: deckDoc.id, ...deckDoc.data() };
                     
-                    if (deckData.ownerId !== authUser.uid && !deckData.isPublic) {
-                        setError('You do not have access to this deck');
+                    // Enhanced access control logic - FIXED
+                    const userOwnsTheDeck = deckData.ownerId === authUser?.uid;
+                    const deckIsPublic = deckData.isPublic;
+                    const hasAccess = userOwnsTheDeck || deckIsPublic;
+                    
+                    if (!hasAccess) {
+                        setError('The owner of this deck has set it to private.');
                         setLoading(false);
                         return;
+                    }
+                    // Set public deck state - FIXED LOGIC
+                    const viewingAsPublic = deckIsPublic && !userOwnsTheDeck;
+                    setIsPublicDeck(viewingAsPublic);
+                    
+                    // If it's a public deck viewed by non-owner, fetch owner info for attribution
+                    if (viewingAsPublic) {
+                        try {
+                            const ownerDoc = await getDoc(doc(db, 'users', deckData.ownerId));
+                            if (ownerDoc.exists()) {
+                                setDeckOwnerInfo({
+                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                    email: ownerDoc.data().email
+                                });
+                            }
+                        } catch (error) {
+                            console.log('Could not fetch owner info:', error);
+                            // Don't fail the whole operation if we can't get owner info
+                        }
                     }
                     setDeck(deckData);
 
@@ -478,14 +530,16 @@ function FlashCardUI({
 
     try {
         // Track streak for cramming mode too (NEW)
-        const isCramming = true;
-        const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
-        
-        if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
-            console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+        // Only track streaks for authenticated users
+        if (authUser) {
+            const isCramming = true;
+            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
+            
+            if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
+                console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+            }
         }
 
-        // Rest of your existing cramming logic...
         const newUniqueAttempted = new Set([...uniqueCardsAttempted, currentCardId]);
         setUniqueCardsAttempted(newUniqueAttempted);
 
@@ -642,6 +696,197 @@ function FlashCardUI({
             );
         }
     };
+
+    // New component for public deck header
+    const PublicDeckHeader = () => {
+        if (!isPublicDeck) return null;
+        
+        return (
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-500/30 p-4 rounded-xl mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-blue-400 text-lg font-semibold mb-1">
+                            📚 Public Deck: {deck?.title}
+                        </h3>
+                        {deckOwnerInfo && (
+                            <p className="text-white/70 text-sm">
+                                Created by: {deckOwnerInfo.displayName}
+                            </p>
+                        )}
+                    </div>
+                    {!authUser && (
+                        <button 
+                            onClick={() => setShowSignUpPrompt(true)}
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                            Save This Deck
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const SignUpPromptModal = () => {
+        if (!showSignUpPrompt) return null;
+        
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-gray-800 p-6 rounded-xl max-w-md mx-4 border border-gray-700">
+                    <h3 className="text-xl font-semibold text-white mb-3">
+                        Save This Deck to Your Account
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                        Sign up to save this deck, track your progress with spaced repetition, and access all features!
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={handleCreateAccountAndSaveDeck}
+                            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                        >
+                            Sign Up & Save
+                        </button>
+                        <button 
+                            onClick={() => setShowSignUpPrompt(false)}
+                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-all"
+                        >
+                            Continue Studying
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // New function to handle account creation and deck saving
+    const handleCreateAccountAndSaveDeck = async () => {
+        try {
+            // Your existing sign-in logic here
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            
+            // Copy the public deck to user's account
+            await copyPublicDeckToUserAccount(user, deck, flashCards);
+            
+            setShowSignUpPrompt(false);
+            alert('Deck saved to your account!');
+            
+        } catch (error) {
+            console.error('Error creating account and saving deck:', error);
+            alert('Error saving deck. Please try again.');
+        }
+    };
+
+    // New function to copy public deck to user's account
+    const copyPublicDeckToUserAccount = async (user, deckData, cardsData) => {
+        try {
+            const batch = writeBatch(db);
+            
+            // Create or update user document               
+            const userRef = doc(db, 'users', user.uid);
+            batch.set(userRef, {
+                email: user.email,
+                displayName: user.displayName || 'Anonymous User',
+                lastActiveAt: serverTimestamp(),
+                'stats.totalDecks': increment(1),
+                'stats.totalCards': increment(cardsData.length)
+            }, { merge: true });
+            
+            // Create default folder if needed
+            const folderRef = doc(collection(db, 'folders'));
+            batch.set(folderRef, {
+                name: "Saved Decks",
+                ownerId: user.uid,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                isPublic: false,
+                deckCount: 1
+            });
+            
+            // Create new deck
+            const newDeckRef = doc(collection(db, 'decks'));
+            batch.set(newDeckRef, {
+                title: `${deckData.title} (Copy)`,
+                description: deckData.description || "Saved from public deck",
+                ownerId: user.uid,
+                folderId: folderRef.id,
+                isPublic: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                cardCount: cardsData.length,
+                tags: deckData.tags || [],
+                originalDeckId: deckData.id // Track where it came from
+            });
+            
+            // Copy all cards
+            cardsData.forEach((card, index) => {
+                const cardRef = doc(collection(db, 'decks', newDeckRef.id, 'cards'));
+                batch.set(cardRef, {
+                    question: card.question,
+                    answer: card.answer,
+                    question_type: card.question_type || "text",
+                    answer_type: card.answer_type || "text",
+                    createdAt: serverTimestamp(),
+                    order: index + 1
+                });
+            });
+            
+            await batch.commit();
+            
+            // Redirect to the new deck
+            window.location.href = `/flashcards/${newDeckRef.id}`;
+            
+        } catch (error) {
+            console.error('Error copying deck:', error);
+            throw error;
+        }
+    };
+
+
+    // NEW: Study mode selector
+    const renderStudyModeSelector = () => {
+    // Show for both authenticated and unauthenticated users
+    if (isPublicDeck && !authUser) {
+        // Special selector for unauthenticated users viewing public decks
+        return (
+            <div className="flex bg-gray-700 rounded-lg p-1">
+                <button
+                    className="px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-violet-600 text-white shadow-lg"
+                >
+                    <i className="fa-solid fa-bolt"></i>
+                    Quick Study
+                </button>
+                
+                <button
+                    onClick={() => setShowSignUpPrompt(true)}
+                    className="group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-gray-600 text-gray-500 hover:text-white hover:bg-gray-600"
+                >
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                        🔒 Sign up to unlock Smart Review
+                    </div>
+                    <i className="fa-solid fa-brain"></i>
+                    Smart Review 🔒
+                </button>
+            </div>
+        );
+    } else if (authUser) {
+        // Normal selector for authenticated users
+        return (
+            <StudyModeSelector 
+                deckId={deckId} 
+                db={db} 
+                authUser={authUser} 
+                currentMode={studyMode} 
+                onModeChange={onStudyModeChange} 
+                dueCardsCount={dueCardsCount}
+                disableSpaced={isPublicDeck}
+            />
+        );
+    }
+    return null;
+    };
+
 
     // Render different button sets based on study mode
     const renderStudyButtons = () => {
@@ -804,64 +1049,57 @@ function FlashCardUI({
     }
 
     return (
-        <>  
-            {/* Buttons */}
-            <div className={`flex justify-between mb-1`}>
-                <div>
-                    {deckId && <EditDeckBtn deckId={deckId} />} 
-                    {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
-                </div>
-             
-                <div>
-                    {authUser && (
-                        <StudyModeSelector 
-                            deckId={deckId} 
-                            db={db} 
-                            authUser={authUser} 
-                            currentMode={studyMode} 
-                            onModeChange={onStudyModeChange} 
-                            dueCardsCount={dueCardsCount}
-                        />
+    <>  
+        <PublicDeckHeader />
+        <SignUpPromptModal />
+        
+        {/* Buttons */}
+        <div className={`flex justify-between mb-1`}>
+            <div>
+                {/* Only show edit button if user owns the deck */}
+                {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />} 
+            </div>
+         
+            <div>
+                {renderStudyModeSelector()}
+            </div>
+        </div>
+
+        {/* Rest of your existing JSX... */}
+        <div>
+            {renderScoreContainer()}
+        </div>
+
+        {/* Show cleanup notification if orphaned progress was found */}
+        {orphanedProgressCount > 0 && (
+            <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
+                <p className="text-green-200 text-sm">
+                    ✅ Cleaned up {orphanedProgressCount} orphaned progress records from deleted cards.
+                </p>
+            </div>
+        )}
+        
+        <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
+            <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
+                <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
+                    {currentIndex < flashCards.length ? (
+                        renderContent(currentQuestion, currentQuestionType, styles.questionImage)
+                    ) : (
+                        <h2>You completed it!!!</h2>
                     )}
                 </div>
-                
-            </div>
-
-            <div >
-                {renderScoreContainer()}
-            </div>
-
-            {/* Show cleanup notification if orphaned progress was found */}
-            {orphanedProgressCount > 0 && (
-                <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
-                    <p className="text-green-200 text-sm">
-                        ✅ Cleaned up {orphanedProgressCount} orphaned progress records from deleted cards.
-                    </p>
-                </div>
-            )}
-            
-            <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
-                <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
-                        {currentIndex < flashCards.length ? (
-                            renderContent(currentQuestion, currentQuestionType, styles.questionImage)
-                        ) : (
-                            <h2>You completed it!!!</h2>
-                        )                        
-                        }
-                    </div>
-                    <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
-                        {currentIndex < flashCards.length ? (
-                            renderContent(currentAnswer, currentAnswerType, styles.questionImage)
-                        ) : (
-                            <h2>You completed it!!!</h2>
-                        )}
-                    </div>
+                <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
+                    {currentIndex < flashCards.length ? (
+                        renderContent(currentAnswer, currentAnswerType, styles.questionImage)
+                    ) : (
+                        <h2>You completed it!!!</h2>
+                    )}
                 </div>
             </div>
-            
-            {renderStudyButtons()}
-        </>
+        </div>
+        
+        {renderStudyButtons()}
+    </>
     );
 }
 
