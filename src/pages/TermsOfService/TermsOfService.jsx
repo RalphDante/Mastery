@@ -14,7 +14,7 @@ function TermsOfService() {
           {/* Section 1 */}
           <section>
             <h2 className="text-2xl font-semibold mb-4 text-white">1. Acceptance of Terms</h2>
-            <p>By accessing or using Mastery Study ("Service", "Platform", "we", "us", "our"), you ("User", "you", "your") agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use our Service.</p>
+            <p>Mastery Study is owned and operated by Ralph T. Comandante as a sole proprietor. By accessing or using Mastery Study ("Service", "Platform", "we", "us", "our"), you ("User", "you", "your") agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, please do not use our Service.</p>
           </section>
 
           {/* Section 2 */}
