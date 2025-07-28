@@ -192,9 +192,17 @@ function App(){
 
               {/* Footer */}
               <footer className="bg-gray-900 mt-12 border-t border-gray-700">
-                  <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-400">
-                      <p>&copy; 2025 Mastery. All rights reserved.</p>
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-400">
+                  <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-6">
+                    <p>&copy; 2025 Mastery. All rights reserved.</p>
+                    <a 
+                      href="/terms-of-service" 
+                      className="text-slate-400 hover:text-white transition-colors underline"
+                    >
+                      Terms of Service
+                    </a>
                   </div>
+                </div>
               </footer>
 
 
