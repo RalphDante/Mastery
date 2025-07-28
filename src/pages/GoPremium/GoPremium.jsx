@@ -2,7 +2,7 @@ import { Check, Star, Zap, Crown } from 'lucide-react';
 
 function GoPremium() {
   return (
-    <div className="min-h-screen bg-gradient-to-br bg-black text-white">
+    <div className="min-h-screen bg-gradient-to-br text-white">
       {/* Minimal Header */}
       <div className="flex justify-between items-center p-6">
         <h1 className="text-2xl font-bold text-violet-300">Mastery</h1>

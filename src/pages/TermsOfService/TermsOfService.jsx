@@ -81,7 +81,7 @@ function TermsOfService() {
             
             <h3 className="text-xl font-medium mb-3 text-gray-200">5.1 Refund Eligibility</h3>
             <ul className="list-disc list-inside space-y-2 ml-4 mb-4">
-              <li>New subscribers may request a full refund within 7 days of their initial subscription</li>
+              <li>New subscribers may request a full refund within 14 days of their initial subscription</li>
               <li>Refunds are only available for the current billing period</li>
               <li>Refunds will be processed to the original payment method within 5-10 business days</li>
             </ul>
