@@ -56,7 +56,7 @@ function FlashCardUI({
     deckId, 
     db 
 }) {
-    const [authUser, setAuthUser] = useState(null);
+    const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
     const [deck, setDeck] = useState(null); 
     const [currentQuestion, setCurrentQuestion] = useState();
@@ -110,9 +110,10 @@ function FlashCardUI({
         return <h2>Content not available</h2>;
     };
 
-    // Auth state listener
+    // FIX 2: Update the auth state listener to be more explicit
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
+            console.log('Auth state changed:', user ? 'signed in' : 'signed out');
             setAuthUser(user);
         });
         return () => unsubscribe();
@@ -230,6 +231,11 @@ function FlashCardUI({
 
     // --- Enhanced fetch function with cleanup ---
     const fetchDeckAndCards = useCallback(async () => {
+
+        if (authUser === undefined) {
+            console.log('Auth state still loading, waiting...');
+            return;
+        }
 
         setLoading(true);
         setError(null);
@@ -377,10 +383,16 @@ function FlashCardUI({
         }
     }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer, cleanupOrphanedProgress, initializeNewCardsProgress]);
 
-    // Effect to trigger data fetching when dependencies change
+    // FIX 3: Add a loading check in the main effect
     useEffect(() => {
         let unsubscribe;
         const setupData = async () => {
+            // Wait for auth state to be determined
+            if (authUser === undefined) {
+                console.log('Waiting for auth state...');
+                return;
+            }
+            
             if (unsubscribe) {
                 unsubscribe();
             }
