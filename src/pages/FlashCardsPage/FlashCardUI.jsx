@@ -866,6 +866,12 @@ function FlashCardUI({
     const copyPublicDeckToUserAccount = async (user, deckData, cardsData) => {
         try {
             const batch = writeBatch(db);
+
+            // Remove duplicates from cardsData by filtering unique card IDs
+            const uniqueCards = cardsData.filter((card, index, self) => 
+                index === self.findIndex(c => c.id === card.id)
+            );
+        
             
             // Update user document using updateDoc instead of batch for stats
             // We'll do this separately to avoid the dot notation issue with batches
@@ -919,13 +925,13 @@ function FlashCardUI({
                 isPublic: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                cardCount: cardsData.length,
+                cardCount: uniqueCards.length,
                 tags: deckData.tags || [],
                 originalDeckId: deckData.id // Track where it came from
             });
             
             // Copy all cards
-            cardsData.forEach((card, index) => {
+            uniqueCards.forEach((card, index) => {
                 const cardRef = doc(collection(db, 'decks', newDeckRef.id, 'cards'));
                 batch.set(cardRef, {
                     question: card.question,
@@ -943,7 +949,7 @@ function FlashCardUI({
             // Then update user stats separately using updateDoc
             await updateDoc(userRef, {
                 'stats.totalDecks': increment(1),
-                'stats.totalCards': increment(cardsData.length)
+                'stats.totalCards': increment(uniqueCards.length)
             });
             
             // Redirect to the new deck
