@@ -15,6 +15,10 @@ import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
 
 function FlashCardsPage() {
+
+    // Public Deck data
+    const [publicDeckData, setPublicDeckData] = useState(null)
+
     const navigate = useNavigate();
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
@@ -184,7 +188,7 @@ function FlashCardsPage() {
     // Determine the display name for the header
     const displayName = studyMode === 'spaced' && !paramDeckId 
                         ? "Global Smart Review" // For global spaced review
-                        : deckTitle || deckData?.title || "Unknown Deck"; // For specific deck
+                        : deckTitle || deckData?.title || publicDeckData?.title || "Unknown Deck"; // For specific deck
 
     // Only show deck description if we're on a specific deck page OR it's cramming mode
     const showDescription = studyMode === 'cramming' || (studyMode === 'spaced' && paramDeckId);
@@ -216,6 +220,7 @@ function FlashCardsPage() {
                         setCurrentIndex={setCurrentIndex}
                         deckId={paramDeckId} // Pass deckId from params (can be null for global review)
                         db={db} // Pass Firestore instance to FlashCardUI
+                        publicDeckData={setPublicDeckData}
                     />
                 </div>
                 
@@ -232,7 +237,7 @@ function FlashCardsPage() {
                         )}
                         <div className="text-2xl font-bold mb-1 text-purple-400">{displayName}</div>
                         {showDescription && deckData?.description && deckData.description !== "No Description" && (
-                            <p className="text-gray-400 mb-4">{deckData.description}</p>
+                            <p className="text-gray-400 mb-4">{deckData.description}</p> 
                         )}
                         
                         <div className="space-y-4">

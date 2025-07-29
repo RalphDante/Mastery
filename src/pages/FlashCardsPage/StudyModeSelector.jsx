@@ -8,7 +8,8 @@ function StudyModeSelector({
     authUser, 
     currentMode, 
     onModeChange, 
-    dueCardsCount 
+    dueCardsCount,
+    disableSpaced = false // New prop with default value
 }) {
     const [isLoading, setIsLoading] = useState(false);
 
@@ -49,6 +50,11 @@ function StudyModeSelector({
     
     const handleModeSwitch = async (newMode) => {
         if (newMode === currentMode) return;
+        
+        // Prevent switching to spaced mode if disabled
+        if (newMode === 'spaced' && disableSpaced) {
+            return; // Do nothing if spaced mode is disabled
+        }
         
         setIsLoading(true);
         
@@ -120,18 +126,29 @@ function StudyModeSelector({
                 
                 <button
                     onClick={() => handleModeSwitch('spaced')}
-                    disabled={isLoading}
-                    className={`px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
+                    disabled={isLoading || disableSpaced} // Disable button if disableSpaced is true
+                    className={`group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
                         currentMode === 'spaced' 
                             ? 'bg-emerald-600 text-white shadow-lg' 
-                            : 'text-gray-400 hover:text-white hover:bg-gray-600'
+                            : disableSpaced 
+                                ? 'text-gray-500 cursor-not-allowed bg-gray-600' // Disabled styles
+                                : 'text-gray-400 hover:text-white hover:bg-gray-600'
                     }`}
                 >
+                    {/* Tooltip for disabled state */}
+                    {disableSpaced && (
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                            🔒 Copy this deck to unlock Smart Review
+                        </div>
+                    )}
+                    
                     <i className="fa-solid fa-brain"></i>
                     Smart Review
+                    {disableSpaced && <span className="ml-1">🔒</span>}
+                    
                     {/* Only show dueCardsCount badge if deckId exists (i.e., not global review)
-                        and if there are due cards. */}
-                    {deckId && dueCardsCount > 0 && (
+                        and if there are due cards and spaced mode is not disabled. */}
+                    {deckId && dueCardsCount > 0 && !disableSpaced && (
                         <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
                             {dueCardsCount}
                         </span>

@@ -14,13 +14,11 @@ import {
     deleteDoc,
     writeBatch,
     serverTimestamp,
-    increment
+    increment,
+    updateDoc
 } from 'firebase/firestore'; 
 
-import { 
-    signInWithPopup, 
-    GoogleAuthProvider // Add this missing import
-} from "firebase/auth";
+import { authService } from "../../hooks/useAuth";
 
 import { onAuthStateChanged } from "firebase/auth";
 import styles from './FlashCardsPage.module.css';
@@ -39,6 +37,7 @@ import { calculateSM2 } from '../../utils/sm2';
 import StudyTimeTracker from './StudyTimeTracker';
 
 
+
 // FiresStore
 
 import { Timestamp } from 'firebase/firestore';
@@ -54,7 +53,8 @@ function FlashCardUI({
     currentIndex, 
     setCurrentIndex,
     deckId, 
-    db 
+    db,
+    publicDeckData 
 }) {
     const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
@@ -340,6 +340,7 @@ function FlashCardUI({
                         }
                     }
                     setDeck(deckData);
+                    publicDeckData(deckData);
 
                     const cardsRef = collection(db, 'decks', deckId, 'cards');
                     const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
@@ -637,6 +638,68 @@ function FlashCardUI({
         }
     }, [flashCards, currentIndex]);
 
+
+    const CopyDeckBtn = ({ 
+        deckId, 
+        deckName, 
+        authUser, 
+        deck, 
+        flashCards, 
+        db, 
+        onCopy, 
+        onShowSignUp 
+    }) => {
+        const [copying, setCopying] = useState(false);
+
+        const handleCopy = async () => {
+            if (!authUser) {
+                onShowSignUp();
+                return;
+            }
+
+            if (!deck || !flashCards.length) {
+                alert('No deck data available to copy');
+                return;
+            }
+
+            setCopying(true);
+            try {
+                await onCopy(authUser, deck, flashCards);
+                // Success - the function already handles redirection
+            } catch (error) {
+                console.error('Error copying deck:', error);
+                alert('Failed to copy deck. Please try again.');
+            } finally {
+                setCopying(false);
+            }
+        };
+
+        return (
+            <button
+                onClick={handleCopy}
+                disabled={copying}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors duration-200 font-medium"
+            >
+                <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/>
+                </svg>
+                {copying ? 'Copying...' : 'Copy Deck'}
+            </button>
+        );
+    };
+
+
+
     // Show if the deck is finished
     useEffect(()=>{
         if(!(currentIndex < flashCards.length)){
@@ -773,16 +836,25 @@ function FlashCardUI({
     // New function to handle account creation and deck saving
     const handleCreateAccountAndSaveDeck = async () => {
         try {
-            // Your existing sign-in logic here
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
-            
-            // Copy the public deck to user's account
-            await copyPublicDeckToUserAccount(user, deck, flashCards);
-            
-            setShowSignUpPrompt(false);
-            alert('Deck saved to your account!');
+            // Use the existing authService.signIn with custom success callback
+            await authService.signIn({
+                onSuccess: async (user) => {
+                    try {
+                        // Copy the public deck to user's account after successful sign-in
+                        await copyPublicDeckToUserAccount(user, deck, flashCards);
+                        setShowSignUpPrompt(false);
+                        alert('Deck saved to your account!');
+                    } catch (error) {
+                        console.error('Error saving deck after sign-in:', error);
+                        alert('Account created but error saving deck. Please try again.');
+                    }
+                },
+                onError: (errorMessage) => {
+                    console.error('Error during sign-in:', errorMessage);
+                    alert(`Error creating account: ${errorMessage}`);
+                }
+                // Note: navigate is automatically included by the useAuth hook
+            });
             
         } catch (error) {
             console.error('Error creating account and saving deck:', error);
@@ -795,26 +867,47 @@ function FlashCardUI({
         try {
             const batch = writeBatch(db);
             
-            // Create or update user document               
+            // Update user document using updateDoc instead of batch for stats
+            // We'll do this separately to avoid the dot notation issue with batches
             const userRef = doc(db, 'users', user.uid);
+            
+            // First, ensure the user document exists with basic info
             batch.set(userRef, {
                 email: user.email,
                 displayName: user.displayName || 'Anonymous User',
-                lastActiveAt: serverTimestamp(),
-                'stats.totalDecks': increment(1),
-                'stats.totalCards': increment(cardsData.length)
+                lastActiveAt: serverTimestamp()
             }, { merge: true });
             
-            // Create default folder if needed
-            const folderRef = doc(collection(db, 'folders'));
-            batch.set(folderRef, {
-                name: "Saved Decks",
-                ownerId: user.uid,
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                isPublic: false,
-                deckCount: 1
-            });
+            // Check if "Saved Decks" folder already exists
+            const foldersQuery = query(
+                collection(db, 'folders'), 
+                where('ownerId', '==', user.uid),
+                where('name', '==', 'Saved Decks')
+            );
+            
+            const existingFolders = await getDocs(foldersQuery);
+            let folderRef;
+            
+            if (!existingFolders.empty) {
+                // Use existing "Saved Decks" folder
+                folderRef = existingFolders.docs[0].ref;
+                // Update the deck count
+                batch.update(folderRef, {
+                    deckCount: increment(1),
+                    updatedAt: serverTimestamp()
+                });
+            } else {
+                // Create new "Saved Decks" folder
+                folderRef = doc(collection(db, 'folders'));
+                batch.set(folderRef, {
+                    name: "Saved Decks",
+                    ownerId: user.uid,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    isPublic: false,
+                    deckCount: 1
+                });
+            }
             
             // Create new deck
             const newDeckRef = doc(collection(db, 'decks'));
@@ -844,7 +937,14 @@ function FlashCardUI({
                 });
             });
             
+            // Commit the batch first
             await batch.commit();
+            
+            // Then update user stats separately using updateDoc
+            await updateDoc(userRef, {
+                'stats.totalDecks': increment(1),
+                'stats.totalCards': increment(cardsData.length)
+            });
             
             // Redirect to the new deck
             window.location.href = `/flashcards/${newDeckRef.id}`;
@@ -1069,7 +1169,21 @@ function FlashCardUI({
         <div className={`flex justify-between mb-1`}>
             <div>
                 {/* Only show edit button if user owns the deck */}
-                {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />} 
+                {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />}
+                {(!deckId || isPublicDeck) && (
+                    <CopyDeckBtn 
+                        deckId={deckId} 
+                        deckName={deck?.title || "Untitled Deck"}
+                        authUser={authUser}
+                        deck={deck}
+                        flashCards={flashCards}
+                        db={db}
+                        onCopy={copyPublicDeckToUserAccount}
+                        onShowSignUp={() => setShowSignUpPrompt(true)}
+                    />
+                )}
+
+
             </div>
          
             <div>
