@@ -1,6 +1,6 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Globe } from 'lucide-react';
 
-import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs } from "firebase/firestore"; 
+import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app, auth } from '../../api/firebase';
 import { onAuthStateChanged } from "firebase/auth";
@@ -15,6 +15,11 @@ import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
 
 function FlashCardsPage() {
+
+    // Public Deck data
+    const [publicDeckData, setPublicDeckData] = useState(null)
+    const [deckOwnerData, setDeckOwnerData] = useState(null)
+
     const navigate = useNavigate();
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
@@ -170,6 +175,53 @@ function FlashCardsPage() {
         setRedoDeck(true); // Trigger a re-fetch in FlashCardUI
     };
 
+    const handleSetToPublic = async () => {
+        if (!publicDeckData || !authUser) return;
+
+        try{
+            const deckRef = doc(db, 'decks', publicDeckData.id)
+
+            await updateDoc(deckRef, {
+                isPublic: true,
+                publishedAt: serverTimestamp()
+            });
+            
+            // Update local state to reflect the change
+            setPublicDeckData(prev => ({
+                ...prev,
+                isPublic: true,
+                publishedAt: new Date() // For immediate UI update
+            }));
+        
+            console.log("Deck set to public successfully!");
+        } catch(error){
+            console.log("error: ", error)
+        }
+
+    }
+
+    const handleSetToPrivate = async () => {
+        if (!publicDeckData || !authUser) return;
+
+        try{
+            const deckRef = doc(db, 'decks', publicDeckData.id)
+
+            await updateDoc(deckRef, {
+                isPublic: false,
+            });
+            
+            // Update local state to reflect the change
+            setPublicDeckData(prev => ({
+                ...prev,
+                isPublic: false,
+            }));
+        
+            console.log("Deck set to private successfully!");
+        } catch(error){
+            console.log("error: ", error)
+        }
+    }
+
     // Show loading state for the page
     if (loading) {
         return (
@@ -184,7 +236,9 @@ function FlashCardsPage() {
     // Determine the display name for the header
     const displayName = studyMode === 'spaced' && !paramDeckId 
                         ? "Global Smart Review" // For global spaced review
-                        : deckTitle || deckData?.title || "Unknown Deck"; // For specific deck
+                        : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Deck"; // For specific deck
+                        
+    const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== authUser?.uid;
 
     // Only show deck description if we're on a specific deck page OR it's cramming mode
     const showDescription = studyMode === 'cramming' || (studyMode === 'spaced' && paramDeckId);
@@ -216,6 +270,8 @@ function FlashCardsPage() {
                         setCurrentIndex={setCurrentIndex}
                         deckId={paramDeckId} // Pass deckId from params (can be null for global review)
                         db={db} // Pass Firestore instance to FlashCardUI
+                        publicDeckData={setPublicDeckData}
+                        deckOwnerData={setDeckOwnerData}
                     />
                 </div>
                 
@@ -230,9 +286,19 @@ function FlashCardsPage() {
                                 </p>
                             </div>
                         )}
-                        <div className="text-2xl font-bold mb-1 text-purple-400">{displayName}</div>
-                        {showDescription && deckData?.description && deckData.description !== "No Description" && (
-                            <p className="text-gray-400 mb-4">{deckData.description}</p>
+                        <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
+                            {isPublicDeck && <Globe className="w-6 h-6" />}
+                            {displayName}
+                        </div>
+
+                        {!publicDeckData && showDescription && deckData?.description && deckData.description !== "No Description" && (
+                            <p className="text-gray-400 mb-4">{deckData.description}</p> 
+                        )}
+
+                        {deckOwnerData && (
+                            <p className="text-white/70 text-sm">
+                                Created by: {deckOwnerData.displayName}
+                            </p>
                         )}
                         
                         <div className="space-y-4">
@@ -291,6 +357,35 @@ function FlashCardsPage() {
                                         🔄 Redo Deck
                                     </button>
                                 )}
+
+                                {publicDeckData && publicDeckData.ownerId === authUser?.uid ? (
+                                    !publicDeckData?.isPublic ? (
+                                        <button id="publishBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                            onClick={handleSetToPublic}
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-5 0-9-4-9-9s4-9 9-9"></path>
+                                            </svg>
+                                            <span>Make Public</span>
+                                        </button>
+
+                                    ) : (
+                                         <button id="privateBtn" class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                            onClick={handleSetToPrivate}
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            <span>Make Private</span>
+                                        </button>
+                                    )
+                                   
+                                
+                                ) : (
+                                    <div></div>
+                                )
+                                
+                            }
                                 
                                 {/* Show priority indicator for spaced mode */}
                                 {studyMode === 'spaced' && dueCardsCount > 0 && (

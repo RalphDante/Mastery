@@ -1,6 +1,25 @@
 import { useEffect, useState, useCallback } from "react";
 import { auth, app } from '../../api/firebase';
-import { getFirestore, doc, getDoc, collection, query, orderBy, onSnapshot, setDoc, where, getDocs, deleteDoc } from 'firebase/firestore'; 
+import { 
+    getFirestore, 
+    doc, 
+    getDoc, 
+    collection, 
+    query, 
+    orderBy, 
+    onSnapshot, 
+    setDoc, 
+    where, 
+    getDocs, 
+    deleteDoc,
+    writeBatch,
+    serverTimestamp,
+    increment,
+    updateDoc
+} from 'firebase/firestore'; 
+
+import { authService } from "../../hooks/useAuth";
+
 import { onAuthStateChanged } from "firebase/auth";
 import styles from './FlashCardsPage.module.css';
 
@@ -18,6 +37,7 @@ import { calculateSM2 } from '../../utils/sm2';
 import StudyTimeTracker from './StudyTimeTracker';
 
 
+
 // FiresStore
 
 import { Timestamp } from 'firebase/firestore';
@@ -33,9 +53,15 @@ function FlashCardUI({
     currentIndex, 
     setCurrentIndex,
     deckId, 
-    db 
+    db,
+    publicDeckData,
+    deckOwnerData
 }) {
-    const [authUser, setAuthUser] = useState(null);
+
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+
+    const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
     const [deck, setDeck] = useState(null); 
     const [currentQuestion, setCurrentQuestion] = useState();
@@ -57,6 +83,11 @@ function FlashCardUI({
     const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
     const [reviewPhase, setReviewPhase] = useState('initial');
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
+
+    // Public Deck states
+    const [isPublicDeck, setIsPublicDeck] = useState(false);
+    const [deckOwnerInfo, setDeckOwnerInfo] = useState(null);
+    const [showSignUpPrompt, setShowSignUpPrompt] = useState(false);
 
     // Initialize Cloudinary
     const cld = new Cloudinary({ cloud: { cloudName: `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}` } });
@@ -84,9 +115,10 @@ function FlashCardUI({
         return <h2>Content not available</h2>;
     };
 
-    // Auth state listener
+    // FIX 2: Update the auth state listener to be more explicit
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
+            console.log('Auth state changed:', user ? 'signed in' : 'signed out');
             setAuthUser(user);
         });
         return () => unsubscribe();
@@ -203,10 +235,10 @@ function FlashCardUI({
     }, [authUser, db]);
 
     // --- Enhanced fetch function with cleanup ---
-    // --- Enhanced fetch function with cleanup ---
     const fetchDeckAndCards = useCallback(async () => {
-        if (!authUser) {
-            setLoading(false);
+
+        if (authUser === undefined) {
+            console.log('Auth state still loading, waiting...');
             return;
         }
 
@@ -229,6 +261,13 @@ function FlashCardUI({
 
         try {
             if (studyMode === 'spaced') {
+
+                if (!authUser) {
+                    setError('Please sign in to use spaced repetition mode');
+                    setLoading(false);
+                    return;
+                }
+
                 let progressQuery;
                 
                 if (deckId) {
@@ -276,12 +315,41 @@ function FlashCardUI({
                     }
                     const deckData = { id: deckDoc.id, ...deckDoc.data() };
                     
-                    if (deckData.ownerId !== authUser.uid && !deckData.isPublic) {
-                        setError('You do not have access to this deck');
+                    // Enhanced access control logic - FIXED
+                    const userOwnsTheDeck = deckData.ownerId === authUser?.uid;
+                    const deckIsPublic = deckData.isPublic;
+                    const hasAccess = userOwnsTheDeck || deckIsPublic;
+                    
+                    if (!hasAccess) {
+                        setError('The owner of this deck has set it to private.');
                         setLoading(false);
                         return;
                     }
+                    // Set public deck state - FIXED LOGIC
+                    const viewingAsPublic = deckIsPublic && !userOwnsTheDeck;
+                    setIsPublicDeck(viewingAsPublic);
+                    
+                    // If it's a public deck viewed by non-owner, fetch owner info for attribution
+                    if (viewingAsPublic) {
+                        try {
+                            const ownerDoc = await getDoc(doc(db, 'users', deckData.ownerId));
+                            if (ownerDoc.exists()) {
+                                setDeckOwnerInfo({
+                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                    email: ownerDoc.data().email
+                                });
+                                deckOwnerData({
+                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                    email: ownerDoc.data().email
+                                })
+                            }
+                        } catch (error) {
+                            console.log('Could not fetch owner info:', error);
+                            // Don't fail the whole operation if we can't get owner info
+                        }
+                    }
                     setDeck(deckData);
+                    publicDeckData(deckData);
 
                     const cardsRef = collection(db, 'decks', deckId, 'cards');
                     const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
@@ -325,10 +393,16 @@ function FlashCardUI({
         }
     }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer, cleanupOrphanedProgress, initializeNewCardsProgress]);
 
-    // Effect to trigger data fetching when dependencies change
+    // FIX 3: Add a loading check in the main effect
     useEffect(() => {
         let unsubscribe;
         const setupData = async () => {
+            // Wait for auth state to be determined
+            if (authUser === undefined) {
+                console.log('Waiting for auth state...');
+                return;
+            }
+            
             if (unsubscribe) {
                 unsubscribe();
             }
@@ -478,14 +552,16 @@ function FlashCardUI({
 
     try {
         // Track streak for cramming mode too (NEW)
-        const isCramming = true;
-        const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
-        
-        if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
-            console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+        // Only track streaks for authenticated users
+        if (authUser) {
+            const isCramming = true;
+            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
+            
+            if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
+                console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
+            }
         }
 
-        // Rest of your existing cramming logic...
         const newUniqueAttempted = new Set([...uniqueCardsAttempted, currentCardId]);
         setUniqueCardsAttempted(newUniqueAttempted);
 
@@ -571,6 +647,68 @@ function FlashCardUI({
         }
     }, [flashCards, currentIndex]);
 
+
+    const CopyDeckBtn = ({ 
+        deckId, 
+        deckName, 
+        authUser, 
+        deck, 
+        flashCards, 
+        db, 
+        onCopy, 
+        onShowSignUp 
+    }) => {
+        const [copying, setCopying] = useState(false);
+
+        const handleCopy = async () => {
+            if (!authUser) {
+                onShowSignUp();
+                return;
+            }
+
+            if (!deck || !flashCards.length) {
+                alert('No deck data available to copy');
+                return;
+            }
+
+            setCopying(true);
+            try {
+                await onCopy(authUser, deck, flashCards);
+                // Success - the function already handles redirection
+            } catch (error) {
+                console.error('Error copying deck:', error);
+                alert('Failed to copy deck. Please try again.');
+            } finally {
+                setCopying(false);
+            }
+        };
+
+        return (
+            <button
+                onClick={handleCopy}
+                disabled={copying}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-colors duration-200 font-medium"
+            >
+                <svg 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2 2v1"/>
+                </svg>
+                {copying ? 'Copying...' : 'Copy Deck'}
+            </button>
+        );
+    };
+
+
+
     // Show if the deck is finished
     useEffect(()=>{
         if(!(currentIndex < flashCards.length)){
@@ -642,6 +780,302 @@ function FlashCardUI({
             );
         }
     };
+
+    // New component for public deck header
+    const PublicDeckHeader = () => {
+        if (!isPublicDeck) return null;
+        
+        return (
+            <div className="bg-gradient-to-r from-blue-500/20 to-purple-600/20 border border-blue-500/30 p-4 rounded-xl mb-4">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h3 className="text-blue-400 text-lg font-semibold mb-1">
+                            📚 Public Deck: {deck?.title}
+                        </h3>
+                        {deckOwnerInfo && (
+                            <p className="text-white/70 text-sm">
+                                Created by: {deckOwnerInfo.displayName}
+                            </p>
+                        )}
+                    </div>
+                    {!authUser && (
+                        <button 
+                            onClick={() => setShowSignUpPrompt(true)}
+                            className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
+                        >
+                            Save This Deck
+                        </button>
+                    )}
+                </div>
+            </div>
+        );
+    };
+
+    const SignUpPromptModal = () => {
+        if (!showSignUpPrompt) return null;
+        
+        return (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-gray-800 p-6 rounded-xl max-w-md mx-4 border border-gray-700">
+                    <h3 className="text-xl font-semibold text-white mb-3">
+                        Copy This Deck to Your Account
+                    </h3>
+                    <p className="text-gray-300 mb-4">
+                        Sign up to copy this deck, track your progress with spaced repetition, and access all features!
+                    </p>
+                    <div className="flex gap-3">
+                        <button 
+                            onClick={handleCreateAccountAndSaveDeck}
+                            className="flex-1 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-semibold py-2 px-4 rounded-lg transition-all"
+                        >
+                            Sign Up & Save
+                        </button>
+                        <button 
+                            onClick={() => setShowSignUpPrompt(false)}
+                            className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-all"
+                        >
+                            Continue Studying
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    // New function to handle account creation and deck saving
+    const handleCreateAccountAndSaveDeck = async () => {
+        try {
+            // Use the existing authService.signIn with custom success callback
+            await authService.signIn({
+                onSuccess: async (user) => {
+                    try {
+                        // Copy the public deck to user's account after successful sign-in
+                        await copyPublicDeckToUserAccount(user, deck, flashCards);
+                        setShowSignUpPrompt(false);
+                        alert('Deck saved to your account!');
+                    } catch (error) {
+                        console.error('Error saving deck after sign-in:', error);
+                        alert('Account created but error saving deck. Please try again.');
+                    }
+                },
+                onError: (errorMessage) => {
+                    console.error('Error during sign-in:', errorMessage);
+                    alert(`Error creating account: ${errorMessage}`);
+                }
+                // Note: navigate is automatically included by the useAuth hook
+            });
+            
+        } catch (error) {
+            console.error('Error creating account and saving deck:', error);
+            alert('Error saving deck. Please try again.');
+        }
+    };
+
+    // New function to copy public deck to user's account
+    const copyPublicDeckToUserAccount = async (user, deckData, cardsData) => {
+        try {
+            const batch = writeBatch(db);
+
+            // Remove duplicates from cardsData by filtering unique card IDs
+            const uniqueCards = cardsData.filter((card, index, self) => 
+                index === self.findIndex(c => c.id === card.id)
+            );
+        
+            
+            // Update user document using updateDoc instead of batch for stats
+            // We'll do this separately to avoid the dot notation issue with batches
+            const userRef = doc(db, 'users', user.uid);
+            
+            // First, ensure the user document exists with basic info
+            batch.set(userRef, {
+                email: user.email,
+                displayName: user.displayName || 'Anonymous User',
+                lastActiveAt: serverTimestamp()
+            }, { merge: true });
+            
+            // Check if "Saved Decks" folder already exists
+            const foldersQuery = query(
+                collection(db, 'folders'), 
+                where('ownerId', '==', user.uid),
+                where('name', '==', 'Saved Decks')
+            );
+            
+            const existingFolders = await getDocs(foldersQuery);
+            let folderRef;
+            
+            if (!existingFolders.empty) {
+                // Use existing "Saved Decks" folder
+                folderRef = existingFolders.docs[0].ref;
+                // Update the deck count
+                batch.update(folderRef, {
+                    deckCount: increment(1),
+                    updatedAt: serverTimestamp()
+                });
+            } else {
+                // Create new "Saved Decks" folder
+                folderRef = doc(collection(db, 'folders'));
+                batch.set(folderRef, {
+                    name: "Saved Decks",
+                    ownerId: user.uid,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    isPublic: false,
+                    deckCount: 1
+                });
+            }
+            
+            // Create new deck
+            const newDeckRef = doc(collection(db, 'decks'));
+            batch.set(newDeckRef, {
+                title: `${deckData.title} (Copy)`,
+                description: deckData.description || "Saved from public deck",
+                ownerId: user.uid,
+                folderId: folderRef.id,
+                isPublic: false,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                cardCount: uniqueCards.length,
+                tags: deckData.tags || [],
+                originalDeckId: deckData.id // Track where it came from
+            });
+            
+            // Copy all cards
+            uniqueCards.forEach((card, index) => {
+                const cardRef = doc(collection(db, 'decks', newDeckRef.id, 'cards'));
+                batch.set(cardRef, {
+                    question: card.question,
+                    answer: card.answer,
+                    question_type: card.question_type || "text",
+                    answer_type: card.answer_type || "text",
+                    createdAt: serverTimestamp(),
+                    order: index + 1
+                });
+            });
+
+            // NEW: Increment the copies counter on the original deck
+            const originalDeckRef = doc(db, 'decks', deckData.id);
+            batch.update(originalDeckRef, {
+                copies: increment(1)
+            });
+            
+            // Commit the batch first
+            await batch.commit();
+            
+            // Then update user stats separately using updateDoc
+            await updateDoc(userRef, {
+                'stats.totalDecks': increment(1),
+                'stats.totalCards': increment(uniqueCards.length)
+            });
+            
+            // Redirect to the new deck
+            window.location.href = `/flashcards/${newDeckRef.id}`;
+            
+        } catch (error) {
+            console.error('Error copying deck:', error);
+            throw error;
+        }
+    };
+
+
+    // NEW: Study mode selector
+    const renderStudyModeSelector = () => {
+    // Show for both authenticated and unauthenticated users
+    if (isPublicDeck && !authUser) {
+        // Special selector for unauthenticated users viewing public decks
+        return (
+            <>
+            {/* Desktop Version */}
+            <div className="hidden sm:flex bg-gray-700 rounded-lg p-1">
+                <button className="px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-violet-600 text-white shadow-lg">
+                    <i className="fa-solid fa-bolt"></i>
+                    Quick Study
+                </button>
+                
+                <button
+                    onClick={() => setShowSignUpPrompt(true)}
+                    className="group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-gray-600 text-gray-500 hover:text-white hover:bg-gray-600"
+                >
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
+                        🔒 Sign up to unlock Smart Review
+                    </div>
+                    <i className="fa-solid fa-brain"></i>
+                    Smart Review 🔒
+                </button>
+            </div>
+
+            {/* Mobile Version */}
+            <div className="sm:hidden">
+                <button
+                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                    className="bg-gray-700 rounded-lg p-3 text-white hover:bg-gray-600 transition-colors"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <circle cx="19" cy="12" r="2"/>
+                    </svg>
+                </button>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            {showMobileMenu && (
+                <>
+                    {/* Backdrop */}
+                    <div 
+                        className="sm:hidden fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setShowMobileMenu(false)}
+                    />
+                    
+                    {/* Bottom Menu */}
+                    <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-800 rounded-t-2xl p-6 z-50 animate-in slide-in-from-bottom duration-300">
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => setShowMobileMenu(false)}
+                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-violet-600 text-white shadow-lg"
+                            >
+                                <i className="fa-solid fa-bolt"></i>
+                                Quick Study
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setShowSignUpPrompt(true);
+                                    setShowMobileMenu(false);
+                                }}
+                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-gray-600 text-gray-300 active:bg-gray-500"
+                            >
+                                <i className="fa-solid fa-brain"></i>
+                                Smart Review 🔒
+                                <span className="ml-auto text-xs text-gray-400">Sign up required</span>
+                            </button>
+                        </div>
+                        
+                        {/* Close indicator */}
+                        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded-full" />
+                    </div>
+                </>
+            )}
+
+            
+        </>
+        );
+    } else if (authUser) {
+        // Normal selector for authenticated users
+        return (
+            <StudyModeSelector 
+                deckId={deckId} 
+                db={db} 
+                authUser={authUser} 
+                currentMode={studyMode} 
+                onModeChange={onStudyModeChange} 
+                dueCardsCount={dueCardsCount}
+                disableSpaced={isPublicDeck}
+            />
+        );
+    }
+    return null;
+    };
+
 
     // Render different button sets based on study mode
     const renderStudyButtons = () => {
@@ -741,7 +1175,7 @@ function FlashCardUI({
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                             Shuffle Deck
                             </div>
-                            <i class="fas fa-shuffle"></i>
+                            <i className="fas fa-shuffle"></i>
                         </button>
                     
                 </div>
@@ -804,64 +1238,71 @@ function FlashCardUI({
     }
 
     return (
-        <>  
-            {/* Buttons */}
-            <div className={`flex justify-between mb-1`}>
-                <div>
-                    {deckId && <EditDeckBtn deckId={deckId} />} 
-                    {/* {deckId && deck && <SetToPublic deckId={deckId} deck={deck} />}  */}
-                </div>
-             
-                <div>
-                    {authUser && (
-                        <StudyModeSelector 
-                            deckId={deckId} 
-                            db={db} 
-                            authUser={authUser} 
-                            currentMode={studyMode} 
-                            onModeChange={onStudyModeChange} 
-                            dueCardsCount={dueCardsCount}
-                        />
+    <>  
+        {/* <PublicDeckHeader /> */}
+        <SignUpPromptModal />
+        
+        {/* Buttons */}
+        <div className={`flex justify-between mb-1`}>
+            <div>
+                {/* Only show edit button if user owns the deck */}
+                {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />}
+                {(!deckId || isPublicDeck) && (
+                    <CopyDeckBtn 
+                        deckId={deckId} 
+                        deckName={deck?.title || "Untitled Deck"}
+                        authUser={authUser}
+                        deck={deck}
+                        flashCards={flashCards}
+                        db={db}
+                        onCopy={copyPublicDeckToUserAccount}
+                        onShowSignUp={() => setShowSignUpPrompt(true)}
+                    />
+                )}
+
+
+            </div>
+         
+            <div>
+                {renderStudyModeSelector()}
+            </div>
+        </div>
+
+        {/* Rest of your existing JSX... */}
+        <div>
+            {renderScoreContainer()}
+        </div>
+
+        {/* Show cleanup notification if orphaned progress was found */}
+        {orphanedProgressCount > 0 && (
+            <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
+                <p className="text-green-200 text-sm">
+                    ✅ Cleaned up {orphanedProgressCount} orphaned progress records from deleted cards.
+                </p>
+            </div>
+        )}
+        
+        <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
+            <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
+                <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
+                    {currentIndex < flashCards.length ? (
+                        renderContent(currentQuestion, currentQuestionType, styles.questionImage)
+                    ) : (
+                        <h2>You completed it!!!</h2>
                     )}
                 </div>
-                
-            </div>
-
-            <div >
-                {renderScoreContainer()}
-            </div>
-
-            {/* Show cleanup notification if orphaned progress was found */}
-            {orphanedProgressCount > 0 && (
-                <div className="bg-green-900/50 border border-green-700 rounded-lg p-3 mb-4">
-                    <p className="text-green-200 text-sm">
-                        ✅ Cleaned up {orphanedProgressCount} orphaned progress records from deleted cards.
-                    </p>
-                </div>
-            )}
-            
-            <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
-                <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
-                        {currentIndex < flashCards.length ? (
-                            renderContent(currentQuestion, currentQuestionType, styles.questionImage)
-                        ) : (
-                            <h2>You completed it!!!</h2>
-                        )                        
-                        }
-                    </div>
-                    <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
-                        {currentIndex < flashCards.length ? (
-                            renderContent(currentAnswer, currentAnswerType, styles.questionImage)
-                        ) : (
-                            <h2>You completed it!!!</h2>
-                        )}
-                    </div>
+                <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
+                    {currentIndex < flashCards.length ? (
+                        renderContent(currentAnswer, currentAnswerType, styles.questionImage)
+                    ) : (
+                        <h2>You completed it!!!</h2>
+                    )}
                 </div>
             </div>
-            
-            {renderStudyButtons()}
-        </>
+        </div>
+        
+        {renderStudyButtons()}
+    </>
     );
 }
 
