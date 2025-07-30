@@ -69,7 +69,7 @@ function BlogPost1() {
               Before we dive in: Want to create perfect MCAT flashcards from your prep books, notes, or PDFs in seconds? Our AI can turn any study material into optimized flashcards automatically.
             </p>
             <a 
-              href="/try-now" 
+              href="/" 
               className="inline-block bg-violet-600 text-white px-6 py-3 rounded-lg hover:bg-violet-700 transition-colors"
             >
               Generate MCAT Flashcards Now →
