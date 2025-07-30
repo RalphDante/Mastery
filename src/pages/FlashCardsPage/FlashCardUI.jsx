@@ -57,6 +57,10 @@ function FlashCardUI({
     publicDeckData,
     deckOwnerData
 }) {
+
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
+
+
     const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
     const [deck, setDeck] = useState(null); 
@@ -814,10 +818,10 @@ function FlashCardUI({
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-gray-800 p-6 rounded-xl max-w-md mx-4 border border-gray-700">
                     <h3 className="text-xl font-semibold text-white mb-3">
-                        Save This Deck to Your Account
+                        Copy This Deck to Your Account
                     </h3>
                     <p className="text-gray-300 mb-4">
-                        Sign up to save this deck, track your progress with spaced repetition, and access all features!
+                        Sign up to copy this deck, track your progress with spaced repetition, and access all features!
                     </p>
                     <div className="flex gap-3">
                         <button 
@@ -979,10 +983,10 @@ function FlashCardUI({
     if (isPublicDeck && !authUser) {
         // Special selector for unauthenticated users viewing public decks
         return (
-            <div className="flex bg-gray-700 rounded-lg p-1">
-                <button
-                    className="px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-violet-600 text-white shadow-lg"
-                >
+            <>
+            {/* Desktop Version */}
+            <div className="hidden sm:flex bg-gray-700 rounded-lg p-1">
+                <button className="px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-violet-600 text-white shadow-lg">
                     <i className="fa-solid fa-bolt"></i>
                     Quick Study
                 </button>
@@ -998,6 +1002,62 @@ function FlashCardUI({
                     Smart Review 🔒
                 </button>
             </div>
+
+            {/* Mobile Version */}
+            <div className="sm:hidden">
+                <button
+                    onClick={() => setShowMobileMenu(!showMobileMenu)}
+                    className="bg-gray-700 rounded-lg p-3 text-white hover:bg-gray-600 transition-colors"
+                >
+                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <circle cx="5" cy="12" r="2"/>
+                        <circle cx="12" cy="12" r="2"/>
+                        <circle cx="19" cy="12" r="2"/>
+                    </svg>
+                </button>
+            </div>
+
+            {/* Mobile Menu Overlay */}
+            {showMobileMenu && (
+                <>
+                    {/* Backdrop */}
+                    <div 
+                        className="sm:hidden fixed inset-0 bg-black/50 z-40"
+                        onClick={() => setShowMobileMenu(false)}
+                    />
+                    
+                    {/* Bottom Menu */}
+                    <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-800 rounded-t-2xl p-6 z-50 animate-in slide-in-from-bottom duration-300">
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={() => setShowMobileMenu(false)}
+                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-violet-600 text-white shadow-lg"
+                            >
+                                <i className="fa-solid fa-bolt"></i>
+                                Quick Study
+                            </button>
+                            
+                            <button
+                                onClick={() => {
+                                    setShowSignUpPrompt(true);
+                                    setShowMobileMenu(false);
+                                }}
+                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-gray-600 text-gray-300 active:bg-gray-500"
+                            >
+                                <i className="fa-solid fa-brain"></i>
+                                Smart Review 🔒
+                                <span className="ml-auto text-xs text-gray-400">Sign up required</span>
+                            </button>
+                        </div>
+                        
+                        {/* Close indicator */}
+                        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded-full" />
+                    </div>
+                </>
+            )}
+
+            
+        </>
         );
     } else if (authUser) {
         // Normal selector for authenticated users
