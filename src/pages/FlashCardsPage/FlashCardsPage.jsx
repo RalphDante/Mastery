@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Globe } from 'lucide-react';
 
 import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -18,6 +18,7 @@ function FlashCardsPage() {
 
     // Public Deck data
     const [publicDeckData, setPublicDeckData] = useState(null)
+    const [deckOwnerData, setDeckOwnerData] = useState(null)
 
     const navigate = useNavigate();
     const [redoDeck, setRedoDeck] = useState(false);
@@ -235,7 +236,9 @@ function FlashCardsPage() {
     // Determine the display name for the header
     const displayName = studyMode === 'spaced' && !paramDeckId 
                         ? "Global Smart Review" // For global spaced review
-                        : deckTitle || deckData?.title || publicDeckData?.title || "Unknown Deck"; // For specific deck
+                        : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Deck"; // For specific deck
+                        
+    const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== authUser?.uid;
 
     // Only show deck description if we're on a specific deck page OR it's cramming mode
     const showDescription = studyMode === 'cramming' || (studyMode === 'spaced' && paramDeckId);
@@ -268,6 +271,7 @@ function FlashCardsPage() {
                         deckId={paramDeckId} // Pass deckId from params (can be null for global review)
                         db={db} // Pass Firestore instance to FlashCardUI
                         publicDeckData={setPublicDeckData}
+                        deckOwnerData={setDeckOwnerData}
                     />
                 </div>
                 
@@ -282,9 +286,19 @@ function FlashCardsPage() {
                                 </p>
                             </div>
                         )}
-                        <div className="text-2xl font-bold mb-1 text-purple-400">{displayName}</div>
-                        {showDescription && deckData?.description && deckData.description !== "No Description" && (
+                        <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
+                            {isPublicDeck && <Globe className="w-6 h-6" />}
+                            {displayName}
+                        </div>
+
+                        {!publicDeckData && showDescription && deckData?.description && deckData.description !== "No Description" && (
                             <p className="text-gray-400 mb-4">{deckData.description}</p> 
+                        )}
+
+                        {deckOwnerData && (
+                            <p className="text-white/70 text-sm">
+                                Created by: {deckOwnerData.displayName}
+                            </p>
                         )}
                         
                         <div className="space-y-4">

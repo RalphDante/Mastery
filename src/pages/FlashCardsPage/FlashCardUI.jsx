@@ -54,7 +54,8 @@ function FlashCardUI({
     setCurrentIndex,
     deckId, 
     db,
-    publicDeckData 
+    publicDeckData,
+    deckOwnerData
 }) {
     const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
@@ -333,6 +334,10 @@ function FlashCardUI({
                                     displayName: ownerDoc.data().displayName || 'Anonymous User',
                                     email: ownerDoc.data().email
                                 });
+                                deckOwnerData({
+                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                    email: ownerDoc.data().email
+                                })
                             }
                         } catch (error) {
                             console.log('Could not fetch owner info:', error);
@@ -942,6 +947,12 @@ function FlashCardUI({
                     order: index + 1
                 });
             });
+
+            // NEW: Increment the copies counter on the original deck
+            const originalDeckRef = doc(db, 'decks', deckData.id);
+            batch.update(originalDeckRef, {
+                copies: increment(1)
+            });
             
             // Commit the batch first
             await batch.commit();
@@ -1104,7 +1115,7 @@ function FlashCardUI({
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                             Shuffle Deck
                             </div>
-                            <i class="fas fa-shuffle"></i>
+                            <i className="fas fa-shuffle"></i>
                         </button>
                     
                 </div>
@@ -1168,7 +1179,7 @@ function FlashCardUI({
 
     return (
     <>  
-        <PublicDeckHeader />
+        {/* <PublicDeckHeader /> */}
         <SignUpPromptModal />
         
         {/* Buttons */}
