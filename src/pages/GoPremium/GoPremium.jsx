@@ -1,8 +1,145 @@
 import { Check, Star, Zap, Crown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useAuth } from '../../hooks/useAuth';
 
 function GoPremium() {
+  const { authUser } = useAuth();
+  const [paddleLoaded, setPaddleLoaded] = useState(false);
+  const [masteryStudyProPrice, setMasteryStudyProPrice] = useState('$7.99');
+  const [masteryStudyPremiumPrice, setMasteryStudyPremiumPrice] = useState('$14.99');
+  const [billingCycle, setBillingCycle] = useState('month');
+
+  // Product IDs
+  const masteryStudyPro = 'pro_01k1f8yahfd3b9xpm4ksbszm0n';
+  const masteryStudyPremium = 'pro_01k1fh8bfkpdpgkbvahk7nnczp';
+  
+  // Price IDs - make sure these are correct for your actual products
+  const priceIds = {
+    proMonthly: 'pri_01k1f95ne00eje36z837qhzm0q',
+    proYearly: 'pri_01k1fh6p0sgsvxm5s1cregrygr', 
+    premiumMonthly: 'pri_01k1fhah105mkxbgrm2q43s3a5',
+    premiumYearly: 'pri_01k1fhcph6dwqjr8fag4xh36bd' // This should be different!
+  };
+
+  const monthItems = [{
+      quantity: 1,
+      priceId: priceIds.proMonthly,
+    },
+    {
+      quantity: 1,
+      priceId: priceIds.premiumMonthly,
+    }
+  ];
+  
+  const yearItems = [{
+      quantity: 1,
+      priceId: priceIds.proYearly,
+    },
+    {
+      quantity: 1,
+      priceId: priceIds.premiumYearly,
+    }
+  ];
+
+  // Load Paddle SDK
+  useEffect(() => {
+    const loadPaddleScript = () => {
+      if (document.querySelector('script[src*="paddle"]')) {
+        return; // Already loaded
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+      script.async = true;
+      script.onload = () => {
+        initializePaddle();
+      };
+      document.head.appendChild(script);
+    };
+
+    // Check if Paddle is already loaded
+    if (window.Paddle) {
+      initializePaddle();
+    } else {
+      loadPaddleScript();
+    }
+  }, []);
+
+  // Get prices when Paddle loads or billing cycle changes
+  useEffect(() => {
+    if (paddleLoaded) {
+      getPrices(billingCycle);
+    }
+  }, [paddleLoaded, billingCycle]);
+
+  const initializePaddle = () => {
+    try {
+      window.Paddle.Environment.set("sandbox");
+      window.Paddle.Initialize({ 
+        token: "test_af4c89d11014f71659ef8484c82"
+      });
+      setPaddleLoaded(true);
+    } catch (error) {
+      console.error('Failed to initialize Paddle:', error);
+    }
+  };
+
+  // Get prices from Paddle
+  const getPrices = (cycle) => {
+    if (!paddleLoaded) {
+      console.error('Paddle not loaded yet');
+      return;
+    }
+
+    const itemsList = cycle === "month" ? monthItems : yearItems;  
+    const request = {
+      items: itemsList
+    };
+    
+    window.Paddle.PricePreview(request)
+      .then((result) => {
+        console.log(result);
+    
+        const items = result.data.details.lineItems;
+        items.forEach(item => {
+          if (item.product.id === masteryStudyPro) {
+            setMasteryStudyProPrice(item.formattedTotals.total);
+            console.log('Pro price: ' + item.formattedTotals.subtotal);
+          } else if (item.product.id === masteryStudyPremium) {
+            setMasteryStudyPremiumPrice(item.formattedTotals.total);
+            console.log('Premium price: ' + item.formattedTotals.subtotal);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error('Price preview error:', error);
+      });
+  };
+
+  const openCheckout = (priceId, planName) => {
+    if (!paddleLoaded) {
+      console.error('Paddle not loaded yet');
+      return;
+    }
+
+    const items = [{
+      quantity: 1,
+      priceId: priceId,
+    }];
+
+    window.Paddle.Checkout.open({
+      items: items,
+      customer: {
+        email: authUser?.email || 'customer@example.com'// You can get this from your auth system
+      },
+      customData: {
+        plan: planName
+      }
+    });
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-purple-900 text-white">
       {/* Minimal Header */}
       <div className="flex justify-between items-center p-6">
         <h1 className="text-2xl font-bold text-violet-300">Mastery</h1>
@@ -12,17 +149,28 @@ function GoPremium() {
       <div className="max-w-6xl mx-auto px-6 py-0">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          {/* <div className="inline-flex items-center bg-violet-500/20 px-4 py-2 rounded-full border border-violet-500/30 mb-6">
-            <Star className="w-4 h-4 text-yellow-400 mr-2" />
-            <span className="text-sm">Join 12,847+ students mastering faster</span>
-          </div> */}
           <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
             Unlock Your Learning
             <br />Potential
           </h2>
-          {/* <p className="text-xl text-violet-200/80 max-w-2xl mx-auto">
-            Choose the plan that accelerates your learning journey. Upgrade anytime, cancel whenever.
-          </p> */}
+        </div>
+
+        {/* Billing Cycle Toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-white/10 p-1 rounded-lg border border-violet-500/30">
+            <button 
+              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'month' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
+              onClick={() => setBillingCycle('month')}
+            >
+              Monthly
+            </button>
+            <button 
+              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'year' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
+              onClick={() => setBillingCycle('year')}
+            >
+              Annually
+            </button>
+          </div>
         </div>
 
         {/* Pricing Cards */}
@@ -34,8 +182,7 @@ function GoPremium() {
               <h3 className="text-2xl font-bold">Basic</h3>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$5</span>
-              <span className="text-violet-300/70">/month</span>
+              <span className="text-4xl font-bold">Free</span>
             </div>
             <ul className="space-y-3 mb-8">
               <li className="flex items-center">
@@ -68,18 +215,20 @@ function GoPremium() {
               <h3 className="text-2xl font-bold">Pro</h3>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$12</span>
-              <span className="text-violet-300/70">/month</span>
-              <div className="text-sm text-green-400">Save 40% vs Basic</div>
+              <span className="text-4xl font-bold">{masteryStudyProPrice}</span>
+              <span className="text-violet-300/70">/{billingCycle === 'month' ? 'month' : 'year'}</span>
+              {billingCycle === 'year' && (
+                <div className="text-sm text-green-400">Save 17% annually</div>
+              )}
             </div>
             <ul className="space-y-3 mb-8">
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
-                <strong>Unlimited</strong>-AI flashcards
+                <strong>Unlimited</strong> AI flashcards
               </li>
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
-                <strong>Smart</strong>-spaced repetition
+                <strong>Smart</strong> spaced repetition
               </li>
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
@@ -94,7 +243,10 @@ function GoPremium() {
                 Custom study schedules
               </li>
             </ul>
-            <button className="w-full py-4 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02]">
+            <button 
+              className="w-full py-4 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02]"
+              onClick={() => openCheckout(billingCycle === 'month' ? priceIds.proMonthly : priceIds.proYearly, 'pro')}
+            >
               Start Pro Trial
             </button>
           </div>
@@ -106,8 +258,11 @@ function GoPremium() {
               <h3 className="text-2xl font-bold">Premium</h3>
             </div>
             <div className="mb-6">
-              <span className="text-4xl font-bold">$25</span>
-              <span className="text-violet-300/70">/month</span>
+              <span className="text-4xl font-bold">{masteryStudyPremiumPrice}</span>
+              <span className="text-violet-300/70">/{billingCycle === 'month' ? 'month' : 'year'}</span>
+              {billingCycle === 'year' && (
+                <div className="text-sm text-green-400">Save 17% annually</div>
+              )}
             </div>
             <ul className="space-y-3 mb-8">
               <li className="flex items-center">
@@ -131,7 +286,10 @@ function GoPremium() {
                 White-label access
               </li>
             </ul>
-            <button className="w-full py-3 px-6 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/50 rounded-xl font-semibold transition-all">
+            <button 
+              className="w-full py-3 px-6 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/50 rounded-xl font-semibold transition-all"
+              onClick={() => openCheckout(billingCycle === 'month' ? priceIds.premiumMonthly : priceIds.premiumYearly, 'premium')}
+            >
               Go Premium
             </button>
           </div>

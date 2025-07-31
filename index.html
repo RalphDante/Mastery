@@ -4,7 +4,41 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/brain-21.svg" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
-    
+    <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
+    <script type="text/javascript">
+      Paddle.Environment.set("sandbox");
+      Paddle.Initialize({ 
+        token: "test_af4c89d11014f71659ef8484c82" // replace with a client-side token
+      });
+      var basic = 'pro_01k1f8yahfd3b9xpm4ksbszm0n';
+      var monthItems = [{
+          quantity: 1,
+          priceId: 'pri_01k1f95ne00eje36z837qhzm0q',
+        }
+      ];
+      // set initial billing cycle
+      var billingCycle = 'year'
+      
+      // get prices
+      function getPrices(cycle) {
+        var itemsList = monthItems;  
+        var billingCycle = cycle;
+        var request = {
+          items: itemsList
+        }
+        
+        Paddle.PricePreview(request)
+          .then((result) => {
+            console.log(result);
+          })
+          .catch((error) => {
+            console.error(error);
+          });
+      }
+      getPrices('month')
+
+    </script>
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>Mastery Study - AI Flashcard Generator | Turn Notes into Cards Instantly</title>
