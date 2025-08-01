@@ -1,51 +1,38 @@
-import { Check, Star, Zap, Crown } from 'lucide-react';
+import { Check, Star, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
 function GoPremium() {
   const { authUser } = useAuth();
   const [paddleLoaded, setPaddleLoaded] = useState(false);
-  const [masteryStudyProPrice, setMasteryStudyProPrice] = useState('$7.99');
-  const [masteryStudyPremiumPrice, setMasteryStudyPremiumPrice] = useState('$14.99');
-  const [billingCycle, setBillingCycle] = useState('month');
+  const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$4.99');
+  const [masteryStudyProYearlyPrice, setMasteryStudyProYearlyPrice] = useState('$39.99');
+  const [billingCycle, setBillingCycle] = useState('year'); // Default to annual
 
-  // Product IDs
+  // Product ID
   const masteryStudyPro = 'pro_01k1f8yahfd3b9xpm4ksbszm0n';
-  const masteryStudyPremium = 'pro_01k1fh8bfkpdpgkbvahk7nnczp';
   
-  // Price IDs - make sure these are correct for your actual products
+  // Price IDs - only Pro tier now
   const priceIds = {
     proMonthly: 'pri_01k1f95ne00eje36z837qhzm0q',
-    proYearly: 'pri_01k1fh6p0sgsvxm5s1cregrygr', 
-    premiumMonthly: 'pri_01k1fhah105mkxbgrm2q43s3a5',
-    premiumYearly: 'pri_01k1fhcph6dwqjr8fag4xh36bd' // This should be different!
+    proYearly: 'pri_01k1fh6p0sgsvxm5s1cregrygr'
   };
 
   const monthItems = [{
-      quantity: 1,
-      priceId: priceIds.proMonthly,
-    },
-    {
-      quantity: 1,
-      priceId: priceIds.premiumMonthly,
-    }
-  ];
+    quantity: 1,
+    priceId: priceIds.proMonthly,
+  }];
   
   const yearItems = [{
-      quantity: 1,
-      priceId: priceIds.proYearly,
-    },
-    {
-      quantity: 1,
-      priceId: priceIds.premiumYearly,
-    }
-  ];
+    quantity: 1,
+    priceId: priceIds.proYearly,
+  }];
 
   // Load Paddle SDK
   useEffect(() => {
     const loadPaddleScript = () => {
       if (document.querySelector('script[src*="paddle"]')) {
-        return; // Already loaded
+        return;
       }
 
       const script = document.createElement('script');
@@ -57,7 +44,6 @@ function GoPremium() {
       document.head.appendChild(script);
     };
 
-    // Check if Paddle is already loaded
     if (window.Paddle) {
       initializePaddle();
     } else {
@@ -65,7 +51,6 @@ function GoPremium() {
     }
   }, []);
 
-  // Get prices when Paddle loads or billing cycle changes
   useEffect(() => {
     if (paddleLoaded) {
       getPrices(billingCycle);
@@ -84,7 +69,6 @@ function GoPremium() {
     }
   };
 
-  // Get prices from Paddle
   const getPrices = (cycle) => {
     if (!paddleLoaded) {
       console.error('Paddle not loaded yet');
@@ -98,16 +82,14 @@ function GoPremium() {
     
     window.Paddle.PricePreview(request)
       .then((result) => {
-        console.log(result);
-    
         const items = result.data.details.lineItems;
         items.forEach(item => {
           if (item.product.id === masteryStudyPro) {
-            setMasteryStudyProPrice(item.formattedTotals.total);
-            console.log('Pro price: ' + item.formattedTotals.subtotal);
-          } else if (item.product.id === masteryStudyPremium) {
-            setMasteryStudyPremiumPrice(item.formattedTotals.total);
-            console.log('Premium price: ' + item.formattedTotals.subtotal);
+            if (cycle === 'month') {
+              setMasteryStudyProMonthlyPrice(item.formattedTotals.total);
+            } else {
+              setMasteryStudyProYearlyPrice(item.formattedTotals.total);
+            }
           }
         });
       })
@@ -130,7 +112,7 @@ function GoPremium() {
     window.Paddle.Checkout.open({
       items: items,
       customer: {
-        email: authUser?.email || 'customer@example.com'// You can get this from your auth system
+        email: authUser?.email || 'customer@example.com'
       },
       customData: {
         plan: planName
@@ -139,7 +121,7 @@ function GoPremium() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-purple-900 text-white">
+    <div className="min-h-screen text-white">
       {/* Minimal Header */}
       <div className="flex justify-between items-center p-6">
         <h1 className="text-2xl font-bold text-violet-300">Mastery</h1>
@@ -148,33 +130,34 @@ function GoPremium() {
 
       <div className="max-w-6xl mx-auto px-6 py-0">
         {/* Hero Section */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-4">
           <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
             Unlock Your Learning
             <br />Potential
           </h2>
         </div>
 
-        {/* Billing Cycle Toggle */}
+        {/* Billing Cycle Toggle - Annual First */}
         <div className="flex justify-center mb-8">
           <div className="bg-white/10 p-1 rounded-lg border border-violet-500/30">
+            <button 
+              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'year' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
+              onClick={() => setBillingCycle('year')}
+            >
+              Annually
+              <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">SAVE 33%</span>
+            </button>
             <button 
               className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'month' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
               onClick={() => setBillingCycle('month')}
             >
               Monthly
             </button>
-            <button 
-              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'year' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
-              onClick={() => setBillingCycle('year')}
-            >
-              Annually
-            </button>
           </div>
         </div>
 
-        {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-16">
+        {/* Pricing Cards - Only Free and Pro */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-4xl mx-auto">
           {/* Basic */}
           <div className="bg-white/5 p-8 rounded-2xl border border-violet-500/20 relative">
             <div className="flex items-center mb-4">
@@ -188,6 +171,10 @@ function GoPremium() {
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
                 100 AI flashcards/month
+              </li>
+              <li className="flex items-center">
+                <Check className="w-5 h-5 mr-3 text-green-400" />
+                5 decks maximum
               </li>
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
@@ -214,17 +201,33 @@ function GoPremium() {
               <Star className="w-6 h-6 text-yellow-400 mr-2" />
               <h3 className="text-2xl font-bold">Pro</h3>
             </div>
+            
+            {/* Dynamic Pricing Display */}
             <div className="mb-6">
-              <span className="text-4xl font-bold">{masteryStudyProPrice}</span>
-              <span className="text-violet-300/70">/{billingCycle === 'month' ? 'month' : 'year'}</span>
-              {billingCycle === 'year' && (
-                <div className="text-sm text-green-400">Save 17% annually</div>
+              {billingCycle === 'year' ? (
+                <>
+                  <span className="text-4xl font-bold">{masteryStudyProYearlyPrice}</span>
+                  <span className="text-violet-300/70">/year</span>
+                  <div className="text-sm text-green-400 font-semibold">Save $20 compared to monthly!</div>
+                  <div className="text-xs text-violet-300/70 mt-1">That's just $3.33/month</div>
+                </>
+              ) : (
+                <>
+                  <span className="text-4xl font-bold">{masteryStudyProMonthlyPrice}</span>
+                  <span className="text-violet-300/70">/month</span>
+                  <div className="text-sm text-violet-300/70">Annual plan saves you $20/year</div>
+                </>
               )}
             </div>
+
             <ul className="space-y-3 mb-8">
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
                 <strong>Unlimited</strong> AI flashcards
+              </li>
+              <li className="flex items-center">
+                <Check className="w-5 h-5 mr-3 text-green-400" />
+                <strong>Unlimited</strong> decks
               </li>
               <li className="flex items-center">
                 <Check className="w-5 h-5 mr-3 text-green-400" />
@@ -242,56 +245,48 @@ function GoPremium() {
                 <Check className="w-5 h-5 mr-3 text-green-400" />
                 Custom study schedules
               </li>
+              <li className="flex items-center">
+                <Check className="w-5 h-5 mr-3 text-green-400" />
+                Share & copy decks
+              </li>
             </ul>
             <button 
               className="w-full py-4 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02]"
               onClick={() => openCheckout(billingCycle === 'month' ? priceIds.proMonthly : priceIds.proYearly, 'pro')}
             >
-              Start Pro Trial
+              {billingCycle === 'year' ? 'Get Pro Annual' : 'Start Pro Trial'}
             </button>
+            
+            {/* Value Proposition */}
+            {billingCycle === 'year' && (
+              <div className="mt-4 text-center">
+                <div className="text-xs text-violet-300/80">
+                  Perfect for the entire academic year
+                </div>
+              </div>
+            )}
           </div>
+        </div>
 
-          {/* Premium */}
-          <div className="bg-white/5 p-8 rounded-2xl border border-violet-500/20 relative">
-            <div className="flex items-center mb-4">
-              <Crown className="w-6 h-6 text-yellow-500 mr-2" />
-              <h3 className="text-2xl font-bold">Premium</h3>
+        {/* Value Props Section */}
+        <div className="text-center mb-12">
+          <h3 className="text-2xl font-bold mb-8">Why Students Choose Mastery</h3>
+          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
+              <div className="text-3xl mb-3">🧠</div>
+              <h4 className="font-semibold mb-2">AI-Powered Generation</h4>
+              <p className="text-sm text-violet-300/80">Turn any document or notes into flashcards instantly</p>
             </div>
-            <div className="mb-6">
-              <span className="text-4xl font-bold">{masteryStudyPremiumPrice}</span>
-              <span className="text-violet-300/70">/{billingCycle === 'month' ? 'month' : 'year'}</span>
-              {billingCycle === 'year' && (
-                <div className="text-sm text-green-400">Save 17% annually</div>
-              )}
+            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
+              <div className="text-3xl mb-3">📈</div>
+              <h4 className="font-semibold mb-2">Proven Results</h4>
+              <p className="text-sm text-violet-300/80">Smart spaced repetition increases retention by 3x</p>
             </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Everything in Pro
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                AI tutoring sessions
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Advanced analytics
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Team collaboration
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                White-label access
-              </li>
-            </ul>
-            <button 
-              className="w-full py-3 px-6 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/50 rounded-xl font-semibold transition-all"
-              onClick={() => openCheckout(billingCycle === 'month' ? priceIds.premiumMonthly : priceIds.premiumYearly, 'premium')}
-            >
-              Go Premium
-            </button>
+            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
+              <div className="text-3xl mb-3">⚡</div>
+              <h4 className="font-semibold mb-2">Save Time</h4>
+              <p className="text-sm text-violet-300/80">Study smarter, not harder. Focus on what matters.</p>
+            </div>
           </div>
         </div>
 
@@ -313,7 +308,7 @@ function GoPremium() {
               <div className="text-violet-300 text-sm">- Marcus, Stanford</div>
             </div>
             <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
-              <p className="text-sm mb-3">"Boosted my retention rate by 3x. Worth every penny."</p>
+              <p className="text-sm mb-3">"The annual plan paid for itself after my first semester. Best investment!"</p>
               <div className="text-violet-300 text-sm">- Elena, Harvard</div>
             </div>
           </div>
