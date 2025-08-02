@@ -52,7 +52,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/about')}}>About</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/contactme')}}>Contact Me</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/blog')}}>Blog</a>
-                            <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/public-decks')}}>Browse</a>
+                            <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e)=>{e.preventDefault(); navigate('/browse-decks')}}>Browse</a>
                         </div>
                     </div>
                     <div className="flex items-center space-x-4">

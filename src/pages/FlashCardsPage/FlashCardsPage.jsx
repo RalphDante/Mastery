@@ -181,11 +181,17 @@ function FlashCardsPage() {
         try{
             const deckRef = doc(db, 'decks', publicDeckData.id)
 
-            await updateDoc(deckRef, {
+            // Only set copies: 0 if it doesn't exist yet
+            const updateData = {
                 isPublic: true,
                 publishedAt: serverTimestamp()
-            });
-            
+            };
+            if (publicDeckData.copies === undefined) {
+                updateData.copies = 0;
+            }
+
+            await updateDoc(deckRef, updateData);
+                
             // Update local state to reflect the change
             setPublicDeckData(prev => ({
                 ...prev,

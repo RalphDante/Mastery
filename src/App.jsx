@@ -176,7 +176,7 @@ function App(){
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
                   {/* Public Decks */}
-                  <Route path='/public-decks' element={<PublicDecksPage />} />
+                  <Route path='/browse-decks' element={<PublicDecksPage />} />
                   
 
                   {/* Blogs */}
