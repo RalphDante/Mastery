@@ -130,6 +130,46 @@ function App(){
     setIsCreateWithAIDemoModalOpen(false)
   }
 
+  const FeedbackWidget = () => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    const toggleExpanded = () => {
+      setIsExpanded(!isExpanded);
+    };
+
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <div className="flex items-center">
+          {/* Expandable text panel */}
+          <div className={`bg-gray-800/90 backdrop-blur-sm text-white rounded-xl border border-gray-700/50 shadow-lg mr-2 transition-all duration-300 overflow-hidden ${
+            isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'
+          }`}>
+            <div className="px-4 py-3 whitespace-nowrap">
+              <p className="text-sm font-medium mb-2">Found a bug?</p>
+              <a 
+                href="https://discord.gg/e6DDzV4QYN" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                Report it on Discord →
+              </a>
+            </div>
+          </div>
+
+          {/* Bug icon button */}
+          <button
+            onClick={toggleExpanded}
+            className="w-12 h-12 bg-gray-800/80 hover:bg-purple-600/90 backdrop-blur-sm text-white rounded-full border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 hover:scale-110 shadow-lg flex items-center justify-center"
+            aria-label="Bug report"
+          >
+            <span className="text-lg">🐛</span>
+          </button>
+        </div>
+      </div>
+    );
+  };
+
 
   useEffect(()=>{
     onAuthStateChanged(auth, (user) => {
@@ -194,6 +234,7 @@ function App(){
 
               </Routes>
 
+
               {/* Footer */}
               <footer className="bg-gray-900 mt-12 border-t border-gray-700">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-400">
@@ -210,6 +251,8 @@ function App(){
               </footer>
 
 
+
+              <FeedbackWidget />
 
               {/* Global Modals - These will render at the root level and center properly */}
               <CreateFolderModal 

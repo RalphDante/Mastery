@@ -2,7 +2,7 @@ import React from 'react';
 
 function ContactMe() {
     const handleDiscordClick = () => {
-        window.open('https://discord.gg/ykBmVxVr', '_blank');
+        window.open('https://discord.gg/e6DDzV4QYN', '_blank');
     };
 
     const handleFacebookClick = () => {

@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import FolderModalStep1 from './FolderModalStep1';
 import SignUpBtn from './SignUpBtn';
 import CreateWithAIDemoModal from './CreateWithAIDemoModal';
+import { Search, Upload, FileText, Zap, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import MostCopiesSection from './FeaturedDecks/MostCopiesSection';
 
 const TryNowPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [count, setCount] = useState(0);
+
+  const navigate = useNavigate();
 
   // Simple SVG icons as components
   const Camera = () => (
@@ -177,10 +182,23 @@ const TryNowPage = () => {
                 onClick={() => setShowModal(true)}
                 aria-label="Generate flashcards from your notes now"
               >
-                <div className="group-hover:animate-bounce"><Camera /></div>
-                <span>Generate Flashcards Now</span>
-                <div className="group-hover:translate-x-1 transition-transform"><ArrowRight /></div>
+                <div className="group-hover:animate-bounce"><Upload /></div>
+                <span>Create Flashcards</span>
               </button>
+
+              <button 
+                className="group border-2 border-violet-500 bg-transparent hover:bg-violet-500 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
+                onClick={() => navigate("/browse-decks")}
+                aria-label="Browse decks"
+              >
+                <div className="group-hover:animate-bounce"><Search /></div>
+                <span>Browse Decks</span>
+              </button>
+            </div>
+
+            {/* Featured Decks section */}
+            <div className='text-left'>
+              <MostCopiesSection />
             </div>
 
             {/* How It Works Section with Schema markup */}
