@@ -108,7 +108,7 @@ function MostCopiesSection() {
                             </p>
                             
                             <div className="text-sm text-slate-500 mb-1">
-                                by {deck.ownerName || 'Anonymous'}
+                                by {deck.ownerDisplayName || 'Anonymous'}
                             </div>
                         </div>
 

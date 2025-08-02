@@ -181,10 +181,14 @@ function FlashCardsPage() {
         try{
             const deckRef = doc(db, 'decks', publicDeckData.id)
 
+            const userDoc = await getDoc(doc(db, "users", authUser.uid));
+            const firestoreDisplayName = userDoc.exists() ? userDoc.data().displayName : authUser.displayName;
+
             // Only set copies: 0 if it doesn't exist yet
             const updateData = {
                 isPublic: true,
-                publishedAt: serverTimestamp()
+                publishedAt: serverTimestamp(),
+                ownerDisplayName: firestoreDisplayName
             };
             if (publicDeckData.copies === undefined) {
                 updateData.copies = 0;
