@@ -29,18 +29,10 @@ function MostCopiesSection() {
     if (loading) {
         return (
             <section className="mb-16">
-                <div className="flex items-center mb-8">
-                    <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl mr-4">
-                        <TrendingUp className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                        <h2 className="text-3xl font-bold text-slate-100">Most Popular</h2>
-                        <p className="text-slate-400 mt-1">Top performing decks copied by thousands</p>
-                    </div>
-                </div>
+                
                 <div className="flex items-center justify-center py-16">
                     <Loader className="w-8 h-8 text-purple-400 animate-spin" />
-                    <span className="ml-3 text-slate-400">Loading popular decks...</span>
+                    <span className="ml-3 text-slate-400">Loading featured decks...</span>
                 </div>
             </section>
         );
@@ -59,15 +51,11 @@ function MostCopiesSection() {
     };
 
     return (
-        <section className="mb-16">
+        <section className="mb-16 text-left bg-black/20 backdrop-blur-sm rounded-3xl p-8 mb-20 border border-white/10">
             {/* Section Header */}
-            <div className="flex items-center mb-8">
-                <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-3 rounded-xl mr-4">
-                    <TrendingUp className="w-7 h-7 text-white" />
-                </div>
-                <div>
+            <div className="flex flex-col items-center">
+                <div className="flex items-center mb-4">
                     <h2 className="text-3xl font-bold text-slate-100">Featured Decks</h2>
-                    <p className="text-slate-400 mt-1">Popular study decks</p>
                 </div>
             </div>
 

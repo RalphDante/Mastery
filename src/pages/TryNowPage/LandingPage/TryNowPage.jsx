@@ -176,7 +176,7 @@ const TryNowPage = () => {
             </p>
 
             {/* CTA Buttons with better accessibility */}
-            <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-16 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-20 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <button 
                 className="group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
                 onClick={() => setShowModal(true)}
@@ -197,12 +197,10 @@ const TryNowPage = () => {
             </div>
 
             {/* Featured Decks section */}
-            <div className='text-left'>
-              <MostCopiesSection />
-            </div>
+            <MostCopiesSection />
 
             {/* How It Works Section with Schema markup */}
-            <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20" aria-labelledby="how-it-works">
+            {/* <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20" aria-labelledby="how-it-works">
               <h2 id="how-it-works" className="sr-only">How AI Flashcard Generation Works</h2>
               {steps.map((step, index) => {
                 const Icon = step.icon;
@@ -228,7 +226,7 @@ const TryNowPage = () => {
                   </article>
                 );
               })}
-            </section>
+            </section> */}
 
             {/* Social Proof Section */}
             <section className="bg-black/20 backdrop-blur-sm rounded-3xl p-8 mb-20 border border-white/10" aria-labelledby="testimonials">
