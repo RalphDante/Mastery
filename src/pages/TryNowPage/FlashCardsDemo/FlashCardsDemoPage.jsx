@@ -9,6 +9,8 @@ import FlashCardUI from "./FlashCardUI";
 import ModuleDescription from "./Description";
 import styles from './FlashCardsPage.module.css'
 
+import { RotateCcw } from "lucide-react";
+
 
 
 
@@ -92,10 +94,11 @@ function FlashCardsDemoPage() {
                         <h4 className="text-gray-300 mb-4 font-medium">⚡ Quick Actions</h4>
                         <div className="space-y-3">
                         <button 
-                            onClick={()=>{setRedoDeck(true)}}
-                            className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                            onClick={() => setRedoDeck(true)}
+                            className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                         >
-                            🔄 Redo Deck
+                            <RotateCcw className="w-5 h-5 mr-2" />
+                            <span>Redo Deck</span>
                         </button>
                         {/* <button 
                             onClick={(studyMode)=>{}}

@@ -807,7 +807,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                         </div>
 
                         <i className="fa-solid fa-brain"></i>
-                        Smart Review
+                        Smart Review 🔒
                     </button>
                 </div>
             </div>
@@ -909,7 +909,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 </div>
             </div>
 
-            <div className={`${styles.buttonsContainer} gap-4`}>
+            <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
                 <button 
                     className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
                     disabled={processing || (isReviewMode ? reviewIndex === 0 : currentIndex === 0)}

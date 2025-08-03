@@ -276,7 +276,6 @@ function CreateWithAIModal({ onClose, isOpen }) {
         {/* Step 2: Upload File */}
         {step === 2 && (
           <>
-            <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Upload Your PDF</h2>
             <p className="text-slate-300 mb-6 text-center">
               Saving to: <span className="text-violet-400 font-semibold">
                 {isCreatingNewFolder ? newFolderName : folders.find(f => f.id === selectedFolder)?.name || 'Loading folder name...'}

@@ -2,6 +2,7 @@ import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useState, useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -11,6 +12,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     const [showCamera, setShowCamera] = useState(false);
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
+
+    const navigate = useNavigate();
 
     const [topic, setTopic] = useState("");
 
@@ -956,7 +959,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     return (
         <div className="w-full">
     {!showCamera ? (
-        <div className="space-y-6">
+        <div className="space-y-8">
             {/* Main Topic Input - Made much more prominent */}
             <div className="relative">
                 <textarea
@@ -980,32 +983,30 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 </button>
             </div>
 
+            <div className="text-center" style={{ marginTop: '-0.1rem' }}>
+                <button 
+                    onClick={() => navigate('/browse-decks')}
+                    className="text-purple-400 hover:text-purple-300 text-sm font-medium inline-flex items-center gap-2 transition-colors duration-200"
+                >
+                    💡 Need inspiration? →
+                </button>
+            </div>
+
             {/* Divider */}
             <div className="flex items-center gap-4">
                 <div className="flex-1 h-px bg-gray-600"></div>
-                <span className="text-gray-400 text-sm font-medium">OR UPLOAD CONTENT</span>
+                <span className="text-gray-400 text-sm font-medium">OR UPLOAD YOUR NOTES</span>
                 <div className="flex-1 h-px bg-gray-600"></div>
             </div>
 
             {/* Upload Options - More prominent */}
             <div className="grid grid-cols-2 gap-4">
-                <button 
-                    {...getRootProps()} 
-                    className={`${
-                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-primary hover:scale-105'
-                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
-                    disabled={loading}
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    {loading ? 'Processing...' : 'Upload File'}
-                </button>
+                
                 
                 <button 
                     onClick={startCamera}
                     className={`${
-                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-secondary hover:scale-105'
+                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-primary hover:scale-105'
                     } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
                     disabled={loading}
                 >
@@ -1014,6 +1015,19 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                     Take Photo
+                </button>
+
+                <button 
+                    {...getRootProps()} 
+                    className={`${
+                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-secondary hover:scale-105'
+                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
+                    disabled={loading}
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {loading ? 'Processing...' : 'Upload File'}
                 </button>
             </div>
 

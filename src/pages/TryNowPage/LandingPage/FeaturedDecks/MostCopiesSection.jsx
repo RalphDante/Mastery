@@ -62,15 +62,9 @@ function MostCopiesSection() {
 
     return (
         <section className="mb-16 text-left bg-black/20 backdrop-blur-sm rounded-3xl p-8 mb-20 border border-white/10">
-            {/* Section Header */}
-            <div className="flex flex-col items-center">
-                <div className="flex items-center mb-4">
-                    <h3 className="text-3xl opacity-50 font-bold text-slate-100">Featured Decks</h3>
-                </div>
-            </div>
 
             {/* Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="mb-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {decksToShow.map((deck, index) => {
                     const isActive = index === activeDeck;
                     return (
@@ -142,6 +136,18 @@ function MostCopiesSection() {
                     );
                     
                 })}
+            </div>
+            {/* Section Header */}
+            <div className="flex flex-col items-center">
+                <div className="flex items-center">
+                    <h3 className="text-3xl font-bold text-slate-100">
+                        <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse">
+                             Featured Decks
+                        </span>
+                    </h3>
+                   
+
+                </div>
             </div>
 
             
