@@ -183,6 +183,9 @@ function App(){
 
   return (
       <Router>
+        <div className="min-h-screen flex flex-col">
+          {/* Main content */}
+          <div className="flex-1 flex flex-col">
               <ShowNavBar>
                 <NavBar 
                   onCreateFolderClick={handleShowCreateFolderModal}
@@ -233,10 +236,11 @@ function App(){
 
 
               </Routes>
+            </div>
 
 
               {/* Footer */}
-              <footer className="bg-gray-900 mt-12 border-t border-gray-700">
+              <footer className="bg-gray-900 mt-12 border-t border-gray-700 shrink-0">
                 <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 text-center text-slate-400">
                   <div className="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-6">
                     <p>&copy; 2025 Mastery. All rights reserved.</p>
@@ -276,6 +280,7 @@ function App(){
                   onClose={handleCreateWithAIDemoModalClose}
                   isOpen={isCreateWithAIDemoModalOpen}
               />
+        </div>
       </Router>
   );
 }

@@ -964,7 +964,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             <div className="relative">
                 <textarea
                     id="topic-input"
-                    className="w-full h-20 p-4 pr-14 bg-gray-700 bg-opacity-70 text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 border border-gray-600 placeholder-gray-400 resize-none text-lg scrollbar-hide"
+                    className="w-full h-20 p-4 pr-14 bg-gray-700 bg-opacity-70 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 resize-none text-lg scrollbar-hide"
                     placeholder="Enter any topic you want to study... (e.g., World War II, Photosynthesis)"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
