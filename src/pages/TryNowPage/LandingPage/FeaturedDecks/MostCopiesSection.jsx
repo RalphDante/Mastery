@@ -5,8 +5,10 @@ import { useNavigate } from 'react-router-dom';
 
 function MostCopiesSection() {
     const [displayLimit, setDisplayLimit] = useState(3); // How many to show
-    const [allDecks, setAllDecks] = useState([]); // All 12 decks from Firebase
+    const [allDecks, setAllDecks] = useState([]); // Only 3 for preview
     const [loading, setLoading] = useState(false);
+
+    const [activeDeck, setActiveDeck] = useState(0);
 
     const navigate = useNavigate();
     const MAX_DECKS = 12; // Maximum we'll ever fetch
@@ -25,6 +27,14 @@ function MostCopiesSection() {
         }
         fetchTopDecks();
     }, []); // Only runs once on mount
+
+    useEffect(() => {
+        if (allDecks.length === 0) return;
+        const interval = setInterval(() => {
+            setActiveDeck(prev => (prev + 1) % allDecks.length);
+        }, 2500);
+        return () => clearInterval(interval);
+    }, [allDecks]);
 
     if (loading) {
         return (
@@ -55,68 +65,68 @@ function MostCopiesSection() {
             {/* Section Header */}
             <div className="flex flex-col items-center">
                 <div className="flex items-center mb-4">
-                    <h2 className="text-3xl font-bold text-slate-100">Featured Decks</h2>
+                    <h3 className="text-3xl opacity-50 font-bold text-slate-100">Featured Decks</h3>
                 </div>
             </div>
 
             {/* Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {decksToShow.map((deck, index) => (
-                    <div
-                        key={deck.id}
-                        className="bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border border-slate-700/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-lg hover:shadow-purple-500/10 relative"
-                    >
-                        {/* Rank Badge */}
-                        <div className={`absolute -top-3 -left-3 w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                            index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-slate-900' :
-                            index === 1 ? 'bg-gradient-to-r from-gray-300 to-gray-500 text-slate-900' :
-                            index === 2 ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-slate-900' :
-                            'bg-slate-700 text-slate-300'
-                        } shadow-lg`}>
-                            {index + 1}
-                        </div>
-
-                        {/* Category Badge */}
-                        {deck.tags && deck.tags.length > 0 && (
-                            <div className="flex justify-end mb-3">
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(deck.tags[0])}`}>
-                                    {deck.tags[0]}
-                                </span>
-                            </div>
-                        )}
-
-                        {/* Deck Info */}
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold text-slate-100 mb-2 line-clamp-2">
-                                {deck.title}
-                            </h3>
-                            
-                            <p className="text-slate-400 text-sm mb-3 line-clamp-3">
-                                {deck.description}
-                            </p>
-                            
-                            <div className="text-sm text-slate-500 mb-1">
-                                by {deck.ownerDisplayName || 'Anonymous'}
-                            </div>
-                        </div>
-
-                        {/* Stats */}
-                        <div className="flex items-center justify-between mb-4 text-sm text-slate-500">
-                            <div className="flex items-center space-x-3">
-                                <div className="flex items-center space-x-1">
-                                    <BookOpen className="w-4 h-4" />
-                                    <span>{deck.cardCount}</span>
+                {decksToShow.map((deck, index) => {
+                    const isActive = index === activeDeck;
+                    return (
+                        <div
+                            key={deck.id}
+                            className={`relative bg-slate-800/60 backdrop-blur-sm rounded-xl p-6 border transition-all duration-500
+                                ${isActive 
+                                ? 'border-violet-500/50 bg-gradient-to-br from-violet-500/10 to-purple-500/10 shadow-2xl shadow-violet-500/25 scale-105 z-10'
+                                : 'border-white/10 hover:border-white/20'
+                                }`}
+                            style={{ transition: 'all 0.5s cubic-bezier(.4,2,.6,1)' }}
+                        >
+                            {/* Category Badge */}
+                            {deck.tags && deck.tags.length > 0 && (
+                                <div className="flex justify-end mb-3">
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getCategoryColor(deck.tags[0])}`}>
+                                        {deck.tags[0]}
+                                    </span>
                                 </div>
-                                {deck.rating && (
-                                    <div className="flex items-center space-x-1">
-                                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                                        <span>{deck.rating}</span>
-                                    </div>
-                                )}
+                            )}
+
+                            {/* Deck Info */}
+                            <div className="mb-4">
+                                <h3 className="text-lg font-semibold text-slate-100 mb-2 line-clamp-2">
+                                    {deck.title}
+                                </h3>
+                                
+                                <p className="text-slate-400 text-sm mb-3 line-clamp-3">
+                                    {deck.description}
+                                </p>
+                                
+                                <div className="text-sm text-slate-500 mb-1">
+                                    by {deck.ownerDisplayName || 'Anonymous'}
+                                </div>
                             </div>
+
+                            {/* Stats */}
+                            <div className="flex items-center justify-between mb-4 text-sm text-slate-500">
+                                <div className="flex items-center space-x-3">
+                                    <div className="flex items-center space-x-1">
+                                        <BookOpen className="w-4 h-4" />
+                                        <span>{deck.cardCount}</span>
+                                    </div>
+                                    {deck.rating && (
+                                        <div className="flex items-center space-x-1">
+                                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
+                                            <span>{deck.rating}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex items-center space-x-1 text-purple-400">
+                                    <Users className="w-4 h-4" />
+                                    <span className="font-semibold">{(deck.copies || 0).toLocaleString()}</span>
+                                </div>
                             
-                          
-                        </div>
+                            </div>
 
                         {/* Action Button */}
                         <button 
@@ -126,8 +136,12 @@ function MostCopiesSection() {
                             <Eye className="w-4 h-4" />
                             <span>Preview Deck</span>
                         </button>
+                       
+                        
                     </div>
-                ))}
+                    );
+                    
+                })}
             </div>
 
             

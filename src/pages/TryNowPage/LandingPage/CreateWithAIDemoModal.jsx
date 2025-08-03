@@ -50,7 +50,7 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
             {/* <p className="text-slate-300 mb-6 text-center">
               Upload any PDF, image, or document to generate flashcards instantly
             </p> */}
-            {cameraIsOpen ? 
+            {/* {cameraIsOpen ? 
               ""
               :
                <div className="bg-gradient-to-r from-violet-600/20 to-purple-600/20 p-4 rounded-lg border border-violet-500/30 mb-6">
@@ -62,7 +62,7 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
                  Test our AI-powered flashcard generator risk-free. Sign up later to save your decks!
                </p>
              </div>
-            }
+            } */}
             
 
             <FileUpload

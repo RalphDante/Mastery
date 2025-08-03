@@ -90,6 +90,10 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
 
     const [hasWrongAnswer, setHasWrongAnswer] = useState(false);
 
+    const [cardAnimKey, setCardAnimKey] = useState(0);
+
+    const [cardAnimDirection, setCardAnimDirection] = useState("forward");
+
     useEffect(() => {
         if (location.state?.flashcards) {
           setFlashCards(location.state.flashcards);
@@ -516,75 +520,77 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
     const handleReviewKnow = () => {
         setProcessing(true);
         
-        if (reviewIndex < wrongCards.length) {
+        
+     
+        setTimeout(() => {
+            setWrongCards(prev => prev.filter((_, idx) => idx !== reviewIndex));
+            setReviewAnswers(prev => [...prev, true]);
+            setCardAnimKey(prev => prev + 1);
+            
+            // Don't increment if we removed the last card
+            setReviewIndex(prev => Math.max(0, Math.min(prev, wrongCards.length - 2)));
             setShowAnswer(false);
-            setTimeout(() => {
-                setWrongCards(prev => prev.filter((_, idx) => idx !== reviewIndex));
-                setReviewAnswers(prev => [...prev, true]);
-    
-                // Don't increment if we removed the last card
-                setReviewIndex(prev => Math.max(0, Math.min(prev, wrongCards.length - 2)));
-                setProcessing(false);
-            }, 200);
-        } else {
             setProcessing(false);
-        }
+        }, 200);
+       
     };
     const handleReviewDontKnow = () => {
         setProcessing(true);
         
-        if (reviewIndex < wrongCards.length) {
+
+        setTimeout(() => {
+            const currentCard = wrongCards[reviewIndex];
+            setCardAnimKey(prev => prev + 1);
+
+            // Re-add the card to the end of the deck
+            setWrongCards(prev => [...prev.slice(0, reviewIndex), ...prev.slice(reviewIndex + 1), currentCard]);
+            setReviewAnswers(prev => [...prev, false]);
             setShowAnswer(false);
-            setTimeout(() => {
-                const currentCard = wrongCards[reviewIndex];
-                // Re-add the card to the end of the deck
-                setWrongCards(prev => [...prev.slice(0, reviewIndex), ...prev.slice(reviewIndex + 1), currentCard]);
-                setReviewAnswers(prev => [...prev, false]);
-    
-                // Don't increment reviewIndex, just move to the next one in the updated list
-                setProcessing(false);
-            }, 200);
-        } else {
+            // Don't increment reviewIndex, just move to the next one in the updated list
             setProcessing(false);
-        }
+        }, 200);
+       
     };
 
     // Handle main mode responses (these increment counters)
     const handleKnow = () => {
         setProcessing(true);
+        
+        setTimeout(() => {
+            setCurrentIndex(currentIndex + 1);
+            setCardAnimDirection("forward");
+            setCardAnimKey(prev => prev + 1);
 
-        if (currentIndex < flashCards.length) {
+            knowAnswer(prev => {
+                let newKnowAnswer = prev + 1;
+                percent(Math.floor((newKnowAnswer / flashCards.length) * 100));
+                return newKnowAnswer;
+            });
+            setAnswers([...answers, true]);
             setShowAnswer(false);
-            setTimeout(() => {
-                setCurrentIndex(currentIndex + 1);
-                knowAnswer(prev => {
-                    let newKnowAnswer = prev + 1;
-                    percent(Math.floor((newKnowAnswer / flashCards.length) * 100));
-                    return newKnowAnswer;
-                });
-                setAnswers([...answers, true]);
-                setProcessing(false);
-            }, 200);
-        } else {
+
             setProcessing(false);
-        }
+        }, 200);
+
+   
     };
     
     const handleDontKnow = () => {
         setHasWrongAnswer(true);
-        setProcessing(true);
-   
-        if (currentIndex < flashCards.length) {
+        setProcessing(true);    
+
+        setTimeout(() => {
+            setCurrentIndex(currentIndex + 1);
+            setCardAnimDirection("forward");
+            setCardAnimKey(prev => prev + 1);
+            dontKnowAnswer(prev => prev + 1);
+            setAnswers([...answers, false]);
+
             setShowAnswer(false);
-            setTimeout(() => {
-                setCurrentIndex(currentIndex + 1);
-                dontKnowAnswer(prev => prev + 1);
-                setAnswers([...answers, false]);
-                setProcessing(false);
-            }, 200);
-        } else {
+
             setProcessing(false);
-        }
+        }, 200);
+
     };
 
     const handleShowAnswer = () => {
@@ -601,7 +607,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         if (isReviewMode) {
             // Review mode go back
             if (reviewIndex > 0) {
-                setShowAnswer(false);
                 setTimeout(() => {
                     setReviewIndex(reviewIndex - 1);
                     setReviewAnswers(reviewAnswers.slice(0, -1));
@@ -613,7 +618,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
         } else {
             // Main mode go back
             if (currentIndex > 0) {
-                setShowAnswer(false);
                 setTimeout(() => {
                     const lastAnswer = answers[currentIndex - 1];
                     if (lastAnswer) {
@@ -628,8 +632,11 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                             return newDontKnowAnswer;
                         });
                     }
+                    setCardAnimDirection("backward");
+                    setCardAnimKey(prev => prev + 1);
                     setCurrentIndex(currentIndex - 1);
                     setAnswers(answers.slice(0, -1));
+                    setShowAnswer(false);
                     setProcessing(false);
                 }, 200);
             } else {
@@ -857,7 +864,15 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 </div>
             </div>
 
-            <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
+            <div 
+                key={cardAnimKey}
+                className={`${styles.flashCardTextContainer} ${
+                    cardAnimDirection === "forward"
+                        ? styles.cardTransitionForward
+                        : styles.cardTransitionBackward
+                    }`
+                } 
+                onClick={handleShowAnswer}>
                 <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
                     <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
                         {isFinished ? (
@@ -885,6 +900,12 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                             <h2>Loading...</h2>
                         )}
                     </div>
+                    {/* Footer message for first card */}
+                    {currentIndex === 0 && !showAnswer && (
+                        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/70 text-white text-sm px-4 py-2 rounded-lg shadow-lg pointer-events-none select-none z-10">
+                            Click the card to flip
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -909,9 +930,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                         disabled={processing || isFinished}
                         onClick={isReviewMode ? handleReviewDontKnow : handleDontKnow}
                     >
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Mark as Incorrect
-                        </div>
                         ✕ Incorrect
                     </button>
 
@@ -923,9 +941,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                         disabled={processing || isFinished}
                         onClick={isReviewMode ? handleReviewKnow : handleKnow}
                     >
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Mark as Correct
-                        </div>
                         ✓ Correct
                     </button>
                 </div>
