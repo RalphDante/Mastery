@@ -36,12 +36,15 @@ import { calculateSM2 } from '../../utils/sm2';
 
 import StudyTimeTracker from './StudyTimeTracker';
 
-
-
 // FiresStore
 
 import { Timestamp } from 'firebase/firestore';
 import { getCurrentTimestamp, getImmediateReviewTimestamp } from '../../utils/sm2'; 
+
+// Tutorials
+import { useTutorials } from "../../contexts/TutorialContext";
+import TutorialOverlay from "../../components/tutorials/TutorialOverlay";
+import SmartReviewButtons from "../../components/tutorials/CustomTutorials/SmartReviewButtons";
 
 function FlashCardUI({
     knowAnswer, 
@@ -57,6 +60,9 @@ function FlashCardUI({
     publicDeckData,
     deckOwnerData
 }) {
+    const [finishedButtonsTutorial, setFinishedButtonsTutorial] = useState(false);
+    const { isTutorialAtStep, advanceStep } = useTutorials();
+    const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2)
 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
@@ -1240,6 +1246,15 @@ function FlashCardUI({
     return (
     <>  
         {/* <PublicDeckHeader /> */}
+        {!loading && (
+            <TutorialOverlay isVisible={welcomeUserToSmartReview}>
+                <SmartReviewButtons onSuccess={() => {
+                    advanceStep('smart-review');
+                }} />
+            </TutorialOverlay>
+        )}
+
+        
         <SignUpPromptModal />
         
         {/* Buttons */}
@@ -1268,7 +1283,6 @@ function FlashCardUI({
             </div>
         </div>
 
-        {/* Rest of your existing JSX... */}
         <div>
             {renderScoreContainer()}
         </div>

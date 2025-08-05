@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Route, Routes} from 'react-router-dom';
 import Footer from './Footer.jsx';
 
-
 // Components
 import NavBar from './components/NavBar/NavBar.jsx';
 import SignIn from './components/auth/Signin.jsx';
@@ -77,6 +76,7 @@ import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDe
 // Terms of Service
 import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
 import PublicDecksPage from './pages/PublicDecks/PublicDecksPage.jsx';
+import { TutorialProvider } from './contexts/TutorialContext';
 
 
 function App(){
@@ -87,6 +87,7 @@ function App(){
   const [currentUserId, setCurrentUserId] = useState(null); // You'll need to set this from auth
   const [isCreateWithAIDemoModalOpen, setIsCreateWithAIDemoModalOpen] = useState();
 
+  const [authUser, setAuthUser] = useState(null);
   // Folder Modal handlers
   const handleShowCreateFolderModal = () => {
     setIsFolderModalOpen(true);
@@ -175,6 +176,7 @@ function App(){
     onAuthStateChanged(auth, (user) => {
         if (user) {
             setCurrentUserId(user.uid);
+            setAuthUser(user);
         } else {
             setCurrentUserId(null);
         }
@@ -182,6 +184,7 @@ function App(){
   }, []);
 
   return (
+    <TutorialProvider authUser={authUser}>
       <Router>
         <div className="min-h-screen flex flex-col">
           {/* Main content */}
@@ -282,6 +285,7 @@ function App(){
               />
         </div>
       </Router>
+    </ TutorialProvider>
   );
 }
 
