@@ -78,7 +78,7 @@ export function useTutorialState(authUser) {
 function getDefaultTutorials() {
   return {
     "create-deck": { completed: false, step: 1 },
-    "smart-review": { completed: false, step: 1, data: { cardsReviewed: 0 } },
+    "smart-review": { completed: false, step: 1 },
     "global-review": { completed: false, step: 1 },
     "deck-sharing": { completed: false, step: 1 }
   };

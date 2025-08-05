@@ -5,6 +5,8 @@ import { db } from '../../api/firebase';
 import { createPortal } from 'react-dom';
 import TutorialOverlay from '../../components/tutorials/TutorialOverlay';
 import { useTutorials } from '../../contexts/TutorialContext';
+import { getImmediateReviewTimestamp } from '../../utils/sm2';
+import { Timestamp } from 'firebase/firestore';
 
 function StudyModeSelector({ 
     deckId, 
@@ -32,23 +34,45 @@ function StudyModeSelector({
             const cardsQuery = query(collection(db, 'decks', deckIdToInit, 'cards'));
             const cardsSnapshot = await getDocs(cardsQuery);
 
-            const batch = []; // Use a batch for efficiency
+            const maxNewCardsPerDay = 8; // or make this a prop/config
+
+            // 1. Get all cards and sort (optional, but recommended for order)
+            const cards = [];
             cardsSnapshot.forEach(cardDoc => {
-                const cardId = cardDoc.id;
-                const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
-                batch.push(setDoc(progressDocRef, {
-                    userId: authUser.uid,
-                    cardId: cardId,
-                    deckId: deckIdToInit,
-                    easeFactor: 2.5,
-                    interval: 0,
-                    repetitions: 0,
-                    nextReviewDate: getImmediateReviewTimestamp(), // Set for immediate review
-                    lastReviewDate: null,
-                    totalReviews: 0,
-                    correctStreak: 0
-                }, { merge: true })); // Use merge to avoid overwriting if progress exists
+            cards.push({ id: cardDoc.id, ...cardDoc.data() });
             });
+            cards.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+            // 2. Loop and set nextReviewDate
+            const batch = [];
+            cards.forEach((card, index) => {
+            const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${card.id}`);
+            let nextReviewDate;
+            if (index < maxNewCardsPerDay) {
+                nextReviewDate = getImmediateReviewTimestamp(); // Due now
+            } else {
+                // Schedule for future days
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const daysToWait = Math.floor(index / maxNewCardsPerDay);
+                const futureDate = new Date(today);
+                futureDate.setDate(today.getDate() + daysToWait);
+                nextReviewDate = Timestamp.fromDate(futureDate);
+            }
+            batch.push(setDoc(progressDocRef, {
+                userId: authUser.uid,
+                cardId: card.id,
+                deckId: deckIdToInit,
+                easeFactor: 2.5,
+                interval: 0,
+                repetitions: 0,
+                nextReviewDate,
+                lastReviewDate: null,
+                totalReviews: 0,
+                correctStreak: 0
+            }, { merge: true }));
+            });
+
 
             await Promise.all(batch); // Execute all setDoc operations concurrently
             console.log("Cards initialized for spaced repetition.");
@@ -84,7 +108,17 @@ function StudyModeSelector({
             const allProgressSnapshot = await getDocs(allProgressQuery);
             
             if (allProgressSnapshot.empty) {
+                // // No cards have been initialized for spaced repetition yet
+                // const confirmInit = window.confirm(
+                //     "This deck hasn't been set up for spaced repetition yet. " +
+                //     "Would you like to add all cards to your spaced repetition schedule? " +
+                //     "They will be available for review immediately."
+                // );
                 
+                // if (!confirmInit) {
+                //     setIsLoading(false);
+                //     return; // User cancelled, stay in current mode
+                // }
                 
                 await initializeCardsForSpacedRepetition(deckId);
             } else {
@@ -112,12 +146,15 @@ function StudyModeSelector({
     
     return (
         <>
-        <TutorialOverlay isVisible={chooseSmartReviewTutorial}>
-            <div className="relative bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-md w-full p-6 text-white animate-bounce">
-            <span role="img" aria-label="sparkles">✨</span> 
-            Let's add this deck for <span className="text-emerald-600">Smart Review</span>!
-            </div>
-        </TutorialOverlay>
+
+            <TutorialOverlay isVisible={chooseSmartReviewTutorial}>
+                <div className="relative bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-md w-full p-6 text-white animate-bounce">
+                <span role="img" aria-label="sparkles">✨</span> 
+                Let's add this deck for <span className="text-emerald-600">Smart Review</span>!
+                </div>
+            </TutorialOverlay>
+
+        
         <div className="relative">
             
 

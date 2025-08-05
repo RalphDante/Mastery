@@ -9,6 +9,7 @@ const StudyTimeTracker = ({
   isFinished,
   onTimeUpdate = null,
   showDisplay = true,
+  finalTime
 }) => {
   const [displayTime, setDisplayTime] = useState(0); // Total session time in seconds
   const [isActivelyStudying, setIsActivelyStudying] = useState(false);
@@ -236,6 +237,8 @@ const StudyTimeTracker = ({
   // Stop timers when we are finished
   useEffect(()=>{
     if(isFinished){
+      const lastAcceptedTime = `${formatTime(displayTime)}`
+      finalTime(lastAcceptedTime);
       stopAllTimers();
     }
   },[isFinished, stopAllTimers])

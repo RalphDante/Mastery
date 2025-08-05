@@ -45,6 +45,8 @@ import { getCurrentTimestamp, getImmediateReviewTimestamp } from '../../utils/sm
 import { useTutorials } from "../../contexts/TutorialContext";
 import TutorialOverlay from "../../components/tutorials/TutorialOverlay";
 import SmartReviewButtons from "../../components/tutorials/CustomTutorials/SmartReviewButtons";
+import { EncourageBanner } from "../../components/tutorials/CustomTutorials/EncourageBanner";
+import { useNavigate } from "react-router-dom";
 
 function FlashCardUI({
     knowAnswer, 
@@ -60,12 +62,15 @@ function FlashCardUI({
     publicDeckData,
     deckOwnerData
 }) {
-    const [finishedButtonsTutorial, setFinishedButtonsTutorial] = useState(false);
-    const { isTutorialAtStep, advanceStep } = useTutorials();
-    const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2)
+    // Tutorials
+    const { isTutorialAtStep, advanceStep, completeTutorial } = useTutorials();
+    const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2);
+    const firstSmartReviewSession = isTutorialAtStep('smart-review', 3);
+    const goToDashBoard = isTutorialAtStep('smart-review', 4);
+
 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
-
+    const [finalTime, setFinalTime] = useState("");
 
     const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
@@ -81,6 +86,7 @@ function FlashCardUI({
     const [error, setError] = useState(null);
     const [dueCardsCount, setDueCardsCount] = useState(0);
     const [orphanedProgressCount, setOrphanedProgressCount] = useState(0);
+    const navigate = useNavigate();
 
     const [isFinished, setIsFinished] = useState(false);
 
@@ -97,6 +103,8 @@ function FlashCardUI({
 
     // Initialize Cloudinary
     const cld = new Cloudinary({ cloud: { cloudName: `${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}` } });
+
+    
 
     // Helper function to create optimized Cloudinary image
     const createOptimizedImage = (publicId) => {
@@ -182,7 +190,7 @@ function FlashCardUI({
     }, [authUser, db]);
 
     // New Cards Handling
-    const initializeNewCardsProgress = useCallback(async (deckId) => {
+    const initializeNewCardsProgress = useCallback(async (deckId, maxNewCardsPerDay = 8) => {
         if (!authUser || !deckId) return;
         
         try {
@@ -205,38 +213,119 @@ function FlashCardUI({
                 existingProgressCardIds.add(progress.cardId);
             });
             
-            // Find cards without progress and initialize them
+            // Find cards without progress
             const newCardsToInitialize = [];
             cardsSnapshot.forEach(cardDoc => {
                 if (!existingProgressCardIds.has(cardDoc.id)) {
-                    newCardsToInitialize.push(cardDoc.id);
+                    newCardsToInitialize.push({
+                        id: cardDoc.id,
+                        order: cardDoc.data().order || 0
+                    });
                 }
             });
             
-            // Initialize progress for new cards (mark them as due immediately)
-            const initPromises = newCardsToInitialize.map(cardId => {
-                const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
-                return setDoc(progressDocRef, {
+            // Sort by order to ensure consistent daily releases
+            newCardsToInitialize.sort((a, b) => a.order - b.order);
+            
+            // Calculate how many cards to make due today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Check how many new cards from this deck are already due today
+            const todayDueQuery = query(
+                collection(db, 'cardProgress'),
+                where('userId', '==', authUser.uid),
+                where('deckId', '==', deckId),
+                where('repetitions', '==', 0), // New cards have 0 repetitions
+                where('nextReviewDate', '<=', getCurrentTimestamp())
+            );
+            const todayDueSnapshot = await getDocs(todayDueQuery);
+            const newCardsDueToday = todayDueSnapshot.size;
+            
+            // Calculate how many more new cards we can add today
+            const remainingNewCardsForToday = Math.max(0, maxNewCardsPerDay - newCardsDueToday);
+            const cardsToMakeDueToday = Math.min(remainingNewCardsForToday, newCardsToInitialize.length);
+            
+            // Initialize progress for all new cards
+            const batch = writeBatch(db);
+            
+            newCardsToInitialize.forEach((card, index) => {
+                const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${card.id}`);
+                
+                let nextReviewDate;
+                if (index < cardsToMakeDueToday) {
+                    // Make these cards due immediately (today)
+                    nextReviewDate = getImmediateReviewTimestamp();
+                } else {
+                    // Schedule these cards for future days
+                    const daysToWait = Math.floor(index / maxNewCardsPerDay) + 1;
+                    const futureDate = new Date(today);
+                    futureDate.setDate(futureDate.getDate() + daysToWait);
+                    nextReviewDate = Timestamp.fromDate(futureDate);
+                }
+                
+                batch.set(progressDocRef, {
                     userId: authUser.uid,
-                    cardId: cardId,
+                    cardId: card.id,
                     deckId: deckId,
                     easeFactor: 2.5,
                     interval: 0,
                     repetitions: 0,
-                    nextReviewDate: getImmediateReviewTimestamp(), // Due immediately
+                    nextReviewDate: nextReviewDate,
                     lastReviewDate: null,
                     totalReviews: 0,
-                    correctStreak: 0
+                    correctStreak: 0,
+                    isNewCard: true // Flag to identify new cards
                 });
             });
             
-            if (initPromises.length > 0) {
-                await Promise.all(initPromises);
-                console.log(`Initialized progress for ${initPromises.length} new cards`);
+            if (newCardsToInitialize.length > 0) {
+                await batch.commit();
+                console.log(`Initialized ${newCardsToInitialize.length} new cards. ${cardsToMakeDueToday} due today, rest scheduled for future days.`);
             }
             
         } catch (error) {
             console.error("Error initializing new cards progress:", error);
+        }
+    }, [authUser, db]);
+
+    // New function to release more cards daily (call this when fetching due cards)
+    const releaseNewCardsForToday = useCallback(async (deckId, maxNewCardsPerDay = 8) => {
+        if (!authUser || !deckId) return;
+        
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const todayTimestamp = Timestamp.fromDate(today);
+            
+            // Find cards scheduled for today or earlier that aren't due yet
+            const scheduledCardsQuery = query(
+                collection(db, 'cardProgress'),
+                where('userId', '==', authUser.uid),
+                where('deckId', '==', deckId),
+                where('repetitions', '==', 0),
+                where('nextReviewDate', '<=', todayTimestamp),
+                where('nextReviewDate', '>', getCurrentTimestamp()) // Not yet due
+            );
+            
+            const scheduledSnapshot = await getDocs(scheduledCardsQuery);
+            
+            if (!scheduledSnapshot.empty) {
+                const batch = writeBatch(db);
+                
+                // Make these cards due immediately
+                scheduledSnapshot.forEach(doc => {
+                    batch.update(doc.ref, {
+                        nextReviewDate: getImmediateReviewTimestamp()
+                    });
+                });
+                
+                await batch.commit();
+                console.log(`Released ${scheduledSnapshot.size} new cards for today`);
+            }
+            
+        } catch (error) {
+            console.error("Error releasing new cards:", error);
         }
     }, [authUser, db]);
 
@@ -278,7 +367,9 @@ function FlashCardUI({
                 
                 if (deckId) {
                     // Initialize new flashcards first
-                    await initializeNewCardsProgress(deckId);
+                    await initializeNewCardsProgress(deckId, 8); // 8 new cards per day
+
+                    await releaseNewCardsForToday(deckId, 8);
                     
                     // Then create the query for this specific deck
                     progressQuery = query(
@@ -289,11 +380,25 @@ function FlashCardUI({
                         orderBy('nextReviewDate', 'asc')
                     );
                 } else {
+                    // Global review - release new cards for all decks first
+                    const userDecksQuery = query(
+                        collection(db, 'decks'),
+                        where('ownerId', '==', authUser.uid)
+                    );
+                    const userDecksSnapshot = await getDocs(userDecksQuery);
+                    
+                    // Release new cards for each deck
+                    const releasePromises = [];
+                    userDecksSnapshot.forEach(deckDoc => {
+                        releasePromises.push(releaseNewCardsForToday(deckDoc.id, 8));
+                    });
+                    await Promise.all(releasePromises);
+                    
                     // Global review - all due cards across all decks
                     progressQuery = query(
                         collection(db, 'cardProgress'),
                         where('userId', '==', authUser.uid),
-                       where('nextReviewDate', '<=', getCurrentTimestamp()),
+                        where('nextReviewDate', '<=', getCurrentTimestamp()),
                         orderBy('nextReviewDate', 'asc')
                     );
                 }
@@ -763,6 +868,7 @@ function FlashCardUI({
                         db={db}
                         deckId={deckId}
                         isFinished={isFinished}
+                        finalTime={(time)=>setFinalTime(`${time}`)}
                     />
                 </div>
             );
@@ -781,6 +887,7 @@ function FlashCardUI({
                         db={db}
                         deckId={deckId}
                         isFinished={isFinished}
+                        finalTime={(time)=>setFinalTime(`${time}`)}
                     />
                 </div>
             );
@@ -1246,13 +1353,38 @@ function FlashCardUI({
     return (
     <>  
         {/* <PublicDeckHeader /> */}
-        {!loading && (
-            <TutorialOverlay isVisible={welcomeUserToSmartReview}>
-                <SmartReviewButtons onSuccess={() => {
-                    advanceStep('smart-review');
-                }} />
-            </TutorialOverlay>
-        )}
+       
+        <TutorialOverlay isVisible={welcomeUserToSmartReview && !loading && flashCards.length > 0 && studyMode === 'spaced'}>
+            <SmartReviewButtons onSuccess={() => {
+                advanceStep('smart-review');
+            }} />
+        </TutorialOverlay>
+
+        <TutorialOverlay isVisible={goToDashBoard}>
+            <div className="relative space-y-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-lg w-full p-8">
+            <div className="text-5xl mb-4">🎉</div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Congratulations!
+            </h2>
+            <p className="text-gray-300 text-lg">
+                You've completed your first Smart Review session!
+            </p>
+            <p className="text-gray-400">
+                Let's view your progress in the dashboard!
+            </p>
+            <button className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                onClick={()=>{
+                    navigate('/')
+                    completeTutorial('smart-review')
+                }}
+            >
+              Go to Dashboard →
+            </button>
+            </div>
+        </TutorialOverlay>
+
+        
+        
 
         
         <SignUpPromptModal />
@@ -1282,6 +1414,15 @@ function FlashCardUI({
                 {renderStudyModeSelector()}
             </div>
         </div>
+        {firstSmartReviewSession && (
+            <EncourageBanner
+                currentCard={currentIndex}
+                totalCards={flashCards.length}
+                onSuccess={()=>{
+                    advanceStep("smart-review")
+                }}
+            />
+        )}
 
         <div>
             {renderScoreContainer()}
@@ -1302,14 +1443,48 @@ function FlashCardUI({
                     {currentIndex < flashCards.length ? (
                         renderContent(currentQuestion, currentQuestionType, styles.questionImage)
                     ) : (
-                        <h2>You completed it!!!</h2>
+                        <div className="text-center py-8 space-y-4">
+                            <div className="text-5xl animate-bounce">🏆</div>
+                            <h2 className="text-2xl font-bold text-purple-400">
+                                Session Complete!
+                            </h2>
+                            <div className="bg-white/10 rounded-lg p-4 max-w-sm mx-auto">
+                                <div className="text-sm text-gray-300 mb-2">Your Progress:</div>
+                                <div className="flex justify-between text-lg">
+                                <span>Cards Studied: <span className="text-green-400 font-bold">{answers.length}</span></span>
+                                </div>
+                                <div className="flex justify-between text-lg">
+                                <span>Time: <span className="text-blue-400 font-bold">{finalTime}</span></span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-400">
+                                Great job! The hard work will be worth it.
+                            </p>
+                        </div>
                     )}
                 </div>
                 <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
                     {currentIndex < flashCards.length ? (
                         renderContent(currentAnswer, currentAnswerType, styles.questionImage)
                     ) : (
-                        <h2>You completed it!!!</h2>
+                        <div className="text-center py-8 space-y-4">
+                            <div className="text-5xl animate-bounce">🏆</div>
+                            <h2 className="text-2xl font-bold text-purple-400">
+                                Session Complete!
+                            </h2>
+                            <div className="bg-white/10 rounded-lg p-4 max-w-sm mx-auto">
+                                <div className="text-sm text-gray-300 mb-2">Your Progress:</div>
+                                <div className="flex justify-between text-lg">
+                                <span>Cards Studied: <span className="text-green-400 font-bold">{answers.length}</span></span>
+                                </div>
+                                <div className="flex justify-between text-lg">
+                                <span>Time: <span className="text-blue-400 font-bold">{finalTime}</span></span>
+                                </div>
+                            </div>
+                            <p className="text-sm text-gray-400">
+                                Great job! The hard work will be worth it.
+                            </p>
+                        </div>
                     )}
                 </div>
             </div>
