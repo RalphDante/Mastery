@@ -158,6 +158,30 @@ export const UserDataProvider = ({ children }) => {
       }).length;
     })(),
 
+    // Get next review time
+    nextReviewTime: (() => {
+      if (cardProgress.length === 0) return null;
+      
+      const now = new Date();
+      const upcomingCards = cardProgress
+        .filter(card => {
+          if (!card.nextReviewDate) return false;
+          try {
+            const nextReviewDate = card.nextReviewDate.toDate();
+            return nextReviewDate > now; // Future cards only
+          } catch (error) {
+            return false;
+          }
+        })
+        .sort((a, b) => {
+          const dateA = a.nextReviewDate.toDate();
+          const dateB = b.nextReviewDate.toDate();
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+      return upcomingCards.length > 0 ? upcomingCards[0].nextReviewDate.toDate() : null;
+    })(),
+
     // Cards reviewed today
     cardsReviewedToday: (() => {
       const today = new Date();
@@ -231,8 +255,8 @@ export const useFolders = () => {
 };
 
 export const useCardsDue = () => {
-  const { cardsDue, cardsReviewedToday } = useUserData();
-  return { cardsDue, cardsReviewedToday };
+  const { cardsDue, cardsReviewedToday, nextReviewTime } = useUserData();
+  return { cardsDue, cardsReviewedToday, nextReviewTime };
 };
 
 export const useStudyStats = () => {
@@ -244,3 +268,20 @@ export const useStudyStats = () => {
     todaySession
   };
 };
+
+export const getTimeUntilNextReview = (nextReviewTime) => {
+  if (!nextReviewTime) return "No upcoming reviews";
+  
+    const now = new Date();
+    const diffMs = nextReviewTime.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return "Ready now";
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+    return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+  };

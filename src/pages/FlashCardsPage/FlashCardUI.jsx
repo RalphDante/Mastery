@@ -1403,7 +1403,7 @@ function FlashCardUI({
             <div>
                 {/* Only show edit button if user owns the deck */}
                 {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />}
-                {(!deckId || isPublicDeck) && (studyMode !== 'cramming') && (
+                {(!deckId || isPublicDeck) && (studyMode === 'cramming') && (
                     <CopyDeckBtn 
                         deckId={deckId} 
                         deckName={deck?.title || "Untitled Deck"}

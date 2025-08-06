@@ -1,11 +1,11 @@
 // OptimizedWelcomeSection.js
 import React from 'react';
-import { useUserData, useCardsDue, useStudyStats } from '../../../hooks/useUserData';
+import { useUserData, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../hooks/useUserData';
 import { useNavigate } from 'react-router-dom';
 
 function WelcomeSection() {
   const { user, loading, error, userData } = useUserData();
-  const { cardsDue, cardsReviewedToday } = useCardsDue();
+  const { cardsDue, cardsReviewedToday, nextReviewTime } = useCardsDue();
   const { currentStreak, longestStreak } = useStudyStats();
   const navigate = useNavigate();
 
@@ -98,17 +98,21 @@ function WelcomeSection() {
 
           {/* Action Button */}
           <div className="flex justify-center">
-            <button 
-              onClick={handleStartReview}
-              disabled={cardsDue === 0}
-              className={`w-full md:w-auto text-center px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg ${
-                cardsDue === 0 
-                  ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                  : 'bg-violet-600 text-white hover:bg-violet-700 shadow-violet-500/30'
-              }`}
-            >
-              {cardsDue === 0 ? 'No Cards Due' : 'Start Review'}
-            </button>
+            {cardsDue > 0 ? (
+              <button 
+                onClick={handleStartReview}
+                className="w-full md:w-auto text-center px-8 py-4 rounded-full font-bold text-lg transition-all transform hover:scale-105 shadow-lg bg-violet-600 text-white hover:bg-violet-700 shadow-violet-500/30"
+              >
+                Start Review
+              </button>
+            ) : (
+              <div className="w-full md:w-auto text-center px-8 py-4 rounded-full bg-gray-600 text-gray-300">
+                <p className="font-medium">Next review in</p>
+                <p className="text-sm text-violet-400">
+                  {getTimeUntilNextReview(nextReviewTime)}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

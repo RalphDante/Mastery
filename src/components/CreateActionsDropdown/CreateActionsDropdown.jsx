@@ -54,14 +54,14 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
                     onClick={(e) => handleItemClick(onCreateDeckClick, e)} 
                     className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create New Deck
+                    Create Deck Manually
                 </a>
                 <a 
                     href="#" 
                     onClick={(e) => handleItemClick(onCreateWithAIModalClick, e)} 
                     className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create with AI
+                    Create Deck with AI
                 </a>
             </div>
         </div>
