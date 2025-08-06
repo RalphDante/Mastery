@@ -62,6 +62,11 @@ function FlashCardUI({
     publicDeckData,
     deckOwnerData
 }) {
+    // Card animations
+    const [cardAnimDirection, setCardAnimDirection] = useState("forward");
+    const [cardAnimKey, setCardAnimKey] = useState(0);
+    
+
     // Tutorials
     const { isTutorialAtStep, advanceStep, completeTutorial } = useTutorials();
     const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2);
@@ -574,7 +579,6 @@ function FlashCardUI({
         if (processing || currentIndex >= flashCards.length) return; 
     
         setProcessing(true);
-        setShowAnswer(false); 
     
         const currentCard = flashCards[currentIndex];
         const cardId = currentCard.id;
@@ -641,6 +645,9 @@ function FlashCardUI({
             setTimeout(() => {
                 const newIndex = currentIndex + 1;
                 setCurrentIndex(newIndex);
+                setCardAnimDirection('forward')
+                setCardAnimKey(prev => prev + 1);
+                setShowAnswer(false);
                 setProcessing(false);
             }, 200);
     
@@ -656,7 +663,7 @@ function FlashCardUI({
     if (processing || currentIndex >= flashCards.length) return;
 
     setProcessing(true);
-    setShowAnswer(false);
+    
 
     const currentCard = flashCards[currentIndex];
     const currentCardId = currentCard.id;
@@ -687,12 +694,15 @@ function FlashCardUI({
             
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
-                setProcessing(false);
+               setCardAnimDirection('forward')
+                setCardAnimKey(prev => prev + 1);
                 
                 if (shouldCompletePhaseOne) {
                     setPhaseOneComplete(true);
                     setReviewPhase('reviewing');
                 }
+                setShowAnswer(false);
+                setProcessing(false);
             }, 200);
 
         } else {
@@ -705,12 +715,15 @@ function FlashCardUI({
 
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);
-                setProcessing(false);
+                setCardAnimDirection('forward')
+                setCardAnimKey(prev => prev + 1);
                 
                 if (shouldCompletePhaseOne) {
                     setPhaseOneComplete(true);
                     setReviewPhase('reviewing');
                 }
+                setShowAnswer(false);
+                setProcessing(false);
             }, 200);
         }
     } catch (error) {
@@ -728,7 +741,6 @@ function FlashCardUI({
     const handleGoBack = useCallback(() => {
         setProcessing(true);
         if (currentIndex > 0) {
-            setShowAnswer(false);
             setTimeout(() => {
                 const lastAnswerWasCorrect = answers[currentIndex - 1];
                 if (lastAnswerWasCorrect) {
@@ -737,7 +749,10 @@ function FlashCardUI({
                     dontKnowAnswer(prev => prev - 1);
                 }
                 setCurrentIndex(currentIndex - 1);
-                setAnswers(answers.slice(0, -1)); 
+                setAnswers(answers.slice(0, -1));
+                setCardAnimDirection("backward");
+                setCardAnimKey(prev => prev + 1); 
+                setShowAnswer(false);
                 setProcessing(false);
             }, 200);
         } else {
@@ -1232,7 +1247,7 @@ function FlashCardUI({
             );
         } else { // 'cramming' mode buttons
             return (
-                <div className={`${styles.buttonsContainer} gap-4`}>
+                <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
                     {/* <button className={`${styles.outerFlashCardButtons} border-slate-700`} disabled={isDisabled || currentIndex === 0} onClick={handleGoBack}>
                         <i class="fas fa-arrow-left"></i>
                     </button> */}
@@ -1254,9 +1269,6 @@ function FlashCardUI({
                             // disabled={isDisabled}
                             onClick={()=>{handleCrammingResponse(false)}}
                         >
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Mark as Incorrect
-                            </div>
                             ✕ Incorrect
                         </button>
                         {/* <button className={`${styles.innerFlashCardButtons} hover:bg-red-600 transition-all duration-200`} disabled={isDisabled} onClick={() => handleCrammingResponse(false)}> 
@@ -1273,9 +1285,6 @@ function FlashCardUI({
                             disabled={isDisabled}
                             onClick={()=>{handleCrammingResponse(true)}}
                         >
-                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Mark as Correct
-                            </div>
                             ✓ Correct
                         </button>
                     </div>
@@ -1394,7 +1403,7 @@ function FlashCardUI({
             <div>
                 {/* Only show edit button if user owns the deck */}
                 {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />}
-                {(!deckId || isPublicDeck) && (
+                {(!deckId || isPublicDeck) && (studyMode !== 'cramming') && (
                     <CopyDeckBtn 
                         deckId={deckId} 
                         deckName={deck?.title || "Untitled Deck"}
@@ -1437,7 +1446,13 @@ function FlashCardUI({
             </div>
         )}
         
-        <div className={`${styles.flashCardTextContainer}`} onClick={handleShowAnswer}>
+        <div
+            key={cardAnimKey} 
+            className={`${styles.flashCardTextContainer} ${
+            cardAnimDirection === "forward"
+                ? styles.cardTransitionForward
+                : styles.cardTransitionBackward
+            }`} onClick={handleShowAnswer}>
             <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
                 <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
                     {currentIndex < flashCards.length ? (
