@@ -8,7 +8,13 @@ import { auth } from '../../api/firebase'
 import styles from './CreateFilePage.module.css'
 import CreateFlashCards from './CreateFlashCards';
 
+// Tutorial
+import { useTutorials } from '../../contexts/TutorialContext';
+
 function CreateDeck() {
+
+    // Tutorial
+    const { completeTutorial } = useTutorials();
 
     const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
     const [fileName, setFileName] = useState("");
@@ -383,6 +389,8 @@ function CreateDeck() {
             });
     
             await batch.commit(); // Commit all operations in the batch
+
+            completeTutorial('create-deck');
     
             // Navigate to the deck view
             navigate(`/flashcards/${deckRef.id}`, {

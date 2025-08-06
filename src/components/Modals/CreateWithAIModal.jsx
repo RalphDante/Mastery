@@ -11,8 +11,8 @@ import { useTutorials } from "../../contexts/TutorialContext";
 
 function CreateWithAIModal({ onClose, isOpen }) {
   // Tutorials
-
-  const {goBackAStep} = useTutorials();
+  const {goBackAStep, completeTutorial} = useTutorials();
+  const [tutorialCancelled, setTutorialCancelled] = useState(false);
   
   const navigate = useNavigate();
 
@@ -46,9 +46,16 @@ function CreateWithAIModal({ onClose, isOpen }) {
     return () => unsubscribeAuth();
   }, []);
 
+  // Tutorial
+  useEffect(() => {
+      if (isOpen) {
+        setTutorialCancelled(false);
+      }
+    }, [isOpen]);
+
    useEffect(() => {
       if(isOpen === undefined) return;
-      if(!isOpen){
+      if(!isOpen && tutorialCancelled){
         goBackAStep('create-deck')
       }
     }, [isOpen]);
@@ -174,6 +181,8 @@ function CreateWithAIModal({ onClose, isOpen }) {
           updatedAt: new Date(),
         });
       }
+
+      completeTutorial('create-deck');
   
       navigate(`/flashcards/${newDeckRef.id}`, {
         state: {
@@ -198,7 +207,10 @@ function CreateWithAIModal({ onClose, isOpen }) {
       <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 
-          onClick={onClose} 
+          onClick={()=>{
+            setTutorialCancelled(true)
+            onClose()
+          }} 
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
           disabled={loading}
         >
@@ -270,7 +282,10 @@ function CreateWithAIModal({ onClose, isOpen }) {
 
             <div className="flex justify-between mt-8">
               <button 
-                onClick={onClose} 
+                onClick={()=>{
+                  setTutorialCancelled(true)
+                  onClose()
+                }} 
                 className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-slate-100 rounded-lg transition-all duration-200 font-semibold disabled:opacity-50"
                 disabled={loading}
               >
@@ -312,7 +327,10 @@ function CreateWithAIModal({ onClose, isOpen }) {
                 Back
               </button>
               <button 
-                onClick={onClose} 
+                onClick={()=>{
+                  setTutorialCancelled(true)
+                  onClose()
+                }} 
                 className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-slate-100 rounded-lg transition-all duration-200 font-semibold"
               >
                 Cancel
