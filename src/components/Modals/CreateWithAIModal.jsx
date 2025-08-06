@@ -6,7 +6,14 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import CreateWithAIDemoModal from "../../pages/TryNowPage/LandingPage/CreateWithAIDemoModal";
 
+// Tutorials
+import { useTutorials } from "../../contexts/TutorialContext";
+
 function CreateWithAIModal({ onClose, isOpen }) {
+  // Tutorials
+
+  const {goBackAStep} = useTutorials();
+  
   const navigate = useNavigate();
 
   const [step, setStep] = useState(1); // 1: Choose folder, 2: Upload file, 3: Processing, 4: Success
@@ -38,6 +45,13 @@ function CreateWithAIModal({ onClose, isOpen }) {
     });
     return () => unsubscribeAuth();
   }, []);
+
+   useEffect(() => {
+      if(isOpen === undefined) return;
+      if(!isOpen){
+        goBackAStep('create-deck')
+      }
+    }, [isOpen]);
 
   // Fetching folders with proper query (similar to first modal)
   useEffect(() => {

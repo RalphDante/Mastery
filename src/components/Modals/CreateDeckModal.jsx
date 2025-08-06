@@ -4,8 +4,12 @@ import { db, auth } from "../../api/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
+import { useTutorials } from "../../contexts/TutorialContext";
 
 function CreateDeckModal({ uid, onClose, isOpen }) {
+  const [didCompleteStep, setDidCompleteStep] = useState(false);
+  const [wasCancelled, setWasCancelled] = useState(false);
+  const {goBackAStep} = useTutorials();
 
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -30,6 +34,39 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
       }
     });
   }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setDidCompleteStep(false);
+      setWasCancelled(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen === undefined || didCompleteStep) return;
+
+    const noFoldersFetched = folder.length === 0;
+
+    const shouldGoBack =
+      !isOpen &&
+      !didCompleteStep &&
+      (wasCancelled || (
+        (isCreatingNewFolder && !newFolderName.trim()) ||
+        (!isCreatingNewFolder && !selectedFolder && noFoldersFetched)
+      ));
+
+    if (shouldGoBack) {
+      goBackAStep('create-deck');
+    }
+  }, [
+    isOpen,
+    didCompleteStep,
+    wasCancelled,
+    isCreatingNewFolder,
+    newFolderName,
+    selectedFolder,
+    folder,
+]);
 
   // List of folders from Firestore
   useEffect(() => {
@@ -80,6 +117,8 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
       return;
     }
 
+    setDidCompleteStep(true);
+
     // Get folder name - either new folder name or find existing folder name by ID
     let folderName;
     let folderId;
@@ -110,7 +149,10 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 
-          onClick={onClose} 
+          onClick={()=>{
+            setWasCancelled(true);
+            onClose()
+          }} 
           className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 transition-colors"
           disabled={loading}
         >
@@ -192,7 +234,10 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
 
         <div className="flex justify-between mt-8">
           <button 
-            onClick={onClose} 
+            onClick={()=>{
+              setWasCancelled(true);
+              onClose()
+          }} 
             className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-slate-100 rounded-lg transition-all duration-200 font-semibold disabled:opacity-50"
             disabled={loading}
           >

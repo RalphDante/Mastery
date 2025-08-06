@@ -143,6 +143,14 @@ function FlashCardUI({
         return () => unsubscribe();
     }, []);
 
+    // Tutorial
+    useEffect(() => {
+        if (!deckId || isPublicDeck === undefined) return;
+        if (!isPublicDeck) {
+            completeTutorial('create-deck');
+        }
+    }, [deckId, isPublicDeck]);
+
     // --- NEW: Clean up orphaned progress documents ---
     const cleanupOrphanedProgress = useCallback(async (progressDocuments) => {
         if (!authUser) return [];

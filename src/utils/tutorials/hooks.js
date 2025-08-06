@@ -71,6 +71,7 @@ export function useTutorialState(authUser) {
     
     updateTutorial,
     advanceStep: (name) => updateTutorial(name, { step: tutorials[name].step + 1 }),
+    goBackAStep: (name) => updateTutorial(name, { step: tutorials[name]?.step - 1 }),
     completeTutorial: (name) => updateTutorial(name, { completed: true })
   };
 }

@@ -85,6 +85,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/about'); setIsMobileMenuOpen(false)}}>About</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/contactme'); setIsMobileMenuOpen(false)}}>Contact Me</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/blog'); setIsMobileMenuOpen(false)}}>Blog</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => {e.preventDefault(); navigate('/browse-decks'); setIsMobileMenuOpen(false)}}>Browse</a>
                     <div className="flex items-center space-x-2 border-t border-gray-700 pt-3 mt-3">
                         <span className="text-slate-300 font-medium">{userName}</span>
                         <SignUpBtn />
