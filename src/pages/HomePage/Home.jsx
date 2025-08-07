@@ -47,10 +47,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
         <div className="space-y-12">
 
           <UserDataProvider>
-            <div className='z-50'>
-              <WelcomeSection />
-              
-            </div>
+            <WelcomeSection />
             <OverallMasteryV2 />
             <LearningHubSection 
               onCreateDeckClick={onCreateDeckClick}

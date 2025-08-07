@@ -38,7 +38,7 @@ function FlashCardsDemoPage() {
 
     return (
         <>  
-            <div className={`${styles.flashCardsPageContainer} mt-10`}>
+            <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-10`}>
                 <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                     {/* <h1>Display Flash Cards</h1> */}
                     {/* {fileName ?  <h1 className="text-3xl font-bold tex10-white mb-2 break-words">{fileName}</h1> : <h1 className="text-3xl font-bold text-white mb-2">No File Name</h1>} */}
@@ -58,7 +58,7 @@ function FlashCardsDemoPage() {
                     />
 
                 </div>
-                <div className={styles.rightSideFlashCardsPageContainer}>
+                <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
                     {/* <h1>Right side</h1> */}
                     {/* <h1>Correct: {knowAnswer}</h1>
                     <h1>Wrong: {dontKnowAnswer}</h1>

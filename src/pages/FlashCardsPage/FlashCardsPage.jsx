@@ -255,15 +255,18 @@ function FlashCardsPage() {
 
     return (
         <>  
-        
-            <div className={`${styles.flashCardsPageContainer} mt-16`}>
-            <button
-            onClick={() => navigate('/')}
-            className="absolute top-4 left-4 sm:top-5 sm:left-6 md:top-6 md:left-12 flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+            <div className='flex w-full max-w-7xl justify-start  px-4 mt-2 mx-auto '>
+                <button
+                    onClick={() => navigate('/')}
+                    className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
 
-        >
-            <ArrowLeft className="w-4 h-4" />
-        </button>
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                </button>
+            </div>
+            
+            <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-3`}>
+                
            
                 <div className={`${styles.leftSideFlashCardsPageContainer} `}>
 

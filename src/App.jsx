@@ -139,32 +139,32 @@ function App(){
     };
 
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
         <div className="flex items-center">
           {/* Expandable text panel */}
           <div className={`bg-gray-800/90 backdrop-blur-sm text-white rounded-xl border border-gray-700/50 shadow-lg mr-2 transition-all duration-300 overflow-hidden ${
-            isExpanded ? 'opacity-100 max-w-xs' : 'opacity-0 max-w-0'
+            isExpanded ? 'opacity-100 max-w-[280px] sm:max-w-xs' : 'opacity-0 max-w-0'
           }`}>
-            <div className="px-4 py-3 whitespace-nowrap">
-              <p className="text-sm font-medium mb-2">Found a bug?</p>
+            <div className="px-3 py-2 sm:px-4 sm:py-3">
+              <p className="text-xs sm:text-sm font-medium mb-1 sm:mb-2 whitespace-nowrap">Found a bug?</p>
               <a 
-                href="https://discord.gg/e6DDzV4QYN" 
-                target="_blank" 
+                href="https://discord.gg/e6DDzV4QYN"
+                target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-sm text-purple-400 hover:text-purple-300 transition-colors"
+                className="inline-flex items-center text-xs sm:text-sm text-purple-400 hover:text-purple-300 transition-colors whitespace-nowrap"
               >
                 Report it on Discord →
               </a>
             </div>
           </div>
-
+          
           {/* Bug icon button */}
           <button
             onClick={toggleExpanded}
-            className="w-12 h-12 bg-gray-800/80 hover:bg-purple-600/90 backdrop-blur-sm text-white rounded-full border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 hover:scale-110 shadow-lg flex items-center justify-center"
+            className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800/80 hover:bg-purple-600/90 backdrop-blur-sm text-white rounded-full border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg flex items-center justify-center touch-manipulation"
             aria-label="Bug report"
           >
-            <span className="text-lg">🐛</span>
+            <span className="text-base sm:text-lg">🐛</span>
           </button>
         </div>
       </div>
