@@ -1,4 +1,4 @@
-import { ArrowLeft, Globe } from 'lucide-react';
+import { ArrowLeft, Globe, RotateCcw} from 'lucide-react';
 
 import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -365,9 +365,10 @@ function FlashCardsPage() {
                                 {studyMode === 'cramming' && (
                                     <button 
                                         onClick={() => {setRedoDeck(true)}}
-                                        className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200"
+                                        className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                                     >
-                                        🔄 Redo Deck
+                                        <RotateCcw className="w-5 h-5 mr-2" />
+                                        <span>Redo Deck</span>
                                     </button>
                                 )}
 
@@ -376,9 +377,7 @@ function FlashCardsPage() {
                                         <button id="publishBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                                             onClick={handleSetToPublic}
                                         >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0 9c-5 0-9-4-9-9s4-9 9-9"></path>
-                                            </svg>
+                                            <Globe />
                                             <span>Make Public</span>
                                         </button>
 

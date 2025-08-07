@@ -647,6 +647,13 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             <i className="fa-solid fa-wand-magic-sparkles text-violet-400 text-xl"></i>
                             <span className="font-semibold text-slate-200">Generate with AI</span>
                         </button>
+                        <button 
+                            className="w-full flex items-center space-x-3 bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg"
+                            onClick={()=>navigate('/browse-decks')}
+                        >
+                            <i className="fa-solid fa-globe text-violet-400 text-xl"></i>
+                            <span className="font-semibold text-slate-200">Browse Public Decks</span>
+                        </button>
                     </div>
                 </div>
             </div>
