@@ -2,8 +2,11 @@ import { useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../../api/firebase'; // Adjust path
+import { useTutorials } from "../../contexts/TutorialContext";
 
 function ShowNavBar({children}){
+    const {isInTutorial} = useTutorials();
+    const isCreateDeckNotCompleted = isInTutorial('create-deck')
 
     const location = useLocation();
     const [showNavBar, setShowNavBar] = useState(false);
@@ -43,7 +46,7 @@ function ShowNavBar({children}){
     }, [location, authUser, authLoading]);
 
     return(
-        <div className="sticky top-0 z-40">
+        <div className={`sticky top-0 ${isCreateDeckNotCompleted ? 'z-40' : 'z-30'} `}>
             {showNavBar && children}
         </div>
     )
