@@ -1,13 +1,14 @@
-import { Check, Star, Zap } from 'lucide-react';
+import { Check, Star, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
 function GoPremium() {
-  const { authUser } = useAuth();
+  const {authUser} = useAuth();
   const [paddleLoaded, setPaddleLoaded] = useState(false);
   const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$4.99');
   const [masteryStudyProYearlyPrice, setMasteryStudyProYearlyPrice] = useState('$39.99');
-  const [billingCycle, setBillingCycle] = useState('year'); // Default to annual
+  const [billingCycle, setBillingCycle] = useState('year'); // Default to annual for better conversion
+  const [showFeatures, setShowFeatures] = useState(false);
 
   // Product ID
   const masteryStudyPro = 'pro_01k1f8yahfd3b9xpm4ksbszm0n';
@@ -123,203 +124,192 @@ function GoPremium() {
   return (
     <div className="min-h-screen text-white">
       {/* Minimal Header */}
-      <div className="flex justify-between items-center p-6">
-        <h1 className="text-2xl font-bold text-violet-300">Mastery</h1>
-        <div className="text-sm text-violet-300/70">raprapdante75</div>
-      </div>
+      <nav className="relative z-10 flex justify-between items-center p-3 max-w-7xl mx-auto" role="navigation" aria-label="Main navigation">
+        <div className="flex items-center space-x-2">
+          <img 
+            src="/images/brain-21.svg" 
+            alt="Mastery AI Flashcard Generator Logo"
+            className="w-9 h-9"
+            width="36"
+            height="36"
+          />
+          <span className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+            Mastery
+          </span>
+        </div>
+      </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-0">
+      <div className="max-w-4xl mx-auto px-6 py-0">
         {/* Hero Section */}
-        <div className="text-center mb-4">
-          <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
-            Unlock Your Learning
-            <br />Potential
+        <div className="text-center mb-8">
+          <h2 className="text-5xl md:text-6xl font-bold mb-4 pb-3 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
+            Your study sessions are about to get way better
           </h2>
+        
         </div>
 
-        {/* Billing Cycle Toggle - Annual First */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-white/10 p-1 rounded-lg border border-violet-500/30">
-            <button 
-              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'year' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
-              onClick={() => setBillingCycle('year')}
-            >
-              Annually
-              <span className="ml-2 text-xs bg-green-500 text-white px-2 py-1 rounded-full">SAVE 33%</span>
-            </button>
-            <button 
-              className={`px-6 py-2 rounded-md transition-all ${billingCycle === 'month' ? 'bg-violet-600 text-white' : 'text-violet-300'}`}
-              onClick={() => setBillingCycle('month')}
-            >
-              Monthly
-            </button>
-          </div>
-        </div>
-
-        {/* Pricing Cards - Only Free and Pro */}
-        <div className="grid md:grid-cols-2 gap-8 mb-16 max-w-4xl mx-auto">
-          {/* Basic */}
-          <div className="bg-white/5 p-8 rounded-2xl border border-violet-500/20 relative">
-            <div className="flex items-center mb-4">
-              <Zap className="w-6 h-6 text-violet-400 mr-2" />
-              <h3 className="text-2xl font-bold">Basic</h3>
-            </div>
-            <div className="mb-6">
-              <span className="text-4xl font-bold">Free</span>
-            </div>
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                100 AI flashcards/month
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                5 decks maximum
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Basic spaced repetition
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Email support
-              </li>
-            </ul>
-            <button className="w-full py-3 px-6 bg-violet-600/30 hover:bg-violet-600/50 border border-violet-500/50 rounded-xl font-semibold transition-all">
-              Get Started
-            </button>
-          </div>
-
-          {/* Pro - Most Popular */}
-          <div className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-8 rounded-2xl border-2 border-violet-400 relative transform scale-105 shadow-2xl shadow-violet-500/25">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <div className="bg-gradient-to-r from-violet-500 to-purple-600 px-6 py-2 rounded-full text-sm font-bold">
-                MOST POPULAR
+        {/* Pricing Cards - Quizlet Style */}
+        <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
+          {/* Annual - Best Deal */}
+          <div className="bg-white rounded-2xl p-8 text-gray-800 relative shadow-xl">
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+              <div className="bg-yellow-400 px-4 py-1 rounded-full text-sm font-bold text-black">
+                Best deal
               </div>
             </div>
-            <div className="flex items-center mb-4">
-              <Star className="w-6 h-6 text-yellow-400 mr-2" />
-              <h3 className="text-2xl font-bold">Pro</h3>
-            </div>
             
-            {/* Dynamic Pricing Display */}
-            <div className="mb-6">
-              {billingCycle === 'year' ? (
-                <>
-                  <span className="text-4xl font-bold">{masteryStudyProYearlyPrice}</span>
-                  <span className="text-violet-300/70">/year</span>
-                  <div className="text-sm text-green-400 font-semibold">Save $20 compared to monthly!</div>
-                  <div className="text-xs text-violet-300/70 mt-1">That's just $3.33/month</div>
-                </>
-              ) : (
-                <>
-                  <span className="text-4xl font-bold">{masteryStudyProMonthlyPrice}</span>
-                  <span className="text-violet-300/70">/month</span>
-                  <div className="text-sm text-violet-300/70">Annual plan saves you $20/year</div>
-                </>
-              )}
-            </div>
-
-            <ul className="space-y-3 mb-8">
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                <strong>Unlimited</strong> AI flashcards
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                <strong>Unlimited</strong> decks
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                <strong>Smart</strong> spaced repetition
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Priority support
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Progress analytics
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Custom study schedules
-              </li>
-              <li className="flex items-center">
-                <Check className="w-5 h-5 mr-3 text-green-400" />
-                Share & copy decks
-              </li>
-            </ul>
-            <button 
-              className="w-full py-4 px-6 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 rounded-xl font-bold text-lg transition-all transform hover:scale-[1.02]"
-              onClick={() => openCheckout(billingCycle === 'month' ? priceIds.proMonthly : priceIds.proYearly, 'pro')}
-            >
-              {billingCycle === 'year' ? 'Get Pro Annual' : 'Start Pro Trial'}
-            </button>
-            
-            {/* Value Proposition */}
-            {billingCycle === 'year' && (
-              <div className="mt-4 text-center">
-                <div className="text-xs text-violet-300/80">
-                  Perfect for the entire academic year
-                </div>
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-4">Annual</h3>
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-1">Billed at $39.99/year, that's like</div>
+                <div className="text-5xl font-bold text-black mb-1">$3.33</div>
+                <div className="text-lg text-gray-600">/month</div>
               </div>
-            )}
+              <div className="text-sm text-gray-600 mb-6">Start with free 7-day trial</div>
+              <button 
+                className="w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
+                onClick={() => openCheckout(priceIds.proYearly, 'pro')}
+              >
+                Start your free trial
+              </button>
+            </div>
+          </div>
+
+          {/* Monthly */}
+          <div className="bg-white rounded-2xl p-8 text-gray-800 shadow-lg">
+            <div className="text-center">
+              <h3 className="text-2xl font-bold mb-4">Monthly</h3>
+              <div className="mb-4">
+                <div className="text-sm text-gray-600 mb-1">Billed today at</div>
+                <div className="text-5xl font-bold text-black mb-1">$4.99</div>
+                <div className="text-lg text-gray-600">/month</div>
+              </div>
+              <div className="text-sm text-gray-600 mb-6">Recurring billing. Cancel anytime.</div>
+              <button 
+                className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 rounded-xl font-bold text-lg transition-all text-black"
+                onClick={() => openCheckout(priceIds.proMonthly, 'pro')}
+              >
+                Get Mastery Plus
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Value Props Section */}
+        {/* What's Included - Expandable */}
         <div className="text-center mb-12">
-          <h3 className="text-2xl font-bold mb-8">Why Students Choose Mastery</h3>
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
-              <div className="text-3xl mb-3">🧠</div>
-              <h4 className="font-semibold mb-2">AI-Powered Generation</h4>
-              <p className="text-sm text-violet-300/80">Turn any document or notes into flashcards instantly</p>
+          <button 
+            className="flex items-center justify-center mx-auto text-violet-300 hover:text-white transition-colors"
+            onClick={() => setShowFeatures(!showFeatures)}
+          >
+            <span className="mr-2">What's included?</span>
+            {showFeatures ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+          </button>
+          
+          {showFeatures && (
+            <div className="mt-6 grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+              {/* Free Features */}
+              <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
+                <div className="flex items-center mb-4">
+                  <Zap className="w-6 h-6 text-violet-400 mr-2" />
+                  <h3 className="text-xl font-bold">Basic (Free)</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    20 AI generations/month
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    100 total cards
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    5 decks max
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    2 Smart Review decks
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    10 folders max
+                  </li>
+                </ul>
+              </div>
+
+              {/* Pro Features */}
+              <div className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-6 rounded-xl border border-violet-400">
+                <div className="flex items-center mb-4">
+                  <Star className="w-6 h-6 text-yellow-400 mr-2" />
+                  <h3 className="text-xl font-bold">Plus</h3>
+                </div>
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    Unlimited AI generations
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    Unlimited cards
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    Unlimited decks
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    Unlimited Smart Review decks
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-4 h-4 mr-2 text-green-400" />
+                    Unlimited folders
+                  </li>
+                </ul>
+              </div>
             </div>
-            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
-              <div className="text-3xl mb-3">📈</div>
-              <h4 className="font-semibold mb-2">Proven Results</h4>
-              <p className="text-sm text-violet-300/80">Smart spaced repetition increases retention by 3x</p>
-            </div>
-            <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
-              <div className="text-3xl mb-3">⚡</div>
-              <h4 className="font-semibold mb-2">Save Time</h4>
-              <p className="text-sm text-violet-300/80">Study smarter, not harder. Focus on what matters.</p>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Social Proof */}
         <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-4">
+          {/* <div className="flex items-center justify-center mb-6">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+              <Star key={i} className="w-6 h-6 text-yellow-400 fill-current" />
             ))}
-            <span className="ml-2 text-violet-300">4.9/5 from 2,847 reviews</span>
-          </div>
+            <span className="ml-3 text-lg text-violet-300">4.9/5 from 2,847 reviews</span>
+          </div> */}
+          
           <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
               <p className="text-sm mb-3">"Mastery helped me ace my finals. The spaced repetition is game-changing!"</p>
-              <div className="text-violet-300 text-sm">- Sarah, MIT</div>
+              <div className="text-violet-300 text-sm font-semibold">- Sarah, MIT</div>
             </div>
             <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
               <p className="text-sm mb-3">"Finally a flashcard app that actually understands how I learn."</p>
-              <div className="text-violet-300 text-sm">- Marcus, Stanford</div>
+              <div className="text-violet-300 text-sm font-semibold">- Marcus, Stanford</div>
             </div>
             <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
               <p className="text-sm mb-3">"The annual plan paid for itself after my first semester. Best investment!"</p>
-              <div className="text-violet-300 text-sm">- Elena, Harvard</div>
+              <div className="text-violet-300 text-sm font-semibold">- Elena, Harvard</div>
             </div>
           </div>
         </div>
 
-        {/* Guarantee */}
-        <div className="text-center bg-gradient-to-r from-violet-500/10 to-purple-600/10 p-8 rounded-2xl border border-violet-500/30">
-          <h3 className="text-2xl font-bold mb-4">30-Day Money-Back Guarantee</h3>
+        {/* Risk Reduction */}
+        <div className="text-center bg-gradient-to-r from-green-500/10 to-blue-500/10 p-8 rounded-2xl border border-green-500/30 mb-8">
+          <h3 className="text-2xl font-bold mb-4">✅ 30-Day Money-Back Guarantee</h3>
           <p className="text-violet-200/80 max-w-2xl mx-auto">
-            Not satisfied? Get a full refund within 30 days, no questions asked. 
-            We're confident Mastery will transform your learning.
+            Try risk-free. If you're not getting better grades within 30 days, get a full refund. No questions asked.
+          </p>
+        </div>
+
+        {/* Urgency Element */}
+        <div className="text-center bg-gradient-to-r from-red-500/10 to-orange-500/10 p-6 rounded-xl border border-red-500/30">
+          <p className="text-lg font-semibold text-orange-300">
+            🔥 Limited time: Save $20/year with annual billing
+          </p>
+          <p className="text-sm text-orange-200/80 mt-2">
+            Join thousands of students already studying smarter
           </p>
         </div>
       </div>
