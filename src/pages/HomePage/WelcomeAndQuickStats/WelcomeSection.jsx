@@ -1,6 +1,6 @@
 // OptimizedWelcomeSection.js
 import React from 'react';
-import { useUserData, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../hooks/useUserData';
+import { useUserData, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../contexts/useUserData';
 import { useNavigate } from 'react-router-dom';
 import { useTutorials } from '../../../contexts/TutorialContext';
 

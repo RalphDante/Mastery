@@ -13,7 +13,6 @@ import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
 import OverallMastery from './Overall Mastery/OverallMastery.jsx';
 import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
-import { UserDataProvider } from '../../hooks/useUserData.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -46,7 +45,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="space-y-12">
 
-          <UserDataProvider>
             <WelcomeSection />
             <OverallMasteryV2 />
             <LearningHubSection 
@@ -54,7 +52,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               onCreateWithAIModalClick={onCreateWithAIModalClick}
             />
 
-          </UserDataProvider>
 
 
           

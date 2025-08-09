@@ -238,7 +238,7 @@ function CreateDeck() {
                 updatedAt: serverTimestamp(),
                 subscriptionTier: "free", // Default value
                 isPublic: false,
-                deckCount: 1
+                // deckCount: 1
             });
             return folderRef.id;
         } catch (error) {
@@ -337,31 +337,19 @@ function CreateDeck() {
     };
 
     const createNewDeck = async () => {
-        const batch = writeBatch(db); // Initialize a Firestore write batch
-    
+        const batch = writeBatch(db);
+        
         try {
             let actualFolderId = folderId;
     
             // If we need to create a new folder, do it first
             if (isNewFolder) {
                 actualFolderId = await createNewFolder(folderName, authUser.uid);
-            } else {
-                // Increment deckCount for existing folder
-                const folderDocRef = doc(db, 'folders', actualFolderId);
-                
-                // Get the current folder document to read the current deckCount
-                const folderDoc = await getDoc(folderDocRef);
-                const currentDeckCount = folderDoc.exists() ? (folderDoc.data().deckCount || 0) : 0;
-                
-                // Update the folder with incremented deckCount
-                await updateDoc(folderDocRef, {
-                    deckCount: currentDeckCount + 1,
-                    updatedAt: serverTimestamp(),
-                });
             }
+            // REMOVED: Manual folder deckCount increment - let Cloud Function handle it
     
             // Create the deck document
-            const deckRef = doc(collection(db, 'decks')); // Get a new document reference with an auto-generated ID
+            const deckRef = doc(collection(db, 'decks'));
             batch.set(deckRef, {
                 title: fileName,
                 description: fileDescription === "" ? "No Description" : fileDescription,
@@ -370,14 +358,14 @@ function CreateDeck() {
                 isPublic: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                cardCount: flashCards.length,
+                // cardCount: flashCards.length, // This is fine - it's initial data
                 tags: []
             });
     
             // Add cards to the deck's cards subcollection
             const cardsRef = collection(db, 'decks', deckRef.id, 'cards');
             flashCards.forEach((flashCard, index) => {
-                const newCardDocRef = doc(cardsRef); // Get a new document reference for each card
+                const newCardDocRef = doc(cardsRef);
                 batch.set(newCardDocRef, {
                     question: flashCard.question,
                     answer: flashCard.answer,
@@ -388,11 +376,13 @@ function CreateDeck() {
                 });
             });
     
-            await batch.commit(); // Commit all operations in the batch
-
+            await batch.commit();
+            // Cloud Functions will automatically:
+            // 1. Increment user's deck count and card count
+            // 2. Increment folder's deck count
+    
             completeTutorial('create-deck');
     
-            // Navigate to the deck view
             navigate(`/flashcards/${deckRef.id}`, {
                 state: {
                     deckId: deckRef.id,

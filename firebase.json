@@ -10,7 +10,10 @@
       {
         "source": "/sitemap.xml",
         "headers": [
-          { "key": "Content-Type", "value": "application/xml" }
+          {
+            "key": "Content-Type",
+            "value": "application/xml"
+          }
         ]
       }
     ],
@@ -20,5 +23,18 @@
         "destination": "/index.html"
       }
     ]
-  }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
 }

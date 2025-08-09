@@ -2,7 +2,7 @@
 import React from 'react';
 import { Trophy, Flame, Target, TrendingUp, Clock, Brain, Star, Zap, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import { useStudyStats, useCardsDue } from '../../../hooks/useUserData';
+import { useStudyStats, useCardsDue } from '../../../contexts/useUserData';
 
 function OverallMasteryV2(){
   const { dailySessions, todaySession, currentStreak, longestStreak } = useStudyStats();

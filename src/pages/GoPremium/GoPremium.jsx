@@ -189,7 +189,7 @@ function GoPremium() {
                 className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 rounded-xl font-bold text-lg transition-all text-black"
                 onClick={() => openCheckout(priceIds.proMonthly, 'pro')}
               >
-                Get Mastery Plus
+                Get Mastery Pro
               </button>
             </div>
           </div>
@@ -241,7 +241,7 @@ function GoPremium() {
               <div className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-6 rounded-xl border border-violet-400">
                 <div className="flex items-center mb-4">
                   <Star className="w-6 h-6 text-yellow-400 mr-2" />
-                  <h3 className="text-xl font-bold">Plus</h3>
+                  <h3 className="text-xl font-bold">Pro</h3>
                 </div>
                 <ul className="space-y-2 text-sm text-left">
                   <li className="flex items-center">
@@ -279,7 +279,7 @@ function GoPremium() {
             <span className="ml-3 text-lg text-violet-300">4.9/5 from 2,847 reviews</span>
           </div> */}
           
-          <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          {/* <div className="grid md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
               <p className="text-sm mb-3">"Mastery helped me ace my finals. The spaced repetition is game-changing!"</p>
               <div className="text-violet-300 text-sm font-semibold">- Sarah, MIT</div>
@@ -292,24 +292,34 @@ function GoPremium() {
               <p className="text-sm mb-3">"The annual plan paid for itself after my first semester. Best investment!"</p>
               <div className="text-violet-300 text-sm font-semibold">- Elena, Harvard</div>
             </div>
+          </div> */}
+        </div>
+
+
+        {/* Alternative Option 2 - Clean card style */}
+        {/* Risk Reduction - Card Style */}
+        <div className="bg-white rounded-xl p-6 mb-8 shadow-sm">
+          <div className="flex items-start">
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-4 flex-shrink-0">
+              <Check className="w-5 h-5 text-green-600" />
+            </div>
+            <div className="text-gray-800">
+              <h3 className="font-semibold text-lg mb-1">30-Day Money-Back Guarantee</h3>
+              <p className="text-gray-600 text-sm">
+                Try risk-free. Not satisfied? Get a full refund within 30 days of your first payment.
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Risk Reduction */}
-        <div className="text-center bg-gradient-to-r from-green-500/10 to-blue-500/10 p-8 rounded-2xl border border-green-500/30 mb-8">
-          <h3 className="text-2xl font-bold mb-4">✅ 30-Day Money-Back Guarantee</h3>
-          <p className="text-violet-200/80 max-w-2xl mx-auto">
-            Try risk-free. If you're not getting better grades within 30 days, get a full refund. No questions asked.
+        {/* Urgency Element - Card Style */}
+        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4 text-center">
+          <p className="text-violet-800 font-medium">
+            <span className="inline-block w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
+            Limited time: Save $20/year with annual billing
           </p>
-        </div>
-
-        {/* Urgency Element */}
-        <div className="text-center bg-gradient-to-r from-red-500/10 to-orange-500/10 p-6 rounded-xl border border-red-500/30">
-          <p className="text-lg font-semibold text-orange-300">
-            🔥 Limited time: Save $20/year with annual billing
-          </p>
-          <p className="text-sm text-orange-200/80 mt-2">
-            Join thousands of students already studying smarter
+          <p className="text-violet-600 text-sm mt-1">
+            Join 10,000+ students studying smarter
           </p>
         </div>
       </div>

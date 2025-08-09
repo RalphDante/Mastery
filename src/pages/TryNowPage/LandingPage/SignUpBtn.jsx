@@ -22,33 +22,85 @@ function SignUpBtn() {
     const createUserProfileInFirestore = async (user) => {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
-
+    
         if (!userDoc.exists()) {
             console.log('📝 Creating new Firestore user profile...');
+            
+            // Get current timestamp for reset tracking
+            const now = new Date();
+            const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            
             await setDoc(userRef, {
                 email: user.email,
                 displayName: user.displayName || "New User",
-                createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : new Date(),
-                lastActiveAt: new Date(),
+                createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : now,
+                lastActiveAt: now,
                 lastStudyDate: null,
+                
+                // Keep existing stats (but remove totalCards since we're using limits.currentCards now)
                 stats: {
                     totalReviews: 0,
                     weeklyReviews: 0,
                     currentStreak: 0,
                     longestStreak: 0,
-                    totalDecks: 0,
-                    totalCards: 0
+                    totalDecks: 0
+                    // Removed totalCards - using limits.currentCards instead
                 },
+                
+                // Add subscription info
                 subscription: {
                     tier: "free", // Default to free tier
                     expiresAt: null
+                },
+                
+                // Add new limits field with free tier defaults
+                limits: {
+                    // Current usage (starts at 0 for new users)
+                    aiGenerationsUsed: 0,
+                    currentCards: 0,
+                    currentDecks: 0,
+                    smartReviewDecks: 0,
+                    currentFolders: 0,
+                    
+                    // Reset tracking
+                    aiGenerationsResetAt: nextMonthStart, // Next month start
+                    
+                    // Tier-based maximums (free tier limits)
+                    maxAiGenerations: 20,
+                    maxCards: 100,
+                    maxDecks: 5,
+                    maxSmartReviewDecks: 2,
+                    maxFolders: 10
+                },
+                
+                // Add tutorials tracking
+                tutorials: {
+                    "create-deck": { 
+                        completed: false, 
+                        step: 1 
+                    },
+                    "smart-review": { 
+                        completed: false, 
+                        step: 1, 
+                    },
+                    "global-review": { 
+                        completed: false, 
+                        step: 1 
+                    },
+                    "deck-sharing": { 
+                        completed: false, 
+                        step: 1 
+                    }
                 }
             });
+            
             console.log("✅ Firestore profile created for:", user.email);
         } else {
             // Profile exists, just update last active time
             console.log('🔄 Updating lastActiveAt for existing user:', user.email);
-            await setDoc(userRef, { lastActiveAt: new Date() }, { merge: true });
+            await setDoc(userRef, { 
+                lastActiveAt: now 
+            }, { merge: true });
         }
     };
 

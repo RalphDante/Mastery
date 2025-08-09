@@ -1,6 +1,8 @@
 import { useDropzone } from 'react-dropzone';
 import * as pdfjsLib from 'pdfjs-dist';
 import { useState, useEffect, useRef } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -10,6 +12,10 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     const [showCamera, setShowCamera] = useState(false);
     const [stream, setStream] = useState(null);
     const videoRef = useRef(null);
+
+    const navigate = useNavigate();
+
+    const [topic, setTopic] = useState("");
 
     const loadTesseract = () => {
         return new Promise((resolve, reject) => {
@@ -581,6 +587,180 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             }
         }
     };
+    
+    const handleGenerateOnTopic = async () => {
+        // Validate that a topic has been entered
+        if (!topic.trim()) {
+            alert('Please enter a topic first');
+            return;
+        }
+    
+        setLoading(true);
+        setStatus('Generating flashcards for topic...');
+    
+        const makeAPICall = async () => {
+            console.log('Generating flashcards for topic:', topic);
+            
+            // Check if API key is available
+            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
+            }
+    
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `You are a flashcard generator. Create exactly 25 educational flashcards about "${topic}".
+    
+                            CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
+                            
+                            Format: [{"question":"Your question here","answer":"Your answer here"}]
+                            
+                            Requirements:
+                            - Questions should be clear, specific, and educational
+                            - Answers should be concise but complete and accurate
+                            - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
+                            - No line breaks within strings
+                            - Exactly 25 flashcards
+                            - Double quotes only, no single quotes
+                            - Cover different aspects and difficulty levels of the topic
+                            - Include definitions, examples, processes, and key concepts
+                            - Make questions that would help someone learn about "${topic}"
+                            
+                            Topic: ${topic}`
+                        }]
+                    }]
+                })
+            });
+    
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            }
+    
+            const data = await response.json();
+            
+            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+                throw new Error('Invalid response from AI service');
+            }
+            
+            return data.candidates[0].content.parts[0].text;
+        };
+    
+        try {
+            // Use the existing retry with backoff function
+            const flashCardsText = await retryWithBackoff(makeAPICall);
+            console.log('Raw AI response for topic:', flashCardsText);
+            
+            // Use the existing JSON extraction and cleaning logic
+            const extractAndCleanJSON = (text) => {
+                let jsonText = text;
+                
+                // Remove markdown code blocks
+                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+                if (jsonMatch) {
+                    jsonText = jsonMatch[1].trim();
+                }
+                
+                // Find JSON array bounds
+                const startIndex = jsonText.indexOf('[');
+                const lastIndex = jsonText.lastIndexOf(']');
+                
+                if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+                    jsonText = jsonText.substring(startIndex, lastIndex + 1);
+                }
+                
+                // Clean up common issues
+                jsonText = jsonText
+                    .replace(/\\(?!["\\/bfnrt])/g, '\\\\')
+                    .replace(/\\\\_/g, '_')
+                    .replace(/\\'/g, "'")
+                    .replace(/\n/g, ' ')
+                    .replace(/\r/g, ' ')
+                    .replace(/\t/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                
+                return jsonText;
+            };
+    
+            const cleanJSON = extractAndCleanJSON(flashCardsText);
+            console.log('Cleaned JSON for topic:', cleanJSON);
+            
+            // Try parsing with error handling
+            let parsedFlashCards;
+            try {
+                parsedFlashCards = JSON.parse(cleanJSON);
+            } catch (parseError) {
+                console.error('JSON parse error:', parseError);
+                
+                // Try to fix common JSON issues
+                let fixedJSON = cleanJSON;
+                fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
+                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
+                fixedJSON = fixedJSON.replace(/,,+/g, ',');
+                
+                try {
+                    parsedFlashCards = JSON.parse(fixedJSON);
+                } catch (secondParseError) {
+                    // Manual extraction as fallback
+                    const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
+                    if (flashcardMatches && flashcardMatches.length > 0) {
+                        parsedFlashCards = flashcardMatches.map(match => {
+                            try {
+                                return JSON.parse(match);
+                            } catch (e) {
+                                return null;
+                            }
+                        }).filter(card => card !== null);
+                    } else {
+                        throw new Error('Could not extract flashcards from response');
+                    }
+                }
+            }
+    
+            // Validate the result
+            if (!Array.isArray(parsedFlashCards)) {
+                throw new Error('AI response is not an array of flashcards');
+            }
+    
+            const validateFlashcard = (card) => {
+                return card && 
+                       typeof card === 'object' && 
+                       card.question && 
+                       card.answer &&
+                       typeof card.question === 'string' &&
+                       typeof card.answer === 'string' &&
+                       card.question.trim().length > 0 &&
+                       card.answer.trim().length > 0;
+            };
+    
+            const validFlashCards = parsedFlashCards.filter(validateFlashcard);
+    
+            if (validFlashCards.length === 0) {
+                throw new Error('No valid flashcards were generated');
+            }
+    
+            console.log(`Generated ${validFlashCards.length} valid flashcards for topic: ${topic}`);
+            
+            // Clear the topic input after successful generation
+            setTopic('');
+            
+            // Call the success callback with the generated flashcards
+            onSuccess(validFlashCards);
+    
+        } catch (error) {
+            console.error("Error generating flashcards for topic:", error);
+            alert(`Error generating flashcards for topic "${topic}": ${error.message}`);
+        } finally {
+            setLoading(false);
+            setStatus('');
+        }
+    };
 
     const sendToAI = async (text) => {
         const makeAPICall = async () => {
@@ -778,93 +958,143 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
     return (
         <div className="w-full">
-            {!showCamera ? (
-                <div className="flex flex-col items-center gap-4">
-                    <div className="flex gap-3">
-                        <button 
-                            {...getRootProps()} 
-                            className={`btn ${loading ? 'btn-disabled' : 'btn-primary'} px-6 py-3`}
-                            disabled={loading}
-                        >
-                            {loading ? 'Processing...' : 'Choose File'}
-                        </button>
-                        
-                        <button 
-                            onClick={startCamera}
-                            className={`btn ${loading ? 'btn-disabled' : 'btn-secondary'} px-6 py-3 flex items-center gap-2`}
-                            disabled={loading}
-                        >
-                            <span>
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            </span>
-                            Take Photo
-                        </button>
-                    </div>
-                    <input {...getInputProps()} />
-                    
-                    {status && (
-                        <div className="text-sm text-gray-600 flex items-center gap-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                            {status}
-                        </div>
-                    )}
-                    
-                    <div className="text-xs text-gray-500 text-center max-w-md">
-                        Supports: PDF (with OCR), DOCX, PPTX, TXT, and Images (PNG, JPG, etc.)
-                        <br />
-                        📸 Or take a photo of your notes with the camera!
-                        <br />
-                        Will automatically perform OCR on image-based content using Tesseract.js
-                    </div>
-                </div>
-            ) : (
-                <div className="flex flex-col items-center gap-4">
-                    <div className="relative">
-                        <video
-                            ref={videoRef}
-                            className="w-full max-w-md h-auto rounded-lg border-2 border-gray-300"
-                            autoPlay
-                            playsInline
-                            muted
-                        />
-                        
-                        {/* Camera overlay for better UX */}
-                        <div className="absolute inset-0 pointer-events-none">
-                            <div className="absolute top-4 left-4 right-4 text-white bg-black bg-opacity-50 p-2 rounded text-sm text-center">
-                                Position your notes clearly in the frame
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="flex gap-3">
-                        <button 
-                            onClick={capturePhoto}
-                            className="btn btn-primary px-8 py-3 text-lg flex items-center gap-2"
-                            disabled={loading}
-                        >
-                            <span>
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg> 
-                            </span> 
-                            Capture
-                        </button>
-                        
-                        <button 
-                            onClick={stopCamera}
-                            className="btn btn-outline px-6 py-3 bg-red-400"
-                            disabled={loading}
-                        >
-                            Cancel
-                        </button>
+    {!showCamera ? (
+        <div className="space-y-8">
+            {/* Main Topic Input - Made much more prominent */}
+            <div className="relative">
+                <textarea
+                    id="topic-input"
+                    className="w-full h-20 p-4 pr-14 bg-gray-700 bg-opacity-70 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 resize-none text-lg scrollbar-hide"
+                    placeholder="Enter any topic you want to study... (e.g., World War II, Photosynthesis)"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    rows={2}
+                />
+                <button
+                    type="submit"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
+                        topic.length === 0 ? 'opacity-30' : 'opacity-100 hover:bg-purple-700'
+                    } bg-purple-600 text-white p-3 rounded-lg transition-all duration-200`}
+                    aria-label="Generate"
+                    onClick={handleGenerateOnTopic}
+                    disabled={topic.length === 0}
+                >
+                    <ArrowRight className="w-6 h-6" />
+                </button>
+            </div>
+
+            <div className="text-center" style={{ marginTop: '-0.1rem' }}>
+                <button 
+                    onClick={() => navigate('/browse-decks')}
+                    className="text-purple-400 hover:text-purple-300 text-sm font-medium inline-flex items-center gap-2 transition-colors duration-200"
+                >
+                    💡 Need inspiration? →
+                </button>
+            </div>
+
+            {/* Divider */}
+            <div className="flex items-center gap-4">
+                <div className="flex-1 h-px bg-gray-600"></div>
+                <span className="text-gray-400 text-sm font-medium">OR UPLOAD YOUR NOTES</span>
+                <div className="flex-1 h-px bg-gray-600"></div>
+            </div>
+
+            {/* Upload Options - More prominent */}
+            <div className="grid grid-cols-2 gap-4">
+                
+                
+                <button 
+                    onClick={startCamera}
+                    className={`${
+                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-primary hover:scale-105'
+                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
+                    disabled={loading}
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Take Photo
+                </button>
+
+                <button 
+                    {...getRootProps()} 
+                    className={`${
+                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-secondary hover:scale-105'
+                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
+                    disabled={loading}
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    {loading ? 'Processing...' : 'Upload File'}
+                </button>
+            </div>
+
+            <input {...getInputProps()} />
+            
+            {/* Status indicator */}
+            {status && (
+                <div className="bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg p-3">
+                    <div className="text-sm text-blue-200 flex items-center gap-3">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+                        <span className="font-medium">{status}</span>
                     </div>
                 </div>
             )}
+            
+            {/* Condensed file format info */}
+            <div className="bg-gray-800 bg-opacity-50 rounded-lg">
+                <div className="text-xs text-gray-400 text-center">
+                    <div className="font-medium text-gray-300 mb-1">✨ Supported formats:</div>
+                    <div>PDF, DOCX, PPTX, TXT, Images (PNG, JPG) • Auto OCR included</div>
+                </div>
+            </div>
         </div>
+    ) : (
+        /* Camera UI - Keep this mostly the same but with slight improvements */
+        <div className="flex flex-col items-center gap-6">
+            <div className="relative w-full max-w-md">
+                <video
+                    ref={videoRef}
+                    className="w-full h-auto rounded-xl border-2 border-purple-500 shadow-lg"
+                    autoPlay
+                    playsInline
+                    muted
+                />
+                
+                {/* Improved camera overlay */}
+                <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-4 left-4 right-4 text-white bg-black bg-opacity-70 p-3 rounded-lg text-sm text-center font-medium">
+                        📝 Position your notes clearly in the frame
+                    </div>
+                </div>
+            </div>
+            
+            <div className="flex gap-4">
+                <button 
+                    onClick={capturePhoto}
+                    className="btn btn-primary px-8 py-4 text-lg font-semibold flex items-center gap-3 rounded-xl hover:scale-105 transition-all duration-200"
+                    disabled={loading}
+                >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg> 
+                    Capture Photo
+                </button>
+                
+                <button 
+                    onClick={stopCamera}
+                    className="btn btn-outline px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all duration-200"
+                    disabled={loading}
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+    )}
+</div>
     );
 }
 

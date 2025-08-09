@@ -39,7 +39,10 @@ import DisplayFlashCardsPage from './pages/CreateDeckPage/DisplayFlashCards.jsx'
 //TryNowPage
 import TryNowPage from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
-
+//Contexts
+import { UserDataProvider } from './contexts/useUserData.jsx';
+import { TutorialProvider } from './contexts/TutorialContext';
+import { AuthProvider } from './contexts/AuthContext';
 
 
 import SignOutBtn from './components/SignOutBtn/SignOutBtn.jsx'
@@ -76,7 +79,7 @@ import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDe
 // Terms of Service
 import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
 import PublicDecksPage from './pages/PublicDecks/PublicDecksPage.jsx';
-import { TutorialProvider } from './contexts/TutorialContext';
+
 
 
 function App(){
@@ -184,6 +187,8 @@ function App(){
   }, []);
 
   return (
+    <AuthProvider>
+    <UserDataProvider>
     <TutorialProvider authUser={authUser}>
       <Router>
         <div className="min-h-screen flex flex-col">
@@ -286,6 +291,8 @@ function App(){
         </div>
       </Router>
     </ TutorialProvider>
+    </UserDataProvider>
+    </AuthProvider>
   );
 }
 
