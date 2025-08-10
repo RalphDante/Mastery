@@ -158,7 +158,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     const details = error.details;
                     alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
                         details.tier === 'free' 
-                            ? 'Upgrade to Premium for unlimited generations!' 
+                            ? 'Upgrade to Pro for unlimited generations!' 
                             : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
                     }`);
                 } else {
@@ -574,7 +574,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     const details = error.details;
                     alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
                         details.tier === 'free' 
-                            ? 'Upgrade to Premium for unlimited generations!' 
+                            ? 'Upgrade to Pro for unlimited generations!' 
                             : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
                     }`);
                 } else {
@@ -792,7 +792,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 const details = error.details;
                 alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
                     details.tier === 'free' 
-                        ? 'Upgrade to Premium for unlimited generations!' 
+                        ? 'Upgrade to Pro for unlimited generations!' 
                         : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
                 }`);
             } else {

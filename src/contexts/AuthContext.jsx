@@ -205,6 +205,17 @@ export const AuthProvider = ({ children }) => {
         };
     };
 
+    const getFolderLimits = () => {
+        const limits = userProfile?.limits || {};
+        const maxFolders = limits.maxFolders || 10;
+        const currentUsage = limits.currentFolders || 0;
+
+        return {
+            maxFolders,
+            canGenerate: maxFolders === -1 || currentUsage < maxFolders
+        }
+    }
+
     const value = {
         // User state
         user,
@@ -224,7 +235,8 @@ export const AuthProvider = ({ children }) => {
         
         // Utility methods
         isPremium,
-        getAILimits
+        getAILimits,
+        getFolderLimits
     };
 
     return (

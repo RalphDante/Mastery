@@ -531,7 +531,7 @@ exports.trackAiGeneration = onCall(async (request) => {
           'limits.aiGenerationsUsed': 1,
           'limits.aiGenerationsResetAt': Timestamp.fromDate(nextMonthStart)
         });
-        
+        3
         console.log(`🔄 Reset AI generations for user ${userId}`);
       } else {
         // Just increment the count
@@ -609,56 +609,56 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
 // REVIEW SESSION TRACKING (aligned with your schema)
 // ======================
 
-exports.onReviewSessionCreate = onDocumentCreated('reviewSessions/{sessionId}', async (event) => {
-  try {
-    const snap = event.data;
-    const sessionData = snap.data();
-    const userId = sessionData.userId;
+// exports.onReviewSessionCreate = onDocumentCreated('reviewSessions/{sessionId}', async (event) => {
+//   try {
+//     const snap = event.data;
+//     const sessionData = snap.data();
+//     const userId = sessionData.userId;
     
-    if (!userId) {
-      console.error('No userId in review session:', event.params.sessionId);
-      return;
-    }
+//     if (!userId) {
+//       console.error('No userId in review session:', event.params.sessionId);
+//       return;
+//     }
     
-    // Update user stats and daily session
-    const batch = db.batch();
-    const userRef = db.collection('users').doc(userId);
+//     // Update user stats and daily session
+//     const batch = db.batch();
+//     const userRef = db.collection('users').doc(userId);
     
-    // Update user stats (denormalized)
-    batch.update(userRef, {
-      'stats.totalReviews': FieldValue.increment(sessionData.cardsReviewed || 0),
-      'stats.weeklyReviews': FieldValue.increment(sessionData.cardsReviewed || 0),
-      lastStudyDate: sessionData.endTime || FieldValue.serverTimestamp()
-    });
+//     // Update user stats (denormalized)
+//     batch.update(userRef, {
+//       'stats.totalReviews': FieldValue.increment(sessionData.cardsReviewed || 0),
+//       'stats.weeklyReviews': FieldValue.increment(sessionData.cardsReviewed || 0),
+//       lastStudyDate: sessionData.endTime || FieldValue.serverTimestamp()
+//     });
     
-    // Update or create daily session
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-    const dailySessionRef = db.collection('users').doc(userId).collection('dailySessions').doc(today);
+//     // Update or create daily session
+//     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+//     const dailySessionRef = db.collection('users').doc(userId).collection('dailySessions').doc(today);
     
-    batch.set(dailySessionRef, {
-      date: Timestamp.fromDate(new Date()),
-      cardsReviewed: FieldValue.increment(sessionData.cardsReviewed || 0),
-      cardsCorrect: FieldValue.increment(sessionData.cardsCorrect || 0),
-      accuracy: sessionData.accuracy || 0,
-      lastSessionAt: sessionData.endTime || FieldValue.serverTimestamp(),
-      minutesStudied: FieldValue.increment(
-        Math.round((sessionData.endTime?.toMillis() - sessionData.startTime?.toMillis()) / 60000) || 0
-      )
-    }, { merge: true });
+//     batch.set(dailySessionRef, {
+//       date: Timestamp.fromDate(new Date()),
+//       cardsReviewed: FieldValue.increment(sessionData.cardsReviewed || 0),
+//       cardsCorrect: FieldValue.increment(sessionData.cardsCorrect || 0),
+//       accuracy: sessionData.accuracy || 0,
+//       lastSessionAt: sessionData.endTime || FieldValue.serverTimestamp(),
+//       minutesStudied: FieldValue.increment(
+//         Math.round((sessionData.endTime?.toMillis() - sessionData.startTime?.toMillis()) / 60000) || 0
+//       )
+//     }, { merge: true });
     
-    // Set firstSessionAt only if this is the first session today
-    batch.update(dailySessionRef, {
-      firstSessionAt: sessionData.startTime || FieldValue.serverTimestamp()
-    });
+//     // Set firstSessionAt only if this is the first session today
+//     batch.update(dailySessionRef, {
+//       firstSessionAt: sessionData.startTime || FieldValue.serverTimestamp()
+//     });
     
-    await batch.commit();
+//     await batch.commit();
     
-    console.log(`📊 Updated stats for user ${userId} after review session`);
+//     console.log(`📊 Updated stats for user ${userId} after review session`);
     
-  } catch (error) {
-    console.error('Error updating stats after review session:', error);
-  }
-});
+//   } catch (error) {
+//     console.error('Error updating stats after review session:', error);
+//   }
+// });
 
 // ======================
 // UTILITY FUNCTIONS

@@ -4,6 +4,11 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../api/firebase';
 import { useAuth } from '../../hooks/useAuth';
 
+// Context
+import { useAuthContext } from '../../contexts/AuthContext';
+
+import { useNavigate } from 'react-router-dom';
+
 function CustomMessage({ message, type, onClose }) {
     if (!message) return null;
     return (
@@ -25,13 +30,16 @@ function CustomMessage({ message, type, onClose }) {
 }
 
 function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
-
+    // Context
+    const {getFolderLimits} = useAuthContext()
     const { signIn } = useAuth();
     const [folderName, setFolderName] = useState("");
     const [folderDescription, setFolderDescription] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('info');
+
+    const navigate = useNavigate()
     
     // Use actual Firebase auth hook
     const [user, authLoading, authError] = useAuthState(auth);
@@ -60,6 +68,20 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
         if (!folderName.trim() || !folderDescription.trim()) {
             showCustomMessage("Please enter both Folder Name and Description.", 'error');
             setLoading(false);
+            return;
+        }
+
+        const {canGenerate, maxFolders} = getFolderLimits()
+        if(!canGenerate){
+            const upgrade = window.confirm(
+                `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
+                `Press OK to view upgrade options or Cancel to manage/delete folders.`
+            )
+            if(upgrade){
+                navigate('/pricing')
+            }
+            setLoading(false);
+            onClose()
             return;
         }
 

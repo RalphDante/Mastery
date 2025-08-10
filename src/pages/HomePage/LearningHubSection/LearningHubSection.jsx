@@ -1,5 +1,8 @@
 // OptimizedLearningHubSection - Simplified version focusing on folders
 
+// Contexts
+import { useAuthContext } from '../../../contexts/AuthContext';
+
 import React, { useState, useEffect } from 'react';
 import { useUserData, useFolders } from '../../../contexts/useUserData';
 import {
@@ -20,6 +23,8 @@ import { db } from '../../../api/firebase';
 import { useNavigate } from "react-router-dom";
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
+    const {getFolderLimits} = useAuthContext();
+
     const {user, loading, error} = useUserData();
     const folders = useFolders() || []; // Get folders array directly from context
     const navigate = useNavigate();
@@ -77,6 +82,19 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         e.preventDefault();
         if (!newFolderName.trim() || !user) return;
 
+        const {canGenerate, maxFolders} = getFolderLimits()
+        if(!canGenerate){
+            const upgrade = window.confirm(
+                `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
+                `Press OK to view upgrade options or Cancel to manage/delete folders.`
+            )
+            if(upgrade){
+                navigate('/pricing')
+            }
+            return;
+        }
+
+
         try {
             const foldersRef = collection(db, 'folders');
             await addDoc(foldersRef, {
@@ -118,7 +136,41 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 
                 if (!window.confirm(message)) return;
     
-                // Delete all decks in the folder WITHOUT showing individual confirmations
+                // Step 2: Collect all card IDs for cardProgress cleanup
+                const allCardIds = [];
+                
+                for (const deckDoc of decksSnapshot.docs) {
+                    const cardsQuery = query(collection(db, 'decks', deckDoc.id, 'cards'));
+                    const cardsSnapshot = await getDocs(cardsQuery);
+                    
+                    cardsSnapshot.docs.forEach(cardDoc => {
+                        allCardIds.push(`${user.uid}_${cardDoc.id}`);
+                    });
+                }
+    
+                console.log(`Preparing to clean up ${allCardIds.length} cardProgress documents`);
+    
+                // Step 3: Delete cardProgress documents in batches
+                const BATCH_SIZE = 10; // Keep it smaller for client-side to avoid timeout
+                
+                for (let i = 0; i < allCardIds.length; i += BATCH_SIZE) {
+                    const cardIdBatch = allCardIds.slice(i, i + BATCH_SIZE);
+                    
+                    // Query for cardProgress documents with these card IDs
+                    const cardProgressQuery = query(
+                        collection(db, 'cardProgress'),
+                        where('cardId', 'in', cardIdBatch)
+                    );
+                    const cardProgressSnapshot = await getDocs(cardProgressQuery);
+                    
+                    // Delete the found cardProgress documents
+                    const deletePromises = cardProgressSnapshot.docs.map(doc => deleteDoc(doc.ref));
+                    await Promise.all(deletePromises);
+                    
+                    console.log(`Cleaned up ${cardProgressSnapshot.size} cardProgress documents (batch ${Math.floor(i/BATCH_SIZE) + 1})`);
+                }
+    
+                // Step 4: Delete all decks (cards will be cascade deleted)
                 for (const deckDoc of decksSnapshot.docs) {
                     await deleteDeckWithoutConfirmation(deckDoc.id);
                 }
@@ -127,8 +179,10 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 if (!window.confirm(`Are you sure you want to delete "${folderName}"?`)) return;
             }
     
-            // Finally delete the folder
+            // Step 5: Finally delete the folder
             await deleteDoc(folderRef);
+            
+            console.log(`Successfully deleted folder "${folderName}" and cleaned up all related data`);
             
         } catch (error) {
             console.error('Error deleting folder:', error);

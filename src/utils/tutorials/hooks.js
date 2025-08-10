@@ -24,8 +24,8 @@ export function useTutorialState(authUser) {
         }
         
         setTutorials(tutorials);
+        setLoading(false); // Don't forget to set loading to false
     };
- 
 
     fetchTutorials();
   }, [authUser]);
@@ -34,22 +34,23 @@ export function useTutorialState(authUser) {
   const updateTutorial = async (tutorialName, updates) => {
     if (!authUser) return;
 
-    // Update local state immediately (optimistic update)
-    setTutorials(prev => ({
-      ...prev,
-      [tutorialName]: {
+    // Calculate the new state first
+    let newTutorialState;
+    setTutorials(prev => {
+      newTutorialState = {
         ...prev[tutorialName],
         ...updates
-      }
-    }));
+      };
+      return {
+        ...prev,
+        [tutorialName]: newTutorialState
+      };
+    });
 
-    // Update Firestore in background
+    // Update Firestore in background using the calculated new state
     try {
       await updateDoc(doc(db, "users", authUser.uid), {
-        [`tutorials.${tutorialName}`]: {
-          ...tutorials[tutorialName],
-          ...updates
-        }
+        [`tutorials.${tutorialName}`]: newTutorialState
       });
     } catch (error) {
       console.error("Error updating tutorial:", error);
@@ -70,8 +71,29 @@ export function useTutorialState(authUser) {
     shouldShowTutorial: (name, minStep = 1) => tutorials[name] && !tutorials[name].completed && tutorials[name].step >= minStep,
     
     updateTutorial,
-    advanceStep: (name) => updateTutorial(name, { step: tutorials[name].step + 1 }),
-    goBackAStep: (name) => updateTutorial(name, { step: tutorials[name]?.step - 1 }),
+    // Fix: Use functional update to ensure we have the latest state
+    advanceStep: (name) => {
+      setTutorials(prev => {
+        if (!prev[name]) return prev;
+        const newStep = prev[name].step + 1;
+        updateTutorial(name, { step: newStep });
+        return {
+          ...prev,
+          [name]: { ...prev[name], step: newStep }
+        };
+      });
+    },
+    goBackAStep: (name) => {
+      setTutorials(prev => {
+        if (!prev[name]) return prev;
+        const newStep = prev[name].step - 1;
+        updateTutorial(name, { step: newStep });
+        return {
+          ...prev,
+          [name]: { ...prev[name], step: newStep }
+        };
+      });
+    },
     completeTutorial: (name) => updateTutorial(name, { completed: true })
   };
 }

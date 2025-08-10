@@ -153,7 +153,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
         isPublic: false,
         createdAt: new Date(),
         updatedAt: new Date(),
-        cardCount: flashcards.length,
+        // cardCount: flashcards.length,
         tags: []
       });
   
@@ -177,7 +177,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
       if (isCreatingNewFolder || selectedFolder) {
         const folderDocRef = doc(db, 'folders', currentFolderId);
         await updateDoc(folderDocRef, {
-          deckCount: folders.find(f => f.id === currentFolderId)?.deckCount + 1 || 1,
+          // deckCount: folders.find(f => f.id === currentFolderId)?.deckCount + 1 || 1,
           updatedAt: new Date(),
         });
       }

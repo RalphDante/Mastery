@@ -14,6 +14,9 @@ import {
 
 import { useEffect, useState, useCallback } from "react";
 
+// Context
+import { useAuthContext } from '../../../contexts/AuthContext';
+
 // Saving
 import { getDatabase, ref, onValue, set, push } from "firebase/database";
 import { onAuthStateChanged } from "firebase/auth";
@@ -57,7 +60,8 @@ const SignInCard = ({ handleSaveDeck }) => (
 );
 
 function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck}){
-
+    // Context
+    const {userProfile} = useAuthContext();
     const location = useLocation();
     const [authUser, setAuthUser] = useState(null);
     const {fileName} = useParams();
@@ -127,8 +131,10 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
             const userRef = doc(db, 'users', uid);
             
             // Check if user document exists
-            const userDoc = await getDoc(userRef);
-            const isNewUser = !userDoc.exists();
+            // const userDoc = await getDoc(userRef);
+            // const isNewUser = !userDoc.exists();
+            const isNewUser = !userProfile && authUser;
+            
             
             if (isNewUser) {
                 // Create new user with default values
@@ -194,17 +200,88 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     }
                 });
             }
+
+            // 🔒 LIMITS CHECK - Get fresh user data after potential creation
+            const updatedUserDoc = await getDoc(userRef);  // Optimize
+            const userData = updatedUserDoc.data() || {};
+            const limits = userData.limits || {};
+            
+            // Check current usage vs limits
+            const currentCards = limits.currentCards || 0;
+            const currentDecks = limits.currentDecks || 0;
+            const currentFolders = limits.currentFolders || 0;
+            const currentAiGenerations = limits.aiGenerationsUsed || 0;
+            const maxCards = 130;
+            const maxDecks = limits.maxDecks || 5;
+            const maxFolders = limits.maxFolders || 10;
+            const maxAiGenerations = limits.maxAiGenerations || 20;
+            
+            // Calculate what we're about to add
+            const cardsToAdd = flashCards.length;
+            const decksToAdd = 1;
+            const foldersToAdd = isNewUser ? 1 : 0; // Only add folder if new user
+            
+            // Validate limits
+            const errors = [];
+
+            if(currentAiGenerations === 20){
+                errors.push(`AI generations exceeded for this account: ${currentAiGenerations}/${maxAiGenerations}`);
+            }
+            
+            if (maxCards !== -1 && (currentCards + cardsToAdd) > maxCards) {
+                errors.push(`Cards limit exceeded: ${currentCards + cardsToAdd}/100`);
+            }
+            
+            if (maxDecks !== -1 && (currentDecks + decksToAdd) > maxDecks) {
+                errors.push(`Decks limit exceeded: ${currentDecks + decksToAdd}/${maxDecks}`);
+            }
+            
+            if (maxFolders !== -1 && (currentFolders + foldersToAdd) > maxFolders) {
+                errors.push(`Folders limit exceeded: ${currentFolders + foldersToAdd}/${maxFolders}`);
+            }
+            
+            // If any limits exceeded, show upgrade prompt
+            if (errors.length > 0) {
+                const errorMessage = [
+                    "⚠️ Storage limit reached!",
+                    "",
+                    ...errors,
+                    "",
+                    "Upgrade to Pro for unlimited storage:",
+                    "✅ Unlimited cards & decks",
+                    "✅ Unlimited AI generations/month", 
+                    "✅ Advanced study features",
+                    "",
+                    "Would you like to upgrade now?"
+                ].join('\n');
+                
+                const shouldUpgrade = confirm(errorMessage);
+                if (shouldUpgrade) {
+                    // Redirect to upgrade page or show upgrade modal
+                    navigate('/pricing');
+                    return;
+                } else {
+                    throw new Error('Cannot save deck: storage limits exceeded');
+                }
+            }
+            
+            console.log('✅ Limits check passed:', {
+                cards: `${currentCards + cardsToAdd}/${maxCards}`,
+                decks: `${currentDecks + decksToAdd}/${maxDecks}`,
+                folders: `${currentFolders + foldersToAdd}/${maxFolders}`
+            });
             
             // Now use batch for the rest of the operations
             const batch = writeBatch(db);
             
             // Update user stats and last active time
             batch.update(userRef, {
-                'stats.totalDecks': increment(1),
-                'stats.totalCards': increment(flashCards.length),
+                // 'stats.totalDecks': increment(1),
+                // 'stats.totalCards': increment(flashCards.length),
                 lastActiveAt: serverTimestamp(),
                 // Update display name in case it changed
-                displayName: user.displayName || 'Anonymous User'
+                displayName: user.displayName || 'Anonymous User',
+                'limits.aiGenerationsUsed': increment(1)
             });
             
             // Create folder
@@ -218,7 +295,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 updatedAt: serverTimestamp(),
                 subscriptionTier: "free",
                 isPublic: false,
-                deckCount: 1
+                // deckCount: 1
             });
             
             // Create deck
@@ -234,7 +311,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                 isPublic: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                cardCount: flashCards.length,
+                // cardCount: flashCards.length,
                 tags: []
             });
             
