@@ -136,41 +136,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 
                 if (!window.confirm(message)) return;
     
-                // Step 2: Collect all card IDs for cardProgress cleanup
-                const allCardIds = [];
-                
-                for (const deckDoc of decksSnapshot.docs) {
-                    const cardsQuery = query(collection(db, 'decks', deckDoc.id, 'cards'));
-                    const cardsSnapshot = await getDocs(cardsQuery);
-                    
-                    cardsSnapshot.docs.forEach(cardDoc => {
-                        allCardIds.push(`${user.uid}_${cardDoc.id}`);
-                    });
-                }
-    
-                console.log(`Preparing to clean up ${allCardIds.length} cardProgress documents`);
-    
-                // Step 3: Delete cardProgress documents in batches
-                const BATCH_SIZE = 10; // Keep it smaller for client-side to avoid timeout
-                
-                for (let i = 0; i < allCardIds.length; i += BATCH_SIZE) {
-                    const cardIdBatch = allCardIds.slice(i, i + BATCH_SIZE);
-                    
-                    // Query for cardProgress documents with these card IDs
-                    const cardProgressQuery = query(
-                        collection(db, 'cardProgress'),
-                        where('cardId', 'in', cardIdBatch)
-                    );
-                    const cardProgressSnapshot = await getDocs(cardProgressQuery);
-                    
-                    // Delete the found cardProgress documents
-                    const deletePromises = cardProgressSnapshot.docs.map(doc => deleteDoc(doc.ref));
-                    await Promise.all(deletePromises);
-                    
-                    console.log(`Cleaned up ${cardProgressSnapshot.size} cardProgress documents (batch ${Math.floor(i/BATCH_SIZE) + 1})`);
-                }
-    
-                // Step 4: Delete all decks (cards will be cascade deleted)
+                // Delete all decks in the folder WITHOUT showing individual confirmations
                 for (const deckDoc of decksSnapshot.docs) {
                     await deleteDeckWithoutConfirmation(deckDoc.id);
                 }
@@ -179,10 +145,8 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 if (!window.confirm(`Are you sure you want to delete "${folderName}"?`)) return;
             }
     
-            // Step 5: Finally delete the folder
+            // Finally delete the folder
             await deleteDoc(folderRef);
-            
-            console.log(`Successfully deleted folder "${folderName}" and cleaned up all related data`);
             
         } catch (error) {
             console.error('Error deleting folder:', error);
@@ -190,16 +154,66 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         }
     };
 
-    // Simplified deck deletion without confirmation (for folder cascade)
     const deleteDeckWithoutConfirmation = async (deckId) => {
         if (!user) return;
-
+    
         try {
+            // Step 1: Get deck information
             const deckRef = doc(db, 'decks', deckId);
+            const deckSnap = await getDocs(query(collection(db, 'decks'), where('__name__', '==', deckId)));
             
-            // Simply delete the deck - Firebase Functions handle everything else
-            await deleteDoc(deckRef);
+            if (deckSnap.empty) {
+                console.error('Deck not found');
+                return;
+            }
+    
+            const deckData = deckSnap.docs[0].data();
+    
+            // Step 2: Get all cards in this deck
+            const cardsRef = collection(db, 'decks', deckId, 'cards');
+            const cardsSnapshot = await getDocs(cardsRef);
             
+            if (cardsSnapshot.empty) {
+                // No cards, safe to delete deck directly
+                await deleteDoc(deckRef);
+                return;
+            }
+    
+            // Step 3: Delete everything using a batch operation
+            const cardIds = cardsSnapshot.docs.map(doc => doc.id);
+            
+            await runTransaction(db, async (transaction) => {
+                // Delete all card progress entries
+                for (const cardId of cardIds) {
+                    const progressQuery = query(
+                        collection(db, 'cardProgress'), 
+                        where('cardId', '==', cardId)
+                    );
+                    const progressSnapshot = await getDocs(progressQuery);
+                    
+                    progressSnapshot.docs.forEach(progressDoc => {
+                        transaction.delete(progressDoc.ref);
+                    });
+                }
+    
+                // Delete all cards
+                cardsSnapshot.docs.forEach(cardDoc => {
+                    transaction.delete(cardDoc.ref);
+                });
+    
+                // Delete the deck itself
+                transaction.delete(deckRef);
+    
+                // Update folder's deckCount (denormalized data)
+                if (deckData.folderId) {
+                    const folderRef = doc(db, 'folders', deckData.folderId);
+                    transaction.update(folderRef, {
+                        deckCount: increment(-1),
+                        updatedAt: serverTimestamp()
+                    });
+                }
+            });
+    
             console.log('Deck deleted successfully');
             
         } catch (error) {
@@ -293,7 +307,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             if (!window.confirm(message)) return;
     
             // Step 3: Simply delete the deck - Firebase Functions handle the rest
-            await deleteDoc(deckRef);
+            await deleteDeckWithoutConfirmation(deckId);
             
             console.log('Deck deleted successfully');
             
