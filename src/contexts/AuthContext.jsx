@@ -216,6 +216,17 @@ export const AuthProvider = ({ children }) => {
         }
     }
 
+    const getDeckLimits = () => {
+        const limits = userProfile?.limits || {};
+        const maxDecks = limits.maxDecks || 5;
+        const currentUsage = limits.currentDecks || 0;
+
+        return {
+            maxFolders,
+            canGenerate: maxFolders === -1 || currentUsage < maxDecks
+        }
+    }
+
     const value = {
         // User state
         user,

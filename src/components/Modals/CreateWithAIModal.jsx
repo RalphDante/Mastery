@@ -6,10 +6,15 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import CreateWithAIDemoModal from "../../pages/TryNowPage/LandingPage/CreateWithAIDemoModal";
 
+import { useAuthContext } from "../../contexts/AuthContext";
+
 // Tutorials
 import { useTutorials } from "../../contexts/TutorialContext";
 
 function CreateWithAIModal({ onClose, isOpen }) {
+
+  // Context
+  const { getFolderLimits } = useAuthContext();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
   const [tutorialCancelled, setTutorialCancelled] = useState(false);
@@ -111,6 +116,21 @@ function CreateWithAIModal({ onClose, isOpen }) {
       return;
     }
 
+    if(isCreatingNewFolder){
+      const {canGenerate, maxFolders} = getFolderLimits()
+      if(!canGenerate){
+          const upgrade = window.confirm(
+              `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
+              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+          )
+          if(upgrade){
+              navigate('/pricing')
+          }
+          setLoading(false);
+          onClose()
+          return;
+      }
+    }
     setStep(2);
     setLoading(false);
   };

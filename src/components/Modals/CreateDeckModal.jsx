@@ -5,8 +5,13 @@ import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useTutorials } from "../../contexts/TutorialContext";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 function CreateDeckModal({ uid, onClose, isOpen }) {
+
+  //Context
+  const { getFolderLimits } = useAuthContext();
+
   const [didCompleteStep, setDidCompleteStep] = useState(false);
   const [wasCancelled, setWasCancelled] = useState(false);
   const {goBackAStep} = useTutorials();
@@ -115,6 +120,22 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
       alert('Please select a folder');
       setLoading(false);
       return;
+    }
+
+    if(isCreatingNewFolder){
+      const {canGenerate, maxFolders} = getFolderLimits()
+      if(!canGenerate){
+          const upgrade = window.confirm(
+              `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
+              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+          )
+          if(upgrade){
+              navigate('/pricing')
+          }
+          setLoading(false);
+          onClose()
+          return;
+      }
     }
 
     setDidCompleteStep(true);
