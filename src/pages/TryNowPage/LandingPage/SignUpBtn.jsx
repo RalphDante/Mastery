@@ -43,7 +43,7 @@ function SignUpBtn() {
                     weeklyReviews: 0,
                     currentStreak: 0,
                     longestStreak: 0,
-                    totalDecks: 0
+                    // totalDecks: 0
                     // Removed totalCards - using limits.currentCards instead
                 },
                 
@@ -97,6 +97,7 @@ function SignUpBtn() {
             console.log("✅ Firestore profile created for:", user.email);
         } else {
             // Profile exists, just update last active time
+            const now = new Date();
             console.log('🔄 Updating lastActiveAt for existing user:', user.email);
             await setDoc(userRef, { 
                 lastActiveAt: now 

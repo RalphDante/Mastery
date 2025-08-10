@@ -222,8 +222,19 @@ export const AuthProvider = ({ children }) => {
         const currentUsage = limits.currentDecks || 0;
 
         return {
-            maxFolders,
-            canGenerate: maxFolders === -1 || currentUsage < maxDecks
+            maxDecks,
+            canGenerate: maxDecks === -1 || currentUsage < maxDecks
+        }
+    }
+
+    const getCardLimits = () => {
+        const limits = userProfile?.limits || {};
+        const maxCards = limits.maxCards || 100;
+        const currentUsage = limits.currentCards || 0;
+
+        return {
+            maxCards,
+            canGenerate: maxCards === -1 || currentUsage < maxCards
         }
     }
 
@@ -247,7 +258,9 @@ export const AuthProvider = ({ children }) => {
         // Utility methods
         isPremium,
         getAILimits,
-        getFolderLimits
+        getFolderLimits,
+        getDeckLimits,
+        getCardLimits
     };
 
     return (

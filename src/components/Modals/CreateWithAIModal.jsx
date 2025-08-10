@@ -14,7 +14,7 @@ import { useTutorials } from "../../contexts/TutorialContext";
 function CreateWithAIModal({ onClose, isOpen }) {
 
   // Context
-  const { getFolderLimits } = useAuthContext();
+  const { getFolderLimits, getDeckLimits } = useAuthContext();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
   const [tutorialCancelled, setTutorialCancelled] = useState(false);
@@ -131,6 +131,21 @@ function CreateWithAIModal({ onClose, isOpen }) {
           return;
       }
     }
+
+    const {canGenerate, maxDecks} = getDeckLimits()
+      if(!canGenerate){
+          const upgrade = window.confirm(
+              `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
+              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+          )
+          if(upgrade){
+              navigate('/pricing')
+          }
+          setLoading(false);
+          onClose()
+          return;
+      }
+
     setStep(2);
     setLoading(false);
   };

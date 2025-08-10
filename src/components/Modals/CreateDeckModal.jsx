@@ -10,7 +10,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 function CreateDeckModal({ uid, onClose, isOpen }) {
 
   //Context
-  const { getFolderLimits } = useAuthContext();
+  const { getFolderLimits, getDeckLimits } = useAuthContext();
 
   const [didCompleteStep, setDidCompleteStep] = useState(false);
   const [wasCancelled, setWasCancelled] = useState(false);
@@ -137,6 +137,20 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
           return;
       }
     }
+
+    const {canGenerate, maxDecks} = getDeckLimits()
+      if(!canGenerate){
+          const upgrade = window.confirm(
+              `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
+              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+          )
+          if(upgrade){
+              navigate('/pricing')
+          }
+          setLoading(false);
+          onClose()
+          return;
+      }
 
     setDidCompleteStep(true);
 

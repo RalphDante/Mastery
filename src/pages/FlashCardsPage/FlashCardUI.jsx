@@ -49,6 +49,9 @@ import SmartReviewButtons from "../../components/tutorials/CustomTutorials/Smart
 import { EncourageBanner } from "../../components/tutorials/CustomTutorials/EncourageBanner";
 import { useNavigate } from "react-router-dom";
 
+// Context
+import { useAuthContext } from "../../contexts/AuthContext";
+
 function FlashCardUI({
     knowAnswer, 
     dontKnowAnswer, 
@@ -63,6 +66,14 @@ function FlashCardUI({
     publicDeckData,
     deckOwnerData
 }) {
+
+    // Context
+    const { 
+        getFolderLimits,
+        getDeckLimits,
+        getCardLimits
+    } = useAuthContext()
+
     // Card animations
     const [cardAnimDirection, setCardAnimDirection] = useState("forward");
     const [cardAnimKey, setCardAnimKey] = useState(0);
@@ -794,6 +805,7 @@ function FlashCardUI({
         onShowSignUp 
     }) => {
         const [copying, setCopying] = useState(false);
+        const { getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
 
         const handleCopy = async () => {
             if (!authUser) {
@@ -803,6 +815,77 @@ function FlashCardUI({
 
             if (!deck || !flashCards.length) {
                 alert('No deck data available to copy');
+                return;
+            }
+
+            // Check all limits
+            const folderLimits = getFolderLimits();
+            const deckLimits = getDeckLimits();
+            const cardLimits = getCardLimits();
+            const userIsPremium = isPremium();
+
+            // Check deck limits
+            if (!deckLimits.canGenerate) {
+                const confirmMessage = userIsPremium 
+                    ? `You've reached your deck limit (${deckLimits.maxDecks}). Please delete some decks before copying this one, or contact support for assistance.`
+                    : `You've reached your deck limit (${deckLimits.maxDecks} decks). Would you like to upgrade to Premium for unlimited decks, or delete some existing decks first?`;
+                
+                const shouldProceed = window.confirm(confirmMessage);
+                if (!shouldProceed) {
+                    return;
+                }
+                
+                if (!userIsPremium) {
+                    // Redirect to upgrade page or show upgrade modal
+                    // You can replace this with your actual upgrade flow
+                    alert('Please upgrade to Premium or delete some decks first.');
+                    return;
+                }
+            }
+
+            // Check card limits (assuming the deck being copied will add cards)
+            const cardsToAdd = flashCards.length;
+            const currentCards = cardLimits.maxCards === -1 ? 0 : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
+            
+            if (cardLimits.maxCards !== -1 && (currentCards + cardsToAdd) > cardLimits.maxCards) {
+                const confirmMessage = userIsPremium
+                    ? `Copying this deck would exceed your card limit. You currently have space for ${cardLimits.maxCards - currentCards} more cards, but this deck contains ${cardsToAdd} cards. Please delete some cards first.`
+                    : `Copying this deck would exceed your card limit (${cardLimits.maxCards} cards). This deck contains ${cardsToAdd} cards. Would you like to upgrade to Premium for unlimited cards, or free up some space first?`;
+                
+                const shouldProceed = window.confirm(confirmMessage);
+                if (!shouldProceed) {
+                    return;
+                }
+                
+                if (!userIsPremium) {
+                    alert('Please upgrade to Premium or delete some cards first.');
+                    return;
+                }
+            }
+
+            // Check folder limits (if copying creates a new folder or if user needs folders)
+            if (!folderLimits.canGenerate) {
+                const confirmMessage = userIsPremium
+                    ? `You've reached your folder limit (${folderLimits.maxFolders}). Please delete some folders first, or contact support.`
+                    : `You've reached your folder limit (${folderLimits.maxFolders} folders). Would you like to upgrade to Premium for unlimited folders, or delete some existing folders first?`;
+                
+                const shouldProceed = window.confirm(confirmMessage);
+                if (!shouldProceed) {
+                    return;
+                }
+                
+                if (!userIsPremium) {
+                    alert('Please upgrade to Premium or delete some folders first.');
+                    return;
+                }
+            }
+
+            // Final confirmation before copying
+            const finalConfirm = window.confirm(
+                `Are you sure you want to copy "${deckName}"? This will create a new deck with ${cardsToAdd} cards in your account.`
+            );
+            
+            if (!finalConfirm) {
                 return;
             }
 
@@ -823,7 +906,6 @@ function FlashCardUI({
                 onClick={handleCopy}
                 disabled={copying}
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white rounded-lg transition-all duration-300 font-semibold shadow-xl ring-4 ring-purple-500/30 hover:ring-purple-400/50 animate-pulse hover:animate-none hover:scale-105 active:scale-95"
-
             >
                 <Copy className="w-5 h-5 text-white" />
                 {copying ? 'Copying...' : 'Copy Deck'}
