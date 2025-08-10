@@ -257,7 +257,7 @@ function CreateDeck() {
                 title: fileName,
                 description: fileDescription === "" ? "No Description" : fileDescription,
                 updatedAt: serverTimestamp(),
-                cardCount: flashCards.length
+                // cardCount: flashCards.length
             });
 
             // --- 2. Process Cards (Add, Update, Delete) ---

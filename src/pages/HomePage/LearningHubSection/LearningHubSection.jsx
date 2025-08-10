@@ -208,7 +208,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 if (deckData.folderId) {
                     const folderRef = doc(db, 'folders', deckData.folderId);
                     transaction.update(folderRef, {
-                        deckCount: increment(-1),
+                        // deckCount: increment(-1),
                         updatedAt: serverTimestamp()
                     });
                 }
