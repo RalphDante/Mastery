@@ -52,18 +52,18 @@ function CreateWithAIModal({ onClose, isOpen }) {
   }, []);
 
   // Tutorial
-  useEffect(() => {
-      if (isOpen) {
-        setTutorialCancelled(false);
-      }
-    }, [isOpen]);
+  // useEffect(() => {
+  //     if (isOpen) {
+  //       setTutorialCancelled(false);
+  //     }
+  //   }, [isOpen]);
 
-   useEffect(() => {
-      if(isOpen === undefined) return;
-      if(!isOpen && tutorialCancelled){
-        goBackAStep('create-deck')
-      }
-    }, [isOpen]);
+  //  useEffect(() => {
+  //     if(isOpen === undefined) return;
+  //     if(!isOpen && tutorialCancelled){
+  //       goBackAStep('create-deck')
+  //     }
+  //   }, [isOpen]);
 
   // Fetching folders with proper query (similar to first modal)
   useEffect(() => {

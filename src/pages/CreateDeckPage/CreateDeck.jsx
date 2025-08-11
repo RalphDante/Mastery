@@ -8,10 +8,14 @@ import { auth } from '../../api/firebase'
 import styles from './CreateFilePage.module.css'
 import CreateFlashCards from './CreateFlashCards';
 
+import { useAuthContext } from '../../contexts/AuthContext';
+
 // Tutorial
 import { useTutorials } from '../../contexts/TutorialContext';
 
 function CreateDeck() {
+
+    const { getCardLimits, isPremium } = useAuthContext();
 
     // Tutorial
     const { completeTutorial } = useTutorials();
@@ -399,6 +403,7 @@ function CreateDeck() {
         }
     };
 
+    
     const saveData = async () => {
         const isEmpty = checkEmpty()
         if (isEmpty) {
@@ -420,7 +425,55 @@ function CreateDeck() {
             return;
         }
 
-        setShowFlashCardAmount(false); // Consider removing or moving this, it's tied to an aesthetic not critical logic
+        // Card limit check
+        const cardLimits = getCardLimits();
+        
+        if (cardLimits.maxCards !== -1) { // -1 means unlimited (premium users)
+            const currentCardCount = cardLimits.currentUsage || 0;
+            const newTotalCards = isEditMode 
+                ? currentCardCount - originalFlashCardsRef.current.length + flashCards.length 
+                : currentCardCount + flashCards.length;
+            
+            if (newTotalCards > cardLimits.maxCards) {
+                const cardsOverLimit = newTotalCards - cardLimits.maxCards;
+                
+                if (isEditMode) {
+                    // In edit mode, suggest removing cards or upgrading
+                    const confirmMessage = `You're trying to add ${cardsOverLimit} more cards than your ${isPremium() ? 'current' : 'free'} plan allows (${cardLimits.maxCards} total cards).
+
+    Options:
+    1. Remove ${cardsOverLimit} cards from this deck
+    2. ${isPremium() ? 'Contact support for higher limits' : 'Upgrade to Pro for unlimited cards'}
+
+    Would you like to continue editing to remove some cards?`;
+                    
+                    if (window.confirm(confirmMessage)) {
+                        return; // Let user continue editing to remove cards
+                    } else {
+                        return; // Cancel the save operation
+                    }
+                } else {
+                    // In create mode, suggest removing cards or upgrading
+                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
+
+    Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
+
+    Options:
+    1. Remove ${cardsOverLimit} cards from this deck
+    2. ${isPremium() ? 'Contact support for higher limits' : 'Upgrade to Pro for unlimited cards and advanced features'}
+
+    Would you like to continue editing to remove some cards?`;
+                    
+                    if (window.confirm(confirmMessage)) {
+                        return; // Let user continue editing
+                    } else {
+                        return; // Cancel the save operation
+                    }
+                }
+            }
+        }
+
+        setShowFlashCardAmount(false);
 
         try {
             if (isEditMode) {

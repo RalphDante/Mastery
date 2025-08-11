@@ -79,6 +79,7 @@ import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDe
 // Terms of Service
 import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
 import PublicDecksPage from './pages/PublicDecks/PublicDecksPage.jsx';
+import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDeckTutorial.jsx';
 
 
 
@@ -194,6 +195,11 @@ function App(){
         <div className="min-h-screen flex flex-col">
           {/* Main content */}
           <div className="flex-1 flex flex-col">
+              <CreateDeckTutorial 
+                isDeckModalOpen={isDeckModalOpen}
+                isFolderModalOpen={isFolderModalOpen}
+                isCreateWithAIModalOpen={isCreateWithAIModalOpen}
+              />
               <ShowNavBar>
                 <NavBar 
                   onCreateFolderClick={handleShowCreateFolderModal}

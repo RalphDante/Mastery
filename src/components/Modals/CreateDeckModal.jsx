@@ -47,31 +47,31 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen === undefined || didCompleteStep) return;
+//   useEffect(() => {
+//     if (isOpen === undefined || didCompleteStep) return;
 
-    const noFoldersFetched = folder.length === 0;
+//     const noFoldersFetched = folder.length === 0;
 
-    const shouldGoBack =
-      !isOpen &&
-      !didCompleteStep &&
-      (wasCancelled || (
-        (isCreatingNewFolder && !newFolderName.trim()) ||
-        (!isCreatingNewFolder && !selectedFolder && noFoldersFetched)
-      ));
+//     const shouldGoBack =
+//       !isOpen &&
+//       !didCompleteStep &&
+//       (wasCancelled || (
+//         (isCreatingNewFolder && !newFolderName.trim()) ||
+//         (!isCreatingNewFolder && !selectedFolder && noFoldersFetched)
+//       ));
 
-    if (shouldGoBack) {
-      goBackAStep('create-deck');
-    }
-  }, [
-    isOpen,
-    didCompleteStep,
-    wasCancelled,
-    isCreatingNewFolder,
-    newFolderName,
-    selectedFolder,
-    folder,
-]);
+//     // if (shouldGoBack) {
+//     //   goBackAStep('create-deck');
+//     // }
+//   }, [
+//     isOpen,
+//     didCompleteStep,
+//     wasCancelled,
+//     isCreatingNewFolder,
+//     newFolderName,
+//     selectedFolder,
+//     folder,
+// ]);
 
   // List of folders from Firestore
   useEffect(() => {

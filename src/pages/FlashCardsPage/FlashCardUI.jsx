@@ -1449,7 +1449,7 @@ function FlashCardUI({
             }} />
         </TutorialOverlay>
 
-        <TutorialOverlay isVisible={goToDashBoard}>
+        <TutorialOverlay isVisible={goToDashBoard || isFinished}>
             <div className="relative space-y-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-lg w-full p-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -1468,6 +1468,12 @@ function FlashCardUI({
                 }}
             >
               Go to Dashboard →
+            </button>
+            <button 
+                className="border border-white bg-transparent hover:bg-violet-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                onClick={() => completeTutorial('smart-review')}
+                >
+                Continue Studying
             </button>
             </div>
         </TutorialOverlay>

@@ -37,12 +37,12 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
         if (callback) {
             callback(event);
         }
-        advanceStep('create-deck')
+        // advanceStep('create-deck')
     };
 
     return (
         <>
-        <TutorialOverlay isVisible={isCreateDeckNotCompleted && isAtCreateDeckFirstStep}>
+        {/* <TutorialOverlay isVisible={isCreateDeckNotCompleted && isAtCreateDeckFirstStep}>
             <div className="relative bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-700 max-w-md w-full p-6 text-white ring-2 ring-emerald-500/40 animate-in fade-in duration-300">
     
                 <div className="flex items-center gap-3 mb-4">
@@ -56,7 +56,7 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
                 Start building your knowledge one card at a time. Don’t worry — you can always edit or improve it later.
                 </p>
             </div>
-        </TutorialOverlay>
+        </TutorialOverlay> */}
         <div className="relative" ref={dropdownRef}>
             <button 
                 onClick={toggleDropdown} 

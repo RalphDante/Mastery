@@ -234,7 +234,8 @@ export const AuthProvider = ({ children }) => {
 
         return {
             maxCards,
-            canGenerate: maxCards === -1 || currentUsage < maxCards
+            canGenerate: maxCards === -1 || currentUsage < maxCards,
+            currentUsage
         }
     }
 
