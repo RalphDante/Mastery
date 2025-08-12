@@ -13,27 +13,97 @@ const db = getFirestore();
 // PADDLE WEBHOOK CODE
 // ======================
 
-// Paddle webhook verification
-function verifyPaddleWebhook(rawBody, signature, webhookSecret) {
+// Updated Paddle webhook verification function
+function verifyPaddleWebhook(rawBody, paddleSignature, webhookSecret) {
+  console.log('=== SIGNATURE VERIFICATION ===');
+  console.log('Paddle signature:', paddleSignature);
+  console.log('Raw body length:', rawBody.length);
+  
+  // Parse Paddle signature format: ts=timestamp;h1=hash
+  const parts = paddleSignature.split(';');
+  let timestamp = null;
+  let hash = null;
+  
+  for (const part of parts) {
+    const [key, value] = part.split('=');
+    if (key === 'ts') {
+      timestamp = value;
+    } else if (key === 'h1') {
+      hash = value;
+    }
+  }
+  
+  if (!timestamp || !hash) {
+    console.error('Invalid signature format - missing timestamp or hash');
+    return false;
+  }
+  
+  console.log('Parsed timestamp:', timestamp);
+  console.log('Parsed hash:', hash);
+  
+  // Create the signed payload: timestamp + ':' + raw body
+  const signedPayload = timestamp + ':' + rawBody;
+  console.log('Signed payload preview:', signedPayload.substring(0, 100) + '...');
+  
+  // Generate expected signature
   const hmac = crypto.createHmac('sha256', webhookSecret);
-  hmac.update(rawBody);
-  const computedSignature = hmac.digest('hex');
-  return signature === computedSignature;
+  hmac.update(signedPayload, 'utf8');
+  const expectedHash = hmac.digest('hex');
+  
+  console.log('Expected hash:', expectedHash);
+  console.log('Received hash:', hash);
+  console.log('Hashes match:', expectedHash === hash);
+  
+  return expectedHash === hash;
 }
 
+// Updated main webhook handler
 exports.handlePaddleWebhook = onRequest(async (req, res) => {
+  console.log('=== WEBHOOK RECEIVED ===');
+  console.log('Method:', req.method);
+  console.log('Content-Type:', req.get('content-type'));
+  
   try {
-    // Verify webhook signature
-    const signature = req.get('paddle-signature');
+    // Get signature from header
+    const paddleSignature = req.get('paddle-signature');
     const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
     
-    if (!verifyPaddleWebhook(JSON.stringify(req.body), signature, webhookSecret)) {
-      console.error('Invalid webhook signature');
+    console.log('Signature from header:', paddleSignature);
+    console.log('Webhook secret exists:', !!webhookSecret);
+    
+    if (!paddleSignature) {
+      console.error('No paddle-signature header found');
+      return res.status(400).send('Missing signature');
+    }
+    
+    if (!webhookSecret) {
+      console.error('No webhook secret configured');
+      return res.status(500).send('Webhook secret not configured');
+    }
+
+    // Get raw body as string - this is crucial for signature verification
+    let rawBody;
+    if (typeof req.rawBody !== 'undefined') {
+      // Cloud Functions provides rawBody
+      rawBody = req.rawBody.toString('utf8');
+    } else {
+      // Fallback to JSON.stringify (less reliable)
+      rawBody = JSON.stringify(req.body);
+    }
+    
+    console.log('Using raw body, length:', rawBody.length);
+    console.log('Raw body preview:', rawBody.substring(0, 200) + '...');
+
+    // Verify signature
+    if (!verifyPaddleWebhook(rawBody, paddleSignature, webhookSecret)) {
+      console.error('Signature verification failed');
       return res.status(401).send('Unauthorized');
     }
 
+    console.log('✅ Signature verification passed!');
+
     const { event_type, data } = req.body;
-    console.log('Received Paddle webhook:', event_type);
+    console.log('Processing event:', event_type);
 
     switch (event_type) {
       case 'subscription.created':
@@ -51,6 +121,7 @@ exports.handlePaddleWebhook = onRequest(async (req, res) => {
         console.log('Unhandled webhook event:', event_type);
     }
 
+    console.log('Webhook processed successfully');
     res.status(200).send('OK');
   } catch (error) {
     console.error('Webhook error:', error);
@@ -59,8 +130,42 @@ exports.handlePaddleWebhook = onRequest(async (req, res) => {
 });
 
 async function handleSubscriptionUpdate(data) {
-  const { customer, items, status, next_billed_at, paused_at, canceled_at } = data;
-  const userEmail = customer.email;
+  console.log('=== SUBSCRIPTION UPDATE DEBUG ===');
+  console.log('Full data object:', JSON.stringify(data, null, 2));
+  
+  // Log the structure to understand what we're dealing with
+  console.log('data keys:', Object.keys(data));
+  console.log('data.customer:', data.customer);
+  console.log('data.customer_id:', data.customer_id);
+  console.log('data.custom_data:', data.custom_data);
+  
+  // For Paddle, the email might be in custom_data or we need to fetch customer details
+  let userEmail = null;
+  
+  // Try different approaches to get the email
+  if (data.customer && data.customer.email) {
+    userEmail = data.customer.email;
+    console.log('Found email in data.customer.email:', userEmail);
+  } else if (data.custom_data && data.custom_data.userEmail) {
+    userEmail = data.custom_data.userEmail;
+    console.log('Found email in data.custom_data.userEmail:', userEmail);
+  } else if (data.customer_id) {
+    console.log('No direct email found, customer_id available:', data.customer_id);
+    // We might need to fetch customer details from Paddle API here
+    // For now, let's see if we can use custom_data
+  }
+
+  if (!userEmail) {
+    console.error('No email found in webhook data. Available data:', {
+      hasCustomer: !!data.customer,
+      hasCustomData: !!data.custom_data,
+      hasCustomerId: !!data.customer_id,
+      customData: data.custom_data
+    });
+    return;
+  }
+
+  const { items, status, next_billed_at, paused_at, canceled_at } = data;
 
   try {
     const userQuery = await db.collection('users').where('email', '==', userEmail).get();
@@ -79,7 +184,7 @@ async function handleSubscriptionUpdate(data) {
     let expiresAt = null;
 
     if (priceId === 'pri_01k1f95ne00eje36z837qhzm0q' || priceId === 'pri_01k1fh6p0sgsvxm5s1cregrygr') {
-      tier = 'pro'; // Changed to match your schema
+      tier = 'pro';
     }
 
     // Set expiration date
@@ -109,7 +214,7 @@ async function handleSubscriptionUpdate(data) {
       updateData['limits.maxSmartReviewDecks'] = -1;
       updateData['limits.maxFolders'] = -1;
     } else {
-      // Free tier limits - matching your schema
+      // Free tier limits
       updateData['limits.maxAiGenerations'] = 20;
       updateData['limits.maxCards'] = 100;
       updateData['limits.maxDecks'] = 5;
@@ -119,7 +224,7 @@ async function handleSubscriptionUpdate(data) {
 
     await db.collection('users').doc(userId).update(updateData);
 
-    console.log(`Updated subscription for user ${userId}: ${tier} (${status})`);
+    console.log(`✅ Updated subscription for user ${userId}: ${tier} (${status})`);
   } catch (error) {
     console.error('Error updating subscription:', error);
   }
@@ -531,7 +636,6 @@ exports.trackAiGeneration = onCall(async (request) => {
           'limits.aiGenerationsUsed': 1,
           'limits.aiGenerationsResetAt': Timestamp.fromDate(nextMonthStart)
         });
-        3
         console.log(`🔄 Reset AI generations for user ${userId}`);
       } else {
         // Just increment the count

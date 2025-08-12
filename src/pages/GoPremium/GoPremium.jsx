@@ -116,7 +116,9 @@ function GoPremium() {
         email: authUser?.email || 'customer@example.com'
       },
       customData: {
-        plan: planName
+        plan: planName,
+        userId: authUser?.uid, 
+        userEmail: authUser?.email
       }
     });
   };
