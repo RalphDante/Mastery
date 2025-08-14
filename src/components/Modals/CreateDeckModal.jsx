@@ -40,12 +40,12 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
     });
   }, []);
 
-  useEffect(() => {
-    if (isOpen) {
-      setDidCompleteStep(false);
-      setWasCancelled(false);
-    }
-  }, [isOpen]);
+  // useEffect(() => {
+  //   if (isOpen) {
+  //     setDidCompleteStep(false);
+  //     setWasCancelled(false);
+  //   }
+  // }, [isOpen]);
 
 //   useEffect(() => {
 //     if (isOpen === undefined || didCompleteStep) return;
