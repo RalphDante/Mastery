@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import SignUpBtn from '../../pages/TryNowPage/LandingPage/SignUpBtn';
+import { useNavigate } from 'react-router-dom';
 
 function Profile(){
+
+    const navigate = useNavigate();
 
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
@@ -55,6 +58,14 @@ function Profile(){
               >
                 Sign Out
               </a> */}
+              <button 
+                onClick={() => {
+                    navigate('/settings');
+                }}
+              className={`block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors `}
+              >
+                Settings
+              </button>
               <SignUpBtn />
             </div>
         </div>

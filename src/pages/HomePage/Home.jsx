@@ -1,7 +1,7 @@
 import Footer from '../../Footer.jsx'
 import CreateBtn from '../../components/CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
 import { onAuthStateChanged } from 'firebase/auth';
-import {auth} from '../../api/firebase.js'
+import {auth, functions} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
 import UserName from '../../components/auth/UserName.jsx';
 import styles from './navbar.module.css';
@@ -13,6 +13,7 @@ import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
 import OverallMastery from './Overall Mastery/OverallMastery.jsx';
 import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
+import { httpsCallable } from 'firebase/functions';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -21,11 +22,24 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const [authUser, setAuthUser] = useState(null);
 
   const navigate = useNavigate();
+  const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
+
+  const testExpiration = async () => {
+    try {
+      const result = await manuallyProcessExpired();
+      console.log('Manual processing result:', result.data);
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setAuthUser(user);
+        // testExpiration()
+
       } else {
         setAuthUser(null);
         // navigate('/try-now');

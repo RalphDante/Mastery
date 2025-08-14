@@ -1,10 +1,11 @@
 // functions/index.cjs
-const { onRequest, onCall } = require('firebase-functions/v2/https');
+const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https');
 const { onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 const crypto = require('crypto');
+const functions = require('firebase-functions');
 
 initializeApp();
 const db = getFirestore();
@@ -165,7 +166,7 @@ async function handleSubscriptionUpdate(data) {
     return;
   }
 
-  const { items, status, next_billed_at, paused_at, canceled_at } = data;
+  const { items, status, next_billed_at, paused_at, canceled_at, scheduled_change } = data;
 
   try {
     const userQuery = await db.collection('users').where('email', '==', userEmail).get();
@@ -177,28 +178,69 @@ async function handleSubscriptionUpdate(data) {
 
     const userDoc = userQuery.docs[0];
     const userId = userDoc.id;
+    const currentUserData = userDoc.data();
+
+    // CRITICAL FIX: Check if we have a pending cancellation
+    const currentSubscription = currentUserData.subscription || {};
+    const hasScheduledCancellation = scheduled_change && scheduled_change.action === 'cancel';
+    const isCurrentlyCancelRequested = currentSubscription.status === 'cancel_requested';
+
+    console.log('🔍 Checking cancellation status:', {
+      hasScheduledCancellation,
+      isCurrentlyCancelRequested,
+      paddleStatus: status,
+      scheduledChange: scheduled_change
+    });
 
     // Determine subscription tier from price ID
     const priceId = items[0]?.price?.id;
     let tier = 'free';
     let expiresAt = null;
+    let subscriptionStatus = status; // Default to Paddle's status
 
     if (priceId === 'pri_01k1f95ne00eje36z837qhzm0q' || priceId === 'pri_01k1fh6p0sgsvxm5s1cregrygr') {
       tier = 'pro';
     }
 
-    // Set expiration date
-    if (next_billed_at && status === 'active') {
-      expiresAt = Timestamp.fromDate(new Date(next_billed_at));
+    // CRITICAL FIX: Handle expiration and status logic properly
+    if (hasScheduledCancellation) {
+      // Paddle has a scheduled cancellation
+      subscriptionStatus = 'cancel_requested';
+      expiresAt = Timestamp.fromDate(new Date(scheduled_change.effective_at));
+      console.log('📅 Using scheduled cancellation date:', scheduled_change.effective_at);
+    } else if (isCurrentlyCancelRequested && status === 'active') {
+      // We have a local cancellation but Paddle still shows active
+      // DON'T override - keep our cancellation status
+      subscriptionStatus = 'cancel_requested';
+      expiresAt = currentSubscription.expiresAt; // Keep existing expiration
+      console.log('⚠️ Preserving local cancellation status, Paddle not yet updated');
     } else if (canceled_at) {
+      // Actually canceled
+      subscriptionStatus = 'canceled';
       expiresAt = Timestamp.fromDate(new Date(canceled_at));
+    } else if (next_billed_at && status === 'active') {
+      // Normal active subscription
+      subscriptionStatus = 'active';
+      expiresAt = Timestamp.fromDate(new Date(next_billed_at));
     }
+
+    // If no expiration date determined, keep the existing one
+    if (!expiresAt && currentSubscription.expiresAt) {
+      expiresAt = currentSubscription.expiresAt;
+      console.log('🔄 Keeping existing expiration date');
+    }
+
+    console.log('📋 Final subscription update:', {
+      tier,
+      status: subscriptionStatus,
+      expiresAt: expiresAt ? expiresAt.toDate?.() || expiresAt : null
+    });
 
     // Update subscription AND limits when tier changes
     const updateData = {
       subscription: {
         tier: tier,
-        status: status,
+        status: subscriptionStatus, // Use our determined status, not always Paddle's
         expiresAt: expiresAt,
         priceId: priceId,
         paddleSubscriptionId: data.id,
@@ -208,7 +250,7 @@ async function handleSubscriptionUpdate(data) {
 
     // Update tier-based limits based on new subscription
     if (tier === 'pro') {
-      updateData['limits.maxAiGenerations'] = 1000;
+      updateData['limits.maxAiGenerations'] = -1;
       updateData['limits.maxCards'] = -1; // unlimited
       updateData['limits.maxDecks'] = -1;
       updateData['limits.maxSmartReviewDecks'] = -1;
@@ -219,20 +261,35 @@ async function handleSubscriptionUpdate(data) {
       updateData['limits.maxCards'] = 100;
       updateData['limits.maxDecks'] = 5;
       updateData['limits.maxSmartReviewDecks'] = 2;
-      updateData['limits.maxFolders'] = 10;
+      updateData['limits.maxFolders'] = 10; 
     }
 
     await db.collection('users').doc(userId).update(updateData);
 
-    console.log(`✅ Updated subscription for user ${userId}: ${tier} (${status})`);
+    console.log(`✅ Updated subscription for user ${userId}: ${tier} (${subscriptionStatus})`);
   } catch (error) {
     console.error('Error updating subscription:', error);
   }
 }
 
 async function handleSubscriptionCancellation(data) {
-  const { customer, canceled_at } = data;
-  const userEmail = customer.email;
+  console.log('=== SUBSCRIPTION CANCELLATION ===');
+  console.log('Full data object:', JSON.stringify(data, null, 2));
+  
+  // Extract email (same logic as handleSubscriptionUpdate)
+  let userEmail = null;
+  if (data.customer && data.customer.email) {
+    userEmail = data.customer.email;
+  } else if (data.custom_data && data.custom_data.userEmail) {
+    userEmail = data.custom_data.userEmail;
+  }
+
+  if (!userEmail) {
+    console.error('No email found in cancellation webhook');
+    return;
+  }
+
+  const { canceled_at, status } = data;
 
   try {
     const userQuery = await db.collection('users').where('email', '==', userEmail).get();
@@ -245,6 +302,7 @@ async function handleSubscriptionCancellation(data) {
     const userDoc = userQuery.docs[0];
     const userId = userDoc.id;
 
+    // Set expiration date (when subscription actually ends)
     const expiresAt = canceled_at ? 
       Timestamp.fromDate(new Date(canceled_at)) : 
       FieldValue.serverTimestamp();
@@ -253,9 +311,10 @@ async function handleSubscriptionCancellation(data) {
       'subscription.status': 'canceled',
       'subscription.expiresAt': expiresAt,
       'subscription.updatedAt': FieldValue.serverTimestamp()
+      // Don't change tier yet - let the scheduled function handle expiration
     });
 
-    console.log(`Subscription canceled for user ${userId}, expires at:`, canceled_at);
+    console.log(`✅ Subscription canceled for user ${userId}, expires at:`, canceled_at);
   } catch (error) {
     console.error('Error handling cancellation:', error);
   }
@@ -264,6 +323,300 @@ async function handleSubscriptionCancellation(data) {
 async function handleTransactionCompleted(data) {
   console.log('Transaction completed:', data.id);
 }
+
+exports.cancelSubscription = onCall(async (request) => {
+  console.log('🔴 cancelSubscription called');
+  
+  try {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    const userId = request.auth.uid;
+    console.log('👤 User ID:', userId);
+    
+    // Get user's current subscription
+    const userDoc = await db.collection('users').doc(userId).get();
+    
+    if (!userDoc.exists) {
+      throw new HttpsError('not-found', 'User profile not found');
+    }
+    
+    const userData = userDoc.data();
+    const subscription = userData.subscription;
+    
+    console.log('📋 Current subscription data:', JSON.stringify(subscription, null, 2));
+    
+    if (!subscription || !subscription.paddleSubscriptionId) {
+      throw new HttpsError('failed-precondition', 'No active subscription found');
+    }
+    
+    const paddleApiKey = process.env.PADDLE_API_KEY;
+    const environment = process.env.ENVIRONMENT || 'sandbox';
+    
+    console.log('🔑 Paddle API key exists:', !!paddleApiKey);
+    console.log('🌍 Environment:', environment);
+    
+    if (!paddleApiKey) {
+      throw new HttpsError('internal', 'Service configuration error - missing API key');
+    }
+    
+    const paddleBaseUrl = environment === 'production' 
+      ? 'https://api.paddle.com' 
+      : 'https://sandbox-api.paddle.com';
+    
+    console.log('🚀 Calling Paddle API to cancel subscription:', subscription.paddleSubscriptionId);
+    console.log('🌐 Using base URL:', paddleBaseUrl);
+    
+    // Cancel via Paddle API
+    let paddleResponse;
+    try {
+      paddleResponse = await fetch(`${paddleBaseUrl}/subscriptions/${subscription.paddleSubscriptionId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${paddleApiKey}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          effective_from: 'next_billing_period'
+        })
+      });
+      
+      console.log('📡 Paddle API response status:', paddleResponse.status);
+      
+    } catch (fetchError) {
+      console.error('❌ Network error calling Paddle API:', fetchError);
+      throw new HttpsError('unavailable', 'Unable to connect to payment service');
+    }
+    
+    if (!paddleResponse.ok) {
+      const errorText = await paddleResponse.text();
+      console.error('❌ Paddle API error:', errorText);
+      
+      if (paddleResponse.status === 403) {
+        console.error('❌ 403 Forbidden - Check API key permissions');
+        throw new HttpsError('permission-denied', 
+          'Insufficient permissions to cancel subscription. Please contact support.');
+      } else if (paddleResponse.status === 404) {
+        throw new HttpsError('not-found', 'Subscription not found');
+      } else if (paddleResponse.status === 401) {
+        throw new HttpsError('unauthenticated', 'Invalid API key');
+      }
+      
+      throw new HttpsError('internal', `Payment service error: ${paddleResponse.status}`);
+    }
+    
+    const paddleResult = await paddleResponse.json();
+    console.log('✅ Paddle cancellation successful:', JSON.stringify(paddleResult, null, 2));
+    
+    // FIXED: Better logic for extracting the expiration date
+    let expiresAt = null;
+    
+    // Check multiple possible paths in Paddle's response
+    if (paddleResult.data) {
+      const data = paddleResult.data;
+      
+      // Priority 1: scheduled_change.effective_at (when cancellation takes effect)
+      if (data.scheduled_change && data.scheduled_change.effective_at) {
+        expiresAt = Timestamp.fromDate(new Date(data.scheduled_change.effective_at));
+        console.log('📅 Setting expiresAt from scheduled_change.effective_at:', data.scheduled_change.effective_at);
+      }
+      // Priority 2: canceled_at (immediate cancellation)
+      else if (data.canceled_at) {
+        expiresAt = Timestamp.fromDate(new Date(data.canceled_at));
+        console.log('📅 Setting expiresAt from canceled_at:', data.canceled_at);
+      }
+      // Priority 3: next_billed_at (end of current billing period)
+      else if (data.next_billed_at) {
+        expiresAt = Timestamp.fromDate(new Date(data.next_billed_at));
+        console.log('📅 Setting expiresAt from next_billed_at:', data.next_billed_at);
+      }
+      // Priority 4: current_billing_period.ends_at
+      else if (data.current_billing_period && data.current_billing_period.ends_at) {
+        expiresAt = Timestamp.fromDate(new Date(data.current_billing_period.ends_at));
+        console.log('📅 Setting expiresAt from current_billing_period.ends_at:', data.current_billing_period.ends_at);
+      }
+    }
+    
+    // Fallback: If we can't get the date from Paddle, keep the existing expiresAt
+    if (!expiresAt && subscription.expiresAt) {
+      expiresAt = subscription.expiresAt;
+      console.log('⚠️ Using existing expiresAt as fallback:', expiresAt);
+    }
+    
+    // Log the final expiration date
+    console.log('📅 Final expiresAt:', expiresAt ? expiresAt.toDate().toISOString() : 'null');
+    
+    // Update local status
+    console.log('💾 Updating user subscription status...');
+    const updateData = {
+      'subscription.status': 'cancel_requested',
+      'subscription.updatedAt': FieldValue.serverTimestamp()
+    };
+    
+    // Only update expiresAt if we have a valid date
+    if (expiresAt) {
+      updateData['subscription.expiresAt'] = expiresAt;
+      console.log('💾 Including expiresAt in update');
+    } else {
+      console.log('⚠️ No valid expiresAt found - keeping existing value');
+    }
+    
+    console.log('💾 Update data:', updateData);
+    
+    await db.collection('users').doc(userId).update(updateData);
+    
+    console.log('✅ Database update completed');
+    
+    // Verify the update worked
+    const updatedUserDoc = await db.collection('users').doc(userId).get();
+    const updatedData = updatedUserDoc.data();
+    console.log('🔍 Verified updated subscription:', JSON.stringify(updatedData.subscription, null, 2));
+    
+    return { 
+      success: true, 
+      message: 'Subscription will be canceled at the end of your billing period',
+      canceledAt: expiresAt ? expiresAt.toDate().toISOString() : null
+    };
+    
+  } catch (error) {
+    console.error('💥 cancelSubscription error:', error);
+    
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    
+    throw new HttpsError('internal', 'An unexpected error occurred');
+  }
+});
+
+exports.handleExpiredSubscriptions = onSchedule('0 6 * * *', async (event) => {
+  try {
+    console.log('🕐 Checking for expired subscriptions');
+    
+    const now = Timestamp.now();
+    
+    // Find users with expired subscriptions that haven't been downgraded yet
+    const expiredQuery = await db.collection('users')
+      .where('subscription.expiresAt', '<=', now)
+      .where('subscription.tier', '==', 'pro') // Still marked as pro
+      .get();
+    
+    console.log(`Found ${expiredQuery.size} expired subscriptions`);
+    
+    const batch = db.batch();
+    
+    expiredQuery.docs.forEach((userDoc) => {
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+      
+      console.log(`⬇️ Downgrading expired subscription for user ${userId}`);
+      
+      // Apply grandfather method - keep existing content but apply free limits
+      const updateData = {
+        'subscription.tier': 'free',
+        'subscription.status': 'expired',
+        'subscription.updatedAt': FieldValue.serverTimestamp(),
+        
+        // Reset to free tier limits (grandfather existing content)
+        'limits.maxAiGenerations': 20,
+        'limits.maxCards': 100, // They keep existing cards but can't add more
+        'limits.maxDecks': 5,
+        'limits.maxSmartReviewDecks': 2,
+        'limits.maxFolders': 10
+      };
+      
+      batch.update(userDoc.ref, updateData);
+    });
+    
+    if (!expiredQuery.empty) {
+      await batch.commit();
+      console.log(`✅ Processed ${expiredQuery.size} expired subscriptions`);
+    }
+    
+  } catch (error) {
+    console.error('Error handling expired subscriptions:', error);
+  }
+});
+
+
+// MANUAL DOWNGRADE TEST
+exports.manuallyProcessExpired = onCall(async (request) => {
+  try {
+    // Optional: Add admin check or remove for testing
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'User must be authenticated');
+    }
+    
+    console.log('🧪 MANUAL EXPIRATION TEST - Processing expired subscriptions');
+    
+    const now = Timestamp.now();
+    
+    // Find users with expired subscriptions that haven't been downgraded yet
+    const expiredQuery = await db.collection('users')
+      .where('subscription.expiresAt', '<=', now)
+      .where('subscription.tier', '==', 'pro') // Still marked as pro
+      .get();
+    
+    console.log(`Found ${expiredQuery.size} expired subscriptions for manual processing`);
+    
+    if (expiredQuery.empty) {
+      return { 
+        success: true, 
+        message: 'No expired subscriptions found',
+        processed: 0 
+      };
+    }
+    
+    const batch = db.batch();
+    const processedUsers = [];
+    
+    expiredQuery.docs.forEach((userDoc) => {
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+      
+      console.log(`⬇️ MANUAL: Downgrading expired subscription for user ${userId}`);
+      
+      // Apply grandfather method - keep existing content but apply free limits
+      const updateData = {
+        'subscription.tier': 'free',
+        'subscription.status': 'expired',
+        'subscription.updatedAt': FieldValue.serverTimestamp(),
+        'subscription.manuallyProcessed': true, // Flag to show this was manual
+        
+        // Reset to free tier limits (grandfather existing content)
+        'limits.maxAiGenerations': 20,
+        'limits.maxCards': 100, // They keep existing cards but can't add more
+        'limits.maxDecks': 5,
+        'limits.maxSmartReviewDecks': 2,
+        'limits.maxFolders': 10
+      };
+      
+      batch.update(userDoc.ref, updateData);
+      processedUsers.push({
+        userId,
+        email: userData.email,
+        previousTier: 'pro'
+      });
+    });
+    
+    await batch.commit();
+    
+    console.log(`✅ MANUAL: Processed ${expiredQuery.size} expired subscriptions`);
+    
+    return {
+      success: true,
+      message: `Manually processed ${expiredQuery.size} expired subscriptions`,
+      processed: expiredQuery.size,
+      users: processedUsers
+    };
+    
+  } catch (error) {
+    console.error('Error in manual expiration processing:', error);
+    throw new HttpsError('internal', 'Failed to process expired subscriptions');
+  }
+});
 
 // ======================
 // DECK TRACKING (aligned with your schema)

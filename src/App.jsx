@@ -81,6 +81,9 @@ import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
 import PublicDecksPage from './pages/PublicDecks/PublicDecksPage.jsx';
 import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDeckTutorial.jsx';
 
+// Settings
+import Settings from './components/NavBar/ProfileQuickActionsDropDown/Settings.jsx';
+
 
 
 function App(){
@@ -247,6 +250,9 @@ function App(){
                   <Route path='/pricing' element={<GoPremium />} />
                   {/* <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
 
+                  {/* Profile dropdown options */}
+                  <Route path='/settings' element={<Settings />} />
+                  
 
 
               </Routes>

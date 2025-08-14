@@ -32,5 +32,6 @@ dist-ssr
 firebase-admin-scripts/
 email_users_backup.json
 serviceAccountKey.json
+functions/.env
 
 
