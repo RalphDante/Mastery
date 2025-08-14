@@ -198,7 +198,7 @@ async function handleSubscriptionUpdate(data) {
     let expiresAt = null;
     let subscriptionStatus = status; // Default to Paddle's status
 
-    if (priceId === 'pri_01k1f95ne00eje36z837qhzm0q' || priceId === 'pri_01k1fh6p0sgsvxm5s1cregrygr') {
+    if (priceId === 'pri_01k2fc167nrk5f73hm7wz7dx6w' || priceId === 'pri_01k2fbyrdgvshyd5aqs3y34ymn') {
       tier = 'pro';
     }
 

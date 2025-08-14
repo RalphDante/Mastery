@@ -11,12 +11,12 @@ function GoPremium() {
   const [showFeatures, setShowFeatures] = useState(false);
 
   // Product ID
-  const masteryStudyPro = 'pro_01k1f8yahfd3b9xpm4ksbszm0n';
+  const masteryStudyPro = 'pro_01k2fbw2wkgbp8d87cb5ntgds1';
   
   // Price IDs - only Pro tier now
   const priceIds = {
-    proMonthly: 'pri_01k1f95ne00eje36z837qhzm0q',
-    proYearly: 'pri_01k1fh6p0sgsvxm5s1cregrygr'
+    proMonthly: 'pri_01k2fc167nrk5f73hm7wz7dx6w',
+    proYearly: 'pri_01k2fbyrdgvshyd5aqs3y34ymn'
   };
 
   const monthItems = [{
@@ -60,9 +60,9 @@ function GoPremium() {
 
   const initializePaddle = () => {
     try {
-      window.Paddle.Environment.set("sandbox");
+      window.Paddle.Environment.set("production");
       window.Paddle.Initialize({ 
-        token: "test_af4c89d11014f71659ef8484c82"
+        token: "live_b21f845ca0bca27b7b2601c8e27"
       });
       setPaddleLoaded(true);
     } catch (error) {
