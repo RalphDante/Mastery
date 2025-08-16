@@ -1449,7 +1449,8 @@ function FlashCardUI({
             }} />
         </TutorialOverlay>
 
-        <TutorialOverlay isVisible={goToDashBoard || isFinished}>
+
+        <TutorialOverlay isVisible={authUser && (goToDashBoard || isFinished)}>
             <div className="relative space-y-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-lg w-full p-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
