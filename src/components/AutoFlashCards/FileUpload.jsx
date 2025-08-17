@@ -60,6 +60,23 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         });
     };
 
+    const validateFileBeforeProcessing = (file) => {
+        const maxSize = 8 * 1024 * 1024; // 8MB limit
+        
+        if (file.size > maxSize) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            throw new Error(
+                `📄 File too large (${sizeMB}MB)\n\n` +
+                `For best results, please try:\n\n` +
+                `✅ Split your PDF into smaller files (under 8MB)\n` +
+                `✅ Export key pages as JPG images\n` +
+                `✅ Use online PDF splitters (ilovepdf.com, smallpdf.com)\n` +
+                `✅ Take photos of individual pages instead\n\n` +
+                `Why? Large PDFs can take 30+ minutes to process and may crash your browser.`
+            );
+        }
+    };
+
     // OCR function using Tesseract.js
     const performOCR = async (imageFile) => {
         try {
@@ -104,14 +121,33 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
     const { getRootProps, getInputProps } = useDropzone({
         multiple: false,
+        maxSize: 8 * 1024 * 1024, // 8MB limit
         accept: {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt'],
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], // Added DOCX
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'], // Added PPTX
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
             'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
         },
+        onDropRejected: (rejectedFiles) => {
+            const file = rejectedFiles[0];
+            if (file.errors.find(e => e.code === 'file-too-large')) {
+                const sizeMB = (file.file.size / (1024 * 1024)).toFixed(1);
+                alert(
+                    `📄 File too large (${sizeMB}MB)\n\n` +
+                    `For best results, please try:\n\n` +
+                    `✅ Split your PDF into smaller files (under 8MB)\n` +
+                    `✅ Export key pages as JPG images\n` +
+                    `✅ Use online PDF splitters (ilovepdf.com, smallpdf.com)\n` +
+                    `✅ Take photos of individual pages instead\n\n` +
+                    `Why? Large PDFs can take 30+ minutes to process and may crash your browser.`
+                );
+            } else {
+                alert('File type not supported. Please use PDF, DOCX, PPTX, TXT, or image files.');
+            }
+        },
         onDrop: async (acceptedFiles) => {
+            // Your existing onDrop logic stays the same
             if (acceptedFiles.length === 0) return;
             
             setLoading(true);
@@ -120,7 +156,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             const file = acceptedFiles[0];
             const fileType = file.type;
             
-            console.log('File type:', fileType, 'File name:', file.name); // Debug log
+            console.log('File type:', fileType, 'File name:', file.name);
             
             try {
                 let extractedText = '';
@@ -143,7 +179,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 console.log('Extracted text preview:', extractedText.substring(0, 200));
                 
                 if (extractedText.trim()) {
-                    console.log('Final extracted text being sent to AI:', extractedText); // Debug log
+                    console.log('Final extracted text being sent to AI:', extractedText);
                     setStatus('Generating flashcards...');
                     await sendToAI(extractedText);
                 } else {
@@ -173,6 +209,9 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
     // [Keep all the existing file reading functions unchanged - readPDF, readDOCX, readPPTX, etc.]
     const readPDF = async (file) => {
+        // Validate file size first
+        validateFileBeforeProcessing(file);
+        
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = async (event) => {
@@ -180,11 +219,25 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     const typedArray = new Uint8Array(event.target.result);
                     const pdf = await pdfjsLib.getDocument(typedArray).promise;
                     
+                    // Warn about large PDFs
+                    if (pdf.numPages > 20) {
+                        const shouldContinue = confirm(
+                            `🖼️ This PDF has ${pdf.numPages} pages.\n\n` +
+                            `To keep processing fast, we'll only process the first 10 pages if OCR is needed.\n\n` +
+                            `Continue?`
+                        );
+                        if (!shouldContinue) {
+                            reject(new Error('Processing cancelled by user'));
+                            return;
+                        }
+                    }
+                    
                     let text = '';
                     let hasText = false;
                     
-                    // First, try to extract text normally
-                    for (let i = 1; i <= pdf.numPages; i++) {
+                    // First, try to extract text normally (only check first 5 pages for speed)
+                    const pagesToCheck = Math.min(pdf.numPages, 5);
+                    for (let i = 1; i <= pagesToCheck; i++) {
                         const page = await pdf.getPage(i);
                         const content = await page.getTextContent();
                         const pageText = content.items.map((item) => item.str).join(" ");
@@ -194,10 +247,20 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         }
                     }
                     
-                    // If no text found, try OCR on PDF pages
-                    if (!hasText || text.trim().length < 50) {
-                        setStatus('PDF appears to be image-based. Performing OCR...');
-                        text = await performOCROnPDF(pdf);
+                    // If PDF has readable text, extract from all pages
+                    if (hasText && text.trim().length > 100) {
+                        setStatus('Extracting text from PDF...');
+                        // Get text from remaining pages
+                        for (let i = pagesToCheck + 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            const pageText = content.items.map((item) => item.str).join(" ");
+                            text += `${pageText} `;
+                        }
+                    } else {
+                        // If no text found, use limited OCR
+                        setStatus('PDF appears to be image-based. Performing limited OCR...');
+                        text = await performLimitedOCROnPDF(pdf);
                     }
                     
                     resolve(text);
@@ -210,28 +273,57 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         });
     };
 
-    const performOCROnPDF = async (pdf) => {
-        // Convert PDF pages to images and perform OCR
+    const performLimitedOCROnPDF = async (pdf) => {
+        const maxPages = Math.min(pdf.numPages, 10); // Limit to 10 pages
         let ocrText = '';
         
-        for (let i = 1; i <= pdf.numPages; i++) {
-            const page = await pdf.getPage(i);
-            const viewport = page.getViewport({ scale: 2.0 });
-            
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
-            
-            await page.render({
-                canvasContext: context,
-                viewport: viewport
-            }).promise;
-            
-            // Convert canvas to blob
-            const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-            const pageText = await performOCR(blob);
-            ocrText += `${pageText} `;
+        setStatus(`Processing first ${maxPages} pages with OCR...`);
+        
+        for (let i = 1; i <= maxPages; i++) {
+            try {
+                setStatus(`Processing page ${i}/${maxPages}...`);
+                
+                const page = await pdf.getPage(i);
+                // Reduced scale for faster processing
+                const viewport = page.getViewport({ scale: 1.0 });
+                
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                // Convert to JPEG with compression for faster OCR
+                const blob = await new Promise(resolve => 
+                    canvas.toBlob(resolve, 'image/jpeg', 0.6)
+                );
+                
+                const { data: { text } } = await window.Tesseract.recognize(
+                    blob,
+                    'eng',
+                    {
+                        logger: m => {
+                            if (m.status === 'recognizing text' && m.progress > 0.5) {
+                                setStatus(`Processing page ${i}/${maxPages} - ${Math.round(m.progress * 100)}%`);
+                            }
+                        },
+                        // Faster OCR settings
+                        tessedit_ocr_engine_mode: 1,
+                        tessedit_pageseg_mode: 6,
+                    }
+                );
+                
+                ocrText += text.trim() + ' ';
+                
+            } catch (error) {
+                console.error(`Error processing page ${i}:`, error);
+                // Continue with other pages instead of failing completely
+                continue;
+            }
         }
         
         return ocrText;
@@ -1101,10 +1193,13 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     )}
                     
                     {/* Condensed file format info */}
-                    <div className="bg-gray-800 bg-opacity-50 rounded-lg">
+                    <div className="bg-gray-800 bg-opacity-50 rounded-lg p-3">
                         <div className="text-xs text-gray-400 text-center">
                             <div className="font-medium text-gray-300 mb-1">✨ Supported formats:</div>
-                            <div>PDF, DOCX, PPTX, TXT, Images (PNG, JPG) • Auto OCR included</div>
+                            <div className="mb-2">PDF, DOCX, PPTX, TXT, Images (PNG, JPG) • Auto OCR included</div>
+                            <div className="text-xs text-purple-300">
+                                📏 Max file size: 8MB • PDF OCR limited to 10 pages for speed
+                            </div>
                         </div>
                     </div>
                 </div>
