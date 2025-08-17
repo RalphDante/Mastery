@@ -439,35 +439,45 @@ function CreateDeck() {
                 
                 if (isEditMode) {
                     // In edit mode, suggest removing cards or upgrading
-                    const confirmMessage = `You're trying to add ${cardsOverLimit} more cards than your ${isPremium() ? 'current' : 'free'} plan allows (${cardLimits.maxCards} total cards).
+                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
+but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
 
-    Options:
-    1. Remove ${cardsOverLimit} cards from this deck
-    2. ${isPremium() ? 'Contact support for higher limits' : 'Upgrade to Pro for unlimited cards'}
+Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
 
-    Would you like to continue editing to remove some cards?`;
-                    
+Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
+or Cancel to go back and remove ${cardsOverLimit} cards.`;
+
                     if (window.confirm(confirmMessage)) {
-                        return; // Let user continue editing to remove cards
+                    // OK → upgrade or support
+                    if (isPremium()) {
+                        window.location.href = "/contactme";
                     } else {
-                        return; // Cancel the save operation
+                        window.location.href = "/pricing";
+                    }
+                    } else {
+                        // Cancel → just let them keep editing
+                        return;
                     }
                 } else {
                     // In create mode, suggest removing cards or upgrading
-                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
+                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
+but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
 
-    Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
+Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
 
-    Options:
-    1. Remove ${cardsOverLimit} cards from this deck
-    2. ${isPremium() ? 'Contact support for higher limits' : 'Upgrade to Pro for unlimited cards and advanced features'}
+Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
+or Cancel to go back and remove ${cardsOverLimit} cards.`;
 
-    Would you like to continue editing to remove some cards?`;
-                    
                     if (window.confirm(confirmMessage)) {
-                        return; // Let user continue editing
+                    // OK → upgrade or support
+                    if (isPremium()) {
+                        window.location.href = "/contact-me";
                     } else {
-                        return; // Cancel the save operation
+                        window.location.href = "/pricing";
+                    }
+                    } else {
+                        // Cancel → just let them keep editing
+                        return;
                     }
                 }
             }

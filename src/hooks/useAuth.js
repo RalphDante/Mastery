@@ -17,6 +17,9 @@ export const authService = {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
 
+        const now = new Date();
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
         if (!userDoc.exists()) {
             console.log('📝 Creating new Firestore user profile...');
             await setDoc(userRef, {

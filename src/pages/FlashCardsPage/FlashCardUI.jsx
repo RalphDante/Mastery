@@ -80,9 +80,10 @@ function FlashCardUI({
     
 
     // Tutorials
-    const { isTutorialAtStep, advanceStep, completeTutorial } = useTutorials();
+    const { isTutorialAtStep, advanceStep, completeTutorial, isInTutorial } = useTutorials();
     const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2);
     const firstSmartReviewSession = isTutorialAtStep('smart-review', 3);
+    const completedFirstReviewSession = isInTutorial('smart-review');
     const goToDashBoard = isTutorialAtStep('smart-review', 4);
 
 
@@ -826,58 +827,56 @@ function FlashCardUI({
 
             // Check deck limits
             if (!deckLimits.canGenerate) {
-                const confirmMessage = userIsPremium 
-                    ? `You've reached your deck limit (${deckLimits.maxDecks}). Please delete some decks before copying this one, or contact support for assistance.`
-                    : `You've reached your deck limit (${deckLimits.maxDecks} decks). Would you like to upgrade to Premium for unlimited decks, or delete some existing decks first?`;
-                
-                const shouldProceed = window.confirm(confirmMessage);
-                if (!shouldProceed) {
-                    return;
-                }
-                
-                if (!userIsPremium) {
-                    // Redirect to upgrade page or show upgrade modal
-                    // You can replace this with your actual upgrade flow
-                    alert('Please upgrade to Premium or delete some decks first.');
-                    return;
+            const confirmMessage = userIsPremium
+                ? `You've reached your deck limit (${deckLimits.maxDecks}).\n\nPress OK to contact support for higher limits, or Cancel to delete some decks first.`
+                : `You've reached your deck limit (${deckLimits.maxDecks} decks).\n\nPress OK to upgrade to Premium for unlimited decks, or Cancel to delete some decks first.`;
+
+            if (window.confirm(confirmMessage)) {
+                if (userIsPremium) {
+                window.location.href = "/contactme";
+                } else {
+                window.location.href = "/pricing";
                 }
             }
+            return; // always stop here if over the limit
+            }
 
-            // Check card limits (assuming the deck being copied will add cards)
+            // Check card limits
             const cardsToAdd = flashCards.length;
-            const currentCards = cardLimits.maxCards === -1 ? 0 : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
-            
-            if (cardLimits.maxCards !== -1 && (currentCards + cardsToAdd) > cardLimits.maxCards) {
-                const confirmMessage = userIsPremium
-                    ? `Copying this deck would exceed your card limit. You currently have space for ${cardLimits.maxCards - currentCards} more cards, but this deck contains ${cardsToAdd} cards. Please delete some cards first.`
-                    : `Copying this deck would exceed your card limit (${cardLimits.maxCards} cards). This deck contains ${cardsToAdd} cards. Would you like to upgrade to Premium for unlimited cards, or free up some space first?`;
-                
-                const shouldProceed = window.confirm(confirmMessage);
-                if (!shouldProceed) {
-                    return;
-                }
-                
-                if (!userIsPremium) {
-                    alert('Please upgrade to Premium or delete some cards first.');
-                    return;
+            const currentCards =
+            cardLimits.maxCards === -1
+                ? 0
+                : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
+
+            if (cardLimits.maxCards !== -1 && currentCards + cardsToAdd > cardLimits.maxCards) {
+            const confirmMessage = userIsPremium
+                ? `Copying this deck would exceed your card limit.\n\nYou currently have space for ${cardLimits.maxCards - currentCards} more cards, but this deck contains ${cardsToAdd}.\n\nPress OK to contact support for higher limits, or Cancel to delete some cards first.`
+                : `Copying this deck would exceed your card limit (${cardLimits.maxCards} cards).\n\nThis deck contains ${cardsToAdd} cards.\n\nPress OK to upgrade to Premium for unlimited cards, or Cancel to delete some cards first.`;
+
+            if (window.confirm(confirmMessage)) {
+                if (userIsPremium) {
+                window.location.href = "/contactme";
+                } else {
+                window.location.href = "/pricing";
                 }
             }
+            return;
+            }
 
-            // Check folder limits (if copying creates a new folder or if user needs folders)
+            // Check folder limits
             if (!folderLimits.canGenerate) {
-                const confirmMessage = userIsPremium
-                    ? `You've reached your folder limit (${folderLimits.maxFolders}). Please delete some folders first, or contact support.`
-                    : `You've reached your folder limit (${folderLimits.maxFolders} folders). Would you like to upgrade to Premium for unlimited folders, or delete some existing folders first?`;
-                
-                const shouldProceed = window.confirm(confirmMessage);
-                if (!shouldProceed) {
-                    return;
+            const confirmMessage = userIsPremium
+                ? `You've reached your folder limit (${folderLimits.maxFolders}).\n\nPress OK to contact support for higher limits, or Cancel to delete some folders first.`
+                : `You've reached your folder limit (${folderLimits.maxFolders} folders).\n\nPress OK to upgrade to Premium for unlimited folders, or Cancel to delete some folders first.`;
+
+            if (window.confirm(confirmMessage)) {
+                if (userIsPremium) {
+                window.location.href = "/contactme";
+                } else {
+                window.location.href = "/pricing";
                 }
-                
-                if (!userIsPremium) {
-                    alert('Please upgrade to Premium or delete some folders first.');
-                    return;
-                }
+            }
+            return;
             }
 
             // Final confirmation before copying
@@ -1116,7 +1115,7 @@ function FlashCardUI({
                 folderRef = existingFolders.docs[0].ref;
                 // Update the deck count
                 batch.update(folderRef, {
-                    deckCount: increment(1),
+                    // deckCount: increment(1),
                     updatedAt: serverTimestamp()
                 });
             } else {
@@ -1128,7 +1127,7 @@ function FlashCardUI({
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
                     isPublic: false,
-                    deckCount: 1
+                    // deckCount: 1
                 });
             }
             
@@ -1142,7 +1141,7 @@ function FlashCardUI({
                 isPublic: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                cardCount: uniqueCards.length,
+                // cardCount: uniqueCards.length,
                 tags: deckData.tags || [],
                 originalDeckId: deckData.id // Track where it came from
             });
@@ -1450,7 +1449,7 @@ function FlashCardUI({
         </TutorialOverlay>
 
 
-        <TutorialOverlay isVisible={authUser && (goToDashBoard || isFinished)}>
+        <TutorialOverlay isVisible={authUser && (goToDashBoard || isFinished || completedFirstReviewSession)}>
             <div className="relative space-y-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-lg w-full p-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">

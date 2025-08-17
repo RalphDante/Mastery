@@ -142,7 +142,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
       if(!canGenerate){
           const upgrade = window.confirm(
               `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+              `Press OK to view upgrade options or Cancel to manage/delete decks.`
           )
           if(upgrade){
               navigate('/pricing')

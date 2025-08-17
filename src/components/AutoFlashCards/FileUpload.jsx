@@ -192,11 +192,15 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
                     const details = error.details;
-                    alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
-                        details.tier === 'free' 
-                            ? 'Upgrade to Pro for unlimited generations!' 
-                            : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
-                    }`);
+                    const message = `You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
+                    details.tier === 'free' 
+                        ? 'Upgrade to Pro for unlimited generations!' 
+                        : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
+                    }`;
+
+                    if (confirm(`${message}\n\nPress OK to upgrade, or Cancel to stay here.`)) {
+                        window.location.href = "/pricing";
+                    } 
                 } else {
                     alert(`Error processing file: ${error.message}`);
                 }
@@ -882,11 +886,15 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             // Handle limit reached error specifically
             if (error.code === 'LIMIT_REACHED') {
                 const details = error.details;
-                alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
-                    details.tier === 'free' 
-                        ? 'Upgrade to Pro for unlimited generations!' 
-                        : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
-                }`);
+                const message = `You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
+                details.tier === 'free' 
+                    ? 'Upgrade to Pro for unlimited generations!' 
+                    : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
+                }`;
+
+                if (confirm(`${message}\n\nPress OK to upgrade, or Cancel to stay here.`)) {
+                    window.location.href = "/pricing";
+                }       
             } else {
                 alert(`Error generating flashcards for topic "${topic}": ${error.message}`);
             }

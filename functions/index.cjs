@@ -7,8 +7,36 @@ const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestor
 const crypto = require('crypto');
 const functions = require('firebase-functions');
 
+const axios = require('axios');
+
 initializeApp();
 const db = getFirestore();
+
+// ======================
+// MAILER LITE HELPER FUNCTION
+// ======================
+async function addToMailerLite(email, displayName = 'New User') {
+  try {
+    const response = await axios.post('https://api.mailerlite.com/api/v2/subscribers', {
+      email: email,
+      name: displayName,
+      fields: {
+        signup_source: 'web_app',
+        signup_date: new Date().toISOString()
+      }
+    }, {
+      headers: {
+        'X-MailerLite-ApiKey': process.env.MAILERLITE_API_KEY,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    console.log('✅ Added user to MailerLite:', email);
+    return response.data;
+  } catch (error) {
+    console.error('❌ MailerLite API error:', error.response?.data || error.message);
+  }
+}
 
 // ======================
 // PADDLE WEBHOOK CODE
@@ -1013,10 +1041,15 @@ exports.trackAiGeneration = onCall(async (request) => {
 // ======================
 
 exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
+  
   try {
     const userId = event.params.userId;
     const snap = event.data;
     const userData = snap.data();
+
+    if (userData.email) {
+      await addToMailerLite(userData.email, userData.displayName);
+    }
     
     // Initialize limits if they don't exist
     if (!userData.limits) {
@@ -1048,7 +1081,7 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
         },
         tutorials: {
           "create-deck": { completed: false, step: 1 },
-          "smart-review": { completed: false, step: 1, data: { cardsReviewed: 0 } },
+          "smart-review": { completed: false, step: 1 },
           "global-review": { completed: false, step: 1 },
           "deck-sharing": { completed: false, step: 1 }
         }
