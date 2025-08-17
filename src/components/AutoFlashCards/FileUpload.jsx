@@ -120,8 +120,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     };
 
     const { getRootProps, getInputProps } = useDropzone({
-        multiple: false,
-        maxSize: 8 * 1024 * 1024, // 8MB limit
+        multiple: true, // Enable multiple file selection
+        maxSize: 8 * 1024 * 1024, // 8MB limit per file
         accept: {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt'],
@@ -130,64 +130,105 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
         },
         onDropRejected: (rejectedFiles) => {
-            const file = rejectedFiles[0];
-            if (file.errors.find(e => e.code === 'file-too-large')) {
-                const sizeMB = (file.file.size / (1024 * 1024)).toFixed(1);
-                alert(
-                    `📄 File too large (${sizeMB}MB)\n\n` +
-                    `For best results, please try:\n\n` +
-                    `✅ Split your PDF into smaller files (under 8MB)\n` +
-                    `✅ Export key pages as JPG images\n` +
-                    `✅ Use online PDF splitters (ilovepdf.com, smallpdf.com)\n` +
-                    `✅ Take photos of individual pages instead\n\n` +
-                    `Why? Large PDFs can take 30+ minutes to process and may crash your browser.`
-                );
-            } else {
-                alert('File type not supported. Please use PDF, DOCX, PPTX, TXT, or image files.');
+            // Handle rejected files - show info for each rejected file
+            rejectedFiles.forEach(rejectedFile => {
+                const file = rejectedFile.file;
+                if (rejectedFile.errors.find(e => e.code === 'file-too-large')) {
+                    const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+                    alert(`File "${file.name}" is too large (${sizeMB}MB). Please use files under 8MB.`);
+                }
+            });
+            
+            if (rejectedFiles.length > 0) {
+                alert('Some files were rejected. Please check file types and sizes.');
             }
         },
         onDrop: async (acceptedFiles) => {
-            // Your existing onDrop logic stays the same
             if (acceptedFiles.length === 0) return;
             
             setLoading(true);
-            setStatus('Processing file...');
-            
-            const file = acceptedFiles[0];
-            const fileType = file.type;
-            
-            console.log('File type:', fileType, 'File name:', file.name);
+            setStatus('Processing files...');
             
             try {
-                let extractedText = '';
+                let allExtractedText = '';
+                const imageFiles = [];
+                const documentFiles = [];
                 
-                if (fileType === 'application/pdf') {
-                    extractedText = await readPDF(file);
-                } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                    extractedText = await readDOCX(file);
-                } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-                    extractedText = await readPPTX(file);
-                } else if (fileType === 'text/plain') {
-                    extractedText = await readTextFile(file);
-                } else if (fileType.startsWith('image/')) {
-                    extractedText = await performOCR(file);
-                } else {
-                    throw new Error(`Unsupported file type: ${fileType}`);
+                // Separate images from documents
+                acceptedFiles.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        imageFiles.push(file);
+                    } else {
+                        documentFiles.push(file);
+                    }
+                });
+                
+                // Process document files first (only allow one document file type at a time)
+                if (documentFiles.length > 1) {
+                    alert('Please upload only one document file (PDF, DOCX, PPTX, or TXT) at a time. You can upload multiple images together.');
+                    return;
                 }
                 
-                console.log('Extracted text length:', extractedText.length);
-                console.log('Extracted text preview:', extractedText.substring(0, 200));
+                if (documentFiles.length === 1) {
+                    const file = documentFiles[0];
+                    const fileType = file.type;
+                    
+                    setStatus(`Processing ${file.name}...`);
+                    
+                    if (fileType === 'application/pdf') {
+                        allExtractedText = await readPDF(file);
+                    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                        allExtractedText = await readDOCX(file);
+                    } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                        allExtractedText = await readPPTX(file);
+                    } else if (fileType === 'text/plain') {
+                        allExtractedText = await readTextFile(file);
+                    }
+                }
                 
-                if (extractedText.trim()) {
-                    console.log('Final extracted text being sent to AI:', extractedText);
+                // Process multiple images with OCR
+                if (imageFiles.length > 0) {
+                    // Limit the number of images to prevent overwhelming processing
+                    const maxImages = 10;
+                    if (imageFiles.length > maxImages) {
+                        if (!confirm(`You've selected ${imageFiles.length} images. Processing more than ${maxImages} images may take a long time. Continue with first ${maxImages} images?`)) {
+                            return;
+                        }
+                        imageFiles.splice(maxImages); // Keep only first 10 images
+                    }
+                    
+                    setStatus(`Processing ${imageFiles.length} image(s) with OCR...`);
+                    
+                    // Process images sequentially to avoid overwhelming the browser
+                    for (let i = 0; i < imageFiles.length; i++) {
+                        const imageFile = imageFiles[i];
+                        setStatus(`Processing image ${i + 1}/${imageFiles.length}: ${imageFile.name}`);
+                        
+                        try {
+                            const imageText = await performOCR(imageFile);
+                            if (imageText && imageText.trim()) {
+                                allExtractedText += `\n\n--- Image ${i + 1} (${imageFile.name}) ---\n${imageText}`;
+                            }
+                        } catch (ocrError) {
+                            console.error(`OCR failed for ${imageFile.name}:`, ocrError);
+                            allExtractedText += `\n\n--- Image ${i + 1} (${imageFile.name}) ---\nOCR processing failed for this image.`;
+                        }
+                    }
+                }
+                
+                console.log('Total extracted text length:', allExtractedText.length);
+                console.log('Extracted text preview:', allExtractedText.substring(0, 300));
+                
+                if (allExtractedText.trim()) {
+                    console.log('Final extracted text being sent to AI:', allExtractedText);
                     setStatus('Generating flashcards...');
-                    await sendToAI(extractedText);
+                    await sendToAI(allExtractedText);
                 } else {
-                    throw new Error('No text could be extracted from the file');
+                    throw new Error('No text could be extracted from the files');
                 }
                 
             } catch (error) {
-                console.error('Error processing file:', error);
+                console.error('Error processing files:', error);
                 
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
@@ -202,7 +243,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         window.location.href = "/pricing";
                     } 
                 } else {
-                    alert(`Error processing file: ${error.message}`);
+                    alert(`Error processing files: ${error.message}`);
                 }
             } finally {
                 setLoading(false);
