@@ -5,7 +5,7 @@ import { useAuth } from '../../hooks/useAuth';
 function GoPremium() {
   const {authUser} = useAuth();
   const [paddleLoaded, setPaddleLoaded] = useState(false);
-  const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$4.99');
+  const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$1');
   const [masteryStudyProYearlyPrice, setMasteryStudyProYearlyPrice] = useState('$39.99');
   const [billingCycle, setBillingCycle] = useState('year'); // Default to annual for better conversion
   const [showFeatures, setShowFeatures] = useState(false);
@@ -183,7 +183,7 @@ function GoPremium() {
               <h3 className="text-2xl font-bold mb-4">Monthly</h3>
               <div className="mb-4">
                 <div className="text-sm text-gray-600 mb-1">Billed today at</div>
-                <div className="text-5xl font-bold text-black mb-1">$4.99</div>
+                <div className="text-5xl font-bold text-black mb-1">{masteryStudyProMonthlyPrice}</div>
                 <div className="text-lg text-gray-600">/month</div>
               </div>
               <div className="text-sm text-gray-600 mb-6">Recurring billing. Cancel anytime.</div>
