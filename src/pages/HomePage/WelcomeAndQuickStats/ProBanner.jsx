@@ -43,7 +43,7 @@ const ProBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="relative bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 rounded-lg p-4 mb-6 shadow-lg border border-purple-400/20">
+    <div className="relative bg-gradient-to-r from-purple-600 via-purple-500 to-indigo-600 rounded-lg p-3 sm:p-4 mb-6 shadow-lg border border-purple-400/20">
       {/* Close button */}
       <button 
         onClick={(e) => {
@@ -51,35 +51,38 @@ const ProBanner = () => {
           e.stopPropagation();
           setIsVisible(false);
         }}
-        className="absolute top-1 right-1 text-white/80 hover:text-white transition-colors z-20 hover:bg-white/10 rounded"
+        className="absolute top-1 right-1 text-white/80 hover:text-white transition-colors z-20 hover:bg-white/10 rounded "
       >
-        <X size={16} />
+        <X size={14} className="sm:w-4 sm:h-4" />
       </button>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="bg-white/20 rounded-full p-2">
-            <Sparkles className="text-white" size={20} />
+      {/* Mobile: Stack vertically, Desktop: Side by side */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+        {/* Content section */}
+        <div className="flex items-start sm:items-center space-x-3 pr-6 sm:pr-0">
+          <div className="bg-white/20 rounded-full p-1.5 sm:p-2 flex-shrink-0">
+            <Sparkles className="text-white w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <div>
-            <h3 className="text-white font-semibold text-lg">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-white font-semibold text-base sm:text-lg leading-tight">
               Pro features for $1 first month
             </h3>
-            <p className="text-white/90 text-sm">
+            <p className="text-white/90 text-xs sm:text-sm mt-0.5 leading-tight">
               Unlimited AI generations • Smart review features • Priority support
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-4">
+        {/* CTA section */}
+        <div className="flex items-center justify-between sm:justify-end sm:space-x-4">
           <div className="flex items-center space-x-2 text-white/90">
-            <Clock size={16} />
-            <span className="text-sm font-medium">
+            <Clock size={14} className="sm:w-4 sm:h-4" />
+            <span className="text-xs sm:text-sm font-medium whitespace-nowrap">
               Ends in {timeLeft} {timeLeft === 1 ? 'day' : 'days'}
             </span>
           </div>
           <button 
-            className="bg-white text-purple-600 px-6 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-md"
+            className="bg-white text-purple-600 px-4 sm:px-6 py-1.5 sm:py-2 rounded-md sm:rounded-lg font-semibold hover:bg-gray-50 transition-colors shadow-md text-sm sm:text-base whitespace-nowrap ml-3 sm:ml-0"
             onClick={() => navigate("/pricing")}
           >
             Upgrade Now
