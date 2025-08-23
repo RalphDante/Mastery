@@ -83,6 +83,7 @@ import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDec
 
 // Settings
 import Settings from './components/NavBar/ProfileQuickActionsDropDown/Settings.jsx';
+import ProBanner from './pages/HomePage/WelcomeAndQuickStats/ProBanner.jsx';
 
 
 
@@ -203,6 +204,8 @@ function App(){
                 isFolderModalOpen={isFolderModalOpen}
                 isCreateWithAIModalOpen={isCreateWithAIModalOpen}
               />
+              <ProBanner />
+
               <ShowNavBar>
                 <NavBar 
                   onCreateFolderClick={handleShowCreateFolderModal}

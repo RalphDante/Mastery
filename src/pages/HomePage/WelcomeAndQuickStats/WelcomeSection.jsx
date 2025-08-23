@@ -74,7 +74,6 @@ function WelcomeSection() {
           <p className="text-lg text-slate-400">Ready to master something new today?</p>
         </div>
 
-        <ProBanner />
 
         {/* Tutorial Tooltip */}
         {isGlobalReviewNotCompleted && !isCreateDeckNotCompleted && (

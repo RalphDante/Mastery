@@ -5,6 +5,7 @@ import CreateWithAIDemoModal from './CreateWithAIDemoModal';
 import { Search, Upload, FileText, Zap, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MostCopiesSection from './FeaturedDecks/MostCopiesSection';
+import ProBanner from '../../HomePage/WelcomeAndQuickStats/ProBanner';
 
 const TryNowPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -156,6 +157,9 @@ const TryNowPage = () => {
           </div>
           <SignUpBtn />
         </nav>
+
+          
+
 
         {/* Hero Section */}
         <main className="relative z-10 max-w-7xl mx-auto px-6 pt-1 pb-32">

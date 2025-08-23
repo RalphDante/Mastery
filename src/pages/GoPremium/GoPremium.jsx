@@ -1,6 +1,7 @@
 import { Check, Star, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import MonthlyPricingCard from './MonthlyPricingCard';
 
 function GoPremium() {
   const {authUser} = useAuth();
@@ -178,7 +179,12 @@ function GoPremium() {
           </div>
 
           {/* Monthly */}
-          <div className="bg-white rounded-2xl p-8 text-gray-800 shadow-lg">
+          <MonthlyPricingCard 
+           priceIds={priceIds}
+           openCheckout={openCheckout}
+          
+          />
+          {/* <div className="bg-white rounded-2xl p-8 text-gray-800 shadow-lg">
             <div className="text-center">
               <h3 className="text-2xl font-bold mb-4">Monthly</h3>
               <div className="mb-4">
@@ -194,7 +200,7 @@ function GoPremium() {
                 Get Mastery Pro
               </button>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* What's Included - Expandable */}
