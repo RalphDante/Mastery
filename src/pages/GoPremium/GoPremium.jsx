@@ -1,10 +1,10 @@
 import { Check, Star, Zap, ChevronDown, ChevronUp } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import MonthlyPricingCard from './MonthlyPricingCard';
 
 function GoPremium() {
-  const {authUser} = useAuth();
+  const {authUser, signIn} = useAuth();
   const [paddleLoaded, setPaddleLoaded] = useState(false);
   const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$1');
   const [masteryStudyProYearlyPrice, setMasteryStudyProYearlyPrice] = useState('$39.99');
@@ -100,29 +100,38 @@ function GoPremium() {
       });
   };
 
-  const openCheckout = (priceId, planName) => {
-    if (!paddleLoaded) {
-      console.error('Paddle not loaded yet');
-      return;
-    }
+  useEffect(() => {
+  const checkoutData = localStorage.getItem("postLoginCheckout");
+  if (authUser && checkoutData) {
+    localStorage.removeItem("postLoginCheckout");
+    const url = new URL(checkoutData);
+    const plan = url.searchParams.get("plan");
+    const priceId = url.searchParams.get("priceId");
+    openCheckout(priceId, plan); // continue checkout!
+  }
+}, [authUser]);
 
-    const items = [{
-      quantity: 1,
-      priceId: priceId,
-    }];
 
-    window.Paddle.Checkout.open({
-      items: items,
-      customer: {
-        email: authUser?.email || 'customer@example.com'
-      },
-      customData: {
-        plan: planName,
-        userId: authUser?.uid, 
-        userEmail: authUser?.email
-      }
-    });
-  };
+  const openCheckout = useCallback(async (priceId, planName) => {
+  if (!paddleLoaded) return;
+
+  if (!authUser) {
+    const currentUrl = window.location.href;
+    const checkoutUrl = `${currentUrl}?startCheckout=true&plan=${planName}&priceId=${priceId}`;
+    localStorage.setItem("postLoginCheckout", checkoutUrl);
+    await signIn();
+    return;
+  }
+
+  window.Paddle.Checkout.open({
+    items: [{ quantity: 1, priceId }],
+    customer: { email: authUser.email },
+    customData: { plan: planName, userId: authUser.uid, userEmail: authUser.email },
+    successCallback: () => { window.location.href = "/premium-success"; },
+    closeCallback: () => console.log("Checkout closed"),
+    errorCallback: (e) => console.error("Checkout error:", e),
+  });
+}, [authUser, paddleLoaded, signIn]);
 
   return (
     <div className="min-h-screen text-white">

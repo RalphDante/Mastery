@@ -113,7 +113,7 @@ export const authService = {
                 await authService.createUserProfileInFirestore(user);
                 
                 if (onSuccess) onSuccess(user);
-                if (navigate) navigate('/');
+                // if (navigate) navigate('/');
                 
             } catch (popupError) {
                 console.log('❌ Popup failed, trying redirect as fallback...');
