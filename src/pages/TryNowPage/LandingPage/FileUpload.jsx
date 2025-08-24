@@ -74,6 +74,70 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         }
     };
 
+    const validateOCRQuality = (text, confidence) => {
+        // Check text length (too short indicates poor OCR)
+        if (text.trim().length < 50) {
+            return {
+                isValid: false,
+                reason: 'insufficient_text',
+                message: 'Not enough readable text detected'
+            };
+        }
+
+        // Check for too many single characters or fragments
+        const words = text.trim().split(/\s+/);
+        const singleCharWords = words.filter(word => word.length === 1).length;
+        const singleCharRatio = singleCharWords / words.length;
+        
+        if (singleCharRatio > 0.4) { // More than 40% single characters
+            return {
+                isValid: false,
+                reason: 'fragmented_text',
+                message: 'Text appears fragmented or unclear'
+            };
+        }
+
+        // Check for too many non-alphabetic characters
+        const alphaChars = text.replace(/[^a-zA-Z]/g, '').length;
+        const totalChars = text.replace(/\s/g, '').length;
+        const alphaRatio = alphaChars / totalChars;
+        
+        if (alphaRatio < 0.6) { // Less than 60% alphabetic characters
+            return {
+                isValid: false,
+                reason: 'low_text_quality',
+                message: 'Image may contain mostly symbols or unclear text'
+            };
+        }
+
+        // Check confidence if available
+        if (confidence && confidence < 60) {
+            return {
+                isValid: false,
+                reason: 'low_confidence',
+                message: 'OCR confidence is too low'
+            };
+        }
+
+        // Check for common OCR artifacts that indicate poor quality
+        const ocrArtifacts = /[|}{><°~`]/g;
+        const artifactCount = (text.match(ocrArtifacts) || []).length;
+        const artifactRatio = artifactCount / text.length;
+        
+        if (artifactRatio > 0.05) { // More than 5% artifacts
+            return {
+                isValid: false,
+                reason: 'ocr_artifacts',
+                message: 'Image quality appears poor'
+            };
+        }
+
+        return {
+            isValid: true,
+            message: 'Text quality looks good'
+        };
+    };
+
     // OCR function using Tesseract.js
     const performOCR = async (imageFile) => {
         try {
@@ -104,18 +168,53 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             console.log('OCR completed with confidence:', confidence);
             console.log('Extracted text preview:', text.substring(0, 200) + '...');
             
+            // Validate OCR quality
+            const qualityCheck = validateOCRQuality(text, confidence);
+            
+            if (!qualityCheck.isValid) {
+                // Show helpful alert for poor OCR quality
+                const retryMessage = `📷 Photo Quality Issue\n\n` +
+                    `${qualityCheck.message}\n\n` +
+                    `💡 For better results:\n\n` +
+                    `✅ Ensure good lighting (avoid shadows)\n` +
+                    `✅ Hold phone steady and focus clearly\n` +
+                    `✅ Get closer to the text\n` +
+                    `✅ Make sure text fills most of the frame\n` +
+                    `✅ Avoid glare from glossy pages\n` +
+                    `✅ Try portrait orientation for better text capture\n\n` +
+                    `Would you like to try taking another photo?`;
+                
+                const shouldRetry = confirm(retryMessage);
+                
+                if (shouldRetry) {
+                    // Restart camera for another attempt
+                    setTimeout(() => {
+                        startCamera();
+                    }, 100);
+                    throw new Error('OCR_RETRY_REQUESTED');
+                } else {
+                    throw new Error('Poor image quality detected. Please try again with better lighting and focus.');
+                }
+            }
+            
             if (text && text.trim().length > 10) {
                 return text.trim();
             } else {
-                return 'No readable text found in image. Please ensure the image is clear and well-lit.';
+                throw new Error('No readable text found in image. Please ensure the image is clear and well-lit.');
             }
             
         } catch (error) {
             console.error('Tesseract OCR error:', error);
+            
+            // Don't show alert for retry requests (user already saw the quality alert)
+            if (error.message === 'OCR_RETRY_REQUESTED') {
+                throw error;
+            }
+            
             throw new Error(`OCR processing failed: ${error.message}`);
         }
     };
-
+    
     const { getRootProps, getInputProps } = useDropzone({
         multiple: false,
         maxSize: 8 * 1024 * 1024, // 8MB limit
