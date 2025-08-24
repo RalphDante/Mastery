@@ -6,12 +6,14 @@ import { Search, Upload, FileText, Zap, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import MostCopiesSection from './FeaturedDecks/MostCopiesSection';
 import ProBanner from '../../HomePage/WelcomeAndQuickStats/ProBanner';
+import { useAuth } from '../../../hooks/useAuth';
 
 const TryNowPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
   const [count, setCount] = useState(0);
+  const {signIn} = useAuth();
 
   const navigate = useNavigate();
 
@@ -183,20 +185,18 @@ const TryNowPage = () => {
             <div className={`flex flex-col sm:flex-row gap-4 justify-center items-center mb-20 transition-all duration-1000 delay-500 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               <button 
                 className="group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
-                onClick={() => setShowModal(true)}
+                onClick={() => signIn()}
                 aria-label="Generate flashcards from your notes now"
               >
-                <div className="group-hover:animate-bounce"><Upload /></div>
-                <span>Create Flashcards</span>
+                <span>Start Free</span>
               </button>
 
               <button 
                 className="group border-2 border-violet-500 bg-transparent hover:bg-violet-500 px-8 py-4 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
-                onClick={() => navigate("/browse-decks")}
+                onClick={() => setShowModal(true)}
                 aria-label="Browse decks"
               >
-                <div className="group-hover:animate-bounce"><Search /></div>
-                <span>Browse Decks</span>
+                <span>Try Demo</span>
               </button>
             </div>
 
