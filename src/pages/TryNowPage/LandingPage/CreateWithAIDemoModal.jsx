@@ -115,27 +115,28 @@ function CreateWithAIDemoModal({ onClose, isOpen }) {
             </div>
 
             {/* CTA Section */}
-            <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-4 rounded-lg border border-emerald-500/30 mb-6">
+            {/* <div className="bg-gradient-to-r from-emerald-600/20 to-teal-600/20 p-4 rounded-lg border border-emerald-500/30 mb-6">
               <div className="text-center">
                 <p className="text-slate-100 font-semibold mb-2">Ready to study?</p>
                 <p className="text-slate-300 text-sm">
                   Start practicing with your flashcards now!
                 </p>
               </div>
-            </div>
+            </div> */}
 
-            <div className="flex justify-between">
+            <div className="flex justify-center gap-4">
               <button 
                 onClick={() => setStep(1)} 
                 className="px-6 py-3 bg-gray-600 hover:bg-gray-500 text-slate-100 rounded-lg transition-all duration-200 font-semibold"
               >
                 Back
               </button>
+              
               <button 
                 onClick={handleStartDemo} 
                 className="px-8 py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-lg transition-all duration-300 transform hover:scale-105 font-semibold shadow-lg"
               >
-                Start Studying! 🚀
+                Start Studying!
               </button>
             </div>
 

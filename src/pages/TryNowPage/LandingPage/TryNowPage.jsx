@@ -170,9 +170,9 @@ const TryNowPage = () => {
             <h1 className={`text-6xl opacity-90 md:text-8xl font-black mb-6 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               Turn Your
               <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse py-4">
-                Written Notes
+                Text Book Pages
               </span>
-              Into AI Flashcards
+              Into Flashcards
             </h1>
 
             {/* Optimized subheading with keywords */}
@@ -199,6 +199,25 @@ const TryNowPage = () => {
                 <span>Try Demo</span>
               </button>
             </div>
+
+            {/* Benefits Section for SEO */}
+            <section className="mb-20" aria-labelledby="benefits">
+              <h2 id="benefits" className="text-3xl font-bold mb-8">Why Choose Mastery to study?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-violet-400 mb-3">Save Time</h3>
+                  <p className="text-gray-300">Create hundreds of flashcards in seconds instead of hours of manual work</p>
+                </div>
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-purple-400 mb-3">Better Retention</h3>
+                  <p className="text-gray-300">AI-optimized flashcards use proven memory techniques for faster learning</p>
+                </div>
+                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
+                  <h3 className="text-xl font-semibold text-indigo-400 mb-3">Any Subject</h3>
+                  <p className="text-gray-300">Works with math, science, history, languages, and any study material</p>
+                </div>
+              </div>
+            </section>
 
             {/* Featured Decks section */}
             <MostCopiesSection />
@@ -251,24 +270,7 @@ const TryNowPage = () => {
               </div>
             </section>
 
-            {/* Benefits Section for SEO */}
-            <section className="mb-20" aria-labelledby="benefits">
-              <h2 id="benefits" className="text-3xl font-bold mb-8">Why Choose AI-Generated Flashcards?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-violet-400 mb-3">Save Time</h3>
-                  <p className="text-gray-300">Create hundreds of flashcards in seconds instead of hours of manual work</p>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-purple-400 mb-3">Better Retention</h3>
-                  <p className="text-gray-300">AI-optimized flashcards use proven memory techniques for faster learning</p>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-indigo-400 mb-3">Any Subject</h3>
-                  <p className="text-gray-300">Works with math, science, history, languages, and any study material</p>
-                </div>
-              </div>
-            </section>
+            
 
             {/* FAQ Section for SEO */}
             <section className="mb-20 text-left max-w-4xl mx-auto" aria-labelledby="faq">

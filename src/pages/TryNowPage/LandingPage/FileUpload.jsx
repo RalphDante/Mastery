@@ -1049,148 +1049,157 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     };
 
     return (
-        <div className="w-full">
-    {!showCamera ? (
-        <div className="space-y-8">
-            {/* Main Topic Input - Made much more prominent */}
-            <div className="relative">
-                <textarea
-                    id="topic-input"
-                    className="w-full h-20 p-4 pr-14 bg-gray-700 bg-opacity-70 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 resize-none text-lg scrollbar-hide"
-                    placeholder="Enter any topic you want to study... (e.g., World War II, Photosynthesis)"
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    rows={2}
-                />
-                <button
-                    type="submit"
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                        topic.length === 0 ? 'opacity-30' : 'opacity-100 hover:bg-purple-700'
-                    } bg-purple-600 text-white p-3 rounded-lg transition-all duration-200`}
-                    aria-label="Generate"
-                    onClick={handleGenerateOnTopic}
-                    disabled={topic.length === 0}
-                >
-                    <ArrowRight className="w-6 h-6" />
-                </button>
-            </div>
+    <div className="w-full">
+        {!showCamera ? (
+            <div className="space-y-6">
+                {/* PRIMARY: Textbook scanning options - Make these prominent */}
+                <div>
+                    
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <button 
+                            onClick={startCamera}
+                            className={`${
+                                loading ? 'btn-disabled cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 hover:scale-105'
+                            } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                            disabled={loading}
+                        >
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Scan Pages
+                        </button>
 
-            <div className="text-center" style={{ marginTop: '-0.1rem' }}>
-                <button 
-                    onClick={() => navigate('/browse-decks')}
-                    className="text-purple-400 hover:text-purple-300 text-sm font-medium inline-flex items-center gap-2 transition-colors duration-200"
-                >
-                    💡 Need inspiration? →
-                </button>
-            </div>
+                        <button 
+                            {...getRootProps()} 
+                            className={`${
+                                loading ? 'btn-disabled cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                            } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                            disabled={loading}
+                        >
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            {loading ? 'Processing...' : 'Upload Files'}
+                        </button>
+                    </div>
 
-            {/* Divider */}
-            <div className="flex items-center gap-4">
-                <div className="flex-1 h-px bg-gray-600"></div>
-                <span className="text-gray-400 text-sm font-medium">OR UPLOAD YOUR NOTES</span>
-                <div className="flex-1 h-px bg-gray-600"></div>
-            </div>
+                    <input {...getInputProps()} />
+                    
+                    {/* Textbook-specific guidance */}
+                    {/* <div className="bg-blue-900 bg-opacity-30 rounded-lg p-4 border border-blue-700">
+                        <div className="text-sm text-blue-200">
+                            <div className="font-medium text-blue-100 mb-2">📚 Works best with:</div>
+                            <div className="space-y-1">
+                                <div>• Printed textbook pages (clear, high contrast)</div>
+                                <div>• PDF chapters from digital textbooks</div>
+                                <div>• Study guides and course materials</div>
+                                <div>• Lecture slides (PowerPoint, PDF)</div>
+                            </div>
+                        </div>
+                    </div> */}
+                </div>
 
-            {/* Upload Options - More prominent */}
-            <div className="grid grid-cols-2 gap-4">
-                
-                
-                <button 
-                    onClick={startCamera}
-                    className={`${
-                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-primary hover:scale-105'
-                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
-                    disabled={loading}
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    Take Photo
-                </button>
-
-                <button 
-                    {...getRootProps()} 
-                    className={`${
-                        loading ? 'btn-disabled cursor-not-allowed' : 'btn-secondary hover:scale-105'
-                    } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
-                    disabled={loading}
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                    {loading ? 'Processing...' : 'Upload File'}
-                </button>
-            </div>
-
-            <input {...getInputProps()} />
-            
-            {/* Status indicator */}
-            {status && (
-                <div className="bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg p-3">
-                    <div className="text-sm text-blue-200 flex items-center gap-3">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
-                        <span className="font-medium">{status}</span>
+                {/* SECONDARY: Topic generation - Smaller, less prominent */}
+                <div className="pt-4 border-t border-gray-600">
+                    <div className="text-center mb-3">
+                        <span className="text-gray-400 text-sm font-medium">OR CREATE FROM ANY TOPIC</span>
+                    </div>
+                    
+                    <div className="relative">
+                        <input
+                            type="text"
+                            className="w-full h-12 p-4 pr-12 bg-gray-700 bg-opacity-50 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 text-base"
+                            placeholder="e.g., Cellular Biology, European History..."
+                            value={topic}
+                            onChange={(e) => setTopic(e.target.value)}
+                        />
+                        <button
+                            className={`absolute right-2 top-1/2 -translate-y-1/2 ${
+                                topic.length === 0 ? 'opacity-30' : 'opacity-100 hover:bg-purple-700'
+                            } bg-purple-600 text-white p-2 rounded-md transition-all duration-200`}
+                            onClick={handleGenerateOnTopic}
+                            disabled={topic.length === 0}
+                        >
+                            <ArrowRight className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    <div className="text-center mt-2">
+                        <button 
+                            onClick={() => navigate('/browse-decks')}
+                            className="text-purple-400 hover:text-purple-300 text-xs font-medium inline-flex items-center gap-1 transition-colors duration-200"
+                        >
+                            💡 Need inspiration?
+                        </button>
                     </div>
                 </div>
-            )}
-            
-            {/* Condensed file format info */}
-            <div className="bg-gray-800 bg-opacity-50 rounded-lg p-3">
-                <div className="text-xs text-gray-400 text-center">
-                    <div className="font-medium text-gray-300 mb-1">✨ Supported formats:</div>
-                    <div className="mb-2">PDF, DOCX, PPTX, TXT, Images (PNG, JPG) • Auto OCR included</div>
-                    <div className="text-xs text-purple-300">
-                        📏 Max file size: 8MB • PDF OCR limited to 10 pages for speed
-                    </div>
-                </div>
-            </div>
-        </div>
-    ) : (
-        /* Camera UI - Keep this mostly the same but with slight improvements */
-        <div className="flex flex-col items-center gap-6">
-            <div className="relative w-full max-w-md">
-                <video
-                    ref={videoRef}
-                    className="w-full h-auto rounded-xl border-2 border-purple-500 shadow-lg"
-                    autoPlay
-                    playsInline
-                    muted
-                />
                 
-                {/* Improved camera overlay */}
-                <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-4 left-4 right-4 text-white bg-black bg-opacity-70 p-3 rounded-lg text-sm text-center font-medium">
-                        📝 Position your notes clearly in the frame
+                {/* Status indicator */}
+                {status && (
+                    <div className="bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg p-3">
+                        <div className="text-sm text-blue-200 flex items-center gap-3">
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-400"></div>
+                            <span className="font-medium">{status}</span>
+                        </div>
+                    </div>
+                )}
+                
+                {/* Technical specs - Condensed */}
+                <div className="bg-gray-800 bg-opacity-30 rounded-lg p-3">
+                    <div className="text-xs text-gray-400 text-center">
+                        <div className="mb-1">PDF, DOCX, PPTX, Images • Max 8MB • Auto OCR</div>
+                        <div className="text-xs text-gray-500">
+                            PDF OCR processes up to 10 pages for optimal speed
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div className="flex gap-4">
-                <button 
-                    onClick={capturePhoto}
-                    className="btn btn-primary px-8 py-4 text-lg font-semibold flex items-center gap-3 rounded-xl hover:scale-105 transition-all duration-200"
-                    disabled={loading}
-                >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg> 
-                    Capture Photo
-                </button>
+        ) : (
+            /* Camera UI remains the same but with textbook-specific messaging */
+            <div className="flex flex-col items-center gap-6">
+                <div className="relative w-full max-w-md">
+                    <video
+                        ref={videoRef}
+                        className="w-full h-auto rounded-xl border-2 border-purple-500 shadow-lg"
+                        autoPlay
+                        playsInline
+                        muted
+                    />
+                    
+                    <div className="absolute inset-0 pointer-events-none">
+                        <div className="absolute top-4 left-4 right-4 text-white bg-black bg-opacity-70 p-3 rounded-lg text-sm text-center font-medium">
+                            📖 Position textbook page clearly in frame
+                        </div>
+                    </div>
+                </div>
                 
-                <button 
-                    onClick={stopCamera}
-                    className="btn btn-outline px-6 py-4 bg-gray-600 hover:bg-gray-700 text-white rounded-xl transition-all duration-200"
-                    disabled={loading}
-                >
-                    Cancel
-                </button>
+                <div className="flex gap-4">
+                    <button 
+                        onClick={capturePhoto}
+                        className="bg-purple-600 hover:bg-purple-700 px-8 py-4 text-lg font-semibold flex items-center gap-3 rounded-xl hover:scale-105 transition-all duration-200 text-white shadow-lg"
+                        disabled={loading}
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg> 
+                        Scan Page
+                    </button>
+                    
+                    <button 
+                        onClick={stopCamera}
+                        className="bg-gray-600 hover:bg-gray-700 px-6 py-4 text-white rounded-xl transition-all duration-200"
+                        disabled={loading}
+                    >
+                        Cancel
+                    </button>
+                </div>
             </div>
-        </div>
-    )}
-</div>
-    );
+        )}
+    </div>
+);
 }
 
 export default FileUpload;
