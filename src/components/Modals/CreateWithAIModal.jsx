@@ -14,7 +14,8 @@ import { useTutorials } from "../../contexts/TutorialContext";
 function CreateWithAIModal({ onClose, isOpen }) {
 
   // Context
-  const { getFolderLimits, getDeckLimits } = useAuthContext();
+  const { getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
+  const userIsPremium = isPremium();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
   const [tutorialCancelled, setTutorialCancelled] = useState(false);
@@ -136,7 +137,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
       if(!canGenerate){
           const upgrade = window.confirm(
               `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete folders.`
+              `Press OK to view upgrade options or Cancel to manage/delete decks.`
           )
           if(upgrade){
               navigate('/pricing')
@@ -146,6 +147,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
           return;
       }
 
+    
     setStep(2);
     setLoading(false);
   };
@@ -162,6 +164,30 @@ function CreateWithAIModal({ onClose, isOpen }) {
       alert("User not authenticated. Please log in.");
       return;
     }
+
+    // Check card limits
+    const cardLimits = getCardLimits();
+    const cardsToAdd = flashcards.length;
+    const currentCards =
+    cardLimits.maxCards === -1
+        ? 0
+        : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
+
+    if (cardLimits.maxCards !== -1 && currentCards + cardsToAdd > cardLimits.maxCards) {
+      const confirmMessage = userIsPremium
+          ? `Saving this deck would exceed your card limit.\n\nYou currently have space for ${cardLimits.maxCards - currentCards} more cards, but this deck contains ${cardsToAdd}.\n\nPress OK to contact support for higher limits, or Cancel to delete some cards first.`
+          : `Saving this deck would exceed your card limit (${cardLimits.maxCards} cards).\n\nThis deck contains ${cardsToAdd} cards.\n\nPress OK to upgrade to Premium for unlimited cards, or Cancel to delete some cards first.`;
+
+      if (window.confirm(confirmMessage)) {
+          if (userIsPremium) {
+          window.location.href = "/contactme";
+          } else {
+          window.location.href = "/pricing";
+          }
+      }
+      return;
+    }
+
   
     setIsSaving(true); // 🔒 Lock the button
   
