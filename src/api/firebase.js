@@ -1,8 +1,8 @@
 // firebase.js
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getAuth, connectAuthEmulator } from "firebase/auth";
+import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
 import { getFunctions, connectFunctionsEmulator } from "firebase/functions";
 
 const firebaseConfig = {
@@ -21,10 +21,16 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const functions = getFunctions(app);
 
-// If you're developing locally and want to use the Functions emulator
-// Uncomment the line below when running locally
-// if (import.meta.env.DEV) {
-//   connectFunctionsEmulator(functions, 'localhost', 5001);
-// }
+// Connect to emulators when developing locally
+if (location.hostname === 'localhost') {
+  // Connect to Firestore emulator
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  
+  // Connect to Authentication emulator
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  
+  // Connect to Functions emulator
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+}
 
 export { db, auth, app, functions };
