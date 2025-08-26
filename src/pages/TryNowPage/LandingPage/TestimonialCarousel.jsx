@@ -42,7 +42,7 @@ const TestimonialsCarousel = () => {
 
   return (
     <section 
-      className="bg-black/20 backdrop-blur-sm rounded-3xl p-4 mb-20 border border-white/10" 
+      className="backdrop-blur-sm rounded-3xl  mb-20 " 
       aria-labelledby="testimonials"
     >
       <h2 id="testimonials" className="text-2xl font-bold mb-6 flex items-center justify-center space-x-2">
@@ -63,7 +63,7 @@ const TestimonialsCarousel = () => {
               key={index} 
               className="flex-shrink-0 w-80"
             >
-              <div className="bg-white/5 rounded-2xl p-6 border border-white/10 hover:border-violet-500/30 transition-all duration-300 h-full">
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/10 hover:border-violet-500/30 transition-all duration-300 h-full">
                 <div className="flex items-center space-x-2 mb-3">
                   <span className="font-bold text-violet-400">{testimonial.source}</span>
                   <div className="text-yellow-400" aria-label="Verified feedback">
