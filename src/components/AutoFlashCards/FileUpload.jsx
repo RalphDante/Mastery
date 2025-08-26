@@ -980,20 +980,41 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `You are a flashcard generator. Create exactly ${flashcardCount} flashcards from the provided text.
-    
-                            CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
-                            
-                            Format: [{"question":"Your question here","answer":"Your answer here"}]
-                            
-                            Requirements:
-                            - Questions should be clear and specific
-                            - Answers should be concise but complete
+                            text: `You are an expert educational content creator specializing in effective flashcard design. Create exactly ${flashcardCount} high-quality flashcards from the provided text that follow proven learning principles.
+
+                            FLASHCARD QUALITY GUIDELINES:
+                            - Questions should test understanding, not just memorization
+                            - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
+                            - Questions should be specific and unambiguous
+                            - Answers should be concise but complete (1-3 sentences typically)
+                            - Include both factual recall AND conceptual understanding questions
+                            - For complex topics, break them into smaller, focused questions
+                            - Use clear, direct language
+                            - Avoid overly obvious or trivial questions
+
+                            QUESTION TYPES TO INCLUDE:
+                            - "What is..." (definitions)
+                            - "How does..." (processes/mechanisms)  
+                            - "Why does..." (reasoning/causation)
+                            - "What are the key differences between..." (comparisons)
+                            - "Give an example of..." (application)
+                            - "What would happen if..." (hypothetical scenarios)
+
+                            FORMATTING REQUIREMENTS:
+                            - Return ONLY a valid JSON array
+                            - No explanations, markdown, or code blocks
+                            - Format: [{"question":"Your question here","answer":"Your answer here"}]
                             - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
                             - No line breaks within strings
                             - Exactly ${flashcardCount} flashcards
-                            - Double quotes only, no single quotes
-                            
+                            - Double quotes only
+
+                            CONTENT FOCUS:
+                            - Prioritize the most important concepts and facts
+                            - Ensure questions build knowledge progressively
+                            - Include context in answers when needed for clarity
+                            - Make sure each flashcard is self-contained and understandable
+
                             Text to process: ${text}`
                         }]
                     }]
