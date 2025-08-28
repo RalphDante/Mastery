@@ -204,7 +204,9 @@ function App(){
                 isFolderModalOpen={isFolderModalOpen}
                 isCreateWithAIModalOpen={isCreateWithAIModalOpen}
               />
-              <ProBanner />
+
+              {/* DISCOUNT BANNERS */}
+              {/* <ProBanner /> */}
 
               <ShowNavBar>
                 <NavBar 
