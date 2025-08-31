@@ -281,8 +281,8 @@ function CreateWithAIModal({ onClose, isOpen }) {
         {/* Step 1: Choose Folder */}
         {step === 1 && (
           <>
-            <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Create AI Flashcards</h2>
-            <p className="text-slate-300 mb-6 text-center">Where would you like to save your new deck?</p>
+            <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Choose/Create a Folder</h2>
+            <p className="text-slate-300 mb-6 text-center">Folders help you organize your decks for the best experience</p>
 
             <div className="space-y-4">
               <div className="bg-gray-700 rounded-lg p-4 border border-gray-600">

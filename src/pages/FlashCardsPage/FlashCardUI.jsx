@@ -79,13 +79,7 @@ function FlashCardUI({
     const [cardAnimKey, setCardAnimKey] = useState(0);
     
 
-    // Tutorials
-    const { isTutorialAtStep, advanceStep, completeTutorial, isInTutorial } = useTutorials();
-    const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2);
-    const firstSmartReviewSession = isTutorialAtStep('smart-review', 3);
-    const completedFirstReviewSession = isInTutorial('smart-review');
-    const goToDashBoard = isTutorialAtStep('smart-review', 4);
-
+  
 
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [finalTime, setFinalTime] = useState("");
@@ -107,6 +101,14 @@ function FlashCardUI({
     const navigate = useNavigate();
 
     const [isFinished, setIsFinished] = useState(false);
+
+      // Tutorials
+    const { isTutorialAtStep, advanceStep, completeTutorial, isInTutorial } = useTutorials();
+    const welcomeUserToSmartReview = isTutorialAtStep('smart-review', 2);
+    const firstSmartReviewSession = isTutorialAtStep('smart-review', 3);
+    const completedFirstReviewSession = isInTutorial('smart-review');
+    const goToDashBoard = isTutorialAtStep('smart-review', 4);
+    const shouldShowOverlay = completedFirstReviewSession && isFinished;
 
     // Cramming mode tracking states
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
@@ -1437,6 +1439,17 @@ function FlashCardUI({
             );
         }
     }
+    // Add this debugging to see which condition is failing
+    console.log('Tutorial State Debug:', {
+    authUser,
+    completedFirstReviewSession,
+    goToDashBoard, 
+    isFinished,
+    // Also log the raw tutorial data
+    tutorialStep: isTutorialAtStep('smart-review', 4),
+    inTutorial: isInTutorial('smart-review'),
+    allConditionsMet: completedFirstReviewSession && goToDashBoard && isFinished
+    });
 
     return (
     <>  

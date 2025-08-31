@@ -24,7 +24,7 @@ export function useTutorialState(authUser) {
         }
         
         setTutorials(tutorials);
-        setLoading(false); // Don't forget to set loading to false
+        setLoading(false);
     };
 
     fetchTutorials();
@@ -71,29 +71,20 @@ export function useTutorialState(authUser) {
     shouldShowTutorial: (name, minStep = 1) => tutorials[name] && !tutorials[name].completed && tutorials[name].step >= minStep,
     
     updateTutorial,
-    // Fix: Use functional update to ensure we have the latest state
-    advanceStep: (name) => {
-      setTutorials(prev => {
-        if (!prev[name]) return prev;
-        const newStep = prev[name].step + 1;
-        updateTutorial(name, { step: newStep });
-        return {
-          ...prev,
-          [name]: { ...prev[name], step: newStep }
-        };
-      });
+    
+    // FIXED: No more double updates or async in setState
+    advanceStep: async (name) => {
+      if (!tutorials[name]) return;
+      const newStep = tutorials[name].step + 1;
+      await updateTutorial(name, { step: newStep });
     },
-    goBackAStep: (name) => {
-      setTutorials(prev => {
-        if (!prev[name]) return prev;
-        const newStep = prev[name].step - 1;
-        updateTutorial(name, { step: newStep });
-        return {
-          ...prev,
-          [name]: { ...prev[name], step: newStep }
-        };
-      });
+    
+    goBackAStep: async (name) => {
+      if (!tutorials[name]) return;
+      const newStep = tutorials[name].step - 1;
+      await updateTutorial(name, { step: newStep });
     },
+    
     completeTutorial: (name) => updateTutorial(name, { completed: true })
   };
 }

@@ -76,8 +76,71 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             );
         }
     };
+    const validateOCRQuality = (text, confidence) => {
+        // Check text length (too short indicates poor OCR)
+        if (text.trim().length < 50) {
+            return {
+                isValid: false,
+                reason: 'insufficient_text',
+                message: 'Not enough readable text detected'
+            };
+        }
 
-    // OCR function using Tesseract.js
+        // Check for too many single characters or fragments
+        const words = text.trim().split(/\s+/);
+        const singleCharWords = words.filter(word => word.length === 1).length;
+        const singleCharRatio = singleCharWords / words.length;
+        
+        if (singleCharRatio > 0.4) { // More than 40% single characters
+            return {
+                isValid: false,
+                reason: 'fragmented_text',
+                message: 'Text appears fragmented or unclear'
+            };
+        }
+
+        // Check for too many non-alphabetic characters
+        const alphaChars = text.replace(/[^a-zA-Z]/g, '').length;
+        const totalChars = text.replace(/\s/g, '').length;
+        const alphaRatio = alphaChars / totalChars;
+        
+        if (alphaRatio < 0.6) { // Less than 60% alphabetic characters
+            return {
+                isValid: false,
+                reason: 'low_text_quality',
+                message: 'Image may contain mostly symbols or unclear text'
+            };
+        }
+
+        // Check confidence if available
+        if (confidence && confidence < 60) {
+            return {
+                isValid: false,
+                reason: 'low_confidence',
+                message: 'OCR confidence is too low'
+            };
+        }
+
+        // Check for common OCR artifacts that indicate poor quality
+        const ocrArtifacts = /[|}{><°~`]/g;
+        const artifactCount = (text.match(ocrArtifacts) || []).length;
+        const artifactRatio = artifactCount / text.length;
+        
+        if (artifactRatio > 0.05) { // More than 5% artifacts
+            return {
+                isValid: false,
+                reason: 'ocr_artifacts',
+                message: 'Image quality appears poor'
+            };
+        }
+
+        return {
+            isValid: true,
+            message: 'Text quality looks good'
+        };
+    };
+
+    // Replace the existing performOCR function with this enhanced version
     const performOCR = async (imageFile) => {
         try {
             console.log('Starting Tesseract OCR for:', imageFile.name || 'captured image');
@@ -107,14 +170,49 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             console.log('OCR completed with confidence:', confidence);
             console.log('Extracted text preview:', text.substring(0, 200) + '...');
             
+            // Validate OCR quality
+            const qualityCheck = validateOCRQuality(text, confidence);
+            
+            if (!qualityCheck.isValid) {
+                // Show helpful alert for poor OCR quality
+                const retryMessage = `📷 Photo Quality Issue\n\n` +
+                    `${qualityCheck.message}\n\n` +
+                    `💡 For better results:\n\n` +
+                    `✅ Ensure good lighting (avoid shadows)\n` +
+                    `✅ Hold phone steady and focus clearly\n` +
+                    `✅ Get closer to the text\n` +
+                    `✅ Make sure text fills most of the frame\n` +
+                    `✅ Avoid glare from glossy pages\n` +
+                    `✅ Try portrait orientation for better text capture\n\n` +
+                    `Would you like to try taking another photo?`;
+                
+                const shouldRetry = confirm(retryMessage);
+                
+                if (shouldRetry) {
+                    // Restart camera for another attempt
+                    setTimeout(() => {
+                        startCamera();
+                    }, 100);
+                    throw new Error('OCR_RETRY_REQUESTED');
+                } else {
+                    throw new Error('Poor image quality detected. Please try again with better lighting and focus.');
+                }
+            }
+            
             if (text && text.trim().length > 10) {
                 return text.trim();
             } else {
-                return 'No readable text found in image. Please ensure the image is clear and well-lit.';
+                throw new Error('No readable text found in image. Please ensure the image is clear and well-lit.');
             }
             
         } catch (error) {
             console.error('Tesseract OCR error:', error);
+            
+            // Don't show alert for retry requests (user already saw the quality alert)
+            if (error.message === 'OCR_RETRY_REQUESTED') {
+                throw error;
+            }
+            
             throw new Error(`OCR processing failed: ${error.message}`);
         }
     };
@@ -679,6 +777,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         cameraIsOpen(false);
     };
 
+    // Also update the capturePhoto function to handle retry requests properly
     const capturePhoto = () => {
         if (!videoRef.current) return;
         
@@ -705,6 +804,14 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 }
             } catch (error) {
                 console.error('Error processing photo:', error);
+                
+                // Handle OCR retry requests (don't show error alert for these)
+                if (error.message === 'OCR_RETRY_REQUESTED') {
+                    // Camera will restart automatically, just reset loading state
+                    setLoading(false);
+                    setStatus('');
+                    return;
+                }
                 
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
@@ -1179,78 +1286,89 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         <div className="w-full">
             {!showCamera ? (
                 <div className="space-y-8">
-                    {/* Main Topic Input - Made much more prominent */}
-                    <div className="relative">
-                        <textarea
-                            id="topic-input"
-                            className="w-full h-20 p-4 pr-14 bg-gray-700 bg-opacity-70 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 resize-none text-lg scrollbar-hide"
-                            placeholder="Enter any topic you want to study... (e.g., World War II, Photosynthesis)"
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
-                            rows={2}
-                        />
-                        <button
-                            type="submit"
-                            className={`absolute right-3 top-1/2 -translate-y-1/2 ${
-                                topic.length === 0 ? 'opacity-30' : 'opacity-100 hover:bg-purple-700'
-                            } bg-purple-600 text-white p-3 rounded-lg transition-all duration-200`}
-                            aria-label="Generate"
-                            onClick={handleGenerateOnTopic}
-                            disabled={topic.length === 0}
-                        >
-                            <ArrowRight className="w-6 h-6" />
-                        </button>
-                    </div>
-
-                    <div className="text-center" style={{ marginTop: '-0.1rem' }}>
-                        <button 
-                            onClick={() => navigate('/browse-decks')}
-                            className="text-purple-400 hover:text-purple-300 text-sm font-medium inline-flex items-center gap-2 transition-colors duration-200"
-                        >
-                            💡 Need inspiration? →
-                        </button>
-                    </div>
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-4">
-                        <div className="flex-1 h-px bg-gray-600"></div>
-                        <span className="text-gray-400 text-sm font-medium">OR UPLOAD YOUR NOTES</span>
-                        <div className="flex-1 h-px bg-gray-600"></div>
-                    </div>
-
-                    {/* Upload Options - More prominent */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* PRIMARY: Textbook scanning options - Make these prominent */}
+                    <div>
                         
                         
-                        <button 
-                            onClick={startCamera}
-                            className={`${
-                                loading ? 'btn-disabled cursor-not-allowed' : 'btn-primary hover:scale-105'
-                            } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
-                            disabled={loading}
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0118.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            Take Photo
-                        </button>
-
-                        <button 
-                            {...getRootProps()} 
-                            className={`${
-                                loading ? 'btn-disabled cursor-not-allowed' : 'btn-secondary hover:scale-105'
-                            } h-14 px-6 py-4 rounded-lg flex items-center justify-center gap-3 text-lg font-medium transition-all duration-200`}
-                            disabled={loading}
-                        >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                            </svg>
-                            {loading ? 'Processing...' : 'Upload File'}
-                        </button>
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                            <button 
+                                onClick={startCamera}
+                                className={`${
+                                    loading ? 'btn-disabled cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 hover:scale-105'
+                                } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                                disabled={loading}
+                            >
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                                Scan Pages
+                            </button>
+    
+                            <button 
+                                {...getRootProps()} 
+                                className={`${
+                                    loading ? 'btn-disabled cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                                } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                                disabled={loading}
+                            >
+                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                </svg>
+                                {loading ? 'Processing...' : 'Upload Files'}
+                            </button>
+                        </div>
+    
+                        <input {...getInputProps()} />
+                        
+                        {/* Textbook-specific guidance */}
+                        {/* <div className="bg-blue-900 bg-opacity-30 rounded-lg p-4 border border-blue-700">
+                            <div className="text-sm text-blue-200">
+                                <div className="font-medium text-blue-100 mb-2">📚 Works best with:</div>
+                                <div className="space-y-1">
+                                    <div>• Printed textbook pages (clear, high contrast)</div>
+                                    <div>• PDF chapters from digital textbooks</div>
+                                    <div>• Study guides and course materials</div>
+                                    <div>• Lecture slides (PowerPoint, PDF)</div>
+                                </div>
+                            </div>
+                        </div> */}
                     </div>
-
-                    <input {...getInputProps()} />
+    
+                    {/* SECONDARY: Topic generation - Smaller, less prominent */}
+                    <div className="pt-4 border-t border-gray-600">
+                        <div className="text-center mb-3">
+                            <span className="text-gray-400 text-sm font-medium">OR CREATE FROM ANY TOPIC</span>
+                        </div>
+                        
+                        <div className="relative">
+                            <input
+                                type="text"
+                                className="w-full h-12 p-4 pr-12 bg-gray-700 bg-opacity-50 text-gray-100 rounded-lg focus:outline-none border border-gray-600 placeholder-gray-400 text-base"
+                                placeholder="e.g., Cellular Biology, European History..."
+                                value={topic}
+                                onChange={(e) => setTopic(e.target.value)}
+                            />
+                            <button
+                                className={`absolute right-2 top-1/2 -translate-y-1/2 ${
+                                    topic.length === 0 ? 'opacity-30' : 'opacity-100 hover:bg-purple-700'
+                                } bg-purple-600 text-white p-2 rounded-md transition-all duration-200`}
+                                onClick={handleGenerateOnTopic}
+                                disabled={topic.length === 0}
+                            >
+                                <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </div>
+                        
+                        <div className="text-center mt-2">
+                            <button 
+                                onClick={() => navigate('/browse-decks')}
+                                className="text-purple-400 hover:text-purple-300 text-xs font-medium inline-flex items-center gap-1 transition-colors duration-200"
+                            >
+                                💡 Need inspiration?
+                            </button>
+                        </div>
+                    </div>
                     
                     {/* Status indicator */}
                     {status && (
@@ -1262,13 +1380,12 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         </div>
                     )}
                     
-                    {/* Condensed file format info */}
-                    <div className="bg-gray-800 bg-opacity-50 rounded-lg p-3">
+                     {/* Technical specs - Condensed */}
+                    <div className="bg-gray-800 bg-opacity-30 rounded-lg p-3">
                         <div className="text-xs text-gray-400 text-center">
-                            <div className="font-medium text-gray-300 mb-1">✨ Supported formats:</div>
-                            <div className="mb-2">PDF, DOCX, PPTX, TXT, Images (PNG, JPG) • Auto OCR included</div>
-                            <div className="text-xs text-purple-300">
-                                📏 Max file size: 8MB • PDF OCR limited to 10 pages for speed
+                            <div className="mb-1">PDF, DOCX, PPTX, Images • Max 8MB • Auto OCR</div>
+                            <div className="text-xs text-gray-500">
+                                PDF OCR processes up to 10 pages for optimal speed
                             </div>
                         </div>
                     </div>

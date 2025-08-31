@@ -203,6 +203,8 @@ function App(){
                 isDeckModalOpen={isDeckModalOpen}
                 isFolderModalOpen={isFolderModalOpen}
                 isCreateWithAIModalOpen={isCreateWithAIModalOpen}
+                onCreateDeckClick={handleShowCreateDeckModal}
+                onCreateWithAIModalClick={handleShowCreateWithAIModalClick}
               />
 
               {/* DISCOUNT BANNERS */}

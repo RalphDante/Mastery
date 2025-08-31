@@ -12,7 +12,7 @@ export default function SmartReviewButtons({ onSuccess }) {
           <div className="flex text-6xl justify-center items-center mb-8"><Brain className='w-16 h-16 text-pink-500 mr-1'/>✨</div>
           <p className="text-lg text-gray-300 leading-relaxed max-w-md mx-auto">
             This study mode uses <span className="text-blue-400 font-semibold">SRS (Spaced Repetion)</span> - 
-            it shows you cards right before you're about to forget them.
+            so that you'll remember the information faster
           </p>
         </div>
       )

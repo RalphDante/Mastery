@@ -61,8 +61,8 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
             <button 
                 onClick={toggleDropdown} 
                 className={`bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm
-                    ${isCreateDeckNotCompleted ? 'ring-4 ring-yellow-400 ring-offset-2 animate-pulse scale-110 z-40' : ''}
-                    `}
+                ${isCreateDeckNotCompleted ? 'ring-4 ring-yellow-400 ring-offset-2 animate-pulse' : ''}
+                `}
             >
                 Create
             </button>
