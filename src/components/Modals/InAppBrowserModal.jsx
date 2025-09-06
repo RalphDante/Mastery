@@ -6,11 +6,21 @@ const InAppBrowserModal = () => {
   const isInAppBrowser = () => {
     const userAgent = navigator.userAgent.toLowerCase();
     
+    // Debug: log user agent when in test mode
+    if (window.location.search.includes('debug-ua')) {
+      console.log('User Agent:', navigator.userAgent);
+    }
+    
     // Check for known in-app browsers
     const inAppBrowsers = [
       'fban', 'fbav', // Facebook
       'instagram',
       'tiktok',
+      'musical_ly', // TikTok (original name)
+      'trill_', // TikTok identifier
+      'bytelocale', // TikTok
+      'bytelo', // TikTok (shortened)
+      'jssdk', // TikTok JavaScript SDK
       'twitter',
       'linkedin',
       'snapchat',
