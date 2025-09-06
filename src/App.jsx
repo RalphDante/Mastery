@@ -13,6 +13,7 @@ import ShowNavBar from './components/showNavBar/showNavBar.jsx'
 // Modal Components
 import CreateFolderModal from './components/Modals/CreateFolderModal.jsx';
 import CreateDeckModal from './components/Modals/CreateDeckModal.jsx';
+import InAppBrowserModal from './components/Modals/InAppBrowserModal.jsx';
 
 // Pages
 // HomePage
@@ -307,6 +308,8 @@ function App(){
                   onClose={handleCreateWithAIDemoModalClose}
                   isOpen={isCreateWithAIDemoModalOpen}
               />
+
+              <InAppBrowserModal />
         </div>
       </Router>
     </ TutorialProvider>
