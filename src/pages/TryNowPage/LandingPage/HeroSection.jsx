@@ -7,7 +7,6 @@ const HeroSection = ({setShowModal, signIn}) => {
     setIsVisible(true);
   }, []);
 
-
   return (
     <div className="container mx-auto mb-20 py-10">
       <div className="flex flex-col lg:flex-row items-center justify-between gap-12 max-w-7xl mx-auto">
@@ -36,11 +35,30 @@ const HeroSection = ({setShowModal, signIn}) => {
             In Minutes
           </h1>
 
-          {/* Optimized subheading with keywords */}
+          {/* Science-backed metrics */}
+<div className={`flex flex-row gap-4 sm:gap-6 justify-center lg:justify-start mb-6 transition-all duration-1000 delay-600 lg:delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+  <div className="text-center">
+    <div className="text-2xl sm:text-3xl font-bold text-violet-400">2X</div>
+    <div className="text-sm text-gray-400 font-medium">retention</div>
+    <div className="text-xs text-gray-500">with active recall</div>
+  </div>
+  <div className="text-center">
+    <div className="text-2xl sm:text-3xl font-bold text-purple-400">50%</div>
+    <div className="text-sm text-gray-400 font-medium">less time</div>
+    <div className="text-xs text-gray-500">needed to study</div>
+  </div>
+  <div className="text-center">
+    <div className="text-2xl sm:text-3xl font-bold text-indigo-400">80%</div>
+    <div className="text-sm text-gray-400 font-medium">remember</div>
+    <div className="text-xs text-gray-500">after 1 week</div>
+  </div>
+</div>
+
+          {/* Updated subheading */}
           <p className={`text-lg sm:text-xl lg:text-2xl text-gray-300 mb-8 transition-all duration-1000 delay-700 lg:delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            Stop stressing about how to study. 
-            <span className="text-violet-400 font-semibold"> Upload your materials, get AI flashcards instantly, and start cramming </span>
-            <span className="font-bold">NOW.</span>
+            Stop stressing about how to study.
+            <span className="text-violet-400 font-semibold"> Upload your materials, get AI flashcards instantly, and start </span>
+            <span className="font-bold">STUDYING SMARTER.</span>
           </p>
 
           {/* CTA Buttons */}

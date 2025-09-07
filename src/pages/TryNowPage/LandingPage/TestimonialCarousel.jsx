@@ -45,9 +45,7 @@ const TestimonialsCarousel = () => {
       className="backdrop-blur-sm rounded-3xl  mb-20 " 
       aria-labelledby="testimonials"
     >
-      <h2 id="testimonials" className="text-2xl font-bold mb-6 flex items-center justify-center space-x-2">
-        <span>What Students Are Saying</span>
-      </h2>
+      
       
       <div className="relative overflow-hidden">
         {/* Continuous sliding container */}
