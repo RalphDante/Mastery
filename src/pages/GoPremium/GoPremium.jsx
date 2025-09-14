@@ -179,11 +179,48 @@ function GoPremium() {
               </div>
               <div className="text-sm text-gray-600 mb-6">Start with free 7-day trial</div>
               <button 
-                className="w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
+                className="w-full py-4 px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
                 onClick={() => openCheckout(priceIds.proYearly, 'pro')}
               >
                 Start your free trial
               </button>
+              <ul className="space-y-3 text-sm text-left">
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited AI generations</div>
+      <div className="text-gray-500 text-xs">Create flashcards for any topic without limits</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited cards</div>
+      <div className="text-gray-500 text-xs">Build comprehensive study libraries for all subjects</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited decks</div>
+      <div className="text-gray-500 text-xs">Organize every class and topic perfectly</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited Smart Review decks</div>
+      <div className="text-gray-500 text-xs">Focus on what you're struggling with using spaced repetition</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited folders</div>
+      <div className="text-gray-500 text-xs">Keep everything organized from freshman year to graduation</div>
+    </div>
+  </li>
+</ul>
             </div>
           </div>
 
@@ -203,17 +240,54 @@ function GoPremium() {
               </div>
               <div className="text-sm text-gray-600 mb-6">Recurring billing. Cancel anytime.</div>
               <button 
-                className="w-full py-4 px-6 bg-gray-100 hover:bg-gray-200 border-2 border-gray-300 rounded-xl font-bold text-lg transition-all text-black"
+                className="w-full py-4 px-6 bg-gray-100 mb-4 hover:bg-gray-200 border-2 border-gray-300 rounded-xl font-bold text-lg transition-all text-black"
                 onClick={() => openCheckout(priceIds.proMonthly, 'pro')}
               >
                 Get Mastery Pro
               </button>
+<ul className="space-y-3 text-sm text-left">
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited AI generations</div>
+      <div className="text-gray-500 text-xs">Create flashcards for any topic without limits</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited cards</div>
+      <div className="text-gray-500 text-xs">Build comprehensive study libraries for all subjects</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited decks</div>
+      <div className="text-gray-500 text-xs">Organize every class and topic perfectly</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited Smart Review decks</div>
+      <div className="text-gray-500 text-xs">Focus on what you're struggling with using spaced repetition</div>
+    </div>
+  </li>
+  <li className="flex items-start">
+    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+    <div>
+      <div className="font-medium">Unlimited folders</div>
+      <div className="text-gray-500 text-xs">Keep everything organized from freshman year to graduation</div>
+    </div>
+  </li>
+</ul>
             </div>
           </div>
         </div>
 
         {/* What's Included - Expandable */}
-        <div className="text-center mb-12">
+        {/* <div className="text-center mb-12">
           <button 
             className="flex items-center justify-center mx-auto text-violet-300 hover:text-white transition-colors"
             onClick={() => setShowFeatures(!showFeatures)}
@@ -224,7 +298,6 @@ function GoPremium() {
           
           {showFeatures && (
             <div className="mt-6 grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-              {/* Free Features */}
               <div className="bg-white/5 p-6 rounded-xl border border-violet-500/20">
                 <div className="flex items-center mb-4">
                   <Zap className="w-6 h-6 text-violet-400 mr-2" />
@@ -254,7 +327,6 @@ function GoPremium() {
                 </ul>
               </div>
 
-              {/* Pro Features */}
               <div className="bg-gradient-to-br from-violet-500/20 to-purple-600/20 p-6 rounded-xl border border-violet-400">
                 <div className="flex items-center mb-4">
                   <Star className="w-6 h-6 text-yellow-400 mr-2" />
@@ -285,7 +357,7 @@ function GoPremium() {
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Social Proof */}
         <div className="text-center mb-12">
@@ -330,7 +402,7 @@ function GoPremium() {
         </div>
 
         {/* Urgency Element - Card Style */}
-        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4 text-center">
+        {/* <div className="bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-200 rounded-xl p-4 text-center">
           <p className="text-violet-800 font-medium">
             <span className="inline-block w-2 h-2 bg-violet-500 rounded-full mr-2"></span>
             Limited time: Save $20/year with annual billing
@@ -338,7 +410,7 @@ function GoPremium() {
           <p className="text-violet-600 text-sm mt-1">
             Join 10,000+ students studying smarter
           </p>
-        </div>
+        </div> */}
       </div>
     </div>
   );
