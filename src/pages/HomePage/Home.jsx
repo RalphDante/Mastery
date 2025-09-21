@@ -14,6 +14,9 @@ import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
 import OverallMastery from './Overall Mastery/OverallMastery.jsx';
 import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import { httpsCallable } from 'firebase/functions';
+import PartySection from './PartySection/PartySection.jsx';
+import Boss from './Boss/Boss.jsx';
+import Timer from './Timer/Timer.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -56,11 +59,18 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
-      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-12">
 
-            <WelcomeSection />
+            <PartySection />
+            <div class="grid grid-cols-1 h-30 lg:grid-cols-2 gap-6 mb-6">
+              <Timer />
+              <Boss />
+            </div>
+
+            
             <OverallMasteryV2 />
+            <WelcomeSection />
             <LearningHubSection 
               onCreateDeckClick={onCreateDeckClick}
               onCreateWithAIModalClick={onCreateWithAIModalClick}

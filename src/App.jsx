@@ -200,13 +200,13 @@ function App(){
         <div className="min-h-screen flex flex-col">
           {/* Main content */}
           <div className="flex-1 flex flex-col">
-              <CreateDeckTutorial 
+              {/* <CreateDeckTutorial 
                 isDeckModalOpen={isDeckModalOpen}
                 isFolderModalOpen={isFolderModalOpen}
                 isCreateWithAIModalOpen={isCreateWithAIModalOpen}
                 onCreateDeckClick={handleShowCreateDeckModal}
                 onCreateWithAIModalClick={handleShowCreateWithAIModalClick}
-              />
+              /> */}
 
               {/* DISCOUNT BANNERS */}
               {/* <ProBanner /> */}
