@@ -192,7 +192,7 @@ function PartySection() {
       {/* Party Actions */}
       <div className="flex flex-col space-y-2">
         <button className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded transition-colors">
-          Party Chat
+          Leave Party
         </button>
         <button className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded transition-colors">
           Invite Member

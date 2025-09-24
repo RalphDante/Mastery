@@ -159,7 +159,9 @@ const TryNowPage = () => {
               Mastery
             </span>
           </div>
-          <SignUpBtn />
+          <SignUpBtn 
+            signIn = {signIn}
+          />
         </nav>
 
           
@@ -266,7 +268,7 @@ const TryNowPage = () => {
               <p className="text-xl text-gray-300 mb-6">Join students who've improved their grades with AI-powered flashcard generation</p>
               <button 
                 className="bg-gradient-to-r from-violet-500 to-purple-600 px-10 py-5 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 mx-auto"
-                onClick={() => signIn}
+                onClick={() => signIn()}
                 aria-label="Start creating AI flashcards from your notes"
               >
                 <span>Start Now For Free</span>

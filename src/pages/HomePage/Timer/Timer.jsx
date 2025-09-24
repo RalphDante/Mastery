@@ -1,10 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { runTransaction, doc } from 'firebase/firestore';
+// import SimplePomodoroTimer from './Tracker';
 
-function Timer() {
+function Timer({
+  authUser, 
+  db, 
+  deckId = null, 
+  onTimeUpdate = null,
+}) {
+  const unsavedSecondsRef = useRef(0);
+
   const [selectedDuration, setSelectedDuration] = useState(25); // minutes
   const [timeLeft, setTimeLeft] = useState(25 * 60); // seconds
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Missing state
 
   const durations = [
     { label: '15 min', value: 15, damage: 30, xp: 25 },
@@ -13,20 +23,200 @@ function Timer() {
     { label: '60 min', value: 60, damage: 120, xp: 100 }
   ];
 
+  const saveStudyTime = useCallback(async (timeInSecondsToSave) => {
+    if (!authUser || timeInSecondsToSave <= 0 || isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const now = new Date();
+      const dateKey = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+      const minutesStudied = timeInSecondsToSave / 60; // Include fractional minutes
+      
+      console.log(`Saving ${minutesStudied.toFixed(2)} minutes to Firebase`);
+      
+      await runTransaction(db, async (transaction) => {
+        const userRef = doc(db, 'users', authUser.uid);
+        const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
+        
+        // --- PHASE 1: ALL READS FIRST ---
+        const userDoc = await transaction.get(userRef);
+        const dailySessionDoc = await transaction.get(dailySessionRef);
+        
+        // --- PHASE 2: ALL WRITES AFTER READS ---
+        // 1. Update/create user document
+        if (userDoc.exists()) {
+          transaction.update(userRef, {
+            lastStudyDate: now,
+            lastActiveAt: now
+          });
+        } else {
+          transaction.set(userRef, {
+            email: authUser.email,
+            displayName: authUser.displayName || 'Anonymous',
+            createdAt: now,
+            lastActiveAt: now,
+            lastStudyDate: now,
+            stats: {
+              totalReviews: 0,
+              weeklyReviews: 0,
+              currentStreak: 0,
+              longestStreak: 0,
+            }
+          });
+        }
+        
+        // 2. Update/create daily session document
+        if (dailySessionDoc.exists()) {
+          const existingData = dailySessionDoc.data();
+          transaction.update(dailySessionRef, {
+            minutesStudied: (existingData.minutesStudied || 0) + minutesStudied,
+            lastSessionAt: now,
+            // ...(deckId && { spacedSessions: (existingData.spacedSessions || 0) + 1 })
+          });
+        } else {
+          transaction.set(dailySessionRef, {
+            date: now,
+            firstSessionAt: now,
+            lastSessionAt: now,
+            minutesStudied: minutesStudied,
+            accuracy: 0,
+            cardsCorrect: 0,
+            cardsReviewed: 0,
+            crammingSessions: 0,
+            // spacedSessions: deckId ? 1 : 0
+          });
+        }
+      });
+      
+      console.log(`Successfully saved ${minutesStudied.toFixed(2)} minutes`);
+      
+      if (onTimeUpdate) {
+        onTimeUpdate(minutesStudied);
+      }
+      
+    } catch (error) {
+      console.error('Error saving study time:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [authUser, db, deckId, onTimeUpdate, isSaving]); // Added isSaving to deps
+
+  // Separate the save operation to avoid recreating saveStudyTime constantly
+  const handleSaveTime = useCallback(async (timeToSave) => {
+    if (!authUser || timeToSave <= 0 || isSaving) return;
+    
+    setIsSaving(true);
+    
+    try {
+      const now = new Date();
+      const dateKey = now.toLocaleDateString('en-CA');
+      const minutesStudied = timeToSave / 60;
+      
+      console.log(`Saving ${minutesStudied.toFixed(2)} minutes to Firebase`);
+      
+      await runTransaction(db, async (transaction) => {
+        const userRef = doc(db, 'users', authUser.uid);
+        const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
+        
+        const userDoc = await transaction.get(userRef);
+        const dailySessionDoc = await transaction.get(dailySessionRef);
+        
+        if (userDoc.exists()) {
+          transaction.update(userRef, {
+            lastStudyDate: now,
+            lastActiveAt: now
+          });
+        } else {
+          transaction.set(userRef, {
+            email: authUser.email,
+            displayName: authUser.displayName || 'Anonymous',
+            createdAt: now,
+            lastActiveAt: now,
+            lastStudyDate: now,
+            stats: {
+              totalReviews: 0,
+              weeklyReviews: 0,
+              currentStreak: 0,
+              longestStreak: 0,
+              totalDecks: 0,
+              totalCards: 0
+            }
+          });
+        }
+        
+        if (dailySessionDoc.exists()) {
+          const existingData = dailySessionDoc.data();
+          transaction.update(dailySessionRef, {
+            minutesStudied: (existingData.minutesStudied || 0) + minutesStudied,
+            lastSessionAt: now,
+          });
+        } else {
+          transaction.set(dailySessionRef, {
+            date: now,
+            firstSessionAt: now,
+            lastSessionAt: now,
+            minutesStudied: minutesStudied,
+            accuracy: 0,
+            cardsCorrect: 0,
+            cardsReviewed: 0,
+            crammingSessions: 0,
+          });
+        }
+      });
+      
+      console.log(`Successfully saved ${minutesStudied.toFixed(2)} minutes`);
+      
+      if (onTimeUpdate) {
+        onTimeUpdate(minutesStudied);
+      }
+      
+    } catch (error) {
+      console.error('Error saving study time:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [authUser, db, onTimeUpdate, isSaving]);
+
   useEffect(() => {
     let interval = null;
+    
     if (isRunning && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(timeLeft => timeLeft - 1);
+        setTimeLeft(prevTimeLeft => {
+          const newTimeLeft = prevTimeLeft - 1;
+          
+          // Accumulate elapsed time
+          unsavedSecondsRef.current += 1;
+
+          // Every full minute → save
+          if (unsavedSecondsRef.current >= 60) {
+            handleSaveTime(unsavedSecondsRef.current);
+            unsavedSecondsRef.current = 0; // reset
+          }
+
+          // Check if timer finished
+          if (newTimeLeft <= 0) {
+            // Session ended → save leftover time if any
+            if (unsavedSecondsRef.current > 0) {
+              handleSaveTime(unsavedSecondsRef.current);
+              unsavedSecondsRef.current = 0;
+            }
+            setIsRunning(false);
+            setIsSessionActive(false);
+          }
+
+          return newTimeLeft;
+        });
       }, 1000);
-    } else if (timeLeft === 0 && isRunning) {
-      // Timer completed!
-      setIsRunning(false);
-      setIsSessionActive(false);
-      // Here you would trigger notifications, XP gain, etc.
     }
-    return () => clearInterval(interval);
-  }, [isRunning, timeLeft]);
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isRunning, timeLeft, handleSaveTime]); // Fixed dependencies
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -44,6 +234,12 @@ function Timer() {
   };
 
   const resetTimer = () => {
+    // Save any unsaved time before resetting
+    if (unsavedSecondsRef.current > 0) {
+      handleSaveTime(unsavedSecondsRef.current);
+      unsavedSecondsRef.current = 0;
+    }
+    
     setIsRunning(false);
     setIsSessionActive(false);
     setTimeLeft(selectedDuration * 60);
@@ -55,7 +251,7 @@ function Timer() {
       setTimeLeft(duration * 60);
     }
   };
-
+  
   const getCurrentRewards = () => {
     const current = durations.find(d => d.value === selectedDuration);
     return current || durations[1];
@@ -65,8 +261,6 @@ function Timer() {
 
   return (
     <div className="w-full h-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
-      {/* Subtle accent */}
-      
       {!isSessionActive ? (
         /* Timer Setup */
         <>
@@ -195,6 +389,8 @@ function Timer() {
           </div>
         </>
       )}
+
+      {/* <SimplePomodoroTimer /> */}
     </div>
   );
 }

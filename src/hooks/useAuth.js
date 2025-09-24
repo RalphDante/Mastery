@@ -28,6 +28,17 @@ export const authService = {
                 createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : now,
                 lastActiveAt: now,
                 lastStudyDate: null,
+                // New
+                level: 1,
+                exp: 0,
+                health: 100,
+                mana: 100,
+                currentPartyId: null,
+                damageMultiplier: 1.0,
+                autoAssignedAt: null,
+                hasChosenAvatar: false,
+                avatar: "warrior_01",
+                prefersSolo: false,
                 
                 // Keep existing stats (but remove totalCards since we're using limits.currentCards now)
                 stats: {

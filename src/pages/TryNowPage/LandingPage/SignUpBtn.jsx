@@ -12,7 +12,7 @@ const isMobile = () => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-function SignUpBtn() {
+function SignUpBtn({signIn}) {
     const [authUser, setAuthUser] = useState(null);
     const [authLoading, setAuthLoading] = useState(true);
     const [debugInfo, setDebugInfo] = useState('');
@@ -36,6 +36,17 @@ function SignUpBtn() {
                 createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : now,
                 lastActiveAt: now,
                 lastStudyDate: null,
+
+                level: 1,
+                exp: 0,
+                health: 100,
+                mana: 100,
+                currentPartyId: null,
+                damageMultiplier: 1.0,
+                autoAssignedAt: null,
+                hasChosenAvatar: false,
+                avatar: "warrior_01",
+                prefersSolo: false,
                 
                 // Keep existing stats (but remove totalCards since we're using limits.currentCards now)
                 stats: {
@@ -278,7 +289,7 @@ function SignUpBtn() {
             ) : (
                 <button 
                     className="bg-gradient-to-r from-violet-800 to-purple-900 px-6 py-3 rounded-full font-semibold hover:shadow-lg hover:shadow-violet-500/25 transition-all duration-300 transform hover:scale-105 text-white"
-                    onClick={handleSignIn} // No need for an anonymous function here if handleSignIn directly called
+                    onClick={() => signIn()} // No need for an anonymous function here if handleSignIn directly called
                     disabled={authLoading}
                 >
                     {authLoading ? 'Loading...' : 'Sign In'}

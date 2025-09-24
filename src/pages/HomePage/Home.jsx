@@ -8,6 +8,8 @@ import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
 import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
 
+import { db } from '../../api/firebase.js';
+
 
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
@@ -64,7 +66,10 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
             <PartySection />
             <div class="grid grid-cols-1 h-30 lg:grid-cols-2 gap-6 mb-6">
-              <Timer />
+              <Timer 
+                db = {db}
+                authUser = {authUser}
+              />
               <Boss />
             </div>
 
