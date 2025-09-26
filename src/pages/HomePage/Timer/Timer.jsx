@@ -1,6 +1,8 @@
 // TimerWithAutosave.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { runTransaction, doc } from 'firebase/firestore';
+import { runTransaction, doc, increment } from 'firebase/firestore';
+
+import { calculateLevelUp, LEVEL_CONFIG } from '../../../utils/levelUtils';
 
 function Timer({
   authUser,
@@ -9,6 +11,7 @@ function Timer({
   onTimeUpdate = null,
 }) {
   const durations = [
+    { label: '3 min', value: 3, damage: 20, xp: 20 },
     { label: '15 min', value: 15, damage: 30, xp: 25 },
     { label: '25 min', value: 25, damage: 50, xp: 40 },
     { label: '45 min', value: 45, damage: 90, xp: 75 },
@@ -29,13 +32,15 @@ function Timer({
 
   // --- Save logic ---
   const saveStudyTime = useCallback(async (secondsToSave) => {
-    if (!authUser || secondsToSave <= 0 || isSavingRef.current) return;
+    if (!authUser || secondsToSave < 60 || isSavingRef.current) return; // ignore < 1 min
+
+    const fullMinutes = Math.floor(secondsToSave / 60);
+    if (fullMinutes <= 0) return;
 
     isSavingRef.current = true;
     try {
       const now = new Date();
       const dateKey = now.toLocaleDateString('en-CA');
-      const minutesStudied = secondsToSave / 60;
 
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, 'users', authUser.uid);
@@ -45,14 +50,41 @@ function Timer({
         const dailyDoc = await transaction.get(dailySessionRef);
 
         if (userDoc.exists()) {
-          transaction.update(userRef, { lastStudyDate: now, lastActiveAt: now });
+          const currentData = userDoc.data();
+          const currentExp = currentData.exp || 0;
+          const currentLevel = currentData.level || 1;
+          const newExp = currentExp + (fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE);
+
+          const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
+
+
+          const updateData = {
+            lastStudyDate: now,
+            lastActiveAt: now,
+            exp: newExp,
+            level: newLevel
+          };
+
+          if (leveledUp) {
+            updateData.coins = increment(coinBonus);
+            // Could trigger UI notification here
+          }
+
+          transaction.update(userRef, updateData);
+
         } else {
+          const newExp = fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE;
+          const { newLevel } = calculateLevelUp(0, newExp, 1);
+          
           transaction.set(userRef, {
             email: authUser.email,
             displayName: authUser.displayName || 'Anonymous',
             createdAt: now,
             lastActiveAt: now,
             lastStudyDate: now,
+            exp: newExp,
+            level: newLevel,
+            coins: 0, // Add coins field
             stats: { totalReviews:0, weeklyReviews:0, currentStreak:0, longestStreak:0, totalDecks:0, totalCards:0 }
           });
         }
@@ -60,7 +92,7 @@ function Timer({
         if (dailyDoc.exists()) {
           const existingData = dailyDoc.data();
           transaction.update(dailySessionRef, {
-            minutesStudied: (existingData.minutesStudied || 0) + minutesStudied,
+            minutesStudied: (existingData.minutesStudied || 0) + fullMinutes,
             lastSessionAt: now,
           });
         } else {
@@ -68,7 +100,7 @@ function Timer({
             date: now,
             firstSessionAt: now,
             lastSessionAt: now,
-            minutesStudied,
+            minutesStudied: fullMinutes,
             accuracy: 0,
             cardsCorrect: 0,
             cardsReviewed: 0,
@@ -77,7 +109,7 @@ function Timer({
         }
       });
 
-      if (onTimeUpdate) onTimeUpdate(minutesStudied);
+      if (onTimeUpdate) onTimeUpdate(fullMinutes);
     } catch (err) {
       console.error('Error saving study time:', err);
     } finally {
@@ -96,19 +128,27 @@ function Timer({
       sessionTimerRef.current = setInterval(() => {
         sessionSecondsRef.current += 1;
         setTimeElapsed(prev => prev + 1);
-      }, 1000);
+
+        // Save only full minutes
+        const secondsToSave = sessionSecondsRef.current - lastSaveRef.current;
+        if (secondsToSave >= 60) {
+          const fullMinutes = Math.floor(secondsToSave / 60);
+          saveStudyTime(fullMinutes * 60);
+          lastSaveRef.current += fullMinutes * 60;
+        }
+      }, 200);
     }
 
     // autosave every 60 seconds
-    if (!saveIntervalRef.current) {
-      saveIntervalRef.current = setInterval(() => {
-        const secondsToSave = sessionSecondsRef.current - lastSaveRef.current;
-        if (secondsToSave > 0) {
-          saveStudyTime(secondsToSave);
-          lastSaveRef.current = sessionSecondsRef.current;
-        }
-      }, 60_000); // 60 seconds
-    }
+    // if (!saveIntervalRef.current) {
+    //   saveIntervalRef.current = setInterval(() => {
+    //     const secondsToSave = sessionSecondsRef.current - lastSaveRef.current;
+    //     if (secondsToSave > 0) {
+    //       saveStudyTime(secondsToSave);
+    //       lastSaveRef.current = sessionSecondsRef.current;
+    //     }
+    //   }, 60_000); // 60 seconds
+    // }
   };
 
   const pauseTimer = () => {
