@@ -1,264 +1,300 @@
-// SimplePomodoroTimer.jsx - Uses same minutesStudied approach
+// StudyTimeTracker.jsx - Fixed Autosave
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { doc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
 
-const SimplePomodoroTimer = ({ 
+const StudyTimeTracker = ({ 
   authUser, 
   db, 
-  currentPartyId = null,
-  onTimeUpdate = null // Same callback as StudyTimeTracker
+  deckId = null, 
+  isFinished,
+  onTimeUpdate = null,
+  showDisplay = true,
+  finalTime
 }) => {
-  // Timer state
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [sessionType, setSessionType] = useState('focus');
-  const [cycleCount, setCycleCount] = useState(0);
-  
-  // Time tracking (same pattern as StudyTimeTracker)
-  const timerRef = useRef(null);
-  const sessionStartRef = useRef(null);
-  const completedMinutesRef = useRef(0); // Track completed study minutes
-  const lastSaveTimeRef = useRef(0);
+  const [displayTime, setDisplayTime] = useState(0); // Total session time in seconds
+  const [isActivelyStudying, setIsActivelyStudying] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
-  // Config
-  const FOCUS_TIME = 25;
-  const SHORT_BREAK = 5;
-  const LONG_BREAK = 15;
-  const POMODOROS_UNTIL_LONG_BREAK = 4;
+  // Timer refs
+  const sessionTimerRef = useRef(null);      // Main session timer
+  const activityTimerRef = useRef(null);     // Activity detection timer
+  const saveIntervalRef = useRef(null);      // Periodic save interval (changed from timeout)
+  
+  // Time tracking
+  const totalSessionSecondsRef = useRef(0);  // Accumulates total time for saving
+  const activitySecondsRef = useRef(0);      // Tracks seconds since last activity
+  const lastSaveTimeRef = useRef(0);         // Track when we last saved
+  
+  // Configuration
+  const IDLE_TIMEOUT = 5 * 60; // 5 minutes in seconds
+  const SAVE_INTERVAL = 60 * 1000; // Save every 60 seconds
 
+  // --- Utility Function ---
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Same save logic as StudyTimeTracker
-  const saveStudyTime = useCallback(async (minutesToSave) => {
-    if (!authUser || minutesToSave <= 0 || isSaving) return;
+  // --- Timer Management ---
+  
+  
+  // Start both timers
+  const startTimers = useCallback(() => {
+    if (!authUser || isFinished) return;
+    
+    setIsActivelyStudying(true);
+    
+    // Start session timer (increments every second)
+    if (!sessionTimerRef.current) {
+      sessionTimerRef.current = setInterval(() => {
+        totalSessionSecondsRef.current += 1;
+        setDisplayTime(prev => prev + 1);
+      }, 1000);
+    }
+    
+    // Start activity timer (increments every second, resets on activity)
+    if (!activityTimerRef.current) {
+      activityTimerRef.current = setInterval(() => {
+        activitySecondsRef.current += 1;
+        
+        // Check if user has been idle for too long
+        if (activitySecondsRef.current >= IDLE_TIMEOUT)  {
+          pauseTimers();
+        }
+      }, 1000);
+    }
+    
+    // Start periodic save interval
+    if (!saveIntervalRef.current) {
+      saveIntervalRef.current = setInterval(async () => {
+        const timeToSave = totalSessionSecondsRef.current - lastSaveTimeRef.current;
+        if (timeToSave > 0 && !isSaving) {
+          console.log(`Autosaving ${timeToSave} seconds of study time`);
+          await saveStudyTime(timeToSave);
+          lastSaveTimeRef.current = totalSessionSecondsRef.current;
+        }
+      }, SAVE_INTERVAL);
+    }
+  }, [authUser, isFinished]);
+  
+  // Pause both timers (user went idle)
+  const pauseTimers = useCallback(() => {
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+    if (activityTimerRef.current) {
+      clearInterval(activityTimerRef.current);
+      activityTimerRef.current = null;
+    }
+    if (saveIntervalRef.current) {
+      clearInterval(saveIntervalRef.current);
+      saveIntervalRef.current = null;
+    }
+    
+    setIsActivelyStudying(false);
+    
+    // Save any remaining unsaved time when pausing
+    const timeToSave = totalSessionSecondsRef.current - lastSaveTimeRef.current;
+    if (timeToSave > 0) {
+      console.log(`Saving ${timeToSave} seconds on pause`);
+      saveStudyTime(timeToSave);
+      lastSaveTimeRef.current = totalSessionSecondsRef.current;
+    }
+  }, []);
+  
+  // Stop and cleanup all timers
+  const stopAllTimers = useCallback(async () => {
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+    if (activityTimerRef.current) {
+      clearInterval(activityTimerRef.current);
+      activityTimerRef.current = null;
+    }
+    if (saveIntervalRef.current) {
+      clearInterval(saveIntervalRef.current);
+      saveIntervalRef.current = null;
+    }
+    
+    setIsActivelyStudying(false);
+    
+    // Final save when stopping
+    const timeToSave = totalSessionSecondsRef.current - lastSaveTimeRef.current;
+    if (authUser && timeToSave > 0) {
+      console.log(`Final save of ${timeToSave} seconds`);
+      await saveStudyTime(timeToSave);
+      lastSaveTimeRef.current = totalSessionSecondsRef.current;
+    }
+    
+    setDisplayTime(0);
+    totalSessionSecondsRef.current = 0;
+    lastSaveTimeRef.current = 0;
+  }, [authUser]);
+
+  // --- Activity Detection ---
+  
+  // Reset activity timer when user does something
+  const resetActivityTimer = useCallback(() => {
+    // Don't reset activity timer if session is finished
+    if (isFinished) return;
+    
+    activitySecondsRef.current = 0; // Reset activity counter
+    
+    // If timers are paused but user is active, resume them
+    if (authUser && !isActivelyStudying) {
+      startTimers();
+    }
+  }, [authUser, isActivelyStudying, isFinished, startTimers]);
+
+  // --- Firebase Save Logic ---
+  
+  const saveStudyTime = useCallback(async (timeInSecondsToSave) => {
+    if (!authUser || timeInSecondsToSave <= 0 || isSaving) return;
     
     setIsSaving(true);
     
     try {
-      const dateKey = new Date().toLocaleDateString('en-CA');
-      const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
+      const now = new Date();
+      const dateKey = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+      const minutesStudied = timeInSecondsToSave / 60; // Include fractional minutes
       
-      console.log(`Saving ${minutesToSave} pomodoro minutes to Firebase`);
+      console.log(`Saving ${minutesStudied.toFixed(2)} minutes to Firebase`);
       
-      // Same update pattern as StudyTimeTracker
-      await updateDoc(dailySessionRef, {
-        minutesStudied: increment(minutesToSave),
-        lastSessionAt: serverTimestamp()
+      await runTransaction(db, async (transaction) => {
+        const userRef = doc(db, 'users', authUser.uid);
+        const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
+        
+        // --- PHASE 1: ALL READS FIRST ---
+        const userDoc = await transaction.get(userRef);
+        const dailySessionDoc = await transaction.get(dailySessionRef);
+        
+        // --- PHASE 2: ALL WRITES AFTER READS ---
+        // 1. Update/create user document
+        if (userDoc.exists()) {
+          transaction.update(userRef, {
+            lastStudyDate: now,
+            lastActiveAt: now
+          });
+        } else {
+          transaction.set(userRef, {
+            email: authUser.email,
+            displayName: authUser.displayName || 'Anonymous',
+            createdAt: now,
+            lastActiveAt: now,
+            lastStudyDate: now,
+            stats: {
+              totalReviews: 0,
+              weeklyReviews: 0,
+              currentStreak: 0,
+              longestStreak: 0,
+              totalDecks: 0,
+              totalCards: 0
+            }
+          });
+        }
+        
+        // 2. Update/create daily session document
+        if (dailySessionDoc.exists()) {
+          const existingData = dailySessionDoc.data();
+          transaction.update(dailySessionRef, {
+            minutesStudied: (existingData.minutesStudied || 0) + minutesStudied,
+            lastSessionAt: now,
+            // ...(deckId && { spacedSessions: (existingData.spacedSessions || 0) + 1 })
+          });
+        } else {
+          transaction.set(dailySessionRef, {
+            date: now,
+            firstSessionAt: now,
+            lastSessionAt: now,
+            minutesStudied: minutesStudied,
+            accuracy: 0,
+            cardsCorrect: 0,
+            cardsReviewed: 0,
+            crammingSessions: 0,
+            // spacedSessions: deckId ? 1 : 0
+          });
+        }
       });
       
-      // Update party damage if in a party
-      if (currentPartyId) {
-        await updatePartyDamage(minutesToSave);
-      }
+      console.log(`Successfully saved ${minutesStudied.toFixed(2)} minutes`);
       
       if (onTimeUpdate) {
-        onTimeUpdate(minutesToSave);
+        onTimeUpdate(minutesStudied);
       }
       
-      console.log(`Successfully saved ${minutesToSave} minutes`);
-      
     } catch (error) {
-      console.error('Error saving pomodoro time:', error);
+      console.error('Error saving study time:', error);
     } finally {
       setIsSaving(false);
     }
-  }, [authUser, db, currentPartyId, onTimeUpdate, isSaving]);
+  }, [authUser, db, deckId, onTimeUpdate]);
 
-  // Update party damage (same as StudyTimeTracker could use)
-  const updatePartyDamage = useCallback(async (minutes) => {
-    if (!currentPartyId) return;
-    
-    const damage = minutes * 1.0; // Base damage per minute
-    const memberRef = doc(db, 'parties', currentPartyId, 'members', authUser.uid);
-    
-    await updateDoc(memberRef, {
-      currentBossDamage: increment(damage),
-      currentBossStudyMinutes: increment(minutes),
-      lastDamageAt: serverTimestamp(),
-      todayTotalDamage: increment(damage),
-      todayStudyMinutes: increment(minutes),
-      lastStudyAt: serverTimestamp()
-    });
-  }, [currentPartyId, authUser, db]);
+  // --- Effects ---
 
-  // Start session
-  const startSession = useCallback(() => {
-    setIsRunning(true);
-    sessionStartRef.current = Date.now();
-    
-    timerRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          completeSession(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  }, []);
-
-  // Complete session
-  const completeSession = useCallback(async (wasCompleted = false) => {
-    clearInterval(timerRef.current);
-    setIsRunning(false);
-    
-    if (sessionType === 'focus' && wasCompleted) {
-      // Only count completed focus sessions as study time
-      const completedMinutes = sessionType === 'focus' ? FOCUS_TIME : 0;
-      
-      if (completedMinutes > 0) {
-        completedMinutesRef.current += completedMinutes;
-        
-        // Save immediately on completion
-        await saveStudyTime(completedMinutes);
-        lastSaveTimeRef.current = completedMinutesRef.current;
-        
-        console.log(`Completed ${completedMinutes}-minute pomodoro session`);
-      }
-      
-      // Move to next session type
-      moveToNextSessionType();
-    } else if (!wasCompleted) {
-      // Session was stopped early - don't count the time
-      resetToFocus();
-    } else {
-      // Break completed - move to next
-      moveToNextSessionType();
+  // Stop timers when we are finished
+  useEffect(()=>{
+    if(isFinished){
+      const lastAcceptedTime = `${formatTime(displayTime)}`
+      finalTime(lastAcceptedTime);
+      stopAllTimers();
     }
-  }, [sessionType, saveStudyTime]);
+  },[isFinished, stopAllTimers])
 
-  // Move to next session in cycle
-  const moveToNextSessionType = useCallback(() => {
-    if (sessionType === 'focus') {
-      const newCycleCount = cycleCount + 1;
-      setCycleCount(newCycleCount);
-      
-      if (newCycleCount % POMODOROS_UNTIL_LONG_BREAK === 0) {
-        setSessionType('long_break');
-        setTimeLeft(LONG_BREAK * 60);
-      } else {
-        setSessionType('short_break');
-        setTimeLeft(SHORT_BREAK * 60);
-      }
-    } else {
-      // Break over - back to focus
-      setSessionType('focus');
-      setTimeLeft(FOCUS_TIME * 60);
-    }
-  }, [sessionType, cycleCount]);
-
-  // Reset to focus session
-  const resetToFocus = useCallback(() => {
-    setSessionType('focus');
-    setTimeLeft(FOCUS_TIME * 60);
-  }, []);
-
-  // Manual controls
-  const pauseSession = () => {
-    clearInterval(timerRef.current);
-    setIsRunning(false);
-  };
-
-  const resumeSession = () => {
-    if (!isRunning) {
-      startSession();
-    }
-  };
-
-  const stopSession = () => {
-    completeSession(false);
-  };
-
-  const resetTimer = () => {
-    clearInterval(timerRef.current);
-    setIsRunning(false);
-    const duration = sessionType === 'focus' ? FOCUS_TIME : 
-                    sessionType === 'short_break' ? SHORT_BREAK : LONG_BREAK;
-    setTimeLeft(duration * 60);
-  };
-
-  // Cleanup
+  // Start timers when component mounts and user is authenticated
   useEffect(() => {
+    if (authUser && !isFinished){
+      startTimers();
+    }
+    
     return () => {
-      clearInterval(timerRef.current);
+      stopAllTimers();
     };
-  }, []);
+  }, [authUser, startTimers, stopAllTimers]);
+
+  // Set up activity listeners
+  useEffect(() => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+      document.addEventListener(event, resetActivityTimer, { passive: true });
+    });
+    
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, resetActivityTimer);
+      });
+    };
+  }, [resetActivityTimer]);
+
+  // --- Render ---
+  if (!showDisplay) return null;
 
   return (
-    <div className="pomodoro-timer bg-gray-800 p-6 rounded-lg">
-      <div className="text-center">
-        <h3 className="text-xl font-bold mb-4 text-white">
-          {sessionType === 'focus' ? '🍅 Focus Session' : 
-           sessionType === 'short_break' ? '☕ Short Break' : 
-           '🛋️ Long Break'}
-        </h3>
-        
-        <div className="text-6xl font-mono mb-6 text-white">
-          {formatTime(timeLeft)}
-        </div>
-        
-        <div className="flex justify-center gap-3 mb-4">
-          {!isRunning ? (
-            <button
-              onClick={startSession}
-              className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-            >
-              Start
-            </button>
-          ) : (
-            <button
-              onClick={pauseSession}
-              className="px-6 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-            >
-              Pause
-            </button>
-          )}
-          
-          {!isRunning && timeLeft < (sessionType === 'focus' ? FOCUS_TIME * 60 : 
-                                     sessionType === 'short_break' ? SHORT_BREAK * 60 : LONG_BREAK * 60) && (
-            <button
-              onClick={resumeSession}
-              className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Resume
-            </button>
-          )}
-          
-          <button
-            onClick={stopSession}
-            className="px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Stop
-          </button>
-          
-          <button
-            onClick={resetTimer}
-            className="px-6 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            Reset
-          </button>
-        </div>
-        
-        <div className="text-sm text-gray-300 space-y-1">
-          <p>Pomodoro Cycle: {cycleCount}</p>
-          <p>Completed Study Minutes: {completedMinutesRef.current}</p>
-          {currentPartyId && <p>🎯 Fighting boss with party!</p>}
-          {isSaving && <p className="text-blue-400">Saving progress...</p>}
-        </div>
-        
-        {sessionType !== 'focus' && (
-          <div className="mt-4 text-sm text-yellow-400">
-            ℹ️ Only completed focus sessions count as study time
-          </div>
+    <div className={`study-time-tracker`}>
+      <div className="flex items-center gap-2 text-sm text-white/70">
+        {isFinished ? (
+          <>
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span>Finished - Timer Stopped: {formatTime(displayTime)}</span>
+          </>
+        ) : (
+          <>
+            <div className={`w-2 h-2 rounded-full ${isActivelyStudying ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+            <span>Study Time: {formatTime(displayTime)}</span>
+            {!isActivelyStudying && displayTime > 0 && (
+              <span className="text-xs text-yellow-400">(Paused)</span>
+            )}
+          </>
+        )}
+        {isSaving && (
+          <span className="text-xs text-blue-400">Saving...</span>
         )}
       </div>
     </div>
   );
 };
 
-export default SimplePomodoroTimer;
+export default StudyTimeTracker;

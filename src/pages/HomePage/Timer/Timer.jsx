@@ -11,7 +11,6 @@ function Timer({
   onTimeUpdate = null,
 }) {
   const durations = [
-    { label: '3 min', value: 3, damage: 20, xp: 20 },
     { label: '15 min', value: 15, damage: 30, xp: 25 },
     { label: '25 min', value: 25, damage: 50, xp: 40 },
     { label: '45 min', value: 45, damage: 90, xp: 75 },
@@ -44,18 +43,37 @@ function Timer({
 
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, 'users', authUser.uid);
+        
+        
         const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
 
         const userDoc = await transaction.get(userRef);
         const dailyDoc = await transaction.get(dailySessionRef);
 
         if (userDoc.exists()) {
+
+          
           const currentData = userDoc.data();
+
+          // Get party reference if user has one
+          let partyDoc = null;
+          if (userDoc.exists()) {
+            const currentData = userDoc.data();
+            if (currentData.currentPartyId) {
+              const partyRef = doc(db, 'parties', currentData.currentPartyId);
+              partyDoc = await transaction.get(partyRef);
+            }
+          }
+
           const currentExp = currentData.exp || 0;
           const currentLevel = currentData.level || 1;
           const newExp = currentExp + (fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE);
-
           const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
+
+          // Calculate boss damage (10 damage per minute + level multiplier)
+          const baseDamage = fullMinutes * 10;
+          const levelMultiplier = 1 + (newLevel * 0.05); // 5% more damage per level
+          const totalDamage = Math.floor(baseDamage * levelMultiplier);
 
 
           const updateData = {
@@ -71,6 +89,32 @@ function Timer({
           }
 
           transaction.update(userRef, updateData);
+
+          // Deal damage to boss if user has party
+          if (currentData.currentPartyId) {
+            const partyRef = doc(db, 'parties', currentData.currentPartyId);
+            
+            if (partyDoc.exists()) {
+              const partyData = partyDoc.data();
+              const currentBoss = partyData.currentBoss;
+              
+              if (currentBoss && currentBoss.currentHealth > 0) {
+                const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
+                
+                transaction.update(partyRef, {
+                  'currentBoss.currentHealth': newBossHealth,
+                  'currentBoss.lastDamageAt': now,
+                  'currentBoss.lastDamageBy': authUser.uid
+                });
+
+                // TODO: Handle boss defeated logic here
+                if (newBossHealth === 0) {
+                  // Boss defeated - spawn new boss, distribute rewards, etc.
+                  console.log('Boss defeated!', currentBoss.name);
+                }
+              }
+            }
+          }
 
         } else {
           const newExp = fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE;

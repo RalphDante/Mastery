@@ -18,103 +18,7 @@ function SignUpBtn({signIn}) {
     const [debugInfo, setDebugInfo] = useState('');
     const navigate = useNavigate();
 
-    // Function to create/update user profile in Firestore
-    const createUserProfileInFirestore = async (user) => {
-        const userRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userRef);
     
-        if (!userDoc.exists()) {
-            console.log('📝 Creating new Firestore user profile...');
-            
-            // Get current timestamp for reset tracking
-            const now = new Date();
-            const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-            
-            await setDoc(userRef, {
-                email: user.email,
-                displayName: user.displayName || "New User",
-                createdAt: user.metadata.creationTime ? new Date(user.metadata.creationTime) : now,
-                lastActiveAt: now,
-                lastStudyDate: null,
-
-                level: 1,
-                exp: 0,
-                health: 100,
-                mana: 100,
-                currentPartyId: null,
-                damageMultiplier: 1.0,
-                autoAssignedAt: null,
-                hasChosenAvatar: false,
-                avatar: "warrior_01",
-                prefersSolo: false,
-                
-                // Keep existing stats (but remove totalCards since we're using limits.currentCards now)
-                stats: {
-                    totalReviews: 0,
-                    weeklyReviews: 0,
-                    currentStreak: 0,
-                    longestStreak: 0,
-                    // totalDecks: 0
-                    // Removed totalCards - using limits.currentCards instead
-                },
-                
-                // Add subscription info
-                subscription: {
-                    tier: "free", // Default to free tier
-                    expiresAt: null
-                },
-                
-                // Add new limits field with free tier defaults
-                limits: {
-                    // Current usage (starts at 0 for new users)
-                    aiGenerationsUsed: 0,
-                    currentCards: 0,
-                    currentDecks: 0,
-                    smartReviewDecks: 0,
-                    currentFolders: 0,
-                    
-                    // Reset tracking
-                    aiGenerationsResetAt: nextMonthStart, // Next month start
-                    
-                    // Tier-based maximums (free tier limits)
-                    maxAiGenerations: 20,
-                    maxCards: 100,
-                    maxDecks: 5,
-                    maxSmartReviewDecks: 2,
-                    maxFolders: 10
-                },
-                
-                // Add tutorials tracking
-                tutorials: {
-                    "create-deck": { 
-                        completed: false, 
-                        step: 1 
-                    },
-                    "smart-review": { 
-                        completed: false, 
-                        step: 1, 
-                    },
-                    "global-review": { 
-                        completed: false, 
-                        step: 1 
-                    },
-                    "deck-sharing": { 
-                        completed: false, 
-                        step: 1 
-                    }
-                }
-            });
-            
-            console.log("✅ Firestore profile created for:", user.email);
-        } else {
-            // Profile exists, just update last active time
-            const now = new Date();
-            console.log('🔄 Updating lastActiveAt for existing user:', user.email);
-            await setDoc(userRef, { 
-                lastActiveAt: now 
-            }, { merge: true });
-        }
-    };
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -123,10 +27,7 @@ function SignUpBtn({signIn}) {
             setAuthLoading(false);
             setDebugInfo(`Auth: ${user ? user.email : 'Not signed in'} at ${new Date().toLocaleTimeString()}`);
 
-            // If user is signed in, ensure their Firestore profile exists/is updated
-            if (user) {
-                await createUserProfileInFirestore(user);
-            }
+            
         });
 
         return () => unsubscribe();
@@ -166,100 +67,7 @@ function SignUpBtn({signIn}) {
         checkRedirectResult();
     }, []);
     
-    const handleSignIn = async () => {
-        try {
-            console.log('🔐 Sign in clicked', { 
-                authUser: authUser?.email, 
-                isMobileDevice: isMobile(),
-                authLoading 
-            });
-            
-            if (authLoading) {
-                console.log('⏳ Auth still loading, please wait...');
-                alert('Authentication loading, please wait...');
-                return;
-            }
-            
-            if (authUser) {
-                console.log('✅ User already authenticated');
-                alert('You are already signed in!');
-                return;
-            }
-
-            const provider = new GoogleAuthProvider();
-            provider.addScope('email');
-            provider.addScope('profile');
-            provider.setCustomParameters({
-                prompt: 'select_account'
-            });
-            
-            console.log('🔐 Starting authentication flow...');
-            setDebugInfo('Starting sign-in...');
-            
-            try {
-                console.log('🔄 Using popup authentication...');
-                setDebugInfo('Using popup authentication...');
-                
-                const result = await signInWithPopup(auth, provider);
-                const user = result.user;
-                console.log('✅ User signed in via popup:', user.displayName, user.email);
-                
-                // --- IMPORTANT: Create/Update Firestore profile here after successful popup ---
-                await createUserProfileInFirestore(user);
-
-                navigate('/'); // Navigate after successful sign-in and profile creation
-                
-            } catch (popupError) {
-                console.log('❌ Popup failed, trying redirect as fallback...');
-                setDebugInfo('Popup failed, trying redirect...');
-                
-                if (popupError.code === 'auth/popup-blocked' || 
-                    popupError.code === 'auth/popup-closed-by-user' ||
-                    popupError.code === 'auth/web-storage-unsupported') {
-                    
-                    console.log('📱 Falling back to redirect...');
-                    
-                    try {
-                        sessionStorage.setItem('signInIntent', 'true');
-                        sessionStorage.setItem('signInTimestamp', Date.now().toString());
-                    } catch (storageError) {
-                        console.log('⚠️ Storage unavailable, continuing without backup');
-                    }
-                    
-                    await signInWithRedirect(auth, provider); // This will cause a page reload
-                } else {
-                    throw popupError; // Re-throw if it's a different error
-                }
-            }
-            
-        } catch (error) {
-            console.error('❌ Error during sign-in:', error);
-            setDebugInfo(`Sign-in error: ${error.message}`);
-            
-            try {
-                sessionStorage.removeItem('signInIntent');
-                sessionStorage.removeItem('signInTimestamp');
-            } catch (e) {
-                console.log('⚠️ Could not clear storage');
-            }
-            
-            let errorMessage = 'Error signing in. Please try again.';
-            if (error.code === 'auth/popup-closed-by-user') {
-                errorMessage = 'Sign-in was cancelled. Please try again.';
-            } else if (error.code === 'auth/popup-blocked') {
-                errorMessage = 'Pop-up was blocked. Please allow pop-ups for this site or try again.';
-            } else if (error.code === 'auth/unauthorized-domain') {
-                errorMessage = 'Domain not authorized. Please add your domain to Firebase Console.';
-            } else if (error.code === 'auth/web-storage-unsupported') {
-                errorMessage = 'Your browser has storage restrictions. Please:\\n1. Enable cookies\\n2. Disable private/incognito mode\\n3. Try a different browser';
-            } else if (error.message) {
-                errorMessage = `Error: ${error.message}`;
-            }
-            
-            alert(errorMessage);
-        }
-    };
-
+    
     const handleSignOut = async () => {
         try {
             await auth.signOut();

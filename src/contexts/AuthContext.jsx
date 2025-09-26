@@ -8,8 +8,10 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../api/firebase'; // Adjust path as needed
+import { assignUserToParty } from '../utils/partyUtils';
+
 
 const AuthContext = createContext();
 
@@ -53,13 +55,43 @@ export const AuthProvider = ({ children }) => {
             
             if (userDoc.exists()) {
                 const profileData = userDoc.data();
-                setUserProfile(profileData);
+
+                if(!profileData.exp){
+                    const newFields = {
+                        level: 1,
+                        exp: 0,
+                        health: 100,
+                        mana: 100,
+                        currentPartyId: null,
+                        autoAssignedAt: null,
+                        hasChosenAvatar: false,
+                        avatar: "warrior_01",
+                        prefersSolo: false,
+                    }
+
+                    await updateDoc(userRef, newFields);
+                }
+
+                if (!profileData.currentPartyId) {
+                    const generateRandomUsername = () => {
+                        const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
+                        const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
+                        const num = Math.floor(Math.random() * 999) + 1;
+                        return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
+                    };
+                    const displayName = generateRandomUsername() || "New User";
+                    await assignUserToParty(userId, displayName);
+                    // Re-fetch profile after party assignment
+                    const updatedDoc = await getDoc(userRef);
+                    const updatedData = updatedDoc.data();
+                    setUserProfile(updatedData);
+                    setUser(prevUser => ({ ...prevUser, profile: updatedData }));
+                } else {
+                    setUserProfile(profileData);
+                    setUser(prevUser => ({ ...prevUser, profile: profileData }));
+                }
+
                 
-                // Merge Firebase Auth user with Firestore profile
-                setUser(prevUser => ({
-                    ...prevUser,
-                    profile: profileData
-                }));
             } else {
                 // Create a default user profile if it doesn't exist
                 const defaultProfile = {
@@ -247,7 +279,7 @@ export const AuthProvider = ({ children }) => {
         authLoading,
         
         // Auth methods
-        signUp,
+        // signUp,
         signIn,
         logOut,
         resetPassword,
