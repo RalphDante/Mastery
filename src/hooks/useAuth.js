@@ -111,13 +111,21 @@ export const authService = {
                 }
             };
 
+          
             // Create the user document first
             await setDoc(userRef, userProfileData);
             
+            const newUserStats = {
+                level: userProfileData.level,
+                exp: userProfileData.exp,
+                health: userProfileData.health,
+                mana: userProfileData.mana,
+                avatar: userProfileData.avatar
+            }
             
             try {
                 console.log('🎉 Assigning new user to party...');
-                await assignUserToParty(user.uid, userProfileData.displayName);
+                await assignUserToParty(user.uid, userProfileData.displayName, newUserStats);
                 console.log('✅ User successfully assigned to party');
             } catch (partyError) {
                 console.error('❌ Error assigning user to party:', partyError);
@@ -132,11 +140,19 @@ export const authService = {
             
             // Check if existing user needs party assignment
             const existingData = userDoc.data();
-            if (!existingData.partyId) {
+
+            const existingUserStats = {
+                level: existingData.level,
+                exp: existingData.exp,
+                health: existingData.health,
+                mana: existingData.mana,
+                avatar: existingData.avatar
+            }
+            if (!existingData.currentPartyId) {
                 const displayNameForParty = generateRandomUsername();
                 try {
                     console.log('🎉 Existing user needs party assignment...');
-                    await assignUserToParty(user.uid, displayNameForParty);
+                    await assignUserToParty(user.uid, displayNameForParty, existingUserStats);
                     console.log('✅ Existing user successfully assigned to party');
                 } catch (partyError) {
                     console.error('❌ Error assigning existing user to party:', partyError);

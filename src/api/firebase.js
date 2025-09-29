@@ -22,15 +22,15 @@ const db = getFirestore(app);
 const functions = getFunctions(app);
 
 // Connect to emulators when developing locally
-if (location.hostname === 'localhost') {
-  // Connect to Firestore emulator
-  connectFirestoreEmulator(db, 'localhost', 8080);
+if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+  // Connect to Firestore emulator - change localhost to 127.0.0.1
+  connectFirestoreEmulator(db, '127.0.0.1', 8080);
   
-  // Connect to Authentication emulator
-  connectAuthEmulator(auth, 'http://localhost:9099');
+  // Connect to Authentication emulator - change localhost to 127.0.0.1  
+  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
   
-  // Connect to Functions emulator
-  connectFunctionsEmulator(functions, 'localhost', 5001);
+  // Connect to Functions emulator - change localhost to 127.0.0.1
+  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
 }
 
 export { db, auth, app, functions };

@@ -1,15 +1,23 @@
-export const LEVEL_CONFIG = {
+export const PLAYER_CONFIG = {
   BASE_EXP: 100,
   GROWTH_RATE: 1.15,
   EXP_PER_MINUTE: 10,
   LEVEL_UP_COIN_BONUS: 50,
+
+  // HP
+  BASE_HEALTH: 100,
+  HEALTH_PER_MINUTE: 1,
+  
+  // Mana
+  BASE_MANA: 100,
+  MANA_PER_MINUTE: 3,
 };
 
 
 export const getExpForLevel = (level) => {
   // EXP required to go from (level-1) to level
   if (level <= 1) return 0;
-  return Math.floor(LEVEL_CONFIG.BASE_EXP * Math.pow(LEVEL_CONFIG.GROWTH_RATE, level - 2));
+  return Math.floor(PLAYER_CONFIG.BASE_EXP * Math.pow(PLAYER_CONFIG.GROWTH_RATE, level - 2));
 };
 
 export const getTotalExpForLevel = (targetLevel) => {
@@ -63,6 +71,6 @@ export const calculateLevelUp = (oldExp, newExp, oldLevel) => {
     newLevel,
     leveledUp,
     levelsGained,
-    coinBonus: levelsGained * LEVEL_CONFIG.LEVEL_UP_COIN_BONUS
+    coinBonus: levelsGained * PLAYER_CONFIG.LEVEL_UP_COIN_BONUS
   };
 };

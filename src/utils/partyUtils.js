@@ -9,7 +9,8 @@ import {
   setDoc, 
   arrayUnion, 
   runTransaction,
-  getDoc 
+  getDoc, 
+  limit
 } from 'firebase/firestore';
 import { db } from '../api/firebase';
 
@@ -18,7 +19,10 @@ export const PARTY_CONFIG = {
   DEFAULT_BOSS: {
     name: "Study Slime",
     maxHealth: 500,
-    currentHealth: 500
+    currentHealth: 500,
+    isAlive: true,
+    bossNumber: 1,
+    lastDamageAt: null
   }
 };
 
@@ -28,7 +32,8 @@ export const findAvailableParty = async () => {
     const q = query(
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
-      where('isActive', '==', true)
+      where('isActive', '==', true),
+      limit(1)
     );
     
     const querySnapshot = await getDocs(q);
@@ -46,35 +51,53 @@ export const findAvailableParty = async () => {
   }
 };
 
-export const createNewParty = async (leaderId, leaderDisplayName) => {
+export const createNewParty = async (leaderId, leaderDisplayName, userStats = {}) => {
   try {
     const partyId = `party_${Date.now()}_${leaderId.slice(-6)}`;
     const now = new Date();
     
-    const partyData = {
+    await runTransaction(db, async (transaction) => {
+      const partyData = {
         title: `${leaderDisplayName}'s Party`,
         id: partyId,
         leaderId,
-        members: [leaderId],
         memberCount: 1,
         createdAt: now,
         isActive: true,
         currentBoss: {
-            ...PARTY_CONFIG.DEFAULT_BOSS,
-            id: `boss_${Date.now()}`,
-            createdAt: now
+          ...PARTY_CONFIG.DEFAULT_BOSS,
+          createdAt: now
         }
-    };
-    
-    await setDoc(doc(db, 'parties', partyId), partyData);
-    return { id: partyId, ...partyData };
+      };
+      
+      const partyRef = doc(db, 'parties', partyId);
+      transaction.set(partyRef, partyData);
+      
+      const memberRef = doc(db, 'parties', partyId, 'members', leaderId);
+      transaction.set(memberRef, {
+        displayName: leaderDisplayName,
+        joinedAt: now,
+        currentBossDamage: 0,
+        currentBossStudyMinutes: 0,
+        lastDamageAt: null,
+        lastStudyAt: null,
+        // Denormalized data
+        level: userStats.level,
+        exp: userStats.exp,
+        health: userStats.health,
+        mana: userStats.mana,
+        avatar: userStats.avatar
+      });
+    });
+        
+    return { id: partyId };
   } catch (error) {
     console.error('Error creating new party:', error);
     throw error;
   }
 };
 
-export const addUserToParty = async (partyId, userId) => {
+export const addUserToParty = async (partyId, userId, displayName, userStats = {}) => { // Add displayName param
   try {
     await runTransaction(db, async (transaction) => {
       const partyRef = doc(db, 'parties', partyId);
@@ -87,9 +110,26 @@ export const addUserToParty = async (partyId, userId) => {
           throw new Error('Party is full');
         }
         
+        // Update party document
         transaction.update(partyRef, {
-          members: arrayUnion(userId),
           memberCount: partyData.memberCount + 1
+        });
+        
+        // Create member subcollection document
+        const memberRef = doc(db, 'parties', partyId, 'members', userId);
+        transaction.set(memberRef, {
+          displayName,
+          joinedAt: new Date(),
+          currentBossDamage: 0,
+          currentBossStudyMinutes: 0,
+          lastDamageAt: null,
+          lastStudyAt: null,
+          // Denormalized data
+          level: userStats.level,
+          exp: userStats.exp,
+          health: userStats.health,
+          mana: userStats.mana,
+          avatar: userStats.avatar
         });
       }
     });
@@ -99,17 +139,17 @@ export const addUserToParty = async (partyId, userId) => {
   }
 };
 
-export const assignUserToParty = async (userId, displayName) => {
+export const assignUserToParty = async (userId, displayName, userStats = {}) => {
   try {
     // First, try to find an available party
     let party = await findAvailableParty();
     
     if (!party) {
       // No available party, create a new one
-      party = await createNewParty(userId, displayName);
+      party = await createNewParty(userId, displayName, userStats);
     } else {
       // Add user to existing party
-      await addUserToParty(party.id, userId);
+      await addUserToParty(party.id, userId, displayName, userStats);
     }
     
     // Update user document with party info and game fields

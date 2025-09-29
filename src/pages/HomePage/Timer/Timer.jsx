@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { runTransaction, doc, increment } from 'firebase/firestore';
 
-import { calculateLevelUp, LEVEL_CONFIG } from '../../../utils/levelUtils';
+import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
+import { handleBossDefeat } from '../../../utils/bossUtils';
 
 function Timer({
   authUser,
@@ -31,135 +32,182 @@ function Timer({
 
   // --- Save logic ---
   const saveStudyTime = useCallback(async (secondsToSave) => {
-    if (!authUser || secondsToSave < 60 || isSavingRef.current) return; // ignore < 1 min
+  if (!authUser || secondsToSave < 60 || isSavingRef.current) return;
 
-    const fullMinutes = Math.floor(secondsToSave / 60);
-    if (fullMinutes <= 0) return;
+  const fullMinutes = Math.floor(secondsToSave / 60);
+  if (fullMinutes <= 0) return;
 
-    isSavingRef.current = true;
-    try {
-      const now = new Date();
-      const dateKey = now.toLocaleDateString('en-CA');
+  isSavingRef.current = true;
+  try {
+    const now = new Date();
+    const dateKey = now.toLocaleDateString('en-CA');
 
-      await runTransaction(db, async (transaction) => {
-        const userRef = doc(db, 'users', authUser.uid);
+    await runTransaction(db, async (transaction) => {
+      const userRef = doc(db, 'users', authUser.uid);
+      const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
+
+      const userDoc = await transaction.get(userRef);
+      const dailyDoc = await transaction.get(dailySessionRef);
+
+      if (userDoc.exists()) {
+        const currentData = userDoc.data();
+
+        // Get party reference if user has one
+        let partyDoc = null;
+        let memberRef = null;
+        let memberDoc = null;
         
-        
-        const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
-
-        const userDoc = await transaction.get(userRef);
-        const dailyDoc = await transaction.get(dailySessionRef);
-
-        if (userDoc.exists()) {
-
+        if (currentData.currentPartyId) {
+          const partyRef = doc(db, 'parties', currentData.currentPartyId);
+          partyDoc = await transaction.get(partyRef);
           
-          const currentData = userDoc.data();
+          // Get member document from subcollection
+          memberRef = doc(db, 'parties', currentData.currentPartyId, 'members', authUser.uid);
+          memberDoc = await transaction.get(memberRef);
+        }
 
-          // Get party reference if user has one
-          let partyDoc = null;
-          if (userDoc.exists()) {
-            const currentData = userDoc.data();
-            if (currentData.currentPartyId) {
-              const partyRef = doc(db, 'parties', currentData.currentPartyId);
-              partyDoc = await transaction.get(partyRef);
-            }
-          }
+        const currentExp = currentData.exp || 0;
+        const currentLevel = currentData.level || 1;
+        const currentHealth = currentData.health || 0;
+        const currentMana = currentData.mana || 0;
 
-          const currentExp = currentData.exp || 0;
-          const currentLevel = currentData.level || 1;
-          const newExp = currentExp + (fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE);
-          const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
+        const newExp = currentExp + (fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE);
+        const newHealth = Math.min(
+          PLAYER_CONFIG.BASE_HEALTH, 
+          currentHealth + (fullMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE)
+        );
 
-          // Calculate boss damage (10 damage per minute + level multiplier)
-          const baseDamage = fullMinutes * 10;
-          const levelMultiplier = 1 + (newLevel * 0.05); // 5% more damage per level
-          const totalDamage = Math.floor(baseDamage * levelMultiplier);
+        const newMana = Math.min(
+          PLAYER_CONFIG.BASE_MANA, 
+          currentMana + (fullMinutes * PLAYER_CONFIG.MANA_PER_MINUTE)
+        );
 
 
-          const updateData = {
-            lastStudyDate: now,
-            lastActiveAt: now,
-            exp: newExp,
-            level: newLevel
-          };
+        const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
 
-          if (leveledUp) {
-            updateData.coins = increment(coinBonus);
-            // Could trigger UI notification here
-          }
+        // Calculate boss damage (10 damage per minute + level multiplier)
+        const baseDamage = fullMinutes * 10;
+        const levelMultiplier = 1 + (newLevel * 0.05); // 5% more damage per level
+        const totalDamage = Math.floor(baseDamage * levelMultiplier);
 
-          transaction.update(userRef, updateData);
+        const updateData = {
+          lastStudyDate: now,
+          lastActiveAt: now,
+          exp: newExp,
+          level: newLevel,
+          health: newHealth,
+          mana: newMana,
+        };
 
-          // Deal damage to boss if user has party
-          if (currentData.currentPartyId) {
+        if (leveledUp) {
+          updateData.coins = increment(coinBonus);
+        }
+
+        transaction.update(userRef, updateData);
+
+        // Deal damage to boss AND update member stats if user has party
+        if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
+          const partyData = partyDoc.data();
+          const currentBoss = partyData.currentBoss;
+          
+          if (currentBoss && currentBoss.currentHealth > 0) {
             const partyRef = doc(db, 'parties', currentData.currentPartyId);
+            const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
             
-            if (partyDoc.exists()) {
-              const partyData = partyDoc.data();
-              const currentBoss = partyData.currentBoss;
-              
-              if (currentBoss && currentBoss.currentHealth > 0) {
-                const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
+            // Update boss health
+            transaction.update(partyRef, {
+              'currentBoss.currentHealth': newBossHealth,
+              'currentBoss.lastDamageAt': now,
+            });
+
+            // Update member's damage contribution
+            if (memberDoc && memberDoc.exists()) {
+              const memberData = memberDoc.data();
+              transaction.update(memberRef, {
+                currentBossDamage: (memberData.currentBossDamage || 0) + totalDamage,
+                currentBossStudyMinutes: (memberData.currentBossStudyMinutes || 0) + fullMinutes,
+                lastDamageAt: now,
+                lastStudyAt: now,
+                exp: newExp,
+                level: newLevel,
+                health: newHealth,
+                mana: newMana
                 
-                transaction.update(partyRef, {
-                  'currentBoss.currentHealth': newBossHealth,
-                  'currentBoss.lastDamageAt': now,
-                  'currentBoss.lastDamageBy': authUser.uid
-                });
-
-                // TODO: Handle boss defeated logic here
-                if (newBossHealth === 0) {
-                  // Boss defeated - spawn new boss, distribute rewards, etc.
-                  console.log('Boss defeated!', currentBoss.name);
-                }
-              }
+              });
+            } else {
+              // Create member document if it doesn't exist
+              transaction.set(memberRef, {
+                displayName: currentData.displayName || 'Anonymous',
+                joinedAt: now,
+                currentBossDamage: totalDamage,
+                currentBossStudyMinutes: fullMinutes,
+                lastDamageAt: now,
+                lastStudyAt: now,
+                exp: newExp,        
+                level: newLevel,    
+                health: newHealth,  
+                mana: newMana
+              });
             }
+
+            // Handle boss defeat
+            if (newBossHealth <= 0) {
+              console.log('Boss defeated!', currentBoss.name);
+              const defeatTime = now;
+              await handleBossDefeat(transaction, partyRef, currentBoss, defeatTime)
+            }
+           
           }
-
-        } else {
-          const newExp = fullMinutes * LEVEL_CONFIG.EXP_PER_MINUTE;
-          const { newLevel } = calculateLevelUp(0, newExp, 1);
-          
-          transaction.set(userRef, {
-            email: authUser.email,
-            displayName: authUser.displayName || 'Anonymous',
-            createdAt: now,
-            lastActiveAt: now,
-            lastStudyDate: now,
-            exp: newExp,
-            level: newLevel,
-            coins: 0, // Add coins field
-            stats: { totalReviews:0, weeklyReviews:0, currentStreak:0, longestStreak:0, totalDecks:0, totalCards:0 }
-          });
         }
 
-        if (dailyDoc.exists()) {
-          const existingData = dailyDoc.data();
-          transaction.update(dailySessionRef, {
-            minutesStudied: (existingData.minutesStudied || 0) + fullMinutes,
-            lastSessionAt: now,
-          });
-        } else {
-          transaction.set(dailySessionRef, {
-            date: now,
-            firstSessionAt: now,
-            lastSessionAt: now,
-            minutesStudied: fullMinutes,
-            accuracy: 0,
-            cardsCorrect: 0,
-            cardsReviewed: 0,
-            crammingSessions: 0,
-          });
-        }
-      });
+      } else {
+        // Handle new user creation (existing code)
+        const newExp = fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE;
+        const { newLevel } = calculateLevelUp(0, newExp, 1);
+        
+        transaction.set(userRef, {
+          email: authUser.email,
+          displayName: authUser.displayName || 'Anonymous',
+          createdAt: now,
+          lastActiveAt: now,
+          lastStudyDate: now,
+          exp: newExp,
+          level: newLevel,
+          coins: 0,
+          stats: { totalReviews:0, weeklyReviews:0, currentStreak:0, longestStreak:0, totalDecks:0, totalCards:0 },
+          health: PLAYER_CONFIG.BASE_HEALTH,      
+          mana: PLAYER_CONFIG.BASE_MANA, 
+        });
+      }
 
-      if (onTimeUpdate) onTimeUpdate(fullMinutes);
-    } catch (err) {
-      console.error('Error saving study time:', err);
-    } finally {
-      isSavingRef.current = false;
-    }
-  }, [authUser, db, onTimeUpdate]);
+      // Handle daily session (existing code)
+      if (dailyDoc.exists()) {
+        const existingData = dailyDoc.data();
+        transaction.update(dailySessionRef, {
+          minutesStudied: (existingData.minutesStudied || 0) + fullMinutes,
+          lastSessionAt: now,
+        });
+      } else {
+        transaction.set(dailySessionRef, {
+          date: now,
+          firstSessionAt: now,
+          lastSessionAt: now,
+          minutesStudied: fullMinutes,
+          accuracy: 0,
+          cardsCorrect: 0,
+          cardsReviewed: 0,
+          crammingSessions: 0,
+        });
+      }
+    });
+
+    if (onTimeUpdate) onTimeUpdate(fullMinutes);
+  } catch (err) {
+    console.error('Error saving study time:', err);
+  } finally {
+    isSavingRef.current = false;
+  }
+}, [authUser, db, onTimeUpdate]);
 
   // --- Timer start / pause / reset ---
   const startTimer = () => {

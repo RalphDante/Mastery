@@ -35,6 +35,7 @@ export const AuthProvider = ({ children }) => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 setUser(firebaseUser);
+                console.log('🔥 Auth state changed in AuthContext:', firebaseUser ? firebaseUser.email : 'Not signed in');
                 // Fetch additional user profile data from Firestore
                 await fetchUserProfile(firebaseUser.uid);
             } else {
@@ -56,7 +57,14 @@ export const AuthProvider = ({ children }) => {
             if (userDoc.exists()) {
                 const profileData = userDoc.data();
 
-                if(!profileData.exp){
+                if(profileData.exp === null || profileData.exp === undefined){
+                     const generateRandomUsername = () => {
+                        const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
+                        const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
+                        const num = Math.floor(Math.random() * 999) + 1;
+                        return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
+                    };
+                    
                     const newFields = {
                         level: 1,
                         exp: 0,
@@ -67,12 +75,29 @@ export const AuthProvider = ({ children }) => {
                         hasChosenAvatar: false,
                         avatar: "warrior_01",
                         prefersSolo: false,
-                    }
+                    };
 
+                    // Update the user document first
                     await updateDoc(userRef, newFields);
-                }
-
-                if (!profileData.currentPartyId) {
+                    
+                    // Then assign to party with the new data
+                    const displayName = generateRandomUsername() || "New User";
+                    const userData = {
+                        level: newFields.level,
+                        exp: newFields.exp,
+                        health: newFields.health,
+                        mana: newFields.mana,
+                        avatar: newFields.avatar
+                    };
+                    
+                    await assignUserToParty(userId, displayName, userData);
+                    
+                    // Re-fetch and set profile
+                    const updatedDoc = await getDoc(userRef);
+                    const updatedData = updatedDoc.data();
+                    setUserProfile(updatedData);
+                    setUser(prevUser => ({ ...prevUser, profile: updatedData }));
+                } else if (!profileData.currentPartyId) {
                     const generateRandomUsername = () => {
                         const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
                         const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
@@ -80,7 +105,15 @@ export const AuthProvider = ({ children }) => {
                         return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
                     };
                     const displayName = generateRandomUsername() || "New User";
-                    await assignUserToParty(userId, displayName);
+
+                    const existingUserData = {
+                        level: profileData.level,
+                        exp: profileData.exp,
+                        health: profileData.health,
+                        mana: profileData.mana,
+                        avatar: profileData.avatar
+                    };
+                    await assignUserToParty(userId, displayName, existingUserData);
                     // Re-fetch profile after party assignment
                     const updatedDoc = await getDoc(userRef);
                     const updatedData = updatedDoc.data();
