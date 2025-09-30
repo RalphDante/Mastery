@@ -1,5 +1,5 @@
 // contexts/AuthContext.js
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { 
     onAuthStateChanged, 
     signInWithEmailAndPassword, 
@@ -8,14 +8,12 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../api/firebase'; // Adjust path as needed
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { auth, db } from '../api/firebase';
 import { assignUserToParty } from '../utils/partyUtils';
-
 
 const AuthContext = createContext();
 
-// Custom hook to use the auth context
 export const useAuthContext = () => {
     const context = useContext(AuthContext);
     if (!context) {
@@ -29,24 +27,83 @@ export const AuthProvider = ({ children }) => {
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
     const [authLoading, setAuthLoading] = useState(false);
+    const [partyProfile, setPartyProfile] = useState(null);
+    const [partyMembers, setPartyMembers] = useState([]);
 
     // Listen for authentication state changes
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 setUser(firebaseUser);
-                console.log('🔥 Auth state changed in AuthContext:', firebaseUser ? firebaseUser.email : 'Not signed in');
-                // Fetch additional user profile data from Firestore
+                console.log('🔥 Auth state changed:', firebaseUser.email);
+                // Fetch user profile first
                 await fetchUserProfile(firebaseUser.uid);
             } else {
                 setUser(null);
                 setUserProfile(null);
+                setPartyProfile(null);
+                setPartyMembers([]);
             }
             setLoading(false);
         });
 
         return unsubscribe;
     }, []);
+
+    // Fetch party profile and its members
+    const fetchPartyProfile = useCallback(async (partyId) => {
+        if (!partyId) {
+            setPartyProfile(null);
+            setPartyMembers([]);
+            return;
+        }
+
+        try {
+            // Fetch party document
+            const partyRef = doc(db, 'parties', partyId);
+            const partyDoc = await getDoc(partyRef);
+
+            if (partyDoc.exists()) {
+                const partyData = partyDoc.data();
+                setPartyProfile({ id: partyDoc.id, ...partyData });
+
+                // Fetch party members subcollection
+                const membersRef = collection(db, 'parties', partyId, 'members');
+                const membersSnapshot = await getDocs(membersRef);
+                
+                const members = membersSnapshot.docs.map(doc => ({
+                    userId: doc.id,
+                    ...doc.data()
+                }));
+                
+                setPartyMembers(members);
+                
+                console.log('📦 Party Profile:', partyProfile);
+                console.log('👥 Party Members:', partyMembers);
+                
+                console.log('✅ Party loaded:', partyData.title, 'with', members.length, 'members');
+            } else {
+                console.warn('⚠️ Party not found:', partyId);
+                setPartyProfile(null);
+                setPartyMembers([]);
+                
+            }
+        } catch (error) {
+            console.error('❌ Error fetching party profile:', error);
+            setPartyProfile(null);
+            setPartyMembers([]);
+        }
+    }, []);
+
+    // Fetch party when userProfile updates and has a partyId
+    useEffect(() => {
+        if (userProfile?.currentPartyId) {
+            fetchPartyProfile(userProfile.currentPartyId);
+        } else {
+            setPartyProfile(null);
+            setPartyMembers([]);
+        }
+    }, [userProfile?.currentPartyId, fetchPartyProfile]);
 
     // Fetch user profile from Firestore
     const fetchUserProfile = async (userId) => {
@@ -57,14 +114,8 @@ export const AuthProvider = ({ children }) => {
             if (userDoc.exists()) {
                 const profileData = userDoc.data();
 
-                if(profileData.exp === null || profileData.exp === undefined){
-                     const generateRandomUsername = () => {
-                        const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
-                        const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
-                        const num = Math.floor(Math.random() * 999) + 1;
-                        return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
-                    };
-                    
+                // Handle new users without exp field
+                if (profileData.exp === null || profileData.exp === undefined) {
                     const newFields = {
                         level: 1,
                         exp: 0,
@@ -77,11 +128,9 @@ export const AuthProvider = ({ children }) => {
                         prefersSolo: false,
                     };
 
-                    // Update the user document first
                     await updateDoc(userRef, newFields);
                     
-                    // Then assign to party with the new data
-                    const displayName = generateRandomUsername() || "New User";
+                    const displayName = generateRandomUsername();
                     const userData = {
                         level: newFields.level,
                         exp: newFields.exp,
@@ -92,20 +141,15 @@ export const AuthProvider = ({ children }) => {
                     
                     await assignUserToParty(userId, displayName, userData);
                     
-                    // Re-fetch and set profile
+                    // Re-fetch profile after party assignment
                     const updatedDoc = await getDoc(userRef);
                     const updatedData = updatedDoc.data();
                     setUserProfile(updatedData);
-                    setUser(prevUser => ({ ...prevUser, profile: updatedData }));
-                } else if (!profileData.currentPartyId) {
-                    const generateRandomUsername = () => {
-                        const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
-                        const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
-                        const num = Math.floor(Math.random() * 999) + 1;
-                        return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
-                    };
-                    const displayName = generateRandomUsername() || "New User";
-
+                    setUser(prev => ({ ...prev, profile: updatedData }));
+                } 
+                // Handle existing users without party assignment
+                else if (!profileData.currentPartyId) {
+                    const displayName = generateRandomUsername();
                     const existingUserData = {
                         level: profileData.level,
                         exp: profileData.exp,
@@ -113,20 +157,22 @@ export const AuthProvider = ({ children }) => {
                         mana: profileData.mana,
                         avatar: profileData.avatar
                     };
+                    
                     await assignUserToParty(userId, displayName, existingUserData);
+                    
                     // Re-fetch profile after party assignment
                     const updatedDoc = await getDoc(userRef);
                     const updatedData = updatedDoc.data();
                     setUserProfile(updatedData);
-                    setUser(prevUser => ({ ...prevUser, profile: updatedData }));
-                } else {
+                    setUser(prev => ({ ...prev, profile: updatedData }));
+                } 
+                // User already has complete profile
+                else {
                     setUserProfile(profileData);
-                    setUser(prevUser => ({ ...prevUser, profile: profileData }));
+                    setUser(prev => ({ ...prev, profile: profileData }));
                 }
-
-                
             } else {
-                // Create a default user profile if it doesn't exist
+                // Create default profile for brand new users
                 const defaultProfile = {
                     email: auth.currentUser?.email,
                     createdAt: new Date(),
@@ -135,7 +181,7 @@ export const AuthProvider = ({ children }) => {
                         status: 'active'
                     },
                     limits: {
-                        maxAiGenerations: 20, // Free tier limit
+                        maxAiGenerations: 20,
                         aiGenerationsUsed: 0,
                         aiGenerationsResetAt: getNextMonthDate()
                     }
@@ -143,18 +189,22 @@ export const AuthProvider = ({ children }) => {
                 
                 await setDoc(userRef, defaultProfile);
                 setUserProfile(defaultProfile);
-                
-                setUser(prevUser => ({
-                    ...prevUser,
-                    profile: defaultProfile
-                }));
+                setUser(prev => ({ ...prev, profile: defaultProfile }));
             }
         } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.error('❌ Error fetching user profile:', error);
         }
     };
 
-    // Helper function to get next month's date for limit reset
+    // Helper: Generate random username
+    const generateRandomUsername = () => {
+        const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
+        const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
+        const num = Math.floor(Math.random() * 999) + 1;
+        return `${adjectives[Math.floor(Math.random() * adjectives.length)]}${nouns[Math.floor(Math.random() * nouns.length)]}${num}`;
+    };
+
+    // Helper: Get next month's date
     const getNextMonthDate = () => {
         const now = new Date();
         return new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
@@ -166,12 +216,10 @@ export const AuthProvider = ({ children }) => {
         try {
             const { user: newUser } = await createUserWithEmailAndPassword(auth, email, password);
             
-            // Update display name if provided
             if (displayName) {
                 await updateProfile(newUser, { displayName });
             }
             
-            // Create user profile in Firestore
             const userProfile = {
                 email: newUser.email,
                 displayName: displayName || null,
@@ -181,7 +229,7 @@ export const AuthProvider = ({ children }) => {
                     status: 'active'
                 },
                 limits: {
-                    maxAiGenerations: 20, // Free tier limit
+                    maxAiGenerations: 20,
                     aiGenerationsUsed: 0,
                     aiGenerationsResetAt: getNextMonthDate()
                 }
@@ -219,6 +267,8 @@ export const AuthProvider = ({ children }) => {
             await signOut(auth);
             setUser(null);
             setUserProfile(null);
+            setPartyProfile(null);
+            setPartyMembers([]);
             return { success: true };
         } catch (error) {
             console.error('Error signing out:', error);
@@ -242,19 +292,27 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // Refresh user profile (useful after subscription changes)
+    // Refresh user profile
     const refreshUserProfile = async () => {
         if (user?.uid) {
             await fetchUserProfile(user.uid);
         }
     };
 
-    // Check if user is premium
-    const isPremium = () => {
-        return userProfile?.subscription?.tier === 'premium' || userProfile?.subscription?.tier === 'pro';
+    // Refresh party data
+    const refreshPartyProfile = async () => {
+        if (userProfile?.currentPartyId) {
+            await fetchPartyProfile(userProfile.currentPartyId);
+        }
     };
 
-    // Get user's AI generation limits
+    // Check if user is premium
+    const isPremium = () => {
+        return userProfile?.subscription?.tier === 'premium' || 
+               userProfile?.subscription?.tier === 'pro';
+    };
+
+    // Get AI generation limits
     const getAILimits = () => {
         const limits = userProfile?.limits || {};
         const maxGenerations = limits.maxAiGenerations || 20;
@@ -278,8 +336,8 @@ export const AuthProvider = ({ children }) => {
         return {
             maxFolders,
             canGenerate: maxFolders === -1 || currentUsage < maxFolders
-        }
-    }
+        };
+    };
 
     const getDeckLimits = () => {
         const limits = userProfile?.limits || {};
@@ -289,8 +347,8 @@ export const AuthProvider = ({ children }) => {
         return {
             maxDecks,
             canGenerate: maxDecks === -1 || currentUsage < maxDecks
-        }
-    }
+        };
+    };
 
     const getCardLimits = () => {
         const limits = userProfile?.limits || {};
@@ -301,8 +359,8 @@ export const AuthProvider = ({ children }) => {
             maxCards,
             canGenerate: maxCards === -1 || currentUsage < maxCards,
             currentUsage
-        }
-    }
+        };
+    };
 
     const value = {
         // User state
@@ -311,8 +369,11 @@ export const AuthProvider = ({ children }) => {
         loading,
         authLoading,
         
+        // Party state
+        partyProfile,
+        partyMembers,
+        
         // Auth methods
-        // signUp,
         signIn,
         logOut,
         resetPassword,
@@ -320,6 +381,7 @@ export const AuthProvider = ({ children }) => {
         // Profile methods
         refreshUserProfile,
         fetchUserProfile,
+        refreshPartyProfile,
         
         // Utility methods
         isPremium,
