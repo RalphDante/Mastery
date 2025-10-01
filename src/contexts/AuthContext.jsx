@@ -11,6 +11,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../api/firebase';
 import { assignUserToParty } from '../utils/partyUtils';
+import { checkAndApplyBossAttack } from '../utils/bossUtils';
 
 const AuthContext = createContext();
 
@@ -22,6 +23,8 @@ export const useAuthContext = () => {
     return context;
 };
 
+
+// This will act as the gamified global context
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [userProfile, setUserProfile] = useState(null);
@@ -101,6 +104,45 @@ export const AuthProvider = ({ children }) => {
             setPartyMembers([]);
         }
     }, [userProfile?.currentPartyId, fetchPartyProfile]);
+
+    useEffect(() => {
+        const checkBossAttack = async () => {
+            if (user?.uid && userProfile?.currentPartyId && partyProfile) {
+                try {
+                    const result = await checkAndApplyBossAttack(
+                        user.uid, 
+                        userProfile.currentPartyId, 
+                        userProfile, 
+                        partyProfile
+                    );
+                    
+                    if (result?.newUserImmunity) {
+                        console.log(`🛡️ New user is protected for ${result.hoursRemaining.toFixed(1)} more hours`);
+                    } else if (result?.damaged) {
+                        console.log('Boss attack applied! Updating state...');
+                        
+                        setUserProfile(prev => ({
+                            ...prev,
+                            health: result.newHealth,
+                            lastBossAttackAt: new Date()
+                        }));
+                        
+                        setPartyMembers(prev => 
+                            prev.map(member => 
+                                member.userId === user.uid 
+                                    ? { ...member, health: result.newHealth }
+                                    : member
+                            )
+                        );
+                    }
+                } catch (err) {
+                    console.error('Boss attack check failed:', err);
+                }
+            }
+        };
+
+        checkBossAttack();
+    }, [user?.uid, userProfile?.currentPartyId, partyProfile]);
 
     // Fetch user profile from Firestore
     const fetchUserProfile = async (userId) => {
@@ -187,6 +229,7 @@ export const AuthProvider = ({ children }) => {
                     hasChosenAvatar: false,
                     avatar: "warrior_01",
                     prefersSolo: false,
+                    lastBossAttackAt: null,
                     
                     stats: {
                         totalReviews: 0,

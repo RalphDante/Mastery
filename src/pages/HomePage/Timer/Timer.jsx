@@ -1,6 +1,6 @@
 // TimerWithAutosave.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { runTransaction, doc, increment } from 'firebase/firestore';
+import { runTransaction, doc, increment, collection, query, getDocs } from 'firebase/firestore';
 
 import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { handleBossDefeat } from '../../../utils/bossUtils';
@@ -46,25 +46,36 @@ function Timer({
       const userRef = doc(db, 'users', authUser.uid);
       const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
 
+      // ✅ READ #1: User document
       const userDoc = await transaction.get(userRef);
+      
+      // ✅ READ #2: Daily session document
       const dailyDoc = await transaction.get(dailySessionRef);
 
       if (userDoc.exists()) {
         const currentData = userDoc.data();
 
-        // Get party reference if user has one
+        // ✅ READ #3-5: Party-related documents (if user has party)
         let partyDoc = null;
         let memberRef = null;
         let memberDoc = null;
+        let partyRef = null;
+        let allMembersSnapshot = null; // NEW: We need this for handleBossDefeat
         
         if (currentData.currentPartyId) {
-          const partyRef = doc(db, 'parties', currentData.currentPartyId);
+          partyRef = doc(db, 'parties', currentData.currentPartyId);
           partyDoc = await transaction.get(partyRef);
           
-          // Get member document from subcollection
           memberRef = doc(db, 'parties', currentData.currentPartyId, 'members', authUser.uid);
           memberDoc = await transaction.get(memberRef);
+          
+          // ✅ READ #6: ALL members (needed for boss defeat handling)
+          // This MUST be read before any writes!
+          const membersRef = collection(db, 'parties', currentData.currentPartyId, 'members');
+          allMembersSnapshot = await getDocs(membersRef);
         }
+
+        // === ALL READS DONE - NOW WE CAN DO WRITES ===
 
         const currentExp = currentData.exp || 0;
         const currentLevel = currentData.level || 1;
@@ -82,12 +93,11 @@ function Timer({
           currentMana + (fullMinutes * PLAYER_CONFIG.MANA_PER_MINUTE)
         );
 
-
         const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
 
-        // Calculate boss damage (10 damage per minute + level multiplier)
+        // Calculate boss damage
         const baseDamage = fullMinutes * 10;
-        const levelMultiplier = 1 + (newLevel * 0.05); // 5% more damage per level
+        const levelMultiplier = 1 + (newLevel * 0.05);
         const totalDamage = Math.floor(baseDamage * levelMultiplier);
 
         const updateData = {
@@ -103,24 +113,24 @@ function Timer({
           updateData.coins = increment(coinBonus);
         }
 
+        // ✅ WRITE #1: Update user
         transaction.update(userRef, updateData);
 
-        // Deal damage to boss AND update member stats if user has party
+        // Deal damage to boss if user has party
         if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
           const partyData = partyDoc.data();
           const currentBoss = partyData.currentBoss;
           
           if (currentBoss && currentBoss.currentHealth > 0) {
-            const partyRef = doc(db, 'parties', currentData.currentPartyId);
             const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
             
-            // Update boss health
+            // ✅ WRITE #2: Update boss health
             transaction.update(partyRef, {
               'currentBoss.currentHealth': newBossHealth,
               'currentBoss.lastDamageAt': now,
             });
 
-            // Update member's damage contribution
+            // ✅ WRITE #3: Update member's damage contribution
             if (memberDoc && memberDoc.exists()) {
               const memberData = memberDoc.data();
               transaction.update(memberRef, {
@@ -132,10 +142,8 @@ function Timer({
                 level: newLevel,
                 health: newHealth,
                 mana: newMana
-                
               });
             } else {
-              // Create member document if it doesn't exist
               transaction.set(memberRef, {
                 displayName: currentData.displayName || 'Anonymous',
                 joinedAt: now,
@@ -150,18 +158,24 @@ function Timer({
               });
             }
 
-            // Handle boss defeat
+            // ✅ WRITE #4+: Handle boss defeat (if needed)
             if (newBossHealth <= 0) {
               console.log('Boss defeated!', currentBoss.name);
-              const defeatTime = now;
-              await handleBossDefeat(transaction, partyRef, currentBoss, defeatTime)
+              // Pass the already-fetched members snapshot
+              await handleBossDefeat(
+                transaction, 
+                partyRef, 
+                partyDoc, 
+                currentBoss, 
+                now,
+                allMembersSnapshot // Pass pre-fetched snapshot!
+              );
             }
-           
           }
         }
 
       } else {
-        // Handle new user creation (existing code)
+        // Handle new user creation
         const newExp = fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE;
         const { newLevel } = calculateLevelUp(0, newExp, 1);
         
@@ -180,7 +194,7 @@ function Timer({
         });
       }
 
-      // Handle daily session (existing code)
+      // Handle daily session
       if (dailyDoc.exists()) {
         const existingData = dailyDoc.data();
         transaction.update(dailySessionRef, {
