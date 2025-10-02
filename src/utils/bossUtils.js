@@ -1,12 +1,147 @@
-import { doc, updateDoc, getDocs, collection, query } from 'firebase/firestore';
+import { doc, updateDoc, getDocs, collection, query, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../api/firebase';
+import { PLAYER_CONFIG, getTotalExpForLevel, getExpProgressForCurrentLevel } from './playerStatsUtils';
 
 const bosses = [
-  { bossNumber: 1, name: "Study Slime", maxHealth: 500, damage: 15 },
-  { bossNumber: 2, name: "Knowledge Goblin", maxHealth: 800, damage: 20 },
-  { bossNumber: 3, name: "Wisdom Dragon", maxHealth: 1200, damage: 25 },
+  { bossNumber: 1, name: "Amnesiac Ooze", maxHealth: 500, damage: 15 },
+  { bossNumber: 2, name: "Conundrum Crawler", maxHealth: 800, damage: 20 },
+  { bossNumber: 3, name: "Mnemonic Dragon", maxHealth: 1200, damage: 25 },
   { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30 }
 ];
+
+/**
+ * Check if it's time to spawn the next boss and spawn it
+ * Call this on user login after fetching party data
+*/
+export const checkAndSpawnNextBoss = async (partyId, partyData) => {
+  if (!partyId || !partyData) return { spawned: false };
+
+  try {
+    const currentBoss = partyData.currentBoss;
+    const nextBossSpawnsAt = partyData.nextBossSpawnsAt;
+
+    // Check if boss is dead and there's a scheduled spawn time
+    if (!currentBoss?.isAlive && nextBossSpawnsAt) {
+      const now = new Date();
+      const spawnTime = nextBossSpawnsAt.toDate ? nextBossSpawnsAt.toDate() : new Date(nextBossSpawnsAt);
+
+      // Check if it's past the spawn time
+      if (now >= spawnTime) {
+        console.log('⏰ Spawn time reached! Spawning next boss...');
+
+        // Calculate next boss number (rotate through 1-4)
+        const nextBossNumber = (currentBoss.bossNumber % 4) + 1;
+        const nextBossData = bosses[nextBossNumber - 1];
+
+        if (!nextBossData) {
+          console.error('Boss data not found for boss number:', nextBossNumber);
+          return { spawned: false };
+        }
+
+        // Spawn the new boss
+        const partyRef = doc(db, 'parties', partyId);
+        await updateDoc(partyRef, {
+          'currentBoss': {
+            bossNumber: nextBossNumber,
+            name: nextBossData.name,
+            maxHealth: nextBossData.maxHealth,
+            currentHealth: nextBossData.maxHealth,
+            createdAt: serverTimestamp(),
+            isAlive: true,
+            lastDamageAt: null
+          },
+          'nextBossSpawnsAt': null // Clear the spawn timer
+        });
+
+        console.log(`🎮 Boss spawned! ${nextBossData.name} (Boss #${nextBossNumber})`);
+        console.log(`💪 Health: ${nextBossData.maxHealth} | Damage: ${nextBossData.damage}`);
+
+        return {
+          spawned: true,
+          bossNumber: nextBossNumber,
+          bossName: nextBossData.name,
+          bossData: nextBossData
+        };
+      } else {
+        // Not time yet
+        const timeUntilSpawn = spawnTime - now;
+        const hoursUntilSpawn = timeUntilSpawn / (1000 * 60 * 60);
+        
+        console.log(`⏳ Next boss spawns in ${hoursUntilSpawn.toFixed(1)} hours`);
+        return { 
+          spawned: false, 
+          waitTime: timeUntilSpawn,
+          hoursRemaining: hoursUntilSpawn 
+        };
+      }
+    }
+
+    // Boss is already alive or no spawn scheduled
+    return { spawned: false, reason: 'boss_already_alive_or_no_spawn_scheduled' };
+
+  } catch (error) {
+    console.error('Error checking/spawning boss:', error);
+    throw error;
+  }
+};
+
+
+const handlePlayerDeath = async (userId, partyId, userData, deathCause = 'boss') => {
+  try {
+    const currentExp = userData.exp || 0;
+    const currentLevel = userData.level || 1;
+    const currentMana = userData.mana || 0;
+
+    const EXP_LOSS_PERCENTAGE = 1; // 75% of current level progress
+    const { current: progressExp } = getExpProgressForCurrentLevel(currentExp, currentLevel);
+    const expToLose = Math.floor(progressExp * EXP_LOSS_PERCENTAGE);
+    const expForCurrentLevel = getTotalExpForLevel(currentLevel);
+    const newExp = Math.max(expForCurrentLevel, currentExp - expToLose);
+
+    const now = new Date();
+    const userRef = doc(db, 'users', userId);
+    
+    const updateData = {
+      health: PLAYER_CONFIG.BASE_HEALTH,
+      mana: currentMana,
+      exp: newExp,
+      lastDeathAt: now,
+      reviveCount: increment(1),
+      lastDeathCause: deathCause
+    };
+
+    await updateDoc(userRef, updateData);
+
+    if (partyId) {
+      const memberRef = doc(db, 'parties', partyId, 'members', userId);
+      await updateDoc(memberRef, {
+        health: PLAYER_CONFIG.BASE_HEALTH,
+        mana: currentMana,
+        exp: newExp,
+        level: currentLevel
+      });
+    }
+
+    console.log('💀 Player Death:', {
+      cause: deathCause,
+      expLost: expToLose,
+      healthRestored: PLAYER_CONFIG.BASE_HEALTH,
+      progressLost: `${EXP_LOSS_PERCENTAGE * 100}%`
+    });
+
+    return {
+      expLost: expToLose,
+      expBefore: currentExp,
+      expAfter: newExp,
+      healthRestored: PLAYER_CONFIG.BASE_HEALTH,
+      levelStayed: currentLevel,
+      manaKept: currentMana,
+    };
+  } catch (error) {
+    console.error('❌ Error handling player death:', error);
+    throw error;
+  }
+};
 
 export const checkAndApplyBossAttack = async (userId, partyId, userData, partyData) => {
   if (!userId || !partyId || !userData || !partyData) return;
@@ -14,13 +149,12 @@ export const checkAndApplyBossAttack = async (userId, partyId, userData, partyDa
   try {
     const currentBoss = partyData.currentBoss;
     
-    // If boss isn't alive, no damage
     if (!currentBoss?.isAlive) {
       console.log('Boss is dead, no attack');
       return { damaged: false };
     }
 
-    // NEW: Check if user has 24-hour immunity (new accounts)
+    // Check 24-hour immunity for new accounts
     const accountCreatedAt = userData.createdAt;
     if (accountCreatedAt) {
       const accountAge = accountCreatedAt.toDate ? accountCreatedAt.toDate() : new Date(accountCreatedAt);
@@ -34,12 +168,9 @@ export const checkAndApplyBossAttack = async (userId, partyId, userData, partyDa
 
     const lastBossAttackAt = userData.lastBossAttackAt;
     const now = new Date();
-    
-    // Calculate days since last boss attack
     let daysSinceLastAttack;
     
     if (!lastBossAttackAt) {
-      // First time after immunity expires
       daysSinceLastAttack = 1;
       console.log('First boss attack (immunity expired)');
     } else {
@@ -47,33 +178,34 @@ export const checkAndApplyBossAttack = async (userId, partyId, userData, partyDa
       const millisSinceAttack = now - lastAttack;
       const hoursSinceAttack = millisSinceAttack / (1000 * 60 * 60);
       
-      // Boss attacks every 24 hours
       if (hoursSinceAttack < 24) {
         console.log(`Boss attacked ${hoursSinceAttack.toFixed(1)} hours ago, skipping`);
         return { damaged: false };
       }
       
-      // Calculate full days (24-hour periods)
       daysSinceLastAttack = Math.floor(hoursSinceAttack / 24);
     }
 
-    const bossData = bosses[currentBoss.bossNumber - 1]; // Adjust for 0-based index
+    // const bosses = [
+    //   { bossNumber: 1, name: "Study Slime", maxHealth: 500, damage: 15 },
+    //   { bossNumber: 2, name: "Knowledge Goblin", maxHealth: 800, damage: 20 },
+    //   { bossNumber: 3, name: "Wisdom Dragon", maxHealth: 1200, damage: 25 },
+    //   { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30 }
+    // ];
+
+    const bossData = bosses[currentBoss.bossNumber - 1];
     if (!bossData) {
       console.error('Boss data not found for boss number:', currentBoss.bossNumber);
       return { damaged: false };
     }
 
-    // Calculate total damage
     const totalDamage = bossData.damage * daysSinceLastAttack;
-    
-    // Calculate new health (can't go below 0)
     const currentHealth = userData.health || 100;
     const newHealth = Math.max(0, currentHealth - totalDamage);
 
     console.log(`💥 Boss Attack! ${userData.displayName} took ${totalDamage} damage (${daysSinceLastAttack} days × ${bossData.damage} dmg)`);
     console.log(`❤️ Health: ${currentHealth} → ${newHealth}`);
 
-    // Update both user and party member
     const userRef = doc(db, 'users', userId);
     const memberRef = doc(db, 'parties', partyId, 'members', userId);
 
@@ -89,8 +221,19 @@ export const checkAndApplyBossAttack = async (userId, partyId, userData, partyDa
 
     console.log('✅ Boss attack applied successfully');
 
+    // ⚠️ NEW: Check if player died and handle death penalty
     if (newHealth === 0) {
       console.log('💀 User health reached 0!');
+      const deathPenalty = await handlePlayerDeath(userId, partyId, userData, 'boss');
+      
+      return { 
+        damaged: true, 
+        totalDamage, 
+        newHealth: PLAYER_CONFIG.BASE_HEALTH, // They got revived with full health
+        daysMissed: daysSinceLastAttack,
+        died: true,
+        deathPenalty
+      };
     }
 
     return { damaged: true, totalDamage, newHealth, daysMissed: daysSinceLastAttack };
@@ -147,13 +290,17 @@ function calculateFightDuration(bossCreatedAt, defeatedAt) {
  * Handles boss defeat within a Firestore transaction
  * Must be called with member docs already fetched in the transaction
  */
+
 export const handleBossDefeatWithSnapshot = async (
   transaction, 
   partyRef, 
   partyDoc, 
   currentBoss, 
   defeatTime,
-  membersSnapshot // NEW: Accept pre-fetched snapshot
+  membersSnapshot,
+  currentUserId = null, // NEW: ID of user who dealt killing blow
+  currentUserDamage = null, // NEW: Their updated damage
+  currentUserStudyMinutes = null // NEW: Their updated study minutes
 ) => {
   try {
     const partyData = partyDoc.data();
@@ -164,11 +311,21 @@ export const handleBossDefeatWithSnapshot = async (
     
     membersSnapshot.forEach((memberDoc) => {
       const memberData = memberDoc.data();
-      const damage = memberData.currentBossDamage || 0;
-      const studyMinutes = memberData.currentBossStudyMinutes || 0;
+      const memberId = memberDoc.id;
+      
+      // Use updated values for current user, old values for others
+      let damage, studyMinutes;
+      
+      if (memberId === currentUserId && currentUserDamage !== null) {
+        damage = currentUserDamage;
+        studyMinutes = currentUserStudyMinutes;
+      } else {
+        damage = memberData.currentBossDamage || 0;
+        studyMinutes = memberData.currentBossStudyMinutes || 0;
+      }
       
       rankings.push({
-        userId: memberDoc.id,
+        userId: memberId,
         displayName: memberData.displayName || 'Anonymous',
         damage: damage,
         studyMinutes: studyMinutes
@@ -217,5 +374,4 @@ export const handleBossDefeatWithSnapshot = async (
   }
 };
 
-// Keep the old function name for backward compatibility, but it now requires the snapshot
 export const handleBossDefeat = handleBossDefeatWithSnapshot;

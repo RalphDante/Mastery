@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useAuthContext } from '../../../contexts/AuthContext';
+
 
 function Boss() {
   // Mock data - replace with real data from your backend
+  const {partyProfile} = useAuthContext();
   const [bossData, setBossData] = useState({
     name: "Crimson Drake",
     currentHP: 2450,
@@ -17,7 +20,7 @@ function Boss() {
     { player: "Mike", damage: 28, timeAgo: "8m ago" }
   ]);
 
-  const healthPercentage = (bossData.currentHP / bossData.maxHP) * 100;
+  const healthPercentage = (partyProfile.currentBoss.currentHealth / partyProfile.currentBoss.maxHealth) * 100;
   const isDamaged = healthPercentage < 100;
 
   return (
@@ -37,7 +40,7 @@ function Boss() {
         <div className="relative">
           <div className="w-40 h-40 rounded-lg bg-slate-900 border-2 border-slate-700 overflow-hidden">
             <img 
-              src="/images/bosses/red-dragon.png" 
+              src="/images/bosses/ancient-scholar.png" 
               alt="Red Dragon"
               className="w-full h-full object-contain"
               onError={(e) => {
@@ -66,7 +69,7 @@ function Boss() {
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm text-slate-400">HP</span>
             <span className="text-sm text-slate-300">
-              {bossData.currentHP.toLocaleString()} / {bossData.maxHP.toLocaleString()}
+              {partyProfile.currentBoss.currentHealth} / {partyProfile.currentBoss.maxHealth}
             </span>
           </div>
           <div className="w-full bg-slate-900 rounded-full h-3 border border-slate-700">

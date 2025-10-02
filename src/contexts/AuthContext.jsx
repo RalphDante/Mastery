@@ -11,7 +11,7 @@ import {
 import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
 import { auth, db } from '../api/firebase';
 import { assignUserToParty } from '../utils/partyUtils';
-import { checkAndApplyBossAttack } from '../utils/bossUtils';
+import { checkAndApplyBossAttack, checkAndSpawnNextBoss } from '../utils/bossUtils';
 
 const AuthContext = createContext();
 
@@ -106,42 +106,94 @@ export const AuthProvider = ({ children }) => {
     }, [userProfile?.currentPartyId, fetchPartyProfile]);
 
     useEffect(() => {
-        const checkBossAttack = async () => {
+        const checkBossSystemOnLogin = async () => {
             if (user?.uid && userProfile?.currentPartyId && partyProfile) {
                 try {
-                    const result = await checkAndApplyBossAttack(
-                        user.uid, 
+                    // STEP 1: Check if we need to spawn a new boss
+                    console.log('🔍 Checking if boss needs to spawn...');
+                    const spawnResult = await checkAndSpawnNextBoss(
                         userProfile.currentPartyId, 
-                        userProfile, 
                         partyProfile
                     );
                     
-                    if (result?.newUserImmunity) {
-                        console.log(`🛡️ New user is protected for ${result.hoursRemaining.toFixed(1)} more hours`);
-                    } else if (result?.damaged) {
-                        console.log('Boss attack applied! Updating state...');
+                    if (spawnResult.spawned) {
+                        console.log(`🎉 New boss spawned: ${spawnResult.bossName}`);
+                        // Refresh party data to get the new boss
+                        await fetchPartyProfile(userProfile.currentPartyId);
+                    } else if (spawnResult.hoursRemaining) {
+                        console.log(`⏳ Next boss spawns in ${spawnResult.hoursRemaining.toFixed(1)} hours`);
+                    }
+
+                    // STEP 2: Apply boss attack if boss is alive
+                    // Note: Get fresh partyProfile after potential spawn
+                    const currentPartyData = spawnResult.spawned 
+                        ? await (async () => {
+                            const partyRef = doc(db, 'parties', userProfile.currentPartyId);
+                            const freshPartyDoc = await getDoc(partyRef);
+                            return freshPartyDoc.data();
+                        })()
+                        : partyProfile;
+
+                    const attackResult = await checkAndApplyBossAttack(
+                        user.uid, 
+                        userProfile.currentPartyId, 
+                        userProfile, 
+                        currentPartyData
+                    );
+                    
+                    if (attackResult?.newUserImmunity) {
+                        console.log(`🛡️ New user is protected for ${attackResult.hoursRemaining.toFixed(1)} more hours`);
+                    } else if (attackResult?.died) {
+                        console.log('💀 Player died from boss attack!');
+                        console.log('Death Penalty:', attackResult.deathPenalty);
+                        
+                        // TODO: Show death modal here
+                        // showDeathModal(attackResult.deathPenalty);
+                        
+                        // Update state with revived stats
+                        setUserProfile(prev => ({
+                            ...prev,
+                            health: attackResult.newHealth,
+                            exp: attackResult.deathPenalty.expAfter,
+                            lastBossAttackAt: new Date(),
+                            lastDeathAt: new Date()
+                        }));
+                        
+                        setPartyMembers(prev => 
+                            prev.map(member => 
+                                member.userId === user.uid 
+                                    ? { 
+                                        ...member, 
+                                        health: attackResult.newHealth,
+                                        exp: attackResult.deathPenalty.expAfter 
+                                    }
+                                    : member
+                            )
+                        );
+                    } else if (attackResult?.damaged) {
+                        console.log(`💥 Boss dealt ${attackResult.totalDamage} damage! Health: ${attackResult.newHealth}`);
                         
                         setUserProfile(prev => ({
                             ...prev,
-                            health: result.newHealth,
+                            health: attackResult.newHealth,
                             lastBossAttackAt: new Date()
                         }));
                         
                         setPartyMembers(prev => 
                             prev.map(member => 
                                 member.userId === user.uid 
-                                    ? { ...member, health: result.newHealth }
+                                    ? { ...member, health: attackResult.newHealth }
                                     : member
                             )
                         );
                     }
                 } catch (err) {
-                    console.error('Boss attack check failed:', err);
+                    console.error('Boss system check failed:', err);
                 }
             }
         };
 
-        checkBossAttack();
+        checkBossSystemOnLogin();
     }, [user?.uid, userProfile?.currentPartyId, partyProfile]);
 
     // Fetch user profile from Firestore
@@ -446,6 +498,22 @@ export const AuthProvider = ({ children }) => {
         };
     };
 
+    // Setter for boss health update
+    const updateBossHealth = useCallback((newHealth) => {
+        setPartyProfile(prev => {
+            if (!prev?.currentBoss) return prev;
+            
+            return {
+            ...prev,
+            currentBoss: {
+                ...prev.currentBoss,
+                currentHealth: newHealth,
+                lastDamageAt: new Date()
+            }
+            };
+        });
+    }, []);
+
     const value = {
         user,
         userProfile,
@@ -463,7 +531,8 @@ export const AuthProvider = ({ children }) => {
         getAILimits,
         getFolderLimits,
         getDeckLimits,
-        getCardLimits
+        getCardLimits,
+        updateBossHealth
     };
 
     return (

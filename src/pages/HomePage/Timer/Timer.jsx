@@ -5,18 +5,24 @@ import { runTransaction, doc, increment, collection, query, getDocs } from 'fire
 import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
+import { useAuthContext } from '../../../contexts/AuthContext';
+
+
 function Timer({
   authUser,
   db,
   deckId = null,
   onTimeUpdate = null,
 }) {
+  const {updateBossHealth} = useAuthContext();
+
   const durations = [
     { label: '15 min', value: 15, damage: 30, xp: 25 },
     { label: '25 min', value: 25, damage: 50, xp: 40 },
     { label: '45 min', value: 45, damage: 90, xp: 75 },
     { label: '60 min', value: 60, damage: 120, xp: 100 },
   ];
+
 
   const [selectedDuration, setSelectedDuration] = useState(25);
   const [isRunning, setIsRunning] = useState(false);
@@ -121,55 +127,90 @@ function Timer({
           const partyData = partyDoc.data();
           const currentBoss = partyData.currentBoss;
           
-          if (currentBoss && currentBoss.currentHealth > 0) {
-            const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
+          if (currentBoss) {
+            const isBossAlive = currentBoss.isAlive !== false && currentBoss.currentHealth > 0;
             
-            // ✅ WRITE #2: Update boss health
-            transaction.update(partyRef, {
-              'currentBoss.currentHealth': newBossHealth,
-              'currentBoss.lastDamageAt': now,
-            });
-
-            // ✅ WRITE #3: Update member's damage contribution
-            if (memberDoc && memberDoc.exists()) {
-              const memberData = memberDoc.data();
-              transaction.update(memberRef, {
-                currentBossDamage: (memberData.currentBossDamage || 0) + totalDamage,
-                currentBossStudyMinutes: (memberData.currentBossStudyMinutes || 0) + fullMinutes,
-                lastDamageAt: now,
-                lastStudyAt: now,
-                exp: newExp,
-                level: newLevel,
-                health: newHealth,
-                mana: newMana
+            // Calculate new member damage BEFORE any writes
+            const memberData = memberDoc?.exists() ? memberDoc.data() : null;
+            const newMemberDamage = (memberData?.currentBossDamage || 0) + totalDamage;
+            const newMemberStudyMinutes = (memberData?.currentBossStudyMinutes || 0) + fullMinutes;
+            
+            if (isBossAlive) {
+              const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
+              
+              // ✅ WRITE #2: Update boss health
+              transaction.update(partyRef, {
+                'currentBoss.currentHealth': newBossHealth,
+                'currentBoss.lastDamageAt': now,
               });
+
+              updateBossHealth(newBossHealth);
+              
+
+              // ✅ WRITE #3: Update member's damage contribution
+              if (memberDoc && memberDoc.exists()) {
+                transaction.update(memberRef, {
+                  currentBossDamage: newMemberDamage,
+                  currentBossStudyMinutes: newMemberStudyMinutes,
+                  lastDamageAt: now,
+                  lastStudyAt: now,
+                  exp: newExp,
+                  level: newLevel,
+                  health: newHealth,
+                  mana: newMana
+                });
+              } else {
+                transaction.set(memberRef, {
+                  displayName: currentData.displayName || 'Anonymous',
+                  joinedAt: now,
+                  currentBossDamage: newMemberDamage,
+                  currentBossStudyMinutes: newMemberStudyMinutes,
+                  lastDamageAt: now,
+                  lastStudyAt: now,
+                  exp: newExp,        
+                  level: newLevel,    
+                  health: newHealth,  
+                  mana: newMana
+                });
+              }
+
+              // ✅ WRITE #4+: Handle boss defeat (if needed)
+              if (newBossHealth <= 0) {
+                console.log('Boss defeated!', currentBoss.name);
+                // Pass the updated damage for current user
+                await handleBossDefeat(
+                  transaction, 
+                  partyRef, 
+                  partyDoc, 
+                  currentBoss, 
+                  now,
+                  allMembersSnapshot,
+                  authUser.uid, // Current user ID
+                  newMemberDamage, // Updated damage
+                  newMemberStudyMinutes // Updated study minutes
+                );
+              }
             } else {
-              transaction.set(memberRef, {
-                displayName: currentData.displayName || 'Anonymous',
-                joinedAt: now,
-                currentBossDamage: totalDamage,
-                currentBossStudyMinutes: fullMinutes,
-                lastDamageAt: now,
-                lastStudyAt: now,
-                exp: newExp,        
-                level: newLevel,    
-                health: newHealth,  
-                mana: newMana
-              });
-            }
-
-            // ✅ WRITE #4+: Handle boss defeat (if needed)
-            if (newBossHealth <= 0) {
-              console.log('Boss defeated!', currentBoss.name);
-              // Pass the already-fetched members snapshot
-              await handleBossDefeat(
-                transaction, 
-                partyRef, 
-                partyDoc, 
-                currentBoss, 
-                now,
-                allMembersSnapshot // Pass pre-fetched snapshot!
-              );
+              // Boss is dead, but still track player progress
+              if (memberDoc && memberDoc.exists()) {
+                transaction.update(memberRef, {
+                  lastStudyAt: now,
+                  exp: newExp,
+                  level: newLevel,
+                  health: newHealth,
+                  mana: newMana
+                });
+              } else {
+                transaction.set(memberRef, {
+                  displayName: currentData.displayName || 'Anonymous',
+                  joinedAt: now,
+                  lastStudyAt: now,
+                  exp: newExp,        
+                  level: newLevel,    
+                  health: newHealth,  
+                  mana: newMana
+                });
+              }
             }
           }
         }
