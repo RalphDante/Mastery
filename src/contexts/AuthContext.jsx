@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
                 setUser(null);
                 setUserProfile(null);
                 setPartyProfile(null);
-                setPartyMembers([]);
+                setPartyMembers({});
             }
             setLoading(false);
         });
@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
     const fetchPartyProfile = useCallback(async (partyId) => {
         if (!partyId) {
             setPartyProfile(null);
-            setPartyMembers([]);
+            setPartyMembers({});
             return;
         }
 
@@ -72,25 +72,34 @@ export const AuthProvider = ({ children }) => {
                 const membersRef = collection(db, 'parties', partyId, 'members');
                 const membersSnapshot = await getDocs(membersRef);
                 
-                const members = membersSnapshot.docs.map(doc => ({
-                    userId: doc.id,
-                    ...doc.data()
-                }));
+                // const members = membersSnapshot.docs.map(doc => ({
+                //     userId: doc.id,
+                //     ...doc.data()
+                // }));
+
+                // setPartyMembers(members);
+
+                const membersObject = {};
+                membersSnapshot.docs.forEach(doc => {
+                    membersObject[doc.id] = doc.data();
+                });
                 
-                setPartyMembers(members);
+                setPartyMembers(membersObject);
+                
+                
                 
                 console.log('📦 Party Profile:', partyData);
-                console.log('👥 Party Members:', members);
-                console.log('✅ Party loaded:', partyData.title, 'with', members.length, 'members');
+                console.log('👥 Party Members:', membersObject);
+                console.log('✅ Party loaded:', partyData.title, 'with', Object.keys(membersObject).length, 'members');
             } else {
                 console.warn('⚠️ Party not found:', partyId);
                 setPartyProfile(null);
-                setPartyMembers([]);
+                setPartyMembers({});
             }
         } catch (error) {
             console.error('❌ Error fetching party profile:', error);
             setPartyProfile(null);
-            setPartyMembers([]);
+            setPartyMembers({});
         }
     }, []);
 
@@ -101,7 +110,7 @@ export const AuthProvider = ({ children }) => {
             fetchPartyProfile(userProfile.currentPartyId);
         } else {
             setPartyProfile(null);
-            setPartyMembers([]);
+            setPartyMembers({});
         }
     }, [userProfile?.currentPartyId, fetchPartyProfile]);
 
@@ -159,17 +168,14 @@ export const AuthProvider = ({ children }) => {
                             lastDeathAt: new Date()
                         }));
                         
-                        setPartyMembers(prev => 
-                            prev.map(member => 
-                                member.userId === user.uid 
-                                    ? { 
-                                        ...member, 
-                                        health: attackResult.newHealth,
-                                        exp: attackResult.deathPenalty.expAfter 
-                                    }
-                                    : member
-                            )
-                        );
+                        setPartyMembers(prev => ({
+                            ...prev,
+                            [user.uid]: {
+                                ...prev[user.uid],
+                                health: attackResult.newHealth,
+                                exp: attackResult.deathPenalty.expAfter
+                            }
+                        }));
                     } else if (attackResult?.damaged) {
                         console.log(`💥 Boss dealt ${attackResult.totalDamage} damage! Health: ${attackResult.newHealth}`);
                         
@@ -179,13 +185,13 @@ export const AuthProvider = ({ children }) => {
                             lastBossAttackAt: new Date()
                         }));
                         
-                        setPartyMembers(prev => 
-                            prev.map(member => 
-                                member.userId === user.uid 
-                                    ? { ...member, health: attackResult.newHealth }
-                                    : member
-                            )
-                        );
+                        setPartyMembers(prev => ({
+                            ...prev,
+                            [user.uid]: {
+                                ...prev[user.uid],
+                                health: attackResult.newHealth
+                            }
+                        }));
                     }
                 } catch (err) {
                     console.error('Boss system check failed:', err);
@@ -409,7 +415,7 @@ export const AuthProvider = ({ children }) => {
             setUser(null);
             setUserProfile(null);
             setPartyProfile(null);
-            setPartyMembers([]);
+            setPartyMembers({});
             return { success: true };
         } catch (error) {
             console.error('Error signing out:', error);
@@ -514,6 +520,55 @@ export const AuthProvider = ({ children }) => {
         });
     }, []);
 
+    // Setter for updating party member damage
+    const updateMemberDamage = useCallback((userId, newDamage) => {
+        setPartyMembers(prev => {
+            if (!prev[userId]) return prev;
+            
+            return {
+                ...prev,
+                [userId]: {
+                    ...prev[userId],
+                    currentBossDamage: newDamage,
+                    lastDamageAt: new Date()
+                }
+            };
+        });
+    }, []);
+
+    // Setter for updating last boss results
+    const updateLastBossResults = useCallback((lastBossResults, nextBossSpawnsAt) => {
+        setPartyProfile(prev => {
+            if (!prev) return prev;
+            
+            return {
+                ...prev,
+                lastBossResults: lastBossResults,
+                nextBossSpawnsAt: nextBossSpawnsAt,
+                currentBoss: {
+                    ...prev.currentBoss,
+                    isAlive: false,
+                    defeatedAt: lastBossResults.defeatedAt
+                }
+            };
+        });
+    }, []);
+
+    // Setter for resetting all members' boss damage
+    const resetAllMembersBossDamage = useCallback(() => {
+        setPartyMembers(prev => {
+            const updated = {};
+            Object.keys(prev).forEach(userId => {
+                updated[userId] = {
+                    ...prev[userId],
+                    currentBossDamage: 0,
+                    currentBossStudyMinutes: 0
+                };
+            });
+            return updated;
+        });
+    }, []);
+
     const value = {
         user,
         userProfile,
@@ -532,7 +587,10 @@ export const AuthProvider = ({ children }) => {
         getFolderLimits,
         getDeckLimits,
         getCardLimits,
-        updateBossHealth
+        updateBossHealth,
+        updateMemberDamage,
+        updateLastBossResults,
+        resetAllMembersBossDamage
     };
 
     return (

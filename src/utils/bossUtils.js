@@ -1,12 +1,14 @@
 import { doc, updateDoc, getDocs, collection, query, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../api/firebase';
 import { PLAYER_CONFIG, getTotalExpForLevel, getExpProgressForCurrentLevel } from './playerStatsUtils';
+import { useAuthContext } from '../contexts/AuthContext';
 
-const bosses = [
-  { bossNumber: 1, name: "Amnesiac Ooze", maxHealth: 500, damage: 15 },
-  { bossNumber: 2, name: "Conundrum Crawler", maxHealth: 800, damage: 20 },
-  { bossNumber: 3, name: "Mnemonic Dragon", maxHealth: 1200, damage: 25 },
-  { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30 }
+
+export const bosses = [
+  { bossNumber: 1, name: "Amnesiac Ooze", maxHealth: 500, damage: 15, image: "/images/bosses/amnesiac-ooze.png" },
+  { bossNumber: 2, name: "Conundrum Crawler", maxHealth: 800, damage: 20, image: "/images/bosses/conundrum-crawler.png" },
+  { bossNumber: 3, name: "Mnemonic Dragon", maxHealth: 1200, damage: 25, image: "/images/bosses/mnemonic-dragon.png" },
+  { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30, image: "/images/bosses/ancient-scholar.png" }
 ];
 
 /**
@@ -300,7 +302,9 @@ export const handleBossDefeatWithSnapshot = async (
   membersSnapshot,
   currentUserId = null, // NEW: ID of user who dealt killing blow
   currentUserDamage = null, // NEW: Their updated damage
-  currentUserStudyMinutes = null // NEW: Their updated study minutes
+  currentUserStudyMinutes = null, // NEW: Their updated study minutes
+  updateLastBossResults,
+  resetAllMembersBossDamage
 ) => {
   try {
     const partyData = partyDoc.data();
@@ -365,6 +369,20 @@ export const handleBossDefeatWithSnapshot = async (
         currentBossStudyMinutes: 0
       });
     });
+
+    // After defeating the boss, update the context state:
+    updateLastBossResults(
+        {
+            defeatedAt: defeatTime,
+            bossNumber: currentBoss.bossNumber,
+            fightDuration: fightDuration,
+            rankings: rankings
+        },
+        new Date(nextSpawnTime)
+    );
+
+    // Reset all members' damage
+    resetAllMembersBossDamage();
     
     console.log(`🎉 Boss defeated! MVP: ${rankings[0]?.displayName} with ${rankings[0]?.damage} damage`);
     
@@ -375,3 +393,4 @@ export const handleBossDefeatWithSnapshot = async (
 };
 
 export const handleBossDefeat = handleBossDefeatWithSnapshot;
+

@@ -19,6 +19,7 @@ import { httpsCallable } from 'firebase/functions';
 import PartySection from './PartySection/PartySection.jsx';
 import Boss from './Boss/Boss.jsx';
 import Timer from './Timer/Timer.jsx';
+import ServerCostBanner from './ServerCostBanner.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -73,6 +74,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               <Boss />
             </div>
 
+            <ServerCostBanner />
             
             <OverallMasteryV2 />
             <WelcomeSection />

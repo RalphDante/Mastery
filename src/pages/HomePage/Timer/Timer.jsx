@@ -14,7 +14,8 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
-  const {updateBossHealth} = useAuthContext();
+  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage} = useAuthContext();
+  
 
   const durations = [
     { label: '15 min', value: 15, damage: 30, xp: 25 },
@@ -44,6 +45,10 @@ function Timer({
   if (fullMinutes <= 0) return;
 
   isSavingRef.current = true;
+
+  let newBossHealth = null;
+  let newMemberDamage = null;
+
   try {
     const now = new Date();
     const dateKey = now.toLocaleDateString('en-CA');
@@ -132,11 +137,11 @@ function Timer({
             
             // Calculate new member damage BEFORE any writes
             const memberData = memberDoc?.exists() ? memberDoc.data() : null;
-            const newMemberDamage = (memberData?.currentBossDamage || 0) + totalDamage;
+            newMemberDamage = (memberData?.currentBossDamage || 0) + totalDamage;
             const newMemberStudyMinutes = (memberData?.currentBossStudyMinutes || 0) + fullMinutes;
             
             if (isBossAlive) {
-              const newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
+              newBossHealth = Math.max(0, currentBoss.currentHealth - totalDamage);
               
               // ✅ WRITE #2: Update boss health
               transaction.update(partyRef, {
@@ -144,7 +149,9 @@ function Timer({
                 'currentBoss.lastDamageAt': now,
               });
 
-              updateBossHealth(newBossHealth);
+              // updateBossHealth(newBossHealth);
+              // updateMemberDamage(authUser.uid, newMemberDamage);
+
               
 
               // ✅ WRITE #3: Update member's damage contribution
@@ -187,7 +194,9 @@ function Timer({
                   allMembersSnapshot,
                   authUser.uid, // Current user ID
                   newMemberDamage, // Updated damage
-                  newMemberStudyMinutes // Updated study minutes
+                  newMemberStudyMinutes, // Updated study minutes
+                  updateLastBossResults,
+                  resetAllMembersBossDamage
                 );
               }
             } else {
@@ -256,13 +265,22 @@ function Timer({
       }
     });
 
+    if (newBossHealth !== null) {
+      updateBossHealth(newBossHealth);
+    }
+    if (newMemberDamage !== null) {
+      updateMemberDamage(authUser.uid, newMemberDamage);
+    }
+
+
+    
     if (onTimeUpdate) onTimeUpdate(fullMinutes);
   } catch (err) {
     console.error('Error saving study time:', err);
   } finally {
     isSavingRef.current = false;
   }
-}, [authUser, db, onTimeUpdate]);
+}, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage]);
 
   // --- Timer start / pause / reset ---
   const startTimer = () => {
@@ -344,7 +362,7 @@ function Timer({
 
   // --- Render ---
   return (
-    <div className="w-full h-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+    <div className="w-full h-full max-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
       {!isSessionActive ? (
         <>
           <div className="text-left">
