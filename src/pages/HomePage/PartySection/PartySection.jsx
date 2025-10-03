@@ -84,7 +84,7 @@ function PartySection() {
                     : 'border-slate-600'
               }`}>
                 <img 
-                  src="/images/avatars/default-avatar.png" 
+                  src="/images/avatars/warrior_01.png" 
                   alt={partyMembers[0].name}
                   className="w-full h-full object-cover"
                   onError={(e) => {
@@ -161,7 +161,7 @@ function PartySection() {
                     : 'border-slate-600'
               }`}>
                 <img 
-                  src="/images/avatars/default-avatar.png" 
+                  src="/images/avatars/warrior_01.png" 
                   alt={member.name}
                   className="w-full h-full object-cover"
                   onError={(e) => {

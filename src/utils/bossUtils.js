@@ -5,10 +5,10 @@ import { useAuthContext } from '../contexts/AuthContext';
 
 
 export const bosses = [
-  { bossNumber: 1, name: "Amnesiac Ooze", maxHealth: 500, damage: 15, image: "/images/bosses/amnesiac-ooze.png" },
-  { bossNumber: 2, name: "Conundrum Crawler", maxHealth: 800, damage: 20, image: "/images/bosses/conundrum-crawler.png" },
-  { bossNumber: 3, name: "Mnemonic Dragon", maxHealth: 1200, damage: 25, image: "/images/bosses/mnemonic-dragon.png" },
-  { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30, image: "/images/bosses/ancient-scholar.png" }
+  { bossNumber: 1, name: "Amnesiac Ooze", maxHealth: 500, damage: 15, image: "/images/bosses/amnesiac-ooze.png", difficulty: "easy" },
+  { bossNumber: 2, name: "Conundrum Crawler", maxHealth: 800, damage: 20, image: "/images/bosses/conundrum-crawler.png", difficulty: "medium" },
+  { bossNumber: 3, name: "Mnemonic Dragon", maxHealth: 1200, damage: 25, image: "/images/bosses/mnemonic-dragon.png", difficulty: "hard"},
+  { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30, image: "/images/bosses/ancient-scholar.png", difficulty: "Legendary"}
 ];
 
 /**

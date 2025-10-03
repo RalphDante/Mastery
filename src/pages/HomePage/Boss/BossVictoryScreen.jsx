@@ -1,25 +1,45 @@
 import React, { useState } from 'react';
 import { Trophy, Sparkles, Swords, Award } from 'lucide-react';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { bosses } from '../../../utils/bossUtils';
+import BossSpawnCountdown from './BossSpawnCountDown';
 
 function BossVictoryScreen({rankings}) {
-  // Mock data - this would come from your actual boss defeat data
-  const [victoryData] = useState({
-    bossName: "Crimson Drake",
-    bossLevel: 12,
-    bossImage: "/images/bosses/ancient-scholar.png",
-    totalDamage: 5000,
-    contributors: [
-      { userId: "1", displayName: "CleverWarrior973", damage: 2100, level: 12, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=warrior", isMVP: true },
-      { userId: "2", displayName: "CleverLearner912", damage: 1450, level: 11, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=learner", isMVP: false },
-      { userId: "3", displayName: "BraveFighter88", damage: 890, level: 10, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=fighter", isMVP: false },
-      { userId: "4", displayName: "SwordMaster42", damage: 560, level: 9, avatar: "https://api.dicebear.com/7.x/pixel-art/svg?seed=master", isMVP: false },
-    ],
-    rewards: {
-      xp: 500,
-      gold: 250,
-      items: ["Dragon Scale", "Rare Gem"]
-    }
-  });
+  const {partyProfile, partyMembers} = useAuthContext();
+
+  const lastBossResults = partyProfile?.lastBossResults;
+
+  // Map boss number to boss data
+  const bosses = [
+    { bossNumber: 1, name: "Amnesiac Ooze", image: "/images/bosses/amnesiac-ooze.png" },
+    { bossNumber: 2, name: "Conundrum Crawler", image: "/images/bosses/conundrum-crawler.png" },
+    { bossNumber: 3, name: "Mnemonic Dragon", image: "/images/bosses/mnemonic-dragon.png" },
+    { bossNumber: 4, name: "Ancient Scholar", image: "/images/bosses/ancient-scholar.png" }
+  ];
+
+  // Build victory data from lastBossResults
+  const victoryData = lastBossResults ? {
+    bossName: bosses[lastBossResults.bossNumber - 1]?.name || "Unknown Boss",
+    bossLevel: lastBossResults.bossNumber,
+    bossImage: bosses[lastBossResults.bossNumber - 1]?.image || "/images/bosses/ancient-scholar.png",
+    totalDamage: lastBossResults.rankings.reduce((sum, r) => sum + r.damage, 0),
+    contributors: lastBossResults.rankings.map((ranking, index) => {
+      const member = partyMembers[ranking.userId];
+      return {
+        userId: ranking.userId,
+        displayName: ranking.displayName,
+        damage: ranking.damage,
+        level: member?.level || 1,
+        avatar: member?.avatar ? `/images/avatars/${member.avatar}.png` : `https://api.dicebear.com/7.x/pixel-art/svg?seed=${ranking.displayName}`,
+        isMVP: index === 0
+      };
+    }),
+    fightDuration: lastBossResults.fightDuration
+  } : null;
+
+  if (!victoryData) {
+    return <div className="text-center text-slate-400">No boss victory data available</div>;
+  }
 
   const getMedalEmoji = (index) => {
     if (index === 0) return "🥇";
@@ -32,7 +52,7 @@ function BossVictoryScreen({rankings}) {
     <div>
       {/* Victory Banner */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500"></div>
-      
+    
       {/* Header */}
       <div className="text-center mb-6">
         <div className="flex items-center justify-center gap-2 mb-2">
@@ -59,8 +79,11 @@ function BossVictoryScreen({rankings}) {
             <p className="text-lg font-semibold text-slate-300">{victoryData.bossName}</p>
             <p className="text-sm text-slate-400">Level {victoryData.bossLevel} - Defeated</p>
           </div>
+          <BossSpawnCountdown />
         </div>
+        
       </div>
+
 
       {/* MVP Highlight */}
       <div className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-2 border-yellow-500/50 rounded-lg p-4 mb-4">

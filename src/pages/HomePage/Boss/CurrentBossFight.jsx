@@ -19,6 +19,10 @@ function CurrentBossFight() {
   const bossMaxHealth = partyProfile?.currentBoss.maxHealth;
 
   const bossImage = bosses.find(b => b.bossNumber === bossNumber)?.image
+  const bossName = bosses.find(b => b.bossNumber === bossNumber)?.name
+
+  const bossDifficulty = bosses.find(b => b.bossNumber === bossNumber)?.difficulty
+
 
   // const partyMembersContext = partyMembers?
 
@@ -49,7 +53,7 @@ function CurrentBossFight() {
         
       {/* Header */}
       <div className="text-left">
-        <h2 className="text-xl font-semibold mb-1 text-slate-100">{bossData.name}</h2>
+        <h2 className="text-xl font-semibold mb-1 text-slate-100">{bossName}</h2>
           
       </div>
 
@@ -76,7 +80,7 @@ function CurrentBossFight() {
             </div>
           </div>
           <div className="absolute -top-2 -right-2 bg-slate-700 text-yellow-400 text-sm px-2 py-1 rounded-full border border-slate-600">
-            Lv.{bossData.level}
+            {bossDifficulty}
           </div>
         </div>
 
