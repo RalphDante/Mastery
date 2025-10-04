@@ -14,7 +14,7 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
-  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage} = useAuthContext();
+  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = useAuthContext();
   
 
   const durations = [
@@ -48,9 +48,11 @@ function Timer({
 
   let newBossHealth = null;
   let newMemberDamage = null;
+  let newExp, newLevel, newHealth, newMana;
+  let now;
 
   try {
-    const now = new Date();
+    now = new Date();
     const dateKey = now.toLocaleDateString('en-CA');
 
     await runTransaction(db, async (transaction) => {
@@ -93,18 +95,19 @@ function Timer({
         const currentHealth = currentData.health || 0;
         const currentMana = currentData.mana || 0;
 
-        const newExp = currentExp + (fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE);
-        const newHealth = Math.min(
+        newExp = currentExp + (fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE);
+        newHealth = Math.min(
           PLAYER_CONFIG.BASE_HEALTH, 
           currentHealth + (fullMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE)
         );
 
-        const newMana = Math.min(
+        newMana = Math.min(
           PLAYER_CONFIG.BASE_MANA, 
           currentMana + (fullMinutes * PLAYER_CONFIG.MANA_PER_MINUTE)
         );
 
-        const {newLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
+        const {newLevel: calculatedLevel, leveledUp, coinBonus} = calculateLevelUp(currentExp, newExp, currentLevel);
+        newLevel = calculatedLevel;
 
         // Calculate boss damage
         const baseDamage = fullMinutes * 10;
@@ -226,8 +229,9 @@ function Timer({
 
       } else {
         // Handle new user creation
-        const newExp = fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE;
-        const { newLevel } = calculateLevelUp(0, newExp, 1);
+        newExp = fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE;
+        const { newLevel: calculatedNewLevel } = calculateLevelUp(0, newExp, 1);
+        newLevel = calculatedNewLevel;
         
         transaction.set(userRef, {
           email: authUser.email,
@@ -272,6 +276,14 @@ function Timer({
       updateMemberDamage(authUser.uid, newMemberDamage);
     }
 
+    updateUserProfile({
+      exp: newExp,
+      level: newLevel,
+      health: newHealth,
+      mana: newMana,
+      lastStudyDate: now,
+      lastActiveAt: now
+    });
 
     
     if (onTimeUpdate) onTimeUpdate(fullMinutes);
@@ -280,7 +292,7 @@ function Timer({
   } finally {
     isSavingRef.current = false;
   }
-}, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage]);
+}, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile]);
 
   // --- Timer start / pause / reset ---
   const startTimer = () => {

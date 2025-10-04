@@ -42,7 +42,7 @@ function BossSpawnCountdown() {
     <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800">
       <Clock className="w-4 h-4 text-blue-400" />
       <span className="text-lg font-mono font-bold text-blue-400">
-        {timeRemaining}
+        {timeRemaining} 
       </span>
     </div>
   );

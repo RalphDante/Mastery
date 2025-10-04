@@ -569,6 +569,30 @@ export const AuthProvider = ({ children }) => {
         });
     }, []);
 
+    const updateUserProfile = useCallback((updates) => {
+        setUserProfile(prev => {
+            if (!prev) return prev;
+            return {
+            ...prev,
+            ...updates
+            };
+        });
+
+        // Also update the current user in partyMembers
+        if (user?.uid) {
+            setPartyMembers(prev => {
+            if (!prev[user.uid]) return prev;
+            return {
+                ...prev,
+                [user.uid]: {
+                ...prev[user.uid],
+                ...updates
+                }
+            };
+            });
+        }
+    }, [user?.uid]);
+
     const value = {
         user,
         userProfile,
@@ -590,7 +614,8 @@ export const AuthProvider = ({ children }) => {
         updateBossHealth,
         updateMemberDamage,
         updateLastBossResults,
-        resetAllMembersBossDamage
+        resetAllMembersBossDamage,
+        updateUserProfile
     };
 
     return (
