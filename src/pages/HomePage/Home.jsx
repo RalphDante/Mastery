@@ -74,9 +74,9 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               <Boss />
             </div>
 
-            <ServerCostBanner />
+            {/* <ServerCostBanner /> */}
             
-            <OverallMasteryV2 />
+            {/* <OverallMasteryV2 /> */}
             <WelcomeSection />
             <LearningHubSection 
               onCreateDeckClick={onCreateDeckClick}

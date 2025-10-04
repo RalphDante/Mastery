@@ -18,7 +18,7 @@ function Timer({
   
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 0.01, damage: 10, xp: 10, mana: 3, health: 1 },
 
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -342,7 +342,7 @@ function Timer({
           saveStudyTime(fullMinutes * 60);
           lastSaveRef.current += fullMinutes * 60;
         }
-      }, 500);
+      }, 450);
     }
   };
 
@@ -436,8 +436,15 @@ function Timer({
         </>
       ) : showCompletion ? (
         <>
-          <div className="text-center flex-1 flex flex-col justify-center items-center space-y-4">
-            <div className="text-6xl mb-2">🎉</div>
+          <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">
+            <div>
+                <img 
+                  src="/images/sword-x.png"
+                  alt="sword-x image"
+                  className="w-24 h-24 object-contain"
+                />
+
+            </div>
             <h2 className="text-2xl font-bold text-green-400">Session Complete!</h2>
             <p className="text-slate-300">Great work on your {selectedDuration} minute session</p>
             
@@ -446,7 +453,15 @@ function Timer({
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-slate-300">Experience</span>
-                  <span className="text-green-400 font-bold">+{getCurrentRewards().xp} XP</span>
+                  <span className="text-yellow-500 font-bold">+{getCurrentRewards().xp} XP</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Experience</span>
+                  <span className="text-red-500 font-bold">+{getCurrentRewards().health} HP</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-300">Experience</span>
+                  <span className="text-blue-500 font-bold">+{getCurrentRewards().mana} MANA</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-300">Boss Damage</span>

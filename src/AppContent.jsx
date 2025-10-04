@@ -86,6 +86,7 @@ import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDec
 // Settings
 import Settings from './components/NavBar/ProfileQuickActionsDropDown/Settings.jsx';
 import ProBanner from './pages/HomePage/WelcomeAndQuickStats/ProBanner.jsx';
+import KofiWidget from './components/KofiWidget.jsx';
 
 
 
@@ -274,7 +275,8 @@ function AppContent(){
                 </div>
               </footer>
 
-
+              <KofiWidget />
+              
 
               <FeedbackWidget />
 

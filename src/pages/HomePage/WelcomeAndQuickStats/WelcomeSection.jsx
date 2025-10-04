@@ -67,12 +67,12 @@ function WelcomeSection() {
   return (
     <>
       <section id="welcome-section">
-        <div className="text-center md:text-left mb-8">
+        {/* <div className="text-center md:text-left mb-8">
           <h1 className="text-4xl font-extrabold text-slate-100 mb-2">
             Welcome back, {userData?.displayName || user.displayName || 'Student'}!
           </h1>
           <p className="text-lg text-slate-400">Ready to master something new today?</p>
-        </div>
+        </div> */}
 
 
         {/* Tutorial Tooltip */}
