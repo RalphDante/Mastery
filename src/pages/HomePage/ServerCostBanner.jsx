@@ -25,8 +25,8 @@ function ServerCostBanner() {
               className="w-5 h-5 object-contain flex-shrink-0"
             />
             <span className="text-black font-semibold text-xs sm:text-sm md:text-base">
-  Help keep the adventure alive!
-</span>
+              Help keep the adventure alive!
+            </span>
           </div>
 
           {/* Right Label */}

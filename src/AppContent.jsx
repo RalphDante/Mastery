@@ -247,13 +247,14 @@ function AppContent(){
                   {/* Terms of Service */}
                   <Route path="/terms-of-service" element={<TermsOfService />} />
 
-                  {/* Test Phases */}
+                  
                   <Route path='/pricing' element={<GoPremium />} />
                   {/* <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
 
                   {/* Profile dropdown options */}
                   <Route path='/settings' element={<Settings />} />
                   
+                  {/* Test Phases */}
 
 
               </Routes>
