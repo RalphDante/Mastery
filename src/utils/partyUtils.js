@@ -33,7 +33,7 @@ export const findAvailableParty = async () => {
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
-      limit(10)
+      limit(1)
     );
     
     const querySnapshot = await getDocs(q);
