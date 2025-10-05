@@ -18,7 +18,8 @@ function Timer({
   
 
   const durations = [
-    { label: '1 min', value: 0.01, damage: 10, xp: 10, mana: 3, health: 1 },
+    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
 
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -27,7 +28,7 @@ function Timer({
   ];
 
 
-  const [selectedDuration, setSelectedDuration] = useState(25);
+  const [selectedDuration, setSelectedDuration] = useState(5);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -404,25 +405,35 @@ function Timer({
         <>
           <div className="text-left">
             <h2 className="text-xl font-semibold mb-1">⚔️ Study Timer</h2>
-            <p className="text-slate-400 text-sm">Choose your battle session</p>
+            {/* <p className="text-slate-400 text-sm">Choose your battle session</p> */}
           </div>
-
+          <p className="text-slate-400 text-sm text-center">
+            <span className='text-yellow-400'>Pro tip:</span> Add to home screen for instant battles - quick access = more XP!
+          </p>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
                 <button key={d.value} onClick={() => selectDuration(d.value)}
-                  className={`p-3 rounded-lg font-medium ${selectedDuration===d.value?'bg-slate-700 text-slate-100':'bg-slate-900 text-slate-300 hover:bg-slate-700'}`}>
+                  className={`p-3 rounded-lg font-medium ${selectedDuration===d.value?'bg-slate-600 text-slate-100 border border-2 border-slate-900/20':'bg-slate-900 text-slate-300 hover:bg-slate-700'}`}>
                   {d.label}
                 </button>
               ))}
             </div>
 
             <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
-              <p className="text-sm text-slate-400 mb-2">Session rewards:</p>
-              <div className="flex justify-between items-center">
+              <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
+              <div className="flex justify-between space-x-2 items-center">
                 <div className="flex items-center space-x-1">
-                  <span className="text-green-400 font-medium">+{getCurrentRewards().xp}</span>
+                  <span className="text-yellow-400 font-medium">+{getCurrentRewards().xp}</span>
                   <span className="text-slate-400 text-xs">XP</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-red-500 font-medium">+{getCurrentRewards().health}</span>
+                  <span className="text-slate-400 text-xs">HP</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <span className="text-blue-500 font-medium">+{getCurrentRewards().mana}</span>
+                  <span className="text-slate-400 text-xs">MANA</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <span className="text-red-400 font-medium">{getCurrentRewards().damage}</span>
@@ -456,11 +467,11 @@ function Timer({
                   <span className="text-yellow-500 font-bold">+{getCurrentRewards().xp} XP</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Experience</span>
+                  <span className="text-slate-300">Health</span>
                   <span className="text-red-500 font-bold">+{getCurrentRewards().health} HP</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Experience</span>
+                  <span className="text-slate-300">Mana</span>
                   <span className="text-blue-500 font-bold">+{getCurrentRewards().mana} MANA</span>
                 </div>
                 <div className="flex justify-between items-center">

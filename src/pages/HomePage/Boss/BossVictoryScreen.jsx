@@ -86,7 +86,7 @@ function BossVictoryScreen({rankings}) {
 
 
       {/* MVP Highlight */}
-      <div className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 border-2 border-yellow-500/50 rounded-lg p-4 mb-4">
+      <div className="bg-yellow-600  rounded-lg p-4 mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -104,23 +104,25 @@ function BossVictoryScreen({rankings}) {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-yellow-400 font-bold text-sm tracking-wider">MVP</span>
-                <span className="text-2xl">👑</span>
+                <span className="bg-orange-600 text-white font-mono text-xs px-2 py-1 border-2 border-orange-800 shadow-[2px_2px_0px_#000]">
+                  MVP
+                </span>
+                {/* <span className="text-2xl">👑</span> */}
               </div>
               <p className="text-xl font-semibold text-slate-100">
                 {victoryData.contributors[0].displayName}
               </p>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-slate-300">
                 Level {victoryData.contributors[0].level}
               </p>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-3xl font-bold text-red-400">
+            <p className="text-3xl font-bold text-red-600">
               {victoryData.contributors[0].damage}
             </p>
-            <p className="text-xs text-slate-400">Total Damage</p>
-            <p className="text-sm text-yellow-400 mt-1">
+            <p className="text-xs text-slate-300">Total Damage</p>
+            <p className="text-sm text-red-700 mt-1">
               {Math.round((victoryData.contributors[0].damage / victoryData.totalDamage) * 100)}% of total
             </p>
           </div>

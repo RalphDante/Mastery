@@ -44,7 +44,7 @@ function KofiWidget() {
   return (
     <div 
       id="kofi-widget-container" 
-      className="fixed bottom-4 left-4 z-50"
+      className="fixed bottom-4 left-4 z-10"
       style={{ maxWidth: '300px' }}
     />
   );

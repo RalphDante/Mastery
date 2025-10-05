@@ -275,7 +275,7 @@ function AppContent(){
                 </div>
               </footer>
 
-              <KofiWidget />
+              {/* <KofiWidget /> */}
               
 
               <FeedbackWidget />

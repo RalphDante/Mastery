@@ -63,7 +63,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   return(
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-12">
+        <div className="space-y-8">
 
             <PartySection />
             <div class="grid grid-cols-1 h-30 lg:grid-cols-2 gap-6 mb-6">
@@ -74,7 +74,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               <Boss />
             </div>
 
-            {/* <ServerCostBanner /> */}
+            <ServerCostBanner />
             
             {/* <OverallMasteryV2 /> */}
             <WelcomeSection />

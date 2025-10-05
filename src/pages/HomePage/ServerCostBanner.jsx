@@ -8,7 +8,7 @@ function ServerCostBanner() {
       rel="noopener noreferrer"
       className="block" // ensures proper block-level layout
     >
-      <div className="w-full  rounded h-10 overflow-hidden flex items-center relative cursor-pointer hover:opacity-90 transition">
+      <div className="w-full bg-white rounded rounded-lg h-10 overflow-hidden flex items-center relative cursor-pointer hover:opacity-90 transition">
         {/* Progress Fill */}
         <div
           className="bg-emerald-400 h-full"

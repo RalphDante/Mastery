@@ -188,11 +188,7 @@ function PartySection() {
                 return (
                   <div 
                     key={member.userId}
-                    className={`flex flex-row items-center gap-4 p-3 rounded-lg ${
-                      isCurrentUser 
-                        ? 'bg-purple-900/30 border-2 border-purple-500/50' 
-                        : 'bg-slate-700/50 border-2 border-slate-600'
-                    }`}
+                    className={`flex flex-row items-center gap-4 p-3 rounded-lg bg-slate-700/50 border-2 border-slate-600`}
                   >
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
@@ -223,10 +219,10 @@ function PartySection() {
                       <div className="flex items-center justify-between">
                         <div>
                           <p className={`text-sm font-medium ${
-                            isCurrentUser ? 'text-purple-400' : 'text-blue-400'
+                            isCurrentUser ? 'text-blue-400' : 'text-slate-200'
                           }`}>
                             {member.displayName}
-                            {isCurrentUser && <span className="ml-2 text-xs text-purple-300">(You)</span>}
+                            {isCurrentUser && <span className="ml-2 text-xs text-blue-300">(You)</span>}
                           </p>
                           <p className="text-xs text-slate-400">Lv.{member.level}</p>
                         </div>
