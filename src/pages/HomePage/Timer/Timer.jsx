@@ -6,6 +6,7 @@ import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
 import { useAuthContext } from '../../../contexts/AuthContext';
+import ServerCostBanner from '../ServerCostBanner';
 
 
 function Timer({
@@ -18,7 +19,7 @@ function Timer({
   
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
 
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
@@ -400,17 +401,18 @@ function Timer({
 
   // Render
   return (
-    <div className="w-full h-full max-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+    <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
       {!isSessionActive ? (
         <>
           <div className="text-left">
             <h2 className="text-xl font-semibold mb-1">⚔️ Study Timer</h2>
             {/* <p className="text-slate-400 text-sm">Choose your battle session</p> */}
           </div>
-          <p className="text-slate-400 text-sm text-center">
-            <span className='text-yellow-400'>Pro tip:</span> Add to home screen for instant battles - quick access = more XP!
-          </p>
+         
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
+            <p className="text-slate-400 text-sm text-center max-w-md">
+              <span className='text-yellow-400'>Pro tip:</span> Add to home screen for instant battles - quick access = more XP!
+            </p>
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
                 <button key={d.value} onClick={() => selectDuration(d.value)}
@@ -482,6 +484,8 @@ function Timer({
             </div>
           </div>
 
+          <ServerCostBanner />
+
           <button onClick={resetTimer} className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg">
             Start New Session
           </button>
@@ -495,13 +499,13 @@ function Timer({
 
           <div className="flex-1 flex flex-col justify-center items-center">
             <div className="relative mb-6">
-              <div className="w-32 h-32 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center">
+              <div className="w-48 h-48 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="text-3xl font-bold">{formatTime(timeLeft)}</div>
-                  <div className="text-slate-400 text-xs mt-1">{Math.round(progress)}%</div>
+                  <div className="text-5xl font-bold">{formatTime(timeLeft)}</div>
+                  <div className="text-slate-400 text-sm mt-2">{Math.round(progress)}%</div>
                 </div>
               </div>
-              <svg className="absolute inset-0 w-32 h-32 transform -rotate-90" viewBox="0 0 100 100">
+              <svg className="absolute inset-0 w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
                 <circle cx="50" cy="50" r="46" stroke="transparent" strokeWidth="4" fill="none"/>
                 <circle cx="50" cy="50" r="46" stroke="#ef4444" strokeWidth="4" fill="none" strokeLinecap="round"
                   strokeDasharray={`${2*Math.PI*46}`} strokeDashoffset={`${2*Math.PI*46*(1-progress/100)}`}

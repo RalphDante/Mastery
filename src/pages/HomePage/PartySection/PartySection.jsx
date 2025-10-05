@@ -40,10 +40,15 @@ function PartySection() {
 
   return (
     <>
-      <div className="w-full h-30 bg-slate-800 rounded-lg p-4 flex items-center justify-between text-slate-100 relative">
+    <div>
+      <div className="w-full h-30 flex bg-slate-800 rounded-t-lg md:rounded-lg p-4 flex items-center justify-between text-slate-100 relative">
         
-        <div className="flex flex-row w-96 items-center gap-4 mr-8">
+
+
+         {/* User Profile */}
+        <div className="flex flex-row w-full md:w-96 md:mr-8 items-center">
           {/* Avatar */}
+
           <div 
             className="relative cursor-pointer hover:opacity-80 transition-opacity"
             onClick={openModal}
@@ -62,7 +67,7 @@ function PartySection() {
           </div>
           
           <div className='flex flex-col w-full'>
-            {/* Member Info */}
+            {/* User Info */}
             <div className="text-left">
               <p className={`text-xs font-medium text-blue-400`}>
                 {currentUser?.displayName}
@@ -72,7 +77,7 @@ function PartySection() {
 
             <div className='flex flex-col w-full gap-2'>
               {/* HP Bar */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <div className="flex-1 bg-slate-700 h-3 relative overflow-hidden">
                   <div 
                     className="h-full transition-all duration-300 bg-red-500"
@@ -85,7 +90,7 @@ function PartySection() {
               </div>
 
               {/* EXP Bar */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <div className="flex-1 bg-slate-700 h-3 relative overflow-hidden">
                   <div 
                     className="h-full transition-all duration-300 bg-yellow-500"
@@ -98,7 +103,7 @@ function PartySection() {
               </div>
 
               {/* Mana Bar */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <div className="flex-1 bg-slate-700 h-3 relative overflow-hidden">
                   <div 
                     className="h-full transition-all duration-300 bg-blue-500"
@@ -113,7 +118,9 @@ function PartySection() {
           </div>
         </div>
         
-        <div className="flex-1 flex items-center gap-3 overflow-x-auto scrollbar-hide">         
+
+        {/* Party Members */}
+        <div className="hidden md:flex flex-1 items-center gap-3 overflow-x-auto scrollbar-hide">         
           {Object.entries(partyMembers)
             .filter(([userId]) => userId !== user?.uid)
             .map(([userId, member]) => (
@@ -151,12 +158,24 @@ function PartySection() {
         <div className="flex flex-col space-y-2">
           <button 
             onClick={openModal}
-            className="px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded transition-colors"
+            className="hidden md:block px-3 py-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm rounded transition-colors"
           >
             View Party
           </button>
         </div>
       </div>
+      
+      <button 
+        onClick={openModal}
+        className="md:hidden w-full flex justify-center items-center p-1 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-b-lg transition-colors"
+      >
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+    </div>
+
+      
 
       {/* Party Members Modal - Using Portal */}
       {showModal && createPortal(

@@ -120,12 +120,12 @@ function CurrentBossFight() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
+      <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg min-h-[200px]">
         <div className="flex justify-between items-center mb-2">
           <span className="text-sm text-slate-400">Top Contributors</span>
           <span className="text-xs text-slate-500">This battle</span>
         </div>
-        <div className="space-y-1 max-h-20 overflow-y-auto">
+        <div className="space-y-1 h-full overflow-y-auto">
           {topContributors.length > 0 ? (
             topContributors.map((contributor, index) => {
             const percentage = (contributor.damage / maxDamage) * 100;

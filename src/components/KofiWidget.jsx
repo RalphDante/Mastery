@@ -1,53 +1,50 @@
-// components/KofiWidget.jsx
 import { useEffect } from 'react';
 
 function KofiWidget() {
   useEffect(() => {
-    // Load the Ko-fi script dynamically
-    const script = document.createElement('script');
-    script.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
-    script.async = true;
+    // Check if script is already loaded
+    const existingScript = document.querySelector('script[src*="ko-fi.com"]');
     
-    script.onload = () => {
-      // Initialize after script loads
-      if (window.kofiwidget2) {
-        window.kofiwidget2.init('Support me on Ko-fi', '#72a4f2', 'X7X71LPHFA');
-        window.kofiwidget2.draw();
-      }
-    };
+    if (!existingScript) {
+      // Create and load the Ko-fi script
+      const script = document.createElement('script');
+      script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
+      script.async = true;
+      
+      script.onload = () => {
+        // Initialize the widget after script loads
+        if (window.kofiWidgetOverlay) {
+          window.kofiWidgetOverlay.draw('affytee', {
+            'type': 'floating-chat',
+            'floating-chat.donateButton.text': 'Support me',
+            'floating-chat.donateButton.background-color': '#00b9fe',
+            'floating-chat.donateButton.text-color': '#fff'
+          });
+        }
+      };
+      
+      document.body.appendChild(script);
+    } else if (window.kofiWidgetOverlay) {
+      // Script already loaded, just initialize
+      window.kofiWidgetOverlay.draw('affytee', {
+        'type': 'floating-chat',
+        'floating-chat.donateButton.text': 'Support me',
+        'floating-chat.donateButton.background-color': '#00b9fe',
+        'floating-chat.donateButton.text-color': '#fff'
+      });
+    }
     
-    document.body.appendChild(script);
-    
-    // Add custom styles to override Ko-fi widget background
-    const style = document.createElement('style');
-    style.textContent = `
-      .floating-chat-kofi {
-        background: transparent !important;
-      }
-      .floating-chat-kofi iframe {
-        background: transparent !important;
-      }
-    `;
-    document.head.appendChild(style);
-    
-    // Cleanup
+    // Cleanup function
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-      if (document.head.contains(style)) {
-        document.head.removeChild(style);
+      // Remove the widget when component unmounts
+      const kofiWidget = document.querySelector('[id^="kofi-widget"]');
+      if (kofiWidget) {
+        kofiWidget.remove();
       }
     };
   }, []);
 
-  return (
-    <div 
-      id="kofi-widget-container" 
-      className="fixed bottom-4 left-4 z-10"
-      style={{ maxWidth: '300px' }}
-    />
-  );
+  return null; // This component doesn't render anything itself
 }
 
 export default KofiWidget;
