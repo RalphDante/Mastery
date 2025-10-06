@@ -70,19 +70,19 @@ export const UserDataProvider = ({ children }) => {
       unsubscribes.push(unsubFolders);
 
       // 3. Subscribe to card progress (for due cards calculation)
-      const cardProgressRef = collection(db, 'cardProgress');
-      const cardProgressQuery = query(cardProgressRef, where('userId', '==', user.uid));
-      const unsubCardProgress = onSnapshot(cardProgressQuery, (snapshot) => {
-        const progress = [];
-        snapshot.forEach((doc) => {
-          progress.push({ id: doc.id, ...doc.data() });
-        });
-        setCardProgress(progress);
-      });
-      unsubscribes.push(unsubCardProgress);
+      // const cardProgressRef = collection(db, 'cardProgress');
+      // const cardProgressQuery = query(cardProgressRef, where('userId', '==', user.uid));
+      // const unsubCardProgress = onSnapshot(cardProgressQuery, (snapshot) => {
+      //   const progress = [];
+      //   snapshot.forEach((doc) => {
+      //     progress.push({ id: doc.id, ...doc.data() });
+      //   });
+      //   setCardProgress(progress);
+      // });
+      // unsubscribes.push(unsubCardProgress);
 
       // 4. Fetch last 7 days of daily sessions (less frequent updates)
-      fetchDailySessions(user.uid);
+      // fetchDailySessions(user.uid);
 
       setIsLoading(false);
     } catch (err) {
