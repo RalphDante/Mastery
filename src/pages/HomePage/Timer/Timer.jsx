@@ -26,9 +26,8 @@ function Timer({
 
 
   const durations = [
-    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
-
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
     { label: '45 min', value: 45, damage: 450, xp: 450, mana: 135, health: 45  },
