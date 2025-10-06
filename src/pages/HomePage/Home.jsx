@@ -75,7 +75,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
             </div>
 
             {/* <OverallMasteryV2 /> */}
-            <WelcomeSection />
+            {/* <WelcomeSection /> */}
             <LearningHubSection 
               onCreateDeckClick={onCreateDeckClick}
               onCreateWithAIModalClick={onCreateWithAIModalClick}
