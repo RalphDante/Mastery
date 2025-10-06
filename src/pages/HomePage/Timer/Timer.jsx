@@ -1,13 +1,12 @@
 // TimerWithAutosave.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { runTransaction, doc, increment, collection, query, getDocs } from 'firebase/firestore';
+import { runTransaction, doc, increment, collection, query, getDocs, getDoc, updateDoc } from 'firebase/firestore';
 
 import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
 import { useAuthContext } from '../../../contexts/AuthContext';
 import ServerCostBanner from '../ServerCostBanner';
-
 
 function Timer({
   authUser,
@@ -17,9 +16,17 @@ function Timer({
 }) {
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = useAuthContext();
   
+  const startTimeRef = useRef(null);           // NEW: When timer actually started
+  const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
+  const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
+  const sessionTimerRef = useRef(null);
+  const lastSaveRef = useRef(0);               // Track last save in SECONDS not ref ticks
+  const isSavingRef = useRef(false);
+  const audioRef = useRef(null);
+
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
 
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
@@ -35,13 +42,8 @@ function Timer({
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
 
-  // Refs for stable timers and saving
-  const sessionTimerRef = useRef(null);
-  const saveIntervalRef = useRef(null);
-  const sessionSecondsRef = useRef(0);
-  const lastSaveRef = useRef(0);
-  const isSavingRef = useRef(false);
-  const audioRef = useRef(null);
+
+
 
   // Initialize alarm sound
   useEffect(() => {
@@ -283,18 +285,12 @@ function Timer({
     }
   }, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage]);
 
-  // Handle timer completion
-  const handleCompletion = useCallback(() => {
+  const handleCompletion = useCallback(async () => {
     console.log('Timer completed!');
     
-    // Stop the timer
     if (sessionTimerRef.current) {
       clearInterval(sessionTimerRef.current);
       sessionTimerRef.current = null;
-    }
-    if (saveIntervalRef.current) {
-      clearInterval(saveIntervalRef.current);
-      saveIntervalRef.current = null;
     }
     
     setIsRunning(false);
@@ -304,43 +300,85 @@ function Timer({
       audioRef.current.play().catch(err => console.log('Audio play failed:', err));
     }
     
-    // Save any remaining time
-    const remaining = sessionSecondsRef.current - lastSaveRef.current;
+    // Calculate remaining time using TIMESTAMPS (not old ref)
+    const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+    const totalSeconds = Math.floor(totalElapsed / 1000);
+    const remaining = totalSeconds - lastSaveRef.current;
+    
     if (remaining > 0) {
-      saveStudyTime(remaining);
-      lastSaveRef.current = sessionSecondsRef.current;
+      await saveStudyTime(remaining);
     }
     
-    // Show completion screen
+    // Clear timer from database
+    if (authUser) {
+      try {
+        const userRef = doc(db, 'users', authUser.uid);
+        await updateDoc(userRef, {
+          'activeTimer.isActive': false
+        });
+      } catch (err) {
+        console.error('Error clearing timer:', err);
+      }
+    }
+    
     setShowCompletion(true);
-  }, [saveStudyTime]);
+}, [saveStudyTime, authUser, db]);
 
-  // Timer start / pause / reset
-  const startTimer = () => {
+  const startTimer = async () => {
     if (!authUser) return;
+    
+    const now = Date.now();
+    
+    // Initialize or resume timer
+    if (startTimeRef.current === null) {
+      // First start
+      startTimeRef.current = now;
+      pausedTimeRef.current = 0;
+      
+      // Save to database that timer started
+      try {
+        const userRef = doc(db, 'users', authUser.uid);
+        await updateDoc(userRef, {
+          activeTimer: {
+            startedAt: new Date(now),
+            duration: selectedDuration * 60,
+            isActive: true
+          }
+        });
+        console.log('Timer saved to database');
+      } catch (err) {
+        console.error('Error saving timer start:', err);
+      }
+    } else if (lastPauseTimeRef.current !== null) {
+      // Resuming from pause
+      pausedTimeRef.current += now - lastPauseTimeRef.current;
+      lastPauseTimeRef.current = null;
+    }
+    
     setIsRunning(true);
     setIsSessionActive(true);
     setShowCompletion(false);
 
+    // Start the interval
     if (!sessionTimerRef.current) {
       sessionTimerRef.current = setInterval(() => {
-        sessionSecondsRef.current += 1;
-        setTimeElapsed(prev => {
-          const newElapsed = prev + 1;
-          
-          // Check if timer is complete
-          if (newElapsed >= selectedDuration * 60) {
-            handleCompletion();
-            return selectedDuration * 60; // Cap at max duration
-          }
-          
-          return newElapsed;
-        });
+        // CORE FIX: Calculate from timestamps, not tick count
+        const currentTime = Date.now();
+        const totalElapsed = currentTime - startTimeRef.current - pausedTimeRef.current;
+        const totalSeconds = Math.floor(totalElapsed / 1000);
+        
+        setTimeElapsed(totalSeconds);
+        
+        // Check if timer is complete
+        if (totalSeconds >= selectedDuration * 60) {
+          handleCompletion();
+          return;
+        }
 
-        // Save only full minutes
-        const secondsToSave = sessionSecondsRef.current - lastSaveRef.current;
-        if (secondsToSave >= 60) {
-          const fullMinutes = Math.floor(secondsToSave / 60);
+        // Save every full minute
+        const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
+        if (secondsSinceLastSave >= 60) {
+          const fullMinutes = Math.floor(secondsSinceLastSave / 60);
           saveStudyTime(fullMinutes * 60);
           lastSaveRef.current += fullMinutes * 60;
         }
@@ -350,37 +388,60 @@ function Timer({
 
   const pauseTimer = () => {
     setIsRunning(false);
+    lastPauseTimeRef.current = Date.now();
+    
     if (sessionTimerRef.current) { 
       clearInterval(sessionTimerRef.current); 
       sessionTimerRef.current = null; 
     }
-    if (saveIntervalRef.current) { 
-      clearInterval(saveIntervalRef.current); 
-      saveIntervalRef.current = null; 
-    }
 
-    // Save remaining unsaved seconds
-    const remaining = sessionSecondsRef.current - lastSaveRef.current;
+    // Save remaining unsaved time
+    const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+    const totalSeconds = Math.floor(totalElapsed / 1000);
+    const remaining = totalSeconds - lastSaveRef.current;
+    
     if (remaining > 0) {
       saveStudyTime(remaining);
-      lastSaveRef.current = sessionSecondsRef.current;
+      lastSaveRef.current = totalSeconds;
     }
   };
 
-  const resetTimer = () => {
-    pauseTimer();
+  const resetTimer = async () => {
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+    
+    setIsRunning(false);
     setIsSessionActive(false);
     setTimeElapsed(0);
     setShowCompletion(false);
-    sessionSecondsRef.current = 0;
+    
+    // Reset timestamp refs
+    startTimeRef.current = null;
+    pausedTimeRef.current = 0;
+    lastPauseTimeRef.current = null;
     lastSaveRef.current = 0;
+
+    // Clear from database
+    if (authUser) {
+      try {
+        const userRef = doc(db, 'users', authUser.uid);
+        await updateDoc(userRef, {
+          'activeTimer.isActive': false
+        });
+      } catch (err) {
+        console.error('Error clearing timer:', err);
+      }
+    }
   };
 
   const selectDuration = (duration) => {
     if (!isSessionActive) {
       setSelectedDuration(duration);
       setTimeElapsed(0);
-      sessionSecondsRef.current = 0;
+      startTimeRef.current = null;
+      pausedTimeRef.current = 0;
       lastSaveRef.current = 0;
     }
   };
@@ -395,6 +456,68 @@ function Timer({
     const secs = seconds % 60;
     return `${mins.toString().padStart(2,'0')}:${secs.toString().padStart(2,'0')}`;
   };
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && startTimeRef.current) {
+        const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+        const totalSeconds = Math.floor(totalElapsed / 1000);
+        
+        // Check if timer should have completed while away
+        if (totalSeconds >= selectedDuration * 60 && !showCompletion) {
+          handleCompletion();
+        } else if (isRunning) {
+          setTimeElapsed(totalSeconds);
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isRunning, selectedDuration, handleCompletion, showCompletion]);
+
+   // Add this useEffect to check for active timer when component mounts
+  useEffect(() => {
+    const checkForActiveTimer = async () => {
+      if (!authUser) return;
+
+      try {
+        const userRef = doc(db, 'users', authUser.uid);
+        const userDoc = await getDoc(userRef);
+        const activeTimer = userDoc.data()?.activeTimer;
+
+        if (activeTimer?.isActive) {
+          const startedAt = activeTimer.startedAt.toDate();
+          const durationSeconds = activeTimer.duration;
+          const elapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+
+          if (elapsedSeconds < durationSeconds) {
+            // Timer still running - resume it
+            console.log('Resuming timer from', elapsedSeconds, 'seconds');
+            
+            startTimeRef.current = startedAt.getTime();
+            pausedTimeRef.current = 0;
+            setSelectedDuration(Math.ceil(durationSeconds / 60));
+            setTimeElapsed(elapsedSeconds);
+            setIsSessionActive(true);
+            // Don't auto-start, let user click resume
+          } else {
+            // Timer finished while away
+            console.log('Timer completed while app was closed');
+            const minutes = Math.floor(durationSeconds / 60);
+            await saveStudyTime(durationSeconds);
+            await updateDoc(userRef, { 'activeTimer.isActive': false });
+            setShowCompletion(true);
+            setSelectedDuration(minutes);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking active timer:', error);
+      }
+    };
+
+    checkForActiveTimer();
+  }, [authUser, db, saveStudyTime]);
 
   // Cleanup on unmount
   useEffect(() => () => resetTimer(), []);
