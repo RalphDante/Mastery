@@ -4,7 +4,7 @@ import { Sparkles, Star } from 'lucide-react';
 const TestimonialsCarousel = () => {
   const testimonials = [
     {
-      text: "OMG this is actually magic!! Improved my grades by 2 letter grades",
+      text: "Cool, I like the dragon.",
       source: "YouTube Viewer"
     },
     {
@@ -20,7 +20,7 @@ const TestimonialsCarousel = () => {
       source: "App User"
     },
     {
-      text: "This saved me so much time during finals week",
+      text: "The concept is actually really good, keep on going!",
       source: "YouTube Viewer"
     },
     {
@@ -28,7 +28,7 @@ const TestimonialsCarousel = () => {
       source: "Social Media User"
     },
     {
-      text: "Best study app I've ever used",
+      text: "LOOKS FIRE 🔥",
       source: "Content Viewer"
     },
     {

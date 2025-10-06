@@ -15,9 +15,9 @@ const HeroSection = ({setShowModal, signIn}) => {
         <div className="flex-1 max-w-lg lg:max-w-xl order-1 lg:order-2">
           <div className={`transition-all duration-1000 delay-300 lg:delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <img 
-              src="/images/HeadlineImage.webp" 
+              src="/images/bosses-headline-image.webp" 
               alt="Stressed student overwhelmed by textbooks - representing the panic before using Mastery"
-              className="w-full h-auto rounded-2xl shadow-2xl hover:shadow-violet-500/20 transition-shadow duration-500"
+              className="w-full h-auto rounded-2xl"
               loading="eager"
               width="600"
               height="400"
@@ -28,11 +28,11 @@ const HeroSection = ({setShowModal, signIn}) => {
         {/* Mobile: Text Second, Desktop: Text First */}
         <div className="flex-1 text-center lg:text-left order-2 lg:order-1">
           <h1 className={`text-5xl sm:text-5xl lg:text-6xl xl:text-7xl opacity-90 font-black mb-6 transition-all duration-1000 delay-500 lg:delay-0 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            From Panic
+            Studying Alone  
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block animate-pulse py-2 lg:py-4">
-              To Prepared
+              Is Boring.
             </span>
-            In Minutes
+            So This Exists.
           </h1>
 
           {/* Science-backed metrics */}
@@ -56,9 +56,9 @@ const HeroSection = ({setShowModal, signIn}) => {
 
           {/* Updated subheading */}
           <p className={`text-lg sm:text-xl lg:text-2xl text-gray-300 mb-8 transition-all duration-1000 delay-700 lg:delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            Stop stressing about how to study.
-            <span className="text-violet-400 font-semibold"> Upload your materials, get AI flashcards instantly, and start </span>
-            <span className="font-bold">STUDYING SMARTER.</span>
+            Turn studying into 
+            <span className="text-violet-400 font-semibold"> boss battles. </span>
+            <span className="">Study with your party.  Built by a student who was tired of <span className="font-bold">cramming alone. </span></span>
           </p>
 
           {/* CTA Buttons */}
@@ -71,13 +71,13 @@ const HeroSection = ({setShowModal, signIn}) => {
               <span>Start Free</span>
             </button>
 
-            <button 
+            {/* <button 
               className="group border-2 border-violet-500 bg-transparent hover:bg-violet-500 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-2"
               onClick={() => setShowModal(true)}
               aria-label="Browse decks"
             >
               <span>Try Demo</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

@@ -203,7 +203,7 @@ const TryNowPage = () => {
             </section>
 
             {/* Featured Decks section */}
-            <MostCopiesSection />
+            {/* <MostCopiesSection /> */}
 
             {/* How It Works Section with Schema markup */}
             {/* <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20" aria-labelledby="how-it-works">
