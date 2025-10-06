@@ -40,18 +40,18 @@ function BossSpawnCountdown() {
 
   return (
     <>
-      <div className='inline-flex items-center flex-col'>
-        <span className=" text-xs text-blue-100/50">
-            Next boss spawns in:
-          </span>
-          <div className="inline-flex items-center gap-2 px-4  bg-slate-800">
+      <div className="flex flex-col sm:items-center">
+        <span className="text-xs text-blue-100/50">
+          Next boss spawns in:
+        </span>
+
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800">
           <Clock className="w-4 h-4 text-blue-400" />
-          <span className="text-lg font-mono font-bold text-blue-400">
-            {timeRemaining} 
+          <span className="text-xs md:text-lg font-mono font-bold text-blue-400 whitespace-nowrap">
+            {timeRemaining}
           </span>
         </div>
       </div>
-      
     </>
     
   );
