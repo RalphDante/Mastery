@@ -1,6 +1,6 @@
 // OptimizedWelcomeSection.js
 import React from 'react';
-import { useUserData, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../contexts/useUserData';
+import { useAuthContext, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import ProBanner from './ProBanner';
@@ -10,7 +10,8 @@ function WelcomeSection() {
   const isCreateDeckNotCompleted = isInTutorial('create-deck')
   const isGlobalReviewNotCompleted = isInTutorial('global-review')
 
-  const { user, loading, error, userData } = useUserData();
+  // Updated: Use merged AuthContext instead of UserDataContext
+  const { user, userProfile, loading, authLoading } = useAuthContext();
   const { cardsDue, cardsReviewedToday, nextReviewTime } = useCardsDue();
   const { currentStreak, longestStreak } = useStudyStats();
   const navigate = useNavigate();
@@ -26,29 +27,20 @@ function WelcomeSection() {
     completeTutorial('global-review');
   };
 
-  // if (loading) {
-  //   return (
-  //     <section id="welcome-section">
-  //       <div className="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
-  //         <div className="animate-pulse">
-  //           <div className="h-8 bg-gray-700 rounded w-1/3 mb-4"></div>
-  //           <div className="h-4 bg-gray-700 rounded w-1/2 mb-8"></div>
-  //           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-  //             <div className="h-24 bg-gray-700 rounded"></div>
-  //             <div className="h-24 bg-gray-700 rounded"></div>
-  //             <div className="h-24 bg-gray-700 rounded"></div>
-  //           </div>
-  //         </div>
-  //       </div>
-  //     </section>
-  //   );
-  // }
-
-  if (error) {
+  // Loading state check
+  if (loading || authLoading) {
     return (
       <section id="welcome-section">
-        <div className="bg-red-900/20 border border-red-500/50 p-6 rounded-2xl">
-          <p className="text-red-400">Error: {error.message}</p>
+        <div className="bg-gray-800 p-8 rounded-2xl shadow-lg border border-gray-700">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="h-4 bg-gray-700 rounded w-1/2 mb-8"></div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="h-24 bg-gray-700 rounded"></div>
+              <div className="h-24 bg-gray-700 rounded"></div>
+              <div className="h-24 bg-gray-700 rounded"></div>
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -69,7 +61,7 @@ function WelcomeSection() {
       <section id="welcome-section">
         {/* <div className="text-center md:text-left mb-8">
           <h1 className="text-4xl font-extrabold text-slate-100 mb-2">
-            Welcome back, {userData?.displayName || user.displayName || 'Student'}!
+            Welcome back, {userProfile?.displayName || user.displayName || 'Student'}!
           </h1>
           <p className="text-lg text-slate-400">Ready to master something new today?</p>
         </div> */}

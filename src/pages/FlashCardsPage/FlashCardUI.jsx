@@ -1455,7 +1455,7 @@ function FlashCardUI({
     <>  
         {/* <PublicDeckHeader /> */}
        
-        <TutorialOverlay isVisible={welcomeUserToSmartReview && !loading && flashCards.length > 0 && studyMode === 'spaced'}>
+        {/* <TutorialOverlay isVisible={welcomeUserToSmartReview && !loading && flashCards.length > 0 && studyMode === 'spaced'}>
             <SmartReviewButtons onSuccess={() => {
                 advanceStep('smart-review');
             }} />
@@ -1489,7 +1489,7 @@ function FlashCardUI({
                 Continue Studying
             </button>
             </div>
-        </TutorialOverlay>
+        </TutorialOverlay> */}
 
         
         

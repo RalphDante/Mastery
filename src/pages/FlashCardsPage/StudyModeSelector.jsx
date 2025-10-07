@@ -171,20 +171,20 @@ function StudyModeSelector({
     return (
         <>
             {/* Desktop Tutorial Overlay */}
-            <TutorialOverlay isVisible={chooseSmartReviewTutorial && !isMobile}>
+            {/* <TutorialOverlay isVisible={chooseSmartReviewTutorial && !isMobile}>
                 <div className="relative bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-md w-full p-6 text-white animate-bounce">
                 <span role="img" aria-label="sparkles">✨</span> 
                 Let's add this deck for <span className="text-emerald-600">Smart Review</span>!
                 </div>
-            </TutorialOverlay>
+            </TutorialOverlay> */}
 
             {/* Mobile Tutorial Overlay for Menu Button */}
-            <TutorialOverlay isVisible={chooseSmartReviewTutorial && isMobile && !showMobileMenu}>
+            {/* <TutorialOverlay isVisible={chooseSmartReviewTutorial && isMobile && !showMobileMenu}>
                 <div className="relative bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-md w-full p-6 text-white animate-bounce">
                 <span role="img" aria-label="sparkles">✨</span> 
                 Tap the menu to access <span className="text-emerald-600">Smart Review</span>!
                 </div>
-            </TutorialOverlay>
+            </TutorialOverlay> */}
 
         
         <div className="relative">
@@ -207,7 +207,7 @@ function StudyModeSelector({
                         Quick Study
                     </button>
                     
-                    <button
+                    {/* <button
                         onClick={() => handleModeSwitch('spaced')}
                         disabled={isLoading || disableSpaced} // Disable button if disableSpaced is true
                         className={`group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
@@ -220,7 +220,6 @@ function StudyModeSelector({
                         
                         `}
                     >
-                        {/* Tooltip for disabled state */}
                         {disableSpaced && (
                             <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
                                 🔒 Copy this deck to unlock Smart Review
@@ -230,15 +229,13 @@ function StudyModeSelector({
                         <i className="fa-solid fa-brain"></i>
                         Smart Review
                         {disableSpaced && <span className="ml-1">🔒</span>}
-                        
-                        {/* Only show dueCardsCount badge if deckId exists (i.e., not global review)
-                            and if there are due cards and spaced mode is not disabled. */}
+                       
                         {deckId && dueCardsCount > 0 && !disableSpaced && (
                             <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
                                 {dueCardsCount}
                             </span>
                         )}
-                    </button>
+                    </button> */}
                 </div>
                 
                 {isLoading && (
@@ -254,19 +251,10 @@ function StudyModeSelector({
             <div className="sm:hidden">
                 <button
                     onClick={handleMobileMenuClick}
-                    className={`bg-gray-700 rounded-lg p-3 text-white hover:bg-gray-600 transition-all duration-200 relative ${
-                        chooseSmartReviewTutorial && !showMobileMenu 
-                            ? 'ring-4 ring-yellow-400 ring-offset-2 animate-pulse scale-110 shadow-lg shadow-yellow-400/25 z-50' 
-                            : ''
-                    }`}
+                    className={`bg-gray-700 rounded-lg p-3 text-white hover:bg-gray-600 transition-all duration-200 relative`}
                 >
-                    {/* Tutorial notification dot */}
-                    {chooseSmartReviewTutorial && !showMobileMenu && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full animate-ping"></div>
-                    )}
-                    {chooseSmartReviewTutorial && !showMobileMenu && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full"></div>
-                    )}
+                    
+                  
                     
                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <circle cx="5" cy="12" r="2"/>
@@ -288,17 +276,7 @@ function StudyModeSelector({
                     {/* Bottom Menu */}
                     <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-800 rounded-t-2xl p-6 z-50 animate-in slide-in-from-bottom duration-300">
                         
-                        {/* Mobile Tutorial Overlay for Smart Review Button */}
-                        {chooseSmartReviewTutorial && showMobileMenu && (
-                            <div className="absolute -top-20 left-4 right-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-4 text-white animate-bounce z-60">
-                                <span role="img" aria-label="sparkles">✨</span> 
-                                Let's add this deck for <span className="text-emerald-600">Smart Review</span>!
-                                {/* Arrow pointing down to the Smart Review button */}
-                                <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full">
-                                    <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-gray-800"></div>
-                                </div>
-                            </div>
-                        )}
+                        
                         
                         <div className="flex flex-col gap-3">
                             <button
@@ -317,39 +295,6 @@ function StudyModeSelector({
                                 Quick Study
                             </button>
                             
-                            <button
-                                onClick={() => {
-                                    handleModeSwitch('spaced');
-                                    setShowMobileMenu(false);
-                                }}
-                                disabled={isLoading || disableSpaced} // Disable button if disableSpaced is true
-                                className={`group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 ${
-                                    currentMode === 'spaced' 
-                                        ? 'bg-emerald-600 text-white shadow-lg' 
-                                        : disableSpaced 
-                                            ? 'text-gray-500 cursor-not-allowed bg-gray-600' // Disabled styles
-                                            : 'text-gray-400 hover:text-white hover:bg-gray-600'
-                                } ${chooseSmartReviewTutorial && showMobileMenu ? 'ring-4 ring-yellow-400 ring-offset-2 animate-pulse scale-105 z-50' : ''}`}
-                            >
-                                {/* Tooltip for disabled state */}
-                                {disableSpaced && (
-                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                                        🔒 Copy this deck to unlock Smart Review
-                                    </div>
-                                )}
-                                
-                                <i className="fa-solid fa-brain"></i>
-                                Smart Review
-                                {disableSpaced && <span className="ml-1">🔒</span>}
-                                
-                                {/* Only show dueCardsCount badge if deckId exists (i.e., not global review)
-                                    and if there are due cards and spaced mode is not disabled. */}
-                                {deckId && dueCardsCount > 0 && !disableSpaced && (
-                                    <span className="bg-red-500 text-white text-xs rounded-full px-2 py-1 ml-1">
-                                        {dueCardsCount}
-                                    </span>
-                                )}
-                            </button>
                         </div>
                         
                         {/* Close indicator */}

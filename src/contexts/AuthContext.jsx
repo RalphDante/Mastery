@@ -8,7 +8,17 @@ import {
     sendPasswordResetEmail,
     updateProfile
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
+import { 
+    doc, 
+    getDoc, 
+    setDoc, 
+    updateDoc, 
+    collection, 
+    getDocs,
+    query,
+    where,
+    onSnapshot
+} from 'firebase/firestore';
 import { auth, db } from '../api/firebase';
 import { assignUserToParty } from '../utils/partyUtils';
 import { checkAndApplyBossAttack, checkAndSpawnNextBoss } from '../utils/bossUtils';
@@ -23,8 +33,6 @@ export const useAuthContext = () => {
     return context;
 };
 
-
-// This will act as the gamified global context
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [userProfile, setUserProfile] = useState(null);
@@ -32,6 +40,11 @@ export const AuthProvider = ({ children }) => {
     const [authLoading, setAuthLoading] = useState(false);
     const [partyProfile, setPartyProfile] = useState(null);
     const [partyMembers, setPartyMembers] = useState([]);
+    
+    // NEW: Data from UserDataContext
+    const [folders, setFolders] = useState([]);
+    const [cardProgress, setCardProgress] = useState([]);
+    const [dailySessions, setDailySessions] = useState([]);
 
     // Listen for authentication state changes
     useEffect(() => {
@@ -46,12 +59,71 @@ export const AuthProvider = ({ children }) => {
                 setUserProfile(null);
                 setPartyProfile(null);
                 setPartyMembers({});
+                // Clear data
+                setFolders([]);
+                setCardProgress([]);
+                setDailySessions([]);
             }
             setLoading(false);
         });
 
         return unsubscribe;
     }, []);
+
+    // NEW: Subscribe to folders when user is authenticated
+    useEffect(() => {
+        if (!user) {
+            setFolders([]);
+            return;
+        }
+
+        const foldersRef = collection(db, 'folders');
+        const foldersQuery = query(foldersRef, where('ownerId', '==', user.uid));
+        
+        const unsubFolders = onSnapshot(foldersQuery, (snapshot) => {
+            const fetchedFolders = [];
+            snapshot.forEach((doc) => {
+                fetchedFolders.push({ id: doc.id, ...doc.data() });
+            });
+            
+            // Sort by updatedAt
+            fetchedFolders.sort((a, b) => {
+                const dateA = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
+                const dateB = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
+            
+            setFolders(fetchedFolders);
+            console.log('📁 Folders updated:', fetchedFolders.length);
+        });
+
+        return () => unsubFolders();
+    }, [user]);
+
+    // NEW: Optional - Subscribe to card progress if needed
+    // Uncomment this if you need real-time card progress
+    /*
+    useEffect(() => {
+        if (!user) {
+            setCardProgress([]);
+            return;
+        }
+
+        const cardProgressRef = collection(db, 'cardProgress');
+        const cardProgressQuery = query(cardProgressRef, where('userId', '==', user.uid));
+        
+        const unsubCardProgress = onSnapshot(cardProgressQuery, (snapshot) => {
+            const progress = [];
+            snapshot.forEach((doc) => {
+                progress.push({ id: doc.id, ...doc.data() });
+            });
+            setCardProgress(progress);
+            console.log('📊 Card progress updated:', progress.length);
+        });
+
+        return () => unsubCardProgress();
+    }, [user]);
+    */
 
     // Fetch party profile and its members
     const fetchPartyProfile = useCallback(async (partyId) => {
@@ -72,21 +144,12 @@ export const AuthProvider = ({ children }) => {
                 const membersRef = collection(db, 'parties', partyId, 'members');
                 const membersSnapshot = await getDocs(membersRef);
                 
-                // const members = membersSnapshot.docs.map(doc => ({
-                //     userId: doc.id,
-                //     ...doc.data()
-                // }));
-
-                // setPartyMembers(members);
-
                 const membersObject = {};
                 membersSnapshot.docs.forEach(doc => {
                     membersObject[doc.id] = doc.data();
                 });
                 
                 setPartyMembers(membersObject);
-                
-                
                 
                 console.log('📦 Party Profile:', partyData);
                 console.log('👥 Party Members:', membersObject);
@@ -134,7 +197,6 @@ export const AuthProvider = ({ children }) => {
                     }
 
                     // STEP 2: Apply boss attack if boss is alive
-                    // Note: Get fresh partyProfile after potential spawn
                     const currentPartyData = spawnResult.spawned 
                         ? await (async () => {
                             const partyRef = doc(db, 'parties', userProfile.currentPartyId);
@@ -156,10 +218,6 @@ export const AuthProvider = ({ children }) => {
                         console.log('💀 Player died from boss attack!');
                         console.log('Death Penalty:', attackResult.deathPenalty);
                         
-                        // TODO: Show death modal here
-                        // showDeathModal(attackResult.deathPenalty);
-                        
-                        // Update state with revived stats
                         setUserProfile(prev => ({
                             ...prev,
                             health: attackResult.newHealth,
@@ -348,6 +406,56 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // NEW: Fetch daily sessions (from UserDataContext)
+    const fetchDailySessions = useCallback(async (userId) => {
+        if (!userId) return;
+
+        try {
+            const last7Days = [];
+            const today = new Date();
+            
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateStr = getLocalDateString(date);
+                const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+                
+                const sessionDocRef = doc(db, 'users', userId, 'dailySessions', dateStr);
+                const sessionDoc = await getDoc(sessionDocRef);
+                
+                let sessionData = { minutes: 0, spacedRep: 0, cramming: 0 };
+                if (sessionDoc.exists()) {
+                    const data = sessionDoc.data();
+                    sessionData = {
+                        minutes: data.minutesStudied || 0,
+                        spacedRep: data.spacedSessions || 0,
+                        cramming: data.crammingSessions || 0
+                    };
+                }
+                
+                last7Days.push({
+                    day: dayName,
+                    date: dateStr,
+                    minutes: Math.round(sessionData.minutes),
+                    spacedRep: sessionData.spacedRep,
+                    cramming: sessionData.cramming,
+                    isToday: i === 0
+                });
+            }
+            
+            setDailySessions(last7Days);
+        } catch (error) {
+            console.error('Error fetching daily sessions:', error);
+        }
+    }, []);
+
+    const getLocalDateString = (date = new Date()) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     const generateRandomUsername = () => {
         const adjectives = ['Swift', 'Brave', 'Clever', 'Bright', 'Bold'];
         const nouns = ['Scholar', 'Learner', 'Student', 'Warrior', 'Master'];
@@ -416,6 +524,9 @@ export const AuthProvider = ({ children }) => {
             setUserProfile(null);
             setPartyProfile(null);
             setPartyMembers({});
+            setFolders([]);
+            setCardProgress([]);
+            setDailySessions([]);
             return { success: true };
         } catch (error) {
             console.error('Error signing out:', error);
@@ -504,23 +615,82 @@ export const AuthProvider = ({ children }) => {
         };
     };
 
-    // Setter for boss health update
+    // NEW: Computed values (from UserDataContext)
+    const cardsDue = (() => {
+        const now = new Date();
+        return cardProgress.filter(card => {
+            if (!card.nextReviewDate) return false;
+            try {
+                const nextReviewDate = card.nextReviewDate.toDate();
+                return nextReviewDate <= now;
+            } catch (error) {
+                return false;
+            }
+        }).length;
+    })();
+
+    const nextReviewTime = (() => {
+        if (cardProgress.length === 0) return null;
+        
+        const now = new Date();
+        const upcomingCards = cardProgress
+            .filter(card => {
+                if (!card.nextReviewDate) return false;
+                try {
+                    const nextReviewDate = card.nextReviewDate.toDate();
+                    return nextReviewDate > now;
+                } catch (error) {
+                    return false;
+                }
+            })
+            .sort((a, b) => {
+                const dateA = a.nextReviewDate.toDate();
+                const dateB = b.nextReviewDate.toDate();
+                return dateA.getTime() - dateB.getTime();
+            });
+            
+        return upcomingCards.length > 0 ? upcomingCards[0].nextReviewDate.toDate() : null;
+    })();
+
+    const cardsReviewedToday = (() => {
+        const today = new Date();
+        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        return cardProgress.filter(card => {
+            if (!card.lastReviewDate) return false;
+            try {
+                const lastReviewDate = card.lastReviewDate.toDate();
+                const lastReviewDay = new Date(
+                    lastReviewDate.getFullYear(), 
+                    lastReviewDate.getMonth(), 
+                    lastReviewDate.getDate()
+                );
+                return lastReviewDay.getTime() === todayStart.getTime();
+            } catch (error) {
+                return false;
+            }
+        }).length;
+    })();
+
+    const todaySession = dailySessions.find(session => session.isToday) || 
+        { minutes: 0, spacedRep: 0, cramming: 0 };
+
+    // Boss system setters
     const updateBossHealth = useCallback((newHealth) => {
         setPartyProfile(prev => {
             if (!prev?.currentBoss) return prev;
             
             return {
-            ...prev,
-            currentBoss: {
-                ...prev.currentBoss,
-                currentHealth: newHealth,
-                lastDamageAt: new Date()
-            }
+                ...prev,
+                currentBoss: {
+                    ...prev.currentBoss,
+                    currentHealth: newHealth,
+                    lastDamageAt: new Date()
+                }
             };
         });
     }, []);
 
-    // Setter for updating party member damage
     const updateMemberDamage = useCallback((userId, newDamage) => {
         setPartyMembers(prev => {
             if (!prev[userId]) return prev;
@@ -536,7 +706,6 @@ export const AuthProvider = ({ children }) => {
         });
     }, []);
 
-    // Setter for updating last boss results
     const updateLastBossResults = useCallback((lastBossResults, nextBossSpawnsAt) => {
         setPartyProfile(prev => {
             if (!prev) return prev;
@@ -554,7 +723,6 @@ export const AuthProvider = ({ children }) => {
         });
     }, []);
 
-    // Setter for resetting all members' boss damage
     const resetAllMembersBossDamage = useCallback(() => {
         setPartyMembers(prev => {
             const updated = {};
@@ -573,44 +741,66 @@ export const AuthProvider = ({ children }) => {
         setUserProfile(prev => {
             if (!prev) return prev;
             return {
-            ...prev,
-            ...updates
+                ...prev,
+                ...updates
             };
         });
 
-        // Also update the current user in partyMembers
         if (user?.uid) {
             setPartyMembers(prev => {
-            if (!prev[user.uid]) return prev;
-            return {
-                ...prev,
-                [user.uid]: {
-                ...prev[user.uid],
-                ...updates
-                }
-            };
+                if (!prev[user.uid]) return prev;
+                return {
+                    ...prev,
+                    [user.uid]: {
+                        ...prev[user.uid],
+                        ...updates
+                    }
+                };
             });
         }
     }, [user?.uid]);
 
     const value = {
+        // Auth state
         user,
         userProfile,
         loading,
         authLoading,
+        
+        // Party data
         partyProfile,
         partyMembers,
+        
+        // NEW: User data (from UserDataContext)
+        folders,
+        cardProgress,
+        dailySessions,
+        
+        // NEW: Computed values
+        cardsDue,
+        cardsReviewedToday,
+        nextReviewTime,
+        todaySession,
+        
+        // Auth functions
         signIn,
         logOut,
         resetPassword,
         refreshUserProfile,
         fetchUserProfile,
         refreshPartyProfile,
+        
+        // NEW: Utility functions
+        refreshDailySessions: () => fetchDailySessions(user?.uid),
+        
+        // Limit functions
         isPremium,
         getAILimits,
         getFolderLimits,
         getDeckLimits,
         getCardLimits,
+        
+        // Boss system functions
         updateBossHealth,
         updateMemberDamage,
         updateLastBossResults,
@@ -623,6 +813,50 @@ export const AuthProvider = ({ children }) => {
             {!loading && children}
         </AuthContext.Provider>
     );
+};
+
+// NEW: Specialized hooks (from UserDataContext)
+export const useAuth = () => {
+    const { user, loading, authLoading } = useAuthContext();
+    return { user, loading: loading || authLoading };
+};
+
+export const useFolders = () => {
+    const { folders } = useAuthContext();
+    return folders;
+};
+
+export const useCardsDue = () => {
+    const { cardsDue, cardsReviewedToday, nextReviewTime } = useAuthContext();
+    return { cardsDue, cardsReviewedToday, nextReviewTime };
+};
+
+export const useStudyStats = () => {
+    const { userProfile, dailySessions, todaySession } = useAuthContext();
+    return {
+        currentStreak: userProfile?.stats?.currentStreak || 0,
+        longestStreak: userProfile?.stats?.longestStreak || 0,
+        dailySessions,
+        todaySession
+    };
+};
+
+// NEW: Utility function (from UserDataContext)
+export const getTimeUntilNextReview = (nextReviewTime) => {
+    if (!nextReviewTime) return "No upcoming reviews";
+    
+    const now = new Date();
+    const diffMs = nextReviewTime.getTime() - now.getTime();
+    
+    if (diffMs <= 0) return "Ready now";
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    
+    if (diffDays > 0) return `${diffDays} day${diffDays > 1 ? 's' : ''}`;
+    if (diffHours > 0) return `${diffHours} hour${diffHours > 1 ? 's' : ''}`;
+    return `${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
 };
 
 export default AuthContext;

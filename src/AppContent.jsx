@@ -41,9 +41,7 @@ import DisplayFlashCardsPage from './pages/CreateDeckPage/DisplayFlashCards.jsx'
 import TryNowPage from './pages/TryNowPage/LandingPage/TryNowPage.jsx';
 
 //Contexts
-import { UserDataProvider } from './contexts/useUserData.jsx';
 import { TutorialProvider } from './contexts/TutorialContext';
-import { AuthProvider } from './contexts/AuthContext';
 import { useAuthContext } from './contexts/AuthContext';
 
 
@@ -187,7 +185,6 @@ function AppContent(){
   };
 
   return (
-    <UserDataProvider>
     <TutorialProvider authUser={authUser}>
       <Router>
         <div className="min-h-screen flex flex-col">
@@ -308,7 +305,6 @@ function AppContent(){
         </div>
       </Router>
     </ TutorialProvider>
-    </UserDataProvider>
   );
 }
 

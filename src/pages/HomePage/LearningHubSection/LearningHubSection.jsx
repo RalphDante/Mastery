@@ -1,10 +1,8 @@
 // OptimizedLearningHubSection - Simplified version focusing on folders
 
 // Contexts
-import { useAuthContext } from '../../../contexts/AuthContext';
-
-import React, { useState, useEffect } from 'react';
-import { useUserData, useFolders } from '../../../contexts/useUserData';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuthContext, useFolders } from '../../../contexts/AuthContext';
 import {
     collection,
     query,
@@ -13,7 +11,7 @@ import {
     addDoc,
     deleteDoc,
     doc,
-    serverTimestamp,
+    serverTimestamp,    
     getDocs,
     runTransaction,
     increment,
@@ -23,9 +21,7 @@ import { db } from '../../../api/firebase';
 import { useNavigate } from "react-router-dom";
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
-    const {getFolderLimits} = useAuthContext();
-
-    const {user, loading, error} = useUserData();
+    const { user, loading, getFolderLimits } = useAuthContext();
     const folders = useFolders() || []; // Get folders array directly from context
     const navigate = useNavigate();
     
@@ -38,21 +34,25 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const [isDecksLoading, setIsDecksLoading] = useState(false);
 
     // Real-time listener for decks in current folder
-    useEffect(() => {
+    
+
+    // Fetch decks function
+    const fetchDecks = useCallback(async () => {
         if (!user || !currentFolder) {
             setFolderDecks([]);
             return;
         }
 
         setIsDecksLoading(true);
-        const decksRef = collection(db, 'decks');
-        const q = query(
-            decksRef,
-            where('folderId', '==', currentFolder.id),
-            where('ownerId', '==', user.uid)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        try {
+            const decksRef = collection(db, 'decks');
+            const q = query(
+                decksRef,
+                where('folderId', '==', currentFolder.id),
+                where('ownerId', '==', user.uid)
+            );
+            
+            const snapshot = await getDocs(q);
             const fetchedDecks = [];
             snapshot.forEach((doc) => {
                 fetchedDecks.push({
@@ -69,14 +69,16 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             });
 
             setFolderDecks(fetchedDecks);
-            setIsDecksLoading(false);
-        }, (err) => {
+        } catch (err) {
             console.error('Error fetching decks:', err);
+        } finally {
             setIsDecksLoading(false);
-        });
-
-        return () => unsubscribe();
+        }
     }, [user, currentFolder]);
+
+    useEffect(() => {
+        fetchDecks()
+    }, [fetchDecks]);
 
     const handleCreateFolder = async (e) => {
         e.preventDefault();
@@ -255,15 +257,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         );
     }
 
-    if (error) {
-        return (
-            <section id="learning-hub-section" className="p-6 bg-gray-900 min-h-screen">
-                <div className="flex items-center justify-center h-64">
-                    <div className="text-red-400">Error: {error.message}</div>
-                </div>
-            </section>
-        );
-    }
+ 
 
     if (!user) {
         return (

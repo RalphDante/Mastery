@@ -13,7 +13,6 @@ import { db } from '../../api/firebase.js';
 
 import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
 import WelcomeSection from './WelcomeAndQuickStats/WelcomeSection.jsx';
-import OverallMastery from './Overall Mastery/OverallMastery.jsx';
 import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import { httpsCallable } from 'firebase/functions';
 import PartySection from './PartySection/PartySection.jsx';
