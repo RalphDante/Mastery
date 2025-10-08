@@ -519,55 +519,6 @@ exports.cancelSubscription = onCall(async (request) => {
   }
 });
 
-exports.handleExpiredSubscriptions = onSchedule('0 6 * * *', async (event) => {
-  try {
-    console.log('🕐 Checking for expired subscriptions');
-    
-    const now = Timestamp.now();
-    
-    // Find users with expired subscriptions that haven't been downgraded yet
-    const expiredQuery = await db.collection('users')
-      .where('subscription.expiresAt', '<=', now)
-      .where('subscription.tier', '==', 'pro') // Still marked as pro
-      .get();
-    
-    console.log(`Found ${expiredQuery.size} expired subscriptions`);
-    
-    const batch = db.batch();
-    
-    expiredQuery.docs.forEach((userDoc) => {
-      const userId = userDoc.id;
-      const userData = userDoc.data();
-      
-      console.log(`⬇️ Downgrading expired subscription for user ${userId}`);
-      
-      // Apply grandfather method - keep existing content but apply free limits
-      const updateData = {
-        'subscription.tier': 'free',
-        'subscription.status': 'expired',
-        'subscription.updatedAt': FieldValue.serverTimestamp(),
-        
-        // Reset to free tier limits (grandfather existing content)
-        'limits.maxAiGenerations': 20,
-        'limits.maxCards': 100, // They keep existing cards but can't add more
-        'limits.maxDecks': 5,
-        'limits.maxSmartReviewDecks': 2,
-        'limits.maxFolders': 10
-      };
-      
-      batch.update(userDoc.ref, updateData);
-    });
-    
-    if (!expiredQuery.empty) {
-      await batch.commit();
-      console.log(`✅ Processed ${expiredQuery.size} expired subscriptions`);
-    }
-    
-  } catch (error) {
-    console.error('Error handling expired subscriptions:', error);
-  }
-});
-
 
 // MANUAL DOWNGRADE TEST
 exports.manuallyProcessExpired = onCall(async (request) => {

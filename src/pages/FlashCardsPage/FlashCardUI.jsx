@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Copy } from "lucide-react";
+import { ArrowLeft, Copy } from "lucide-react";
 import { auth, app } from '../../api/firebase';
 import { 
     getFirestore, 
@@ -1499,10 +1499,20 @@ function FlashCardUI({
         
         {/* Buttons */}
         <div className={`flex justify-between mb-1`}>
+            <button
+                onClick={() => navigate('/')}
+                className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    
+            </button>
             <div>
+                <div className='flex w-full max-w-7xl justify-start  px-4 mt-2 mx-auto '>
+                    
+                </div>
                 {/* Only show edit button if user owns the deck */}
-                {deckId && !isPublicDeck && <EditDeckBtn deckId={deckId} />}
-                {(!deckId || isPublicDeck) && (studyMode === 'cramming') && (
+                {/* {(!deckId || isPublicDeck) && (studyMode === 'cramming') && (
                     <CopyDeckBtn 
                         deckId={deckId} 
                         deckName={deck?.title || "Untitled Deck"}
@@ -1513,7 +1523,7 @@ function FlashCardUI({
                         onCopy={copyPublicDeckToUserAccount}
                         onShowSignUp={() => setShowSignUpPrompt(true)}
                     />
-                )}
+                )} */}
 
 
             </div>

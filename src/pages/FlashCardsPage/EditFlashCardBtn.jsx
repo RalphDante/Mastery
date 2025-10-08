@@ -1,6 +1,9 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function EditDeckBtn({deckId}){
+
+    
 
     const navigate = useNavigate();
 
@@ -11,10 +14,14 @@ function EditDeckBtn({deckId}){
 
     return(
 
-        <div>
-            <button className="px-6 py-3 bg-white/10 text-white/70 rounded-xl font-semibold transition-all hover:-translate-y-1" onClick={handleEditFlashCard}>Edit Deck</button>           
+            <a 
+                href="#" 
+                onClick={(e) => handleEditFlashCard()} 
+                className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
+            >
+                Edit Deck
+            </a>       
 
-        </div>
     )
 }
 

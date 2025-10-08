@@ -11,7 +11,7 @@ import {
 import { 
     doc, 
     getDoc, 
-    setDoc, 
+    setDoc,
     updateDoc, 
     collection, 
     getDocs,
@@ -267,8 +267,42 @@ export const AuthProvider = ({ children }) => {
             const userDoc = await getDoc(userRef);
             
             if (userDoc.exists()) {
-                const profileData = userDoc.data();
+                let profileData = userDoc.data();
 
+                // 🆕 LAZY EXPIRATION CHECK - Only runs when user logs in
+                const subscription = profileData.subscription || {};
+                const now = new Date();
+                
+                // Check if pro subscription has expired
+                if (subscription.tier === 'pro' && 
+                    subscription.expiresAt && 
+                    subscription.expiresAt.toDate() <= now &&
+                    (subscription.status === 'active' || subscription.status === 'cancel_requested')) {
+                    
+                    console.log('⏰ Subscription expired on login, downgrading to free tier');
+                    
+                    // Downgrade to free tier
+                    await updateDoc(userRef, {
+                        'subscription.tier': 'free',
+                        'subscription.status': 'expired',
+                        'subscription.updatedAt': now,
+                        
+                        // Reset to free tier limits (grandfather existing content)
+                        'limits.maxAiGenerations': 20,
+                        'limits.maxCards': 100,
+                        'limits.maxDecks': 5,
+                        'limits.maxSmartReviewDecks': 2,
+                        'limits.maxFolders': 10
+                    });
+                    
+                    // Re-fetch the updated profile to get fresh data
+                    const updatedDoc = await getDoc(userRef);
+                    profileData = updatedDoc.data();
+                    
+                    console.log('✅ User downgraded to free tier');
+                }
+
+                // Check if user needs gamification fields (existing logic)
                 if (profileData.exp === null || profileData.exp === undefined) {
                     const newFields = {
                         level: 1,
@@ -318,11 +352,12 @@ export const AuthProvider = ({ children }) => {
                     setUser(prev => ({ ...prev, profile: updatedData }));
                 } 
                 else {
+                    // Normal case - just set the profile
                     setUserProfile(profileData);
                     setUser(prev => ({ ...prev, profile: profileData }));
                 }
             } else {
-                // Create default profile for brand new users
+                // Create default profile for brand new users (existing logic)
                 console.log('📝 Creating new user profile in AuthProvider');
                 
                 const now = new Date();

@@ -14,7 +14,7 @@ import { useTutorials } from "../../contexts/TutorialContext";
 function CreateWithAIModal({ onClose, isOpen }) {
 
   // Context
-  const { getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
+  const { folders, getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
   const userIsPremium = isPremium();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
@@ -27,7 +27,6 @@ function CreateWithAIModal({ onClose, isOpen }) {
   const [isCreatingNewFolder, setIsCreatingNewFolder] = useState(false);
   const [flashcards, setFlashcards] = useState([]);
   const [deckName, setDeckName] = useState('');
-  const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState("");
   const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -66,26 +65,8 @@ function CreateWithAIModal({ onClose, isOpen }) {
   //     }
   //   }, [isOpen]);
 
-  // Fetching folders with proper query (similar to first modal)
-  useEffect(() => {
-    if (authUser) {
-      const foldersQuery = query(
-        collection(db, 'folders'),
-        where('ownerId', '==', authUser.uid)
-      );
-      
-      const unsubscribe = onSnapshot(foldersQuery, (snapshot) => {
-        const folderList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          ...doc.data()
-        }));
-        setFolders(folderList);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [authUser, db]);
+ 
+  
 
   // Reset form when modal opens/closes
   useEffect(() => {
