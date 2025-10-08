@@ -1,6 +1,6 @@
 import { ArrowLeft, Globe, RotateCcw} from 'lucide-react';
 
-import { getFirestore, doc, getDoc, query, collection, where, orderBy, getDocs, updateDoc, serverTimestamp } from "firebase/firestore"; 
+import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app, auth } from '../../api/firebase';
 import { onAuthStateChanged } from "firebase/auth";
@@ -13,8 +13,10 @@ import { Timestamp } from "firebase/firestore";
 import FlashCardUI from "./FlashCardUI";
 import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
+import { useAuthContext } from '../../contexts/AuthContext';
 
 function FlashCardsPage() {
+    const {user} = useAuthContext();
 
     // Public Deck data
     const [publicDeckData, setPublicDeckData] = useState(null)
@@ -31,7 +33,6 @@ function FlashCardsPage() {
     // Get additional data from navigation state if available
     const { deckTitle, folderId, folderName } = location.state || {};
 
-    const [authUser, setAuthUser] = useState(null);
     const db = getFirestore(app); 
     
     // States for progress tracking, passed to FlashCardUI as setters
@@ -47,14 +48,6 @@ function FlashCardsPage() {
     // Communication with FlashCardUI for current card index
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // Authentication state listener
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            setAuthUser(user);
-        });
-        return () => unsubscribe();
-    }, []);
-
     // Effect to calculate percentage when knowAnswer or dontKnowAnswer changes
     useEffect(() => {
         const totalAttempted = knowAnswer + dontKnowAnswer;
@@ -65,61 +58,16 @@ function FlashCardsPage() {
         }
     }, [knowAnswer, dontKnowAnswer]); // Dependencies: recalculate when these values change
 
-    // --- Check for due cards and auto-switch to spaced mode ---
-    const checkDueCardsAndAutoSwitch = useCallback(async () => {
-        if (!authUser) return;
     
-        try {
-            let dueCardsQuery;
-            
-            // Create current timestamp for comparison
-            const now = Timestamp.now();
-            
-            if (paramDeckId) {
-                // Check due cards for specific deck
-                dueCardsQuery = query(
-                    collection(db, 'cardProgress'),
-                    where('userId', '==', authUser.uid),
-                    where('deckId', '==', paramDeckId),
-                    where('nextReviewDate', '<=', now)
-                );
-            } else {
-                // Check due cards across all decks
-                dueCardsQuery = query(
-                    collection(db, 'cardProgress'),
-                    where('userId', '==', authUser.uid),
-                    where('nextReviewDate', '<=', now)
-                );
-            }
-    
-            const dueCardsSnapshot = await getDocs(dueCardsQuery);
-            const dueCount = dueCardsSnapshot.size;
-            setDueCardsCount(dueCount);
-    
-            // Auto-switch to spaced mode if there are due cards and we haven't manually switched modes
-            if (dueCount > 0 && studyMode === 'cramming' && !autoSwitchedToSpaced) {
-                setStudyMode('spaced');
-                setAutoSwitchedToSpaced(true);
-                setRedoDeck(true); // Trigger re-fetch in FlashCardUI
-                
-                // Optional: Show a notification to the user
-                console.log(`Auto-switched to spaced repetition mode - ${dueCount} cards due for review!`);
-            }
-        } catch (error) {
-            console.error("Error checking due cards:", error);
-        }
-    }, [authUser, db, paramDeckId, studyMode, autoSwitchedToSpaced]);
 
     // --- Fetch deck metadata based on paramDeckId (if exists) and studyMode ---
     useEffect(() => {
         const fetchDeckMetadata = async () => {
-            if (!authUser) {
+            if (!user) {
                 setLoading(false);
                 return;
             }
 
-            // Check for due cards first
-            await checkDueCardsAndAutoSwitch();
 
             // If we are on a specific deck page (paramDeckId exists), fetch its metadata
             if (paramDeckId) {
@@ -150,7 +98,7 @@ function FlashCardsPage() {
         };
 
         fetchDeckMetadata();
-    }, [paramDeckId, db, authUser, checkDueCardsAndAutoSwitch]); // Re-run if these dependencies change
+    }, [paramDeckId, db, user]); // Re-run if these dependencies change
 
     // This function will now be called by StudyModeSelector internally
     // and will only manage the local state for FlashCardsPage.
@@ -176,13 +124,13 @@ function FlashCardsPage() {
     };
 
     const handleSetToPublic = async () => {
-        if (!publicDeckData || !authUser) return;
+        if (!publicDeckData || !user) return;
 
         try{
             const deckRef = doc(db, 'decks', publicDeckData.id)
 
-            const userDoc = await getDoc(doc(db, "users", authUser.uid));
-            const firestoreDisplayName = userDoc.exists() ? userDoc.data().displayName : authUser.displayName;
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            const firestoreDisplayName = userDoc.exists() ? userDoc.data().displayName : user.displayName;
 
             // Only set copies: 0 if it doesn't exist yet
             const updateData = {
@@ -211,7 +159,7 @@ function FlashCardsPage() {
     }
 
     const handleSetToPrivate = async () => {
-        if (!publicDeckData || !authUser) return;
+        if (!publicDeckData || !user) return;
 
         try{
             const deckRef = doc(db, 'decks', publicDeckData.id)
@@ -248,7 +196,7 @@ function FlashCardsPage() {
                         ? "Global Smart Review" // For global spaced review
                         : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Deck"; // For specific deck
                         
-    const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== authUser?.uid;
+    const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== user?.uid;
 
     // Only show deck description if we're on a specific deck page OR it's cramming mode
     const showDescription = studyMode === 'cramming' || (studyMode === 'spaced' && paramDeckId);
@@ -363,7 +311,7 @@ function FlashCardsPage() {
                                     </button>
                                 )}
 
-                                {publicDeckData && publicDeckData.ownerId === authUser?.uid ? (
+                                {publicDeckData && publicDeckData.ownerId === user?.uid ? (
                                     !publicDeckData?.isPublic ? (
                                         <button id="publishBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
                                             onClick={handleSetToPublic}

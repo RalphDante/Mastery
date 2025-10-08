@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db, auth } from "../../api/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -10,7 +9,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 function CreateDeckModal({ uid, onClose, isOpen }) {
 
   //Context
-  const { getFolderLimits, getDeckLimits } = useAuthContext();
+  const { getFolderLimits, getDeckLimits, folders, user } = useAuthContext();
 
   const [didCompleteStep, setDidCompleteStep] = useState(false);
   const [wasCancelled, setWasCancelled] = useState(false);
@@ -22,23 +21,13 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
   
   const [newFolderName, setNewFolderName] = useState('');
   const [isCreatingNewFolder, setIsCreatingNewFolder] = useState(false);
-  const [folder, setFolder] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState("");
-  const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  const isButtonDisabled = loading || !authUser;
+  const isButtonDisabled = loading || !user;
 
 
-  useEffect(() => {
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-      } else {
-        setAuthUser(null);
-      }
-    });
-  }, []);
+  
 
   // useEffect(() => {
   //   if (isOpen) {
@@ -73,27 +62,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
 //     folder,
 // ]);
 
-  // List of folders from Firestore
-  useEffect(() => {
-    if (uid) {
-      const foldersQuery = query(
-        collection(db, 'folders'),
-        where('ownerId', '==', uid)
-      );
-      
-      const unsubscribe = onSnapshot(foldersQuery, (snapshot) => {
-        const folderList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          ...doc.data()
-        }));
-        console.log(folderList);
-        setFolder(folderList);
-      });
-
-      return () => unsubscribe();
-    }
-  }, [uid]);
+ 
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -162,7 +131,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
       folderName = newFolderName.trim();
       folderId = null; // Will be created
     } else {
-      const selectedFolderObj = folder.find(f => f.id === selectedFolder);
+      const selectedFolderObj = folders.find(f => f.id === selectedFolder);
       folderName = selectedFolderObj ? selectedFolderObj.name : '';
       folderId = selectedFolder;
     }
@@ -173,7 +142,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
         folderName, 
         folderId,
         isNewFolder: isCreatingNewFolder,
-        uid: authUser.uid 
+        uid: user.uid 
       } 
     });
     
@@ -219,7 +188,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
                 disabled={loading}
               >
                 <option value="">Select a folder...</option>
-                {folder.map((folderItem) => (
+                {folders.map((folderItem) => (
                   <option key={folderItem.id} value={folderItem.id}>
                     {folderItem.name}
                   </option>
@@ -254,7 +223,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
           </div>
         </div>
 
-        {!authUser && (
+        {!user && (
             <p className="text-center text-sm text-slate-400 mt-4">
                 Please{' '}
                 <span 

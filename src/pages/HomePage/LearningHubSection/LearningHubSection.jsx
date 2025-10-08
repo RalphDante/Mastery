@@ -1,20 +1,17 @@
-// OptimizedLearningHubSection - Simplified version focusing on folders
+// OptimizedLearningHubSection - With deck caching
 
-// Contexts
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useAuthContext, useFolders } from '../../../contexts/AuthContext';
 import {
     collection,
     query,
     where,
-    onSnapshot,
     addDoc,
     deleteDoc,
     doc,
     serverTimestamp,    
     getDocs,
     runTransaction,
-    increment,
     getDoc
 } from 'firebase/firestore';
 import { db } from '../../../api/firebase';
@@ -22,10 +19,10 @@ import { useNavigate } from "react-router-dom";
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const { user, loading, getFolderLimits } = useAuthContext();
-    const folders = useFolders() || []; // Get folders array directly from context
+    const folders = useFolders() || [];
     const navigate = useNavigate();
     
-    // Local state for folder creation and navigation
+    // Local state
     const [newFolderName, setNewFolderName] = useState("");
     const [isCreating, setIsCreating] = useState(false);
     const [currentView, setCurrentView] = useState('folders');
@@ -33,22 +30,28 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const [folderDecks, setFolderDecks] = useState([]);
     const [isDecksLoading, setIsDecksLoading] = useState(false);
 
-    // Real-time listener for decks in current folder
-    
+    // 🆕 CACHE: Store fetched decks by folderId
+    const decksCacheRef = useRef({});
 
-    // Fetch decks function
-    const fetchDecks = useCallback(async () => {
-        if (!user || !currentFolder) {
-            setFolderDecks([]);
+    // 🆕 OPTIMIZED: Only fetch when folder is opened AND not cached
+    const fetchDecksForFolder = useCallback(async (folderId) => {
+        if (!user || !folderId) return;
+
+        // Check cache first
+        if (decksCacheRef.current[folderId]) {
+            console.log(`📦 Using cached decks for folder ${folderId}`);
+            setFolderDecks(decksCacheRef.current[folderId]);
             return;
         }
 
+        console.log(`🔍 Fetching decks for folder ${folderId}...`);
         setIsDecksLoading(true);
+        
         try {
             const decksRef = collection(db, 'decks');
             const q = query(
                 decksRef,
-                where('folderId', '==', currentFolder.id),
+                where('folderId', '==', folderId),
                 where('ownerId', '==', user.uid)
             );
             
@@ -68,17 +71,34 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 return dateB.getTime() - dateA.getTime();
             });
 
+            // Store in cache
+            decksCacheRef.current[folderId] = fetchedDecks;
             setFolderDecks(fetchedDecks);
         } catch (err) {
             console.error('Error fetching decks:', err);
         } finally {
             setIsDecksLoading(false);
         }
-    }, [user, currentFolder]);
+    }, [user]);
 
-    useEffect(() => {
-        fetchDecks()
-    }, [fetchDecks]);
+    // 🆕 OPTIMIZED: Only called when user clicks on a folder
+    const handleFolderClick = (folder) => {
+        setCurrentFolder(folder);
+        setCurrentView('folder-contents');
+        fetchDecksForFolder(folder.id); // Fetch only when opened
+    };
+
+    // 🆕 Clear cache when needed (e.g., after deck deletion)
+    const invalidateCache = useCallback((folderId) => {
+        if (folderId) {
+            delete decksCacheRef.current[folderId];
+            console.log(`🗑️ Cache invalidated for folder ${folderId}`);
+        } else {
+            // Clear all cache
+            decksCacheRef.current = {};
+            console.log(`🗑️ All deck cache cleared`);
+        }
+    }, []);
 
     const handleCreateFolder = async (e) => {
         e.preventDefault();
@@ -95,7 +115,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             }
             return;
         }
-
 
         try {
             const foldersRef = collection(db, 'folders');
@@ -120,7 +139,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         if (!user) return;
     
         try {
-            // Step 1: Get all decks in this folder
             const decksQuery = query(
                 collection(db, 'decks'),
                 where('folderId', '==', folderId),
@@ -138,17 +156,17 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 
                 if (!window.confirm(message)) return;
     
-                // Delete all decks in the folder WITHOUT showing individual confirmations
                 for (const deckDoc of decksSnapshot.docs) {
                     await deleteDeckWithoutConfirmation(deckDoc.id);
                 }
             } else {
-                // Empty folder, just confirm deletion
                 if (!window.confirm(`Are you sure you want to delete "${folderName}"?`)) return;
             }
     
-            // Finally delete the folder
             await deleteDoc(folderRef);
+            
+            // 🆕 Invalidate cache after deletion
+            invalidateCache(folderId);
             
         } catch (error) {
             console.error('Error deleting folder:', error);
@@ -160,7 +178,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         if (!user) return;
     
         try {
-            // Step 1: Get deck information
             const deckRef = doc(db, 'decks', deckId);
             const deckSnap = await getDocs(query(collection(db, 'decks'), where('__name__', '==', deckId)));
             
@@ -170,22 +187,23 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             }
     
             const deckData = deckSnap.docs[0].data();
+            const deletedDeckFolderId = deckData.folderId; // Store for cache invalidation
     
-            // Step 2: Get all cards in this deck
             const cardsRef = collection(db, 'decks', deckId, 'cards');
             const cardsSnapshot = await getDocs(cardsRef);
             
             if (cardsSnapshot.empty) {
-                // No cards, safe to delete deck directly
                 await deleteDoc(deckRef);
+                // 🆕 Invalidate cache after deletion
+                if (deletedDeckFolderId) {
+                    invalidateCache(deletedDeckFolderId);
+                }
                 return;
             }
     
-            // Step 3: Delete everything using a batch operation
             const cardIds = cardsSnapshot.docs.map(doc => doc.id);
             
             await runTransaction(db, async (transaction) => {
-                // Delete all card progress entries
                 for (const cardId of cardIds) {
                     const progressQuery = query(
                         collection(db, 'cardProgress'), 
@@ -198,36 +216,35 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                     });
                 }
     
-                // Delete all cards
                 cardsSnapshot.docs.forEach(cardDoc => {
                     transaction.delete(cardDoc.ref);
                 });
     
-                // Delete the deck itself
                 transaction.delete(deckRef);
     
-                // Update folder's deckCount (denormalized data)
                 if (deckData.folderId) {
                     const folderRef = doc(db, 'folders', deckData.folderId);
                     transaction.update(folderRef, {
-                        // deckCount: increment(-1),
                         updatedAt: serverTimestamp()
                     });
                 }
             });
+
+            // 🆕 Invalidate cache after deletion
+            if (deletedDeckFolderId) {
+                invalidateCache(deletedDeckFolderId);
+                // Refresh current view if we're in the same folder
+                if (currentFolder?.id === deletedDeckFolderId) {
+                    fetchDecksForFolder(deletedDeckFolderId);
+                }
+            }
     
             console.log('Deck deleted successfully');
             
         } catch (error) {
             console.error('Error deleting deck:', error);
-            throw error; // Re-throw to let the folder deletion handle it
+            throw error;
         }
-    };
-
-
-    const handleFolderClick = (folder) => {
-        setCurrentFolder(folder);
-        setCurrentView('folder-contents');
     };
 
     const handleBackToFolders = () => {
@@ -236,9 +253,45 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         setFolderDecks([]);
     };
 
+    const handleDeleteDeck = async (deckId) => {
+        if (!user) return;
+    
+        try {
+            const deckRef = doc(db, 'decks', deckId);
+            const deckSnap = await getDoc(deckRef);
+            
+            if (!deckSnap.exists()) {
+                console.error('Deck not found');
+                return;
+            }
+    
+            const deckData = deckSnap.data();
+            const deckTitle = deckData.title;
+            const cardCount = deckData.cardCount || 0;
+    
+            const message = cardCount > 0 
+                ? `Are you sure you want to delete "${deckTitle}"?\n\nThis deck contains ${cardCount} cards. All cards and their spaced repetition progress will be permanently deleted. This action cannot be undone.`
+                : `Are you sure you want to delete "${deckTitle}"?`;
+                
+            if (!window.confirm(message)) return;
+    
+            await deleteDeckWithoutConfirmation(deckId);
+            
+            console.log('Deck deleted successfully');
+            
+        } catch (error) {
+            console.error('Error deleting deck:', error);
+            alert('Failed to delete deck. Please try again.');
+        }
+    };
+
+    const handleQuickActionsClick = (callback, e) => {
+        e.preventDefault()
+        callback(e);
+    }
+
     const formatDate = (timestamp) => {
         if (!timestamp) return 'Unknown';
-
         const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
         return date.toLocaleDateString('en-US', {
             month: 'short',
@@ -257,8 +310,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         );
     }
 
- 
-
     if (!user) {
         return (
             <section id="learning-hub-section" className="p-6 bg-gray-900 min-h-screen">
@@ -269,53 +320,10 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         );
     }
 
-    // Determine if scrollbar is needed - with safety check
     const MAX_FOLDER_HEIGHT_PX = 120;
     const GRID_GAP_PX = 16;
     const desiredMaxHeight = (3 * MAX_FOLDER_HEIGHT_PX) + (2 * GRID_GAP_PX);
     const showScrollbar = folders && folders.length > 9;
-
-    // Handle Delete Deck Click
-    const handleDeleteDeck = async (deckId) => {
-        if (!user) return;
-    
-        try {
-            // Step 1: Get deck information for confirmation
-            const deckRef = doc(db, 'decks', deckId);
-            const deckSnap = await getDoc(deckRef);
-            
-            if (!deckSnap.exists()) {
-                console.error('Deck not found');
-                return;
-            }
-    
-            const deckData = deckSnap.data();
-            const deckTitle = deckData.title;
-            const cardCount = deckData.cardCount || 0;
-    
-            // Step 2: Show confirmation dialog
-            const message = cardCount > 0 
-                ? `Are you sure you want to delete "${deckTitle}"?\n\nThis deck contains ${cardCount} cards. All cards and their spaced repetition progress will be permanently deleted. This action cannot be undone.`
-                : `Are you sure you want to delete "${deckTitle}"?`;
-                
-            if (!window.confirm(message)) return;
-    
-            // Step 3: Simply delete the deck - Firebase Functions handle the rest
-            await deleteDeckWithoutConfirmation(deckId);
-            
-            console.log('Deck deleted successfully');
-            
-        } catch (error) {
-            console.error('Error deleting deck:', error);
-            alert('Failed to delete deck. Please try again.');
-        }
-    };
-
-    // Handle Quick Actions Click
-    const handleQuickActionsClick = (callback, e) => {
-        e.preventDefault()
-        callback(e);
-    }
 
     return (
         <section id="learning-hub-section">
@@ -362,7 +370,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                 </button>
                             </div>
 
-                            {/* Create new folder form */}
                             {isCreating && (
                                 <form onSubmit={handleCreateFolder} className="mb-4 p-4 bg-gray-700 rounded-lg">
                                     <div className="flex gap-2">
@@ -394,14 +401,12 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                 </form>
                             )}
 
-                            {/* Loading state for folders */}
                             {loading && (
                                 <div className="flex items-center justify-center h-32">
                                     <div className="text-slate-400">Loading folders...</div>
                                 </div>
                             )}
 
-                            {/* Empty state for folders */}
                             {!loading && (!folders || folders.length === 0) && (
                                 <div className="flex flex-col items-center justify-center h-32 text-slate-400">
                                     <i className="fa-solid fa-folder-open text-3xl mb-2"></i>
@@ -409,7 +414,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                 </div>
                             )}
 
-                            {/* Folders grid */}
                             {!loading && folders && folders.length > 0 && (
                                 <div
                                     className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4"
@@ -471,14 +475,12 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                 </button>
                             </div>
 
-                            {/* Loading state for decks */}
                             {isDecksLoading && (
                                 <div className="flex items-center justify-center h-32">
                                     <div className="text-slate-400">Loading decks...</div>
                                 </div>
                             )}
 
-                            {/* Empty state for decks */}
                             {!isDecksLoading && folderDecks.length === 0 && (
                                 <div className="flex flex-col items-center justify-center h-32 text-slate-400">
                                     <i className="fa-solid fa-layer-group text-3xl mb-2"></i>
@@ -486,7 +488,6 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                 </div>
                             )}
 
-                            {/* Decks grid */}
                             {!isDecksLoading && folderDecks.length > 0 && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                                     {folderDecks.map(deck => (
@@ -495,8 +496,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                             className="relative group cursor-pointer bg-gray-700 hover:bg-gray-600 transition-colors p-4 rounded-lg shadow"
                                             onClick={()=>navigate(`/flashcards/${deck.id}`)}
                                         >
-                                            <div 
-                                                className="flex items-center space-x-3 mb-2">
+                                            <div className="flex items-center space-x-3 mb-2">
                                                 <i className="fa-solid fa-layer-group text-xl text-blue-400"></i>
                                                 <h4 className="font-semibold text-slate-200 truncate flex-1">{deck.title}</h4>
                                                 <button
@@ -547,7 +547,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                     )}
                 </div>
 
-                {/* Quick Actions - Updated to be context-aware */}
+                {/* Quick Actions */}
                 <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
                     <h3 className="text-xl font-semibold text-slate-100 mb-4">Quick Actions</h3>
                     <div className="space-y-3">

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getFirestore, collection, doc, getDocs, onSnapshot, addDoc, updateDoc, query, where, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, doc, getDocs, onSnapshot, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { app, auth } from "../../api/firebase"
 import FileUpload from "../AutoFlashCards/FileUpload";
 import { onAuthStateChanged } from "firebase/auth";
@@ -14,7 +14,7 @@ import { useTutorials } from "../../contexts/TutorialContext";
 function CreateWithAIModal({ onClose, isOpen }) {
 
   // Context
-  const { folders, getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
+  const { folders, getFolderLimits, getDeckLimits, getCardLimits, isPremium, user } = useAuthContext();
   const userIsPremium = isPremium();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
@@ -28,7 +28,6 @@ function CreateWithAIModal({ onClose, isOpen }) {
   const [flashcards, setFlashcards] = useState([]);
   const [deckName, setDeckName] = useState('');
   const [selectedFolder, setSelectedFolder] = useState("");
-  const [authUser, setAuthUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -39,18 +38,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
   // Firestore instance
   const db = getFirestore(app);
 
-  useEffect(() => {
-    // Authentication listener
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-      } else {
-        setAuthUser(null);
-      }
-    });
-    return () => unsubscribeAuth();
-  }, []);
-
+ 
   // Tutorial
   // useEffect(() => {
   //     if (isOpen) {
@@ -141,7 +129,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
       return;
     }
   
-    if (!authUser) {
+    if (!user) {
       alert("User not authenticated. Please log in.");
       return;
     }
@@ -173,7 +161,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
     setIsSaving(true); // 🔒 Lock the button
   
     try {
-      const ownerIdRef = `${authUser.uid}`;
+      const ownerIdRef = `${user.uid}`;
       let currentFolderId = selectedFolder;
   
       if (isCreatingNewFolder) {

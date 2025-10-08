@@ -43,7 +43,6 @@ export const AuthProvider = ({ children }) => {
     
     // NEW: Data from UserDataContext
     const [folders, setFolders] = useState([]);
-    const [cardProgress, setCardProgress] = useState([]);
     const [dailySessions, setDailySessions] = useState([]);
 
     // Listen for authentication state changes
@@ -61,7 +60,6 @@ export const AuthProvider = ({ children }) => {
                 setPartyMembers({});
                 // Clear data
                 setFolders([]);
-                setCardProgress([]);
                 setDailySessions([]);
             }
             setLoading(false);
@@ -560,7 +558,6 @@ export const AuthProvider = ({ children }) => {
             setPartyProfile(null);
             setPartyMembers({});
             setFolders([]);
-            setCardProgress([]);
             setDailySessions([]);
             return { success: true };
         } catch (error) {
@@ -650,62 +647,7 @@ export const AuthProvider = ({ children }) => {
         };
     };
 
-    // NEW: Computed values (from UserDataContext)
-    const cardsDue = (() => {
-        const now = new Date();
-        return cardProgress.filter(card => {
-            if (!card.nextReviewDate) return false;
-            try {
-                const nextReviewDate = card.nextReviewDate.toDate();
-                return nextReviewDate <= now;
-            } catch (error) {
-                return false;
-            }
-        }).length;
-    })();
-
-    const nextReviewTime = (() => {
-        if (cardProgress.length === 0) return null;
-        
-        const now = new Date();
-        const upcomingCards = cardProgress
-            .filter(card => {
-                if (!card.nextReviewDate) return false;
-                try {
-                    const nextReviewDate = card.nextReviewDate.toDate();
-                    return nextReviewDate > now;
-                } catch (error) {
-                    return false;
-                }
-            })
-            .sort((a, b) => {
-                const dateA = a.nextReviewDate.toDate();
-                const dateB = b.nextReviewDate.toDate();
-                return dateA.getTime() - dateB.getTime();
-            });
-            
-        return upcomingCards.length > 0 ? upcomingCards[0].nextReviewDate.toDate() : null;
-    })();
-
-    const cardsReviewedToday = (() => {
-        const today = new Date();
-        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        
-        return cardProgress.filter(card => {
-            if (!card.lastReviewDate) return false;
-            try {
-                const lastReviewDate = card.lastReviewDate.toDate();
-                const lastReviewDay = new Date(
-                    lastReviewDate.getFullYear(), 
-                    lastReviewDate.getMonth(), 
-                    lastReviewDate.getDate()
-                );
-                return lastReviewDay.getTime() === todayStart.getTime();
-            } catch (error) {
-                return false;
-            }
-        }).length;
-    })();
+   
 
     const todaySession = dailySessions.find(session => session.isToday) || 
         { minutes: 0, spacedRep: 0, cramming: 0 };
@@ -808,13 +750,9 @@ export const AuthProvider = ({ children }) => {
         
         // NEW: User data (from UserDataContext)
         folders,
-        cardProgress,
         dailySessions,
         
         // NEW: Computed values
-        cardsDue,
-        cardsReviewedToday,
-        nextReviewTime,
         todaySession,
         
         // Auth functions

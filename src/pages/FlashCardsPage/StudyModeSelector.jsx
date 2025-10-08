@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { collection, query, where, getDocs, setDoc, doc, getDoc } from 'firebase/firestore'; // Added setDoc, doc for initialization logic
+import { collection, query, getDocs, setDoc, doc, getDoc } from 'firebase/firestore'; // Added setDoc, doc for initialization logic
 import { app } from '../../api/firebase'; // Ensure app is imported if initializeCardsForSpacedRepetition is here
 import { db } from '../../api/firebase';
 import { createPortal } from 'react-dom';
@@ -113,77 +113,7 @@ function StudyModeSelector({
         }
     };
     
-    const handleModeSwitch = async (newMode) => {
-        if (newMode === currentMode) return;
-        
-        // Prevent switching to spaced mode if disabled
-        if (newMode === 'spaced' && disableSpaced) {
-            return; // Do nothing if spaced mode is disabled
-        }
-
-        if (chooseSmartReviewTutorial){
-            advanceStep("smart-review");
-        }
-        
-        setIsLoading(true);
-        
-        // Enhanced logic to handle spaced repetition initialization
-        if (newMode === 'spaced' && deckId) { // Only check if switching to spaced and on a specific deck
-            // First, check if ANY cards exist in cardProgress for this deck and user
-            const allProgressQuery = query(
-                collection(db, 'cardProgress'),
-                where('userId', '==', authUser.uid),
-                where('deckId', '==', deckId)
-            );
-            
-            const allProgressSnapshot = await getDocs(allProgressQuery);
-            
-            if (allProgressSnapshot.empty) {
-                // // No cards have been initialized for spaced repetition yet
-                // const confirmInit = window.confirm(
-                //     "This deck hasn't been set up for spaced repetition yet. " +
-                //     "Would you like to add all cards to your spaced repetition schedule? " +
-                //     "They will be available for review immediately."
-                // );
-                
-                // if (!confirmInit) {
-                //     setIsLoading(false);
-                //     return; // User cancelled, stay in current mode
-                // }
-                
-                await initializeCardsForSpacedRepetition(deckId);
-            } else {
-                // Cards exist in progress, but check if any are due today
-                const dueCardsQuery = query(
-                    collection(db, 'cardProgress'),
-                    where('userId', '==', authUser.uid),
-                    where('deckId', '==', deckId),
-                    where('nextReviewDate', '<=', new Date().toISOString())
-                );
-                
-                const dueCardsSnapshot = await getDocs(dueCardsQuery);
-                
-                if (dueCardsSnapshot.empty) {
-                    // Cards exist but none are due today - this is the correct behavior
-                    // Just proceed with the mode switch, FlashCardUI will handle the empty state properly
-                    console.log("No cards due for review today in this deck.");
-                }
-            }
-        }
-        
-        await onModeChange(newMode); // Now passes the newMode to the parent handler
-        setIsLoading(false);
-    };
-
-    const handleMobileMenuClick = () => {
-        if (chooseSmartReviewTutorial && !showMobileMenu) {
-            // If tutorial is active and menu is closed, open it
-            setShowMobileMenu(true);
-        } else {
-            // Normal behavior
-            setShowMobileMenu(!showMobileMenu);
-        }
-    };
+  
     
     return (
         <>

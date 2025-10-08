@@ -71,7 +71,8 @@ function FlashCardUI({
     const { 
         getFolderLimits,
         getDeckLimits,
-        getCardLimits
+        getCardLimits,
+        user
     } = useAuthContext()
 
     // Card animations
@@ -84,7 +85,6 @@ function FlashCardUI({
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [finalTime, setFinalTime] = useState("");
 
-    const [authUser, setAuthUser] = useState(undefined);
     const [flashCards, setFlashCards] = useState([]);
     const [deck, setDeck] = useState(null); 
     const [currentQuestion, setCurrentQuestion] = useState();
@@ -149,14 +149,6 @@ function FlashCardUI({
         return <h2>Content not available</h2>;
     };
 
-    // FIX 2: Update the auth state listener to be more explicit
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
-            console.log('Auth state changed:', user ? 'signed in' : 'signed out');
-            setAuthUser(user);
-        });
-        return () => unsubscribe();
-    }, []);
 
     // Tutorial
     useEffect(() => {
@@ -166,201 +158,16 @@ function FlashCardUI({
         }
     }, [deckId, isPublicDeck]);
 
-    // --- NEW: Clean up orphaned progress documents ---
-    const cleanupOrphanedProgress = useCallback(async (progressDocuments) => {
-        if (!authUser) return [];
+    
 
-        const validCards = [];
-        const orphanedProgressIds = [];
+    
 
-        for (const progressDoc of progressDocuments) {
-            const progress = progressDoc.data();
-            try {
-                const cardDoc = await getDoc(doc(db, 'decks', progress.deckId, 'cards', progress.cardId));
-                if (cardDoc.exists()) {
-                    validCards.push({
-                        id: cardDoc.id,
-                        ...cardDoc.data(),
-                        deckId: progress.deckId,
-                        progress: progress
-                    });
-                } else {
-                    // Card doesn't exist anymore, mark progress for deletion
-                    orphanedProgressIds.push(progressDoc.id);
-                }
-            } catch (error) {
-                console.error(`Error checking card ${progress.cardId}:`, error);
-                // If there's an error accessing the card, also mark for deletion
-                orphanedProgressIds.push(progressDoc.id);
-            }
-        }
-
-        // Clean up orphaned progress documents
-        if (orphanedProgressIds.length > 0) {
-            console.log(`Found ${orphanedProgressIds.length} orphaned progress documents. Cleaning up...`);
-            setOrphanedProgressCount(orphanedProgressIds.length);
-            
-            const deletePromises = orphanedProgressIds.map(progressId => 
-                deleteDoc(doc(db, 'cardProgress', progressId))
-            );
-            
-            try {
-                await Promise.all(deletePromises);
-                console.log(`Successfully cleaned up ${orphanedProgressIds.length} orphaned progress documents.`);
-            } catch (error) {
-                console.error("Error cleaning up orphaned progress:", error);
-            }
-        } else {
-            setOrphanedProgressCount(0);
-        }
-
-        return validCards;
-    }, [authUser, db]);
-
-    // New Cards Handling
-    const initializeNewCardsProgress = useCallback(async (deckId, maxNewCardsPerDay = 8) => {
-        if (!authUser || !deckId) return;
-        
-        try {
-            // Get all cards in the deck
-            const cardsRef = collection(db, 'decks', deckId, 'cards');
-            const cardsSnapshot = await getDocs(cardsRef);
-            
-            // Get existing progress for this deck
-            const progressQuery = query(
-                collection(db, 'cardProgress'),
-                where('userId', '==', authUser.uid),
-                where('deckId', '==', deckId)
-            );
-            const progressSnapshot = await getDocs(progressQuery);
-            
-            // Create a Set of card IDs that already have progress
-            const existingProgressCardIds = new Set();
-            progressSnapshot.forEach(doc => {
-                const progress = doc.data();
-                existingProgressCardIds.add(progress.cardId);
-            });
-            
-            // Find cards without progress
-            const newCardsToInitialize = [];
-            cardsSnapshot.forEach(cardDoc => {
-                if (!existingProgressCardIds.has(cardDoc.id)) {
-                    newCardsToInitialize.push({
-                        id: cardDoc.id,
-                        order: cardDoc.data().order || 0
-                    });
-                }
-            });
-            
-            // Sort by order to ensure consistent daily releases
-            newCardsToInitialize.sort((a, b) => a.order - b.order);
-            
-            // Calculate how many cards to make due today
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            
-            // Check how many new cards from this deck are already due today
-            const todayDueQuery = query(
-                collection(db, 'cardProgress'),
-                where('userId', '==', authUser.uid),
-                where('deckId', '==', deckId),
-                where('repetitions', '==', 0), // New cards have 0 repetitions
-                where('nextReviewDate', '<=', getCurrentTimestamp())
-            );
-            const todayDueSnapshot = await getDocs(todayDueQuery);
-            const newCardsDueToday = todayDueSnapshot.size;
-            
-            // Calculate how many more new cards we can add today
-            const remainingNewCardsForToday = Math.max(0, maxNewCardsPerDay - newCardsDueToday);
-            const cardsToMakeDueToday = Math.min(remainingNewCardsForToday, newCardsToInitialize.length);
-            
-            // Initialize progress for all new cards
-            const batch = writeBatch(db);
-            
-            newCardsToInitialize.forEach((card, index) => {
-                const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${card.id}`);
-                
-                let nextReviewDate;
-                if (index < cardsToMakeDueToday) {
-                    // Make these cards due immediately (today)
-                    nextReviewDate = getImmediateReviewTimestamp();
-                } else {
-                    // Schedule these cards for future days
-                    const daysToWait = Math.floor(index / maxNewCardsPerDay) + 1;
-                    const futureDate = new Date(today);
-                    futureDate.setDate(futureDate.getDate() + daysToWait);
-                    nextReviewDate = Timestamp.fromDate(futureDate);
-                }
-                
-                batch.set(progressDocRef, {
-                    userId: authUser.uid,
-                    cardId: card.id,
-                    deckId: deckId,
-                    easeFactor: 2.5,
-                    interval: 0,
-                    repetitions: 0,
-                    nextReviewDate: nextReviewDate,
-                    lastReviewDate: null,
-                    totalReviews: 0,
-                    correctStreak: 0,
-                    isNewCard: true // Flag to identify new cards
-                });
-            });
-            
-            if (newCardsToInitialize.length > 0) {
-                await batch.commit();
-                console.log(`Initialized ${newCardsToInitialize.length} new cards. ${cardsToMakeDueToday} due today, rest scheduled for future days.`);
-            }
-            
-        } catch (error) {
-            console.error("Error initializing new cards progress:", error);
-        }
-    }, [authUser, db]);
-
-    // New function to release more cards daily (call this when fetching due cards)
-    const releaseNewCardsForToday = useCallback(async (deckId, maxNewCardsPerDay = 8) => {
-        if (!authUser || !deckId) return;
-        
-        try {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-            const todayTimestamp = Timestamp.fromDate(today);
-            
-            // Find cards scheduled for today or earlier that aren't due yet
-            const scheduledCardsQuery = query(
-                collection(db, 'cardProgress'),
-                where('userId', '==', authUser.uid),
-                where('deckId', '==', deckId),
-                where('repetitions', '==', 0),
-                where('nextReviewDate', '<=', todayTimestamp),
-                where('nextReviewDate', '>', getCurrentTimestamp()) // Not yet due
-            );
-            
-            const scheduledSnapshot = await getDocs(scheduledCardsQuery);
-            
-            if (!scheduledSnapshot.empty) {
-                const batch = writeBatch(db);
-                
-                // Make these cards due immediately
-                scheduledSnapshot.forEach(doc => {
-                    batch.update(doc.ref, {
-                        nextReviewDate: getImmediateReviewTimestamp()
-                    });
-                });
-                
-                await batch.commit();
-                console.log(`Released ${scheduledSnapshot.size} new cards for today`);
-            }
-            
-        } catch (error) {
-            console.error("Error releasing new cards:", error);
-        }
-    }, [authUser, db]);
+    
 
     // --- Enhanced fetch function with cleanup ---
     const fetchDeckAndCards = useCallback(async () => {
 
-        if (authUser === undefined) {
+        if (user === undefined) {
             console.log('Auth state still loading, waiting...');
             return;
         }
@@ -383,161 +190,98 @@ function FlashCardUI({
         setPhaseOneComplete(false);
 
         try {
-            if (studyMode === 'spaced') {
-
-                if (!authUser) {
-                    setError('Please sign in to use spaced repetition mode');
+            if (deckId) { 
+                const deckDoc = await getDoc(doc(db, 'decks', deckId));
+                if (!deckDoc.exists()) {
+                    setError('Deck not found');
                     setLoading(false);
                     return;
                 }
-
-                let progressQuery;
+                const deckData = { id: deckDoc.id, ...deckDoc.data() };
                 
-                if (deckId) {
-                    // Initialize new flashcards first
-                    await initializeNewCardsProgress(deckId, 8); // 8 new cards per day
-
-                    await releaseNewCardsForToday(deckId, 8);
-                    
-                    // Then create the query for this specific deck
-                    progressQuery = query(
-                        collection(db, 'cardProgress'),
-                        where('userId', '==', authUser.uid),
-                        where('deckId', '==', deckId),
-                        where('nextReviewDate', '<=', getCurrentTimestamp()),
-                        orderBy('nextReviewDate', 'asc')
-                    );
-                } else {
-                    // Global review - release new cards for all decks first
-                    const userDecksQuery = query(
-                        collection(db, 'decks'),
-                        where('ownerId', '==', authUser.uid)
-                    );
-                    const userDecksSnapshot = await getDocs(userDecksQuery);
-                    
-                    // Release new cards for each deck
-                    const releasePromises = [];
-                    userDecksSnapshot.forEach(deckDoc => {
-                        releasePromises.push(releaseNewCardsForToday(deckDoc.id, 8));
-                    });
-                    await Promise.all(releasePromises);
-                    
-                    // Global review - all due cards across all decks
-                    progressQuery = query(
-                        collection(db, 'cardProgress'),
-                        where('userId', '==', authUser.uid),
-                        where('nextReviewDate', '<=', getCurrentTimestamp()),
-                        orderBy('nextReviewDate', 'asc')
-                    );
-                }
+                // Enhanced access control logic - FIXED
+                const userOwnsTheDeck = deckData.ownerId === user?.uid;
+                const deckIsPublic = deckData.isPublic;
+                const hasAccess = userOwnsTheDeck || deckIsPublic;
                 
-                const progressSnapshot = await getDocs(progressQuery);
-                const progressDocuments = [];
-                progressSnapshot.forEach(doc => {
-                    progressDocuments.push(doc);
-                });
-
-                // Clean up orphaned progress and get valid cards
-                const validCards = await cleanupOrphanedProgress(progressDocuments);
-                
-                setDueCardsCount(validCards.length); // Set the actual count after cleanup
-                setFlashCards(validCards); 
-                setLoading(false);
-
-            } else { // 'cramming' mode (specific deck)
-                if (deckId) { 
-                    const deckDoc = await getDoc(doc(db, 'decks', deckId));
-                    if (!deckDoc.exists()) {
-                        setError('Deck not found');
-                        setLoading(false);
-                        return;
-                    }
-                    const deckData = { id: deckDoc.id, ...deckDoc.data() };
-                    
-                    // Enhanced access control logic - FIXED
-                    const userOwnsTheDeck = deckData.ownerId === authUser?.uid;
-                    const deckIsPublic = deckData.isPublic;
-                    const hasAccess = userOwnsTheDeck || deckIsPublic;
-                    
-                    if (!hasAccess) {
-                        setError('The owner of this deck has set it to private.');
-                        setLoading(false);
-                        return;
-                    }
-                    // Set public deck state - FIXED LOGIC
-                    const viewingAsPublic = deckIsPublic && !userOwnsTheDeck;
-                    setIsPublicDeck(viewingAsPublic);
-                    
-                    // If it's a public deck viewed by non-owner, fetch owner info for attribution
-                    if (viewingAsPublic) {
-                        try {
-                            const ownerDoc = await getDoc(doc(db, 'users', deckData.ownerId));
-                            if (ownerDoc.exists()) {
-                                setDeckOwnerInfo({
-                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
-                                    email: ownerDoc.data().email
-                                });
-                                deckOwnerData({
-                                    displayName: ownerDoc.data().displayName || 'Anonymous User',
-                                    email: ownerDoc.data().email
-                                })
-                            }
-                        } catch (error) {
-                            console.log('Could not fetch owner info:', error);
-                            // Don't fail the whole operation if we can't get owner info
-                        }
-                    }
-                    setDeck(deckData);
-                    publicDeckData(deckData);
-
-                    const cardsRef = collection(db, 'decks', deckId, 'cards');
-                    const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
-                    
-                    const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
-                        const cardsData = [];
-                        snapshot.forEach((doc) => {
-                            cardsData.push({
-                                id: doc.id,
-                                ...doc.data(),
-                                deckId: deckId 
-                            });
-                        });
-                        
-                        // Shuffle cards for cramming mode on initial load/redo
-                        let flashCardsCopy = [...cardsData];
-                        let shuffledFlashCards = [];
-                        while (flashCardsCopy.length !== 0) {
-                            let randomNum = Math.floor(Math.random() * flashCardsCopy.length);
-                            shuffledFlashCards.push(flashCardsCopy[randomNum]);
-                            flashCardsCopy.splice(randomNum, 1);
-                        }
-                        setFlashCards(shuffledFlashCards);
-                        setOriginalDeckSize(shuffledFlashCards.length);
-                        setLoading(false);
-                    }, (error) => {
-                        console.error("Error fetching cards:", error);
-                        setError('Failed to load flashcards');
-                        setLoading(false);
-                    });
-                    return unsubscribe; 
-                } else {
-                    setError('No deck selected for cramming mode.');
+                if (!hasAccess) {
+                    setError('The owner of this deck has set it to private.');
                     setLoading(false);
+                    return;
                 }
+                // Set public deck state - FIXED LOGIC
+                const viewingAsPublic = deckIsPublic && !userOwnsTheDeck;
+                setIsPublicDeck(viewingAsPublic);
+                
+                // If it's a public deck viewed by non-owner, fetch owner info for attribution
+                if (viewingAsPublic) {
+                    try {
+                        const ownerDoc = await getDoc(doc(db, 'users', deckData.ownerId));
+                        if (ownerDoc.exists()) {
+                            setDeckOwnerInfo({
+                                displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                email: ownerDoc.data().email
+                            });
+                            deckOwnerData({
+                                displayName: ownerDoc.data().displayName || 'Anonymous User',
+                                email: ownerDoc.data().email
+                            })
+                        }
+                    } catch (error) {
+                        console.log('Could not fetch owner info:', error);
+                        // Don't fail the whole operation if we can't get owner info
+                    }
+                }
+                setDeck(deckData);
+                publicDeckData(deckData);
+
+                const cardsRef = collection(db, 'decks', deckId, 'cards');
+                const cardsQuery = query(cardsRef, orderBy('order', 'asc'));
+                
+                const unsubscribe = onSnapshot(cardsQuery, (snapshot) => {
+                    const cardsData = [];
+                    snapshot.forEach((doc) => {
+                        cardsData.push({
+                            id: doc.id,
+                            ...doc.data(),
+                            deckId: deckId 
+                        });
+                    });
+                    
+                    // Shuffle cards for cramming mode on initial load/redo
+                    let flashCardsCopy = [...cardsData];
+                    let shuffledFlashCards = [];
+                    while (flashCardsCopy.length !== 0) {
+                        let randomNum = Math.floor(Math.random() * flashCardsCopy.length);
+                        shuffledFlashCards.push(flashCardsCopy[randomNum]);
+                        flashCardsCopy.splice(randomNum, 1);
+                    }
+                    setFlashCards(shuffledFlashCards);
+                    setOriginalDeckSize(shuffledFlashCards.length);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Error fetching cards:", error);
+                    setError('Failed to load flashcards');
+                    setLoading(false);
+                });
+                return unsubscribe; 
+            } else {
+                setError('No deck selected for cramming mode.');
+                setLoading(false);
             }
         } catch (err) {
             console.error('Error fetching data:', err);
             setError('Failed to load data');
             setLoading(false);
         }
-    }, [authUser, deckId, db, studyMode, knowAnswer, dontKnowAnswer, cleanupOrphanedProgress, initializeNewCardsProgress]);
+    }, [user, deckId, db, studyMode, knowAnswer, dontKnowAnswer]);
 
     // FIX 3: Add a loading check in the main effect
     useEffect(() => {
         let unsubscribe;
         const setupData = async () => {
             // Wait for auth state to be determined
-            if (authUser === undefined) {
+            if (user === undefined) {
                 console.log('Waiting for auth state...');
                 return;
             }
@@ -609,7 +353,7 @@ function FlashCardUI({
         const isCorrect = quality >= 3; // Consider 3+ as correct for streak purposes
     
         let currentProgress = {};
-        const progressDocRef = doc(db, 'cardProgress', `${authUser.uid}_${cardId}`);
+        const progressDocRef = doc(db, 'cardProgress', `${user.uid}_${cardId}`);
     
         try {
             const progressSnap = await getDoc(progressDocRef);
@@ -635,7 +379,7 @@ function FlashCardUI({
     
             // Update card progress
             await setDoc(progressDocRef, {
-                userId: authUser.uid,
+                userId: user.uid,
                 cardId: cardId,
                 deckId: currentDeckId, 
                 easeFactor: newEaseFactor,
@@ -649,7 +393,7 @@ function FlashCardUI({
     
             // Update streak system (NEW)
             const isCramming = false;
-            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
+            const streakResult = await updateFlashCardUIStreaks(db, user.uid, isCorrect, isCramming);
             
             if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
                 // Optional: Show streak notification
@@ -679,7 +423,7 @@ function FlashCardUI({
             setError("Failed to update card progress.");
             setProcessing(false);
         }
-    }, [currentIndex, flashCards, authUser, db, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
+    }, [currentIndex, flashCards, user, db, knowAnswer, dontKnowAnswer, setCurrentIndex, processing]);
 
     // --- Handle card progression for CRAMMING MODE ---
     const handleCrammingResponse = useCallback(async (isCorrect) => {
@@ -694,9 +438,9 @@ function FlashCardUI({
     try {
         // Track streak for cramming mode too (NEW)
         // Only track streaks for authenticated users
-        if (authUser) {
+        if (user) {
             const isCramming = true;
-            const streakResult = await updateFlashCardUIStreaks(db, authUser.uid, isCorrect, isCramming);
+            const streakResult = await updateFlashCardUIStreaks(db, user.uid, isCorrect, isCramming);
             
             if (streakResult && streakResult.isFirstSessionToday && streakResult.isNewStreak) {
                 console.log(`🔥 New streak milestone! ${streakResult.currentStreak} days`);
@@ -754,7 +498,7 @@ function FlashCardUI({
         setProcessing(false);
     }
 }, [currentIndex, flashCards, knowAnswer, dontKnowAnswer, setCurrentIndex, processing, 
-    originalDeckSize, uniqueCardsAttempted, phaseOneComplete, db, authUser]);
+    originalDeckSize, uniqueCardsAttempted, phaseOneComplete, db, user]);
 
 
     const handleShowAnswer = () => {
@@ -800,7 +544,7 @@ function FlashCardUI({
     const CopyDeckBtn = ({ 
         deckId, 
         deckName, 
-        authUser, 
+        user, 
         deck, 
         flashCards, 
         db, 
@@ -811,7 +555,7 @@ function FlashCardUI({
         const { getFolderLimits, getDeckLimits, getCardLimits, isPremium } = useAuthContext();
 
         const handleCopy = async () => {
-            if (!authUser) {
+            if (!user) {
                 onShowSignUp();
                 return;
             }
@@ -892,7 +636,7 @@ function FlashCardUI({
 
             setCopying(true);
             try {
-                await onCopy(authUser, deck, flashCards);
+                await onCopy(user, deck, flashCards);
                 // Success - the function already handles redirection
             } catch (error) {
                 console.error('Error copying deck:', error);
@@ -960,7 +704,7 @@ function FlashCardUI({
                         )}
                     </div>
                     <StudyTimeTracker 
-                        authUser={authUser}
+                        user={user}
                         db={db}
                         deckId={deckId}
                         isFinished={isFinished}
@@ -979,7 +723,7 @@ function FlashCardUI({
                         }
                     </div>
                     <StudyTimeTracker 
-                        authUser={authUser}
+                        user={user}
                         db={db}
                         deckId={deckId}
                         isFinished={isFinished}
@@ -1007,7 +751,7 @@ function FlashCardUI({
                             </p>
                         )}
                     </div>
-                    {!authUser && (
+                    {!user && (
                         <button 
                             onClick={() => setShowSignUpPrompt(true)}
                             className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
@@ -1089,8 +833,6 @@ function FlashCardUI({
             const uniqueCards = cardsData.filter((card, index, self) => 
                 index === self.findIndex(c => c.id === card.id)
             );
-        
-            
             // Update user document using updateDoc instead of batch for stats
             // We'll do this separately to avoid the dot notation issue with batches
             const userRef = doc(db, 'users', user.uid);
@@ -1188,101 +930,38 @@ function FlashCardUI({
 
     // NEW: Study mode selector
     const renderStudyModeSelector = () => {
-    // Show for both authenticated and unauthenticated users
-    if (isPublicDeck && !authUser) {
-        // Special selector for unauthenticated users viewing public decks
-        return (
-            <>
-            {/* Desktop Version */}
-            <div className="hidden sm:flex bg-gray-700 rounded-lg p-1">
-                <button className="px-4 py-1 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-violet-600 text-white shadow-lg">
-                    <i className="fa-solid fa-bolt"></i>
-                    Quick Study
-                </button>
-                
-                <button
-                    onClick={() => setShowSignUpPrompt(true)}
-                    className="group relative px-4 py-2 rounded-md font-medium transition-all duration-200 flex items-center gap-2 bg-gray-600 text-gray-500 hover:text-white hover:bg-gray-600"
-                >
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                        🔒 Sign up to unlock Smart Review
-                    </div>
-                    <i className="fa-solid fa-brain"></i>
-                    Smart Review 🔒
-                </button>
-            </div>
-
-            {/* Mobile Version */}
-            <div className="sm:hidden">
-                <button
-                    onClick={() => setShowMobileMenu(!showMobileMenu)}
-                    className="bg-gray-700 rounded-lg p-3 text-white hover:bg-gray-600 transition-colors"
-                >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <circle cx="5" cy="12" r="2"/>
-                        <circle cx="12" cy="12" r="2"/>
-                        <circle cx="19" cy="12" r="2"/>
-                    </svg>
-                </button>
-            </div>
-
-            {/* Mobile Menu Overlay */}
-            {showMobileMenu && (
+        // Show for both authenticated and unauthenticated users
+        if (isPublicDeck && !user) {
+            // Special selector for unauthenticated users viewing public decks
+            return (
                 <>
-                    {/* Backdrop */}
-                    <div 
-                        className="sm:hidden fixed inset-0 bg-black/50 z-40"
-                        onClick={() => setShowMobileMenu(false)}
-                    />
-                    
-                    {/* Bottom Menu */}
-                    <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-gray-800 rounded-t-2xl p-6 z-50 animate-in slide-in-from-bottom duration-300">
-                        <div className="flex flex-col gap-3">
-                            <button
-                                onClick={() => setShowMobileMenu(false)}
-                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-violet-600 text-white shadow-lg"
-                            >
-                                <i className="fa-solid fa-bolt"></i>
-                                Quick Study
-                            </button>
-                            
-                            <button
-                                onClick={() => {
-                                    setShowSignUpPrompt(true);
-                                    setShowMobileMenu(false);
-                                }}
-                                className="w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 flex items-center gap-3 bg-gray-600 text-gray-300 active:bg-gray-500"
-                            >
-                                <i className="fa-solid fa-brain"></i>
-                                Smart Review 🔒
-                                <span className="ml-auto text-xs text-gray-400">Sign up required</span>
-                            </button>
-                        </div>
-                        
-                        {/* Close indicator */}
-                        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded-full" />
-                    </div>
+                    <StudyModeSelector 
+                    deckId={deckId} 
+                    db={db} 
+                    user={user} 
+                    currentMode={studyMode} 
+                    onModeChange={onStudyModeChange} 
+                    dueCardsCount={dueCardsCount}
+                    disableSpaced={isPublicDeck}
+                />
+                
                 </>
-            )}
-
-            
-        </>
-        );
-    } else if (authUser) {
-        // Normal selector for authenticated users
-        return (
-            <StudyModeSelector 
-                deckId={deckId} 
-                db={db} 
-                authUser={authUser} 
-                currentMode={studyMode} 
-                onModeChange={onStudyModeChange} 
-                dueCardsCount={dueCardsCount}
-                disableSpaced={isPublicDeck}
-            />
-        );
-    }
-    return null;
+            );
+        } else if (user) {
+            // Normal selector for authenticated users
+            return (
+                <StudyModeSelector 
+                    deckId={deckId} 
+                    db={db} 
+                    user={user} 
+                    currentMode={studyMode} 
+                    onModeChange={onStudyModeChange} 
+                    dueCardsCount={dueCardsCount}
+                    disableSpaced={isPublicDeck}
+                />
+            );
+        }
+        return null;
     };
 
 
@@ -1441,7 +1120,7 @@ function FlashCardUI({
     }
     // Add this debugging to see which condition is failing
     console.log('Tutorial State Debug:', {
-    authUser,
+    user,
     completedFirstReviewSession,
     goToDashBoard, 
     isFinished,
@@ -1462,7 +1141,7 @@ function FlashCardUI({
         </TutorialOverlay>
 
 
-        <TutorialOverlay isVisible={authUser && completedFirstReviewSession && goToDashBoard && isFinished}>
+        <TutorialOverlay isVisible={user && completedFirstReviewSession && goToDashBoard && isFinished}>
             <div className="relative space-y-4 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 max-w-lg w-full p-8">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
@@ -1516,7 +1195,7 @@ function FlashCardUI({
                     <CopyDeckBtn 
                         deckId={deckId} 
                         deckName={deck?.title || "Untitled Deck"}
-                        authUser={authUser}
+                        user={user}
                         deck={deck}
                         flashCards={flashCards}
                         db={db}

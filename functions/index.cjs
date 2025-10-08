@@ -749,16 +749,18 @@ exports.onCardCreate = onDocumentCreated('decks/{deckId}/cards/{cardId}', async 
   }
 });
 
+// ======================
+// CARD TRACKING - OPTIMIZED (No cardProgress cleanup)
+// ======================
+
 exports.onCardDelete = onDocumentDeleted('decks/{deckId}/cards/{cardId}', async (event) => {
   try {
     const deckId = event.params.deckId;
     const cardId = event.params.cardId;
-    const snap = event.data;
-    const cardData = snap.data();
     
     console.log(`🗑️ CARD DELETE TRIGGERED for card: ${cardId} in deck: ${deckId}`);
     
-    // Try to get the deck to find the owner, but handle if deck is already deleted
+    // Try to get the deck to find the owner
     let userId = null;
     let deckExists = false;
     let isDeckCascadeDelete = false;
@@ -771,94 +773,51 @@ exports.onCardDelete = onDocumentDeleted('decks/{deckId}/cards/{cardId}', async 
         deckExists = true;
         console.log(`Found deck ${deckId}, owner: ${userId}`);
       } else {
-        console.log(`⚠️ Deck ${deckId} not found (likely already deleted during cascade)`);
+        console.log(`⚠️ Deck ${deckId} not found (likely cascade delete from deck/folder deletion)`);
         isDeckCascadeDelete = true;
-        
-        // Try to find userId from card progress records as fallback
-        const cardProgressQuery = await db.collection('cardProgress')
-          .where('cardId', '==', `${deckId}_${cardId}`)
-          .limit(1)
-          .get();
-        
-        if (!cardProgressQuery.empty) {
-          userId = cardProgressQuery.docs[0].data().userId;
-          console.log(`Found userId ${userId} from cardProgress records`);
-        }
+        // No fallback needed - if deck is gone, onDeckDelete handles counts
       }
     } catch (deckError) {
       console.log('⚠️ Error fetching deck:', deckError.message);
       isDeckCascadeDelete = true;
     }
     
-    // If this is a cascade delete from deck deletion, don't decrement user counts
-    // because onDeckDelete should handle the bulk count updates
+    // If this is a cascade delete, skip individual count updates
+    // The parent delete handler (onDeckDelete or onFolderDelete) handles bulk counts
     if (isDeckCascadeDelete) {
-      console.log('🔄 Cascade delete detected - skipping user count updates, cleaning up card progress only');
-      
-      // Still clean up card progress records
-      try {
-        const cardProgressQuery = await db.collection('cardProgress')
-          .where('cardId', '==', `${deckId}_${cardId}`)
-          .get();
-        
-        if (!cardProgressQuery.empty) {
-          const batch = db.batch();
-          cardProgressQuery.docs.forEach(doc => {
-            batch.delete(doc.ref);
-          });
-          await batch.commit();
-          console.log(`🧹 Cleaned up ${cardProgressQuery.size} cardProgress documents for cascade-deleted card`);
-        }
-      } catch (progressError) {
-        console.error('Error cleaning up card progress:', progressError);
-      }
-      
-      return;
+      console.log('🔄 Cascade delete detected - parent handler manages counts');
+      return; // Exit early - NO READS needed!
     }
     
     if (!userId) {
-      console.log('⚠️ No userId found and not cascade delete - this shouldn\'t happen');
+      console.log('⚠️ No userId found - orphaned card, skipping');
       return;
     }
     
-    console.log(`🗑️ Individual card ${cardId} deleted, updating counts for user ${userId}`);
+    console.log(`🗑️ Individual card ${cardId} deleted, updating counts`);
     
     const batch = db.batch();
     
-    // Update user's card count (only for individual card deletions)
+    // Update user's card count (only for individual deletions)
     const userRef = db.collection('users').doc(userId);
     batch.update(userRef, {
       'limits.currentCards': FieldValue.increment(-1)
     });
     
-    console.log(`📊 Decrementing card count for user ${userId}`);
-    
-    // Update deck's card count ONLY if deck still exists
+    // Update deck's card count (only if deck exists)
     if (deckExists) {
       const deckRef = db.collection('decks').doc(deckId);
       batch.update(deckRef, {
         cardCount: FieldValue.increment(-1)
       });
-      console.log(`📊 Decrementing card count for deck ${deckId}`);
-    }
-    
-    // Clean up card progress for all users
-    const cardProgressQuery = await db.collection('cardProgress')
-      .where('cardId', '==', `${deckId}_${cardId}`)
-      .get();
-    
-    if (!cardProgressQuery.empty) {
-      cardProgressQuery.docs.forEach(doc => {
-        batch.delete(doc.ref);
-      });
-      console.log(`🧹 Cleaning up ${cardProgressQuery.size} cardProgress documents`);
+      console.log(`📊 Decrementing counts: user & deck`);
     }
     
     await batch.commit();
-    console.log(`✅ Completed individual card delete handling for ${cardId}`);
+    console.log(`✅ Card delete completed`);
     
   } catch (error) {
-    console.error('❌ Error updating card count on delete:', error);
+    console.error('❌ Error in onCardDelete:', error);
   }
 });
 
@@ -998,9 +957,9 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
     const snap = event.data;
     const userData = snap.data();
 
-    if (userData.email) {
-      await addToMailerLite(userData.email, userData.displayName);
-    }
+    // if (userData.email) {
+    //   await addToMailerLite(userData.email, userData.displayName);
+    // }
     
     // Initialize limits if they don't exist
     if (!userData.limits) {

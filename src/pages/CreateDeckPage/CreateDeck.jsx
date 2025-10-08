@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'; // Import useRef
-import { getFirestore, collection, addDoc, doc, setDoc, getDocs, query, where, onSnapshot, serverTimestamp, getDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore'; // Import writeBatch
+import { getFirestore, collection, addDoc, doc, setDoc, getDocs, query, onSnapshot, serverTimestamp, getDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore'; // Import writeBatch
 import { app } from '../../api/firebase';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import DisplayFlashCards from './DisplayFlashCards';
@@ -15,7 +15,7 @@ import { useTutorials } from '../../contexts/TutorialContext';
 
 function CreateDeck() {
 
-    const { getCardLimits, isPremium } = useAuthContext();
+    const { getCardLimits, isPremium, user } = useAuthContext();
 
     // Tutorial
     const { completeTutorial } = useTutorials();
@@ -28,7 +28,6 @@ function CreateDeck() {
         { question: "", answer: "", question_type: "text", answer_type: "text" },
         { question: "", answer: "", question_type: "text", answer_type: "text" }
     ]);
-    const [authUser, setAuthUser] = useState(null);
     const [fileList, setFileList] = useState([]);
     const [folderId, setFolderId] = useState(null);
     const [folderName, setFolderName] = useState("");
@@ -50,16 +49,7 @@ function CreateDeck() {
         }, 0);
     };
 
-    useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-            if (user) {
-                setAuthUser(user);
-            } else {
-                setAuthUser(null);
-            }
-        });
-        return () => unsubscribeAuth(); // Cleanup auth listener
-    }, []);
+   
 
     // Get folder info from navigation state (for create mode)
     const location = useLocation();
@@ -67,6 +57,7 @@ function CreateDeck() {
 
     // Set folderId from navigation state (create mode)
     useEffect(() => {
+        
         if (passedFolderId && !isEditMode) {
             setFolderId(passedFolderId);
         }
@@ -77,10 +68,14 @@ function CreateDeck() {
 
     // Load existing deck data in edit mode
     useEffect(() => {
-        if (isEditMode && deckId && authUser) {
+        if(!user){
+            alert("You need to be logged in!");
+            navigate("/");
+        }
+        if (isEditMode && deckId && user) {
             loadExistingDeck(deckId);
         }
-    }, [isEditMode, deckId, authUser]);
+    }, [isEditMode, deckId, user]);
 
     const loadExistingDeck = async (deckId) => {
         setIsLoading(true);
@@ -98,7 +93,7 @@ function CreateDeck() {
             const deckData = deckSnap.data();
 
             // Check if user owns this deck
-            if (deckData.ownerId !== authUser.uid) {
+            if (deckData.ownerId !== user.uid) {
                 alert("You don't have permission to edit this deck!");
                 navigate('/');
                 return;
@@ -158,31 +153,7 @@ function CreateDeck() {
         }
     };
 
-    // Check for duplicate deck names in the current folder (only if folder already exists and not in edit mode)
-    useEffect(() => {
-        if (!authUser || !folderId || isNewFolder || isEditMode) return;
-
-        const decksRef = collection(db, 'decks');
-        const q = query(
-            decksRef,
-            where('ownerId', '==', authUser.uid),
-            where('folderId', '==', folderId)
-        );
-
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const decks = [];
-            snapshot.forEach((doc) => {
-                decks.push({
-                    id: doc.id,
-                    name: doc.data().title,
-                    ...doc.data()
-                });
-            });
-            setFileList(decks);
-        });
-
-        return () => unsubscribe();
-    }, [authUser, folderId, db, isNewFolder, isEditMode]);
+    
 
     const addFlashCard = (flashcard) => {
         // When adding a new card, it won't have an 'id' yet, Firestore will assign one
@@ -191,35 +162,9 @@ function CreateDeck() {
 
     const deleteFlashCard = async (index) => {
         
-        // Get the card object to be deleted using the index
-        const cardToDelete = flashCards[index];
+        
 
-        // Check if the card has an ID (meaning it's an existing card from Firestore)
-        if (cardToDelete && cardToDelete.id) {
-            const cardId = cardToDelete.id; // Get the cardId
-
-            const progressQuery = query(
-                collection(db, 'cardProgress'),
-                where('cardId', '==', cardId),
-                where('userId', '==', authUser.uid) // It's good practice to filter by user as well
-            );
-            const progressSnap = await getDocs(progressQuery);
-
-            if (progressSnap.size > 0) {
-                const confirmed = window.confirm(
-                    `This card has study progress data. Deleting it will remove all progress history for this card. Are you sure you want to continue?`
-                );
-                if (!confirmed) return;
-
-                // If confirmed, you would also need to delete the cardProgress documents
-                // This is better handled in a Cloud Function for transactional consistency,
-                // but for a client-side deletion, you'd add batch.delete operations here.
-                // Example of how you might add them to the batch (though updateExistingDeck's batch is separate)
-                // For now, you just prevent deletion if not confirmed.
-            }
-        }
-
-    const newFlashCard = flashCards.filter((element, idx) => idx !== index);
+        const newFlashCard = flashCards.filter((element, idx) => idx !== index);
         setFlashCards(newFlashCard)
     }
 
@@ -348,7 +293,7 @@ function CreateDeck() {
     
             // If we need to create a new folder, do it first
             if (isNewFolder) {
-                actualFolderId = await createNewFolder(folderName, authUser.uid);
+                actualFolderId = await createNewFolder(folderName, user.uid);
             }
             // REMOVED: Manual folder deckCount increment - let Cloud Function handle it
     
@@ -357,7 +302,7 @@ function CreateDeck() {
             batch.set(deckRef, {
                 title: fileName,
                 description: fileDescription === "" ? "No Description" : fileDescription,
-                ownerId: authUser.uid,
+                ownerId: user.uid,
                 folderId: actualFolderId,
                 isPublic: false,
                 createdAt: serverTimestamp(),
