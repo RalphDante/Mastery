@@ -58,7 +58,7 @@ const HeroSection = ({setShowModal, signIn}) => {
           <p className={`text-lg sm:text-xl lg:text-2xl text-gray-300 mb-8 transition-all duration-1000 delay-700 lg:delay-300 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             Turn studying into 
             <span className="text-violet-400 font-semibold"> boss battles. </span>
-            <span className="">Study with your party.  Built by a student who was tired of <span className="font-bold">cramming alone. </span></span>
+            <span className="">Study with your party.  Built by a student. Used by <span className="font-bold">students.</span></span>
           </p>
 
           {/* CTA Buttons */}
@@ -68,7 +68,7 @@ const HeroSection = ({setShowModal, signIn}) => {
               onClick={() => signIn()}
               aria-label="Generate flashcards from your notes now"
             >
-              <span>Start Free</span>
+              <span>Start Adventure</span>
             </button>
 
             {/* <button 

@@ -18,7 +18,6 @@ import {
     increment,
     updateDoc
 } from 'firebase/firestore'; 
-
 import { authService } from "../../hooks/useAuth";
 
 import { onAuthStateChanged } from "firebase/auth";

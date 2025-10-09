@@ -78,7 +78,6 @@ import CreateWithAIDemoModal from './pages/TryNowPage/LandingPage/CreateWithAIDe
 
 // Terms of Service
 import TermsOfService from './pages/TermsOfService/TermsOfService.jsx';
-import PublicDecksPage from './pages/PublicDecks/PublicDecksPage.jsx';
 import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDeckTutorial.jsx';
 
 // Settings
@@ -233,8 +232,6 @@ function AppContent(){
 
                   <Route path='/flashcards-demo' element={<FlashCardsDemoPage />} />
 
-                  {/* Public Decks */}
-                  <Route path='/browse-decks' element={<PublicDecksPage />} />
                   
 
                   {/* Blogs */}
