@@ -1,39 +1,17 @@
 import { useEffect,useState } from "react"
 import { auth } from "../../api/firebase"
-import { onAuthStateChanged } from "firebase/auth"
+import { useAuthContext } from "../../contexts/AuthContext";
 
 function UserName(){
+    const {user} = useAuthContext();
 
-    const [authUser, setAuthUser] = useState(null);
-
-    useEffect(()=>{
-        onAuthStateChanged(auth, (user)=>{
-            if(user){
-                setAuthUser(user)
-            } else {
-                setAuthUser(null)
-            }
-        })
-    },[])
-
-    let userName = "";
-
-    if(authUser){
-        const userEmail = authUser.email;
-        let currentIndex = 0
         
-    
-        while(userEmail[currentIndex] !== "." && userEmail[currentIndex] !== "@"){
-            userName += userEmail[currentIndex];
-            currentIndex += 1;
-        }
-    }
-
+   
    
 
     return(
         <>
-            <h4 style={{margin: '0px'}}>{userName? userName: ''}</h4>
+            <h4 style={{margin: '0px'}}>{user ? user?.displayName: 'Guest'}</h4>
         </>
     )
 

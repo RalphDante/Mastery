@@ -145,7 +145,6 @@ export const hasStudiedToday = (lastStudyDate) => {
 };
 
 // Enhanced version that tracks daily review sessions
-// Enhanced version that tracks daily review sessions
 export const trackDailySession = async (db, userId, sessionData, isCramming) => {
   const today = new Date();
   const dateKey = getLocalDateKey(today);
@@ -164,13 +163,9 @@ export const trackDailySession = async (db, userId, sessionData, isCramming) => 
       await setDoc(sessionDocRef, {
         date: Timestamp.fromDate(today),
         cardsReviewed: sessionData.cardsReviewed || 1,
-        cardsCorrect: sessionData.cardsCorrect || 0,
-        accuracy: sessionData.accuracy || 0,
         sessions: 1,
         firstSessionAt: Timestamp.now(),
         lastSessionAt: Timestamp.now(),
-        crammingSessions: isCramming ? 1 : 0,
-        spacedSessions: isCramming ? 0 : 1
       });
       
       return { ...streakUpdate, isFirstSessionToday: true };

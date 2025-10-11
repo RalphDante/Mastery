@@ -11,9 +11,12 @@ import { Timestamp } from "firebase/firestore";
 
 
 import FlashCardUI from "./FlashCardUI";
-import ModuleDescription from "./Description"; // Still commented out
 import styles from './FlashCardsPage.module.css'
 import { useAuthContext } from '../../contexts/AuthContext';
+
+import EditDeckBtn from './EditFlashCardBtn';
+import DeckActionsDropdown from './DeckActionsDropdown';
+import BattleSection from './BattleSection';
 
 function FlashCardsPage() {
     const {user} = useAuthContext();
@@ -25,7 +28,6 @@ function FlashCardsPage() {
     const navigate = useNavigate();
     const [redoDeck, setRedoDeck] = useState(false);
     const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
-    const [autoSwitchedToSpaced, setAutoSwitchedToSpaced] = useState(false); // Track if we auto-switched
     const location = useLocation();
     // Rename deckId from useParams to paramDeckId to avoid confusion with global mode
     const { deckId: paramDeckId } = useParams(); 
@@ -102,26 +104,7 @@ function FlashCardsPage() {
 
     // This function will now be called by StudyModeSelector internally
     // and will only manage the local state for FlashCardsPage.
-    const handleStudyModeToggle = async (newMode) => { // Added newMode parameter
-        if (currentIndex > 0) {
-            const confirmReset = window.confirm(
-                "Changing study modes will reset your progress for the current session. Are you sure you want to continue?"
-            );
-            if (!confirmReset) return;
-        }
-        
-        // Reset local session progress
-        setCurrentIndex(0);
-        setKnowAnswer(0);
-        setDontKnowAnswer(0);
-        setPercent(0); // Ensure percent is reset here too
-        
-        // Mark that user manually changed modes (disable auto-switching for this session)
-        setAutoSwitchedToSpaced(true);
-        
-        setStudyMode(newMode); // Use newMode from the selector
-        setRedoDeck(true); // Trigger a re-fetch in FlashCardUI
-    };
+    
 
     const handleSetToPublic = async () => {
         if (!publicDeckData || !user) return;
@@ -194,7 +177,7 @@ function FlashCardsPage() {
     // Determine the display name for the header
     const displayName = studyMode === 'spaced' && !paramDeckId 
                         ? "Global Smart Review" // For global spaced review
-                        : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Deck"; // For specific deck
+                        : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Boss"; // For specific deck
                         
     const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== user?.uid;
 
@@ -209,7 +192,29 @@ function FlashCardsPage() {
            
                 <div className={`${styles.leftSideFlashCardsPageContainer} `}>
 
+                    {/* Buttons */}
+                    <div className={`flex justify-between mb-1`}>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                        </button>
+        
+                        
+                        <DeckActionsDropdown
+                            deckId={paramDeckId}
+                        />
+                    </div>
 
+                    <BattleSection
+                        deckData = {deckData}
+                        knowAnswer = {knowAnswer}
+                        dontKnowAnswer = {dontKnowAnswer}
+                    />
+
+
+                    
                     <FlashCardUI 
                         knowAnswer={setKnowAnswer}
                         dontKnowAnswer={setDontKnowAnswer}
@@ -217,7 +222,6 @@ function FlashCardsPage() {
                         redoDeck={redoDeck}
                         setRedoDeck={setRedoDeck}
                         studyMode={studyMode}
-                        onStudyModeChange={handleStudyModeToggle} // Pass the updated handler
                         currentIndex={currentIndex}
                         setCurrentIndex={setCurrentIndex}
                         deckId={paramDeckId} // Pass deckId from params (can be null for global review)
@@ -231,13 +235,7 @@ function FlashCardsPage() {
                     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
                         {/* Show notification if auto-switched to spaced mode */}
 
-                        {autoSwitchedToSpaced && studyMode === 'spaced' && dueCardsCount > 0 && (
-                            <div className="bg-blue-900/50 border border-blue-700 rounded-lg p-3 mb-4">
-                                <p className="text-blue-200 text-sm">
-                                    🎯 Automatically switched to spaced repetition - {dueCardsCount} cards due for review!
-                                </p>
-                            </div>
-                        )}
+                       
                         <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
                             {isPublicDeck && <Globe className="w-6 h-6" />}
                             {displayName}

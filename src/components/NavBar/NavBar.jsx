@@ -1,45 +1,28 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
-import { db, auth } from '../../api/firebase';
 import SignUpBtn from '../../pages/TryNowPage/LandingPage/SignUpBtn';
 import { useNavigate } from 'react-router-dom';
 import CreateActionsDropdown from '../CreateActionsDropdown/CreateActionsDropdown';
 import Profile from './Profile';
+import { useAuthContext } from '../../contexts/AuthContext';
 
 
 
 // NavBar component
 function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalClick, onSignOutClick }) {
-
+    const {userProfile} = useAuthContext();
     const navigate = useNavigate();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [userName, setUserName] = useState("Loading...");
 
     useEffect(() => {
-        const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                try {
-                    const userDocRef = doc(db, 'users', user.uid);
-                    const userDocSnap = await getDoc(userDocRef);
-
-                    if (userDocSnap.exists()) {
-                        const profileData = userDocSnap.data();
-                        setUserName(profileData.displayName || profileData.email);
-                    } else {
-                        console.log("User profile not found in Firestore for NavBar. Displaying 'Guest'.");
-                        setUserName("Guest");
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile for NavBar:", error);
-                    setUserName("Error");
-                }
-            } else {
-                setUserName("Guest");
-            }
-        });
-        return () => unsubscribeAuth();
-    }, []);
+   
+       if (userProfile) {
+            setUserName(userProfile.displayName || user.email || "Guest");
+        } else {
+            setUserName("Guest");
+        }
+        
+    }, [userProfile]);
 
     return (
         <header className="bg-gray-900/80 backdrop-blur-md shadow-sm border-b border-gray-700">

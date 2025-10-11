@@ -188,12 +188,7 @@ export const checkAndApplyBossAttack = async (userId, partyId, userData, partyDa
       daysSinceLastAttack = Math.floor(hoursSinceAttack / 24);
     }
 
-    // const bosses = [
-    //   { bossNumber: 1, name: "Study Slime", maxHealth: 500, damage: 15 },
-    //   { bossNumber: 2, name: "Knowledge Goblin", maxHealth: 800, damage: 20 },
-    //   { bossNumber: 3, name: "Wisdom Dragon", maxHealth: 1200, damage: 25 },
-    //   { bossNumber: 4, name: "Ancient Scholar", maxHealth: 1500, damage: 30 }
-    // ];
+  
 
     const bossData = bosses[currentBoss.bossNumber - 1];
     if (!bossData) {

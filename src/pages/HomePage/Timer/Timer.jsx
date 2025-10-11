@@ -251,10 +251,7 @@ function Timer({
             firstSessionAt: now,
             lastSessionAt: now,
             minutesStudied: fullMinutes,
-            accuracy: 0,
-            cardsCorrect: 0,
             cardsReviewed: 0,
-            crammingSessions: 0,
           });
         }
       });

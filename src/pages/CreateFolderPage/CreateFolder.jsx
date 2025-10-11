@@ -2,7 +2,6 @@ import React, {useState, useEffect} from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { getDatabase, ref, set, push, onValue} from 'firebase/database'
 import { app } from '../../api/firebase';
-import AuthDetails from '../../components/auth/AuthDetails'
 import { onAuthStateChanged } from 'firebase/auth';
 import {auth} from '../../api/firebase'
 

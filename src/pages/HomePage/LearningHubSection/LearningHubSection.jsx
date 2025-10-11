@@ -1,7 +1,8 @@
 // OptimizedLearningHubSection - With deck caching
 
 import React, { useState, useCallback, useRef } from 'react';
-import { useAuthContext, useFolders } from '../../../contexts/AuthContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import { useDeckCache, useFolders } from '../../../contexts/DeckCacheContext';
 import {
     collection,
     query,
@@ -19,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const { user, loading, getFolderLimits } = useAuthContext();
+    const { getDecksByFolder, invalidateFolderDecks, invalidateDeckMetadata } = useDeckCache();
     const folders = useFolders() || [];
     const navigate = useNavigate();
     
@@ -30,75 +32,16 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const [folderDecks, setFolderDecks] = useState([]);
     const [isDecksLoading, setIsDecksLoading] = useState(false);
 
-    // 🆕 CACHE: Store fetched decks by folderId
-    const decksCacheRef = useRef({});
-
-    // 🆕 OPTIMIZED: Only fetch when folder is opened AND not cached
-    const fetchDecksForFolder = useCallback(async (folderId) => {
-        if (!user || !folderId) return;
-
-        // Check cache first
-        if (decksCacheRef.current[folderId]) {
-            console.log(`📦 Using cached decks for folder ${folderId}`);
-            setFolderDecks(decksCacheRef.current[folderId]);
-            return;
-        }
-
-        console.log(`🔍 Fetching decks for folder ${folderId}...`);
-        setIsDecksLoading(true);
-        
-        try {
-            const decksRef = collection(db, 'decks');
-            const q = query(
-                decksRef,
-                where('folderId', '==', folderId),
-                where('ownerId', '==', user.uid)
-            );
-            
-            const snapshot = await getDocs(q);
-            const fetchedDecks = [];
-            snapshot.forEach((doc) => {
-                fetchedDecks.push({
-                    id: doc.id,
-                    ...doc.data()
-                });
-            });
-
-            // Sort decks by updatedAt
-            fetchedDecks.sort((a, b) => {
-                const dateA = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
-                const dateB = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-
-            // Store in cache
-            decksCacheRef.current[folderId] = fetchedDecks;
-            setFolderDecks(fetchedDecks);
-        } catch (err) {
-            console.error('Error fetching decks:', err);
-        } finally {
-            setIsDecksLoading(false);
-        }
-    }, [user]);
-
-    // 🆕 OPTIMIZED: Only called when user clicks on a folder
-    const handleFolderClick = (folder) => {
+    // Fetch decks using context
+    const handleFolderClick = async (folder) => {
         setCurrentFolder(folder);
         setCurrentView('folder-contents');
-        fetchDecksForFolder(folder.id); // Fetch only when opened
+        setIsDecksLoading(true);
+        
+        const decks = await getDecksByFolder(folder.id);
+        setFolderDecks(decks);
+        setIsDecksLoading(false);
     };
-
-    // 🆕 Clear cache when needed (e.g., after deck deletion)
-    const invalidateCache = useCallback((folderId) => {
-        if (folderId) {
-            delete decksCacheRef.current[folderId];
-            console.log(`🗑️ Cache invalidated for folder ${folderId}`);
-        } else {
-            // Clear all cache
-            decksCacheRef.current = {};
-            console.log(`🗑️ All deck cache cleared`);
-        }
-    }, []);
 
     const handleCreateFolder = async (e) => {
         e.preventDefault();
@@ -164,9 +107,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             }
     
             await deleteDoc(folderRef);
-            
-            // 🆕 Invalidate cache after deletion
-            invalidateCache(folderId);
+            invalidateFolderDecks(folderId);
             
         } catch (error) {
             console.error('Error deleting folder:', error);
@@ -187,16 +128,16 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
             }
     
             const deckData = deckSnap.docs[0].data();
-            const deletedDeckFolderId = deckData.folderId; // Store for cache invalidation
+            const deletedDeckFolderId = deckData.folderId;
     
             const cardsRef = collection(db, 'decks', deckId, 'cards');
             const cardsSnapshot = await getDocs(cardsRef);
             
             if (cardsSnapshot.empty) {
                 await deleteDoc(deckRef);
-                // 🆕 Invalidate cache after deletion
                 if (deletedDeckFolderId) {
-                    invalidateCache(deletedDeckFolderId);
+                    invalidateFolderDecks(deletedDeckFolderId);
+                    invalidateDeckMetadata(deckId);
                 }
                 return;
             }
@@ -230,12 +171,14 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 }
             });
 
-            // 🆕 Invalidate cache after deletion
             if (deletedDeckFolderId) {
-                invalidateCache(deletedDeckFolderId);
+                invalidateFolderDecks(deletedDeckFolderId);
+                invalidateDeckMetadata(deckId);
+                
                 // Refresh current view if we're in the same folder
                 if (currentFolder?.id === deletedDeckFolderId) {
-                    fetchDecksForFolder(deletedDeckFolderId);
+                    const refreshedDecks = await getDecksByFolder(deletedDeckFolderId);
+                    setFolderDecks(refreshedDecks);
                 }
             }
     

@@ -42,7 +42,6 @@ export const AuthProvider = ({ children }) => {
     const [partyMembers, setPartyMembers] = useState([]);
     
     // NEW: Data from UserDataContext
-    const [folders, setFolders] = useState([]);
     const [dailySessions, setDailySessions] = useState([]);
 
     // Listen for authentication state changes
@@ -59,7 +58,6 @@ export const AuthProvider = ({ children }) => {
                 setPartyProfile(null);
                 setPartyMembers({});
                 // Clear data
-                setFolders([]);
                 setDailySessions([]);
             }
             setLoading(false);
@@ -68,60 +66,8 @@ export const AuthProvider = ({ children }) => {
         return unsubscribe;
     }, []);
 
-    // NEW: Subscribe to folders when user is authenticated
-    useEffect(() => {
-        if (!user) {
-            setFolders([]);
-            return;
-        }
-
-        const foldersRef = collection(db, 'folders');
-        const foldersQuery = query(foldersRef, where('ownerId', '==', user.uid));
-        
-        const unsubFolders = onSnapshot(foldersQuery, (snapshot) => {
-            const fetchedFolders = [];
-            snapshot.forEach((doc) => {
-                fetchedFolders.push({ id: doc.id, ...doc.data() });
-            });
-            
-            // Sort by updatedAt
-            fetchedFolders.sort((a, b) => {
-                const dateA = a.updatedAt?.toDate ? a.updatedAt.toDate() : new Date(0);
-                const dateB = b.updatedAt?.toDate ? b.updatedAt.toDate() : new Date(0);
-                return dateB.getTime() - dateA.getTime();
-            });
-            
-            setFolders(fetchedFolders);
-            console.log('📁 Folders updated:', fetchedFolders.length);
-        });
-
-        return () => unsubFolders();
-    }, [user]);
-
-    // NEW: Optional - Subscribe to card progress if needed
-    // Uncomment this if you need real-time card progress
-    /*
-    useEffect(() => {
-        if (!user) {
-            setCardProgress([]);
-            return;
-        }
-
-        const cardProgressRef = collection(db, 'cardProgress');
-        const cardProgressQuery = query(cardProgressRef, where('userId', '==', user.uid));
-        
-        const unsubCardProgress = onSnapshot(cardProgressQuery, (snapshot) => {
-            const progress = [];
-            snapshot.forEach((doc) => {
-                progress.push({ id: doc.id, ...doc.data() });
-            });
-            setCardProgress(progress);
-            console.log('📊 Card progress updated:', progress.length);
-        });
-
-        return () => unsubCardProgress();
-    }, [user]);
-    */
+    
+   
 
     // Fetch party profile and its members
     const fetchPartyProfile = useCallback(async (partyId) => {
@@ -257,6 +203,14 @@ export const AuthProvider = ({ children }) => {
 
         checkBossSystemOnLogin();
     }, [user?.uid, userProfile?.currentPartyId, partyProfile]);
+
+    useEffect(() => {
+        console.log('🔥 AuthProvider re-rendered!', {
+            user: !!user,
+            userProfile: !!userProfile,
+            partyProfile: !!partyProfile,
+        });
+    });
 
     // Fetch user profile from Firestore
     const fetchUserProfile = async (userId) => {
@@ -557,7 +511,6 @@ export const AuthProvider = ({ children }) => {
             setUserProfile(null);
             setPartyProfile(null);
             setPartyMembers({});
-            setFolders([]);
             setDailySessions([]);
             return { success: true };
         } catch (error) {
@@ -749,7 +702,6 @@ export const AuthProvider = ({ children }) => {
         partyMembers,
         
         // NEW: User data (from UserDataContext)
-        folders,
         dailySessions,
         
         // NEW: Computed values
@@ -794,10 +746,6 @@ export const useAuth = () => {
     return { user, loading: loading || authLoading };
 };
 
-export const useFolders = () => {
-    const { folders } = useAuthContext();
-    return folders;
-};
 
 export const useCardsDue = () => {
     const { cardsDue, cardsReviewedToday, nextReviewTime } = useAuthContext();

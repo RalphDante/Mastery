@@ -5,11 +5,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useDeckCache } from "../../contexts/DeckCacheContext";
 
 function CreateDeckModal({ uid, onClose, isOpen }) {
 
   //Context
-  const { getFolderLimits, getDeckLimits, folders, user } = useAuthContext();
+  const { getFolderLimits, getDeckLimits, user } = useAuthContext();
+  const {folders} = useDeckCache();
+
 
   const [didCompleteStep, setDidCompleteStep] = useState(false);
   const [wasCancelled, setWasCancelled] = useState(false);

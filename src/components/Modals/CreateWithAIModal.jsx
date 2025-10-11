@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getFirestore, collection, doc, getDocs, onSnapshot, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { app, auth } from "../../api/firebase"
 import FileUpload from "../AutoFlashCards/FileUpload";
 import { onAuthStateChanged } from "firebase/auth";

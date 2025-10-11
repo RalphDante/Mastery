@@ -7,7 +7,6 @@ import Footer from './Footer.jsx';
 import NavBar from './components/NavBar/NavBar.jsx';
 import SignIn from './components/auth/Signin.jsx';
 import SignUp from './components/auth/Signup.jsx';
-import AuthDetails from './components/auth/AuthDetails.jsx';
 import ShowNavBar from './components/showNavBar/showNavBar.jsx'
 
 // Modal Components
@@ -47,16 +46,11 @@ import { useAuthContext } from './contexts/AuthContext';
 
 import SignOutBtn from './components/SignOutBtn/SignOutBtn.jsx'
 import CreateFolder from './pages/CreateFolderPage/CreateFolder.jsx'
-import CreateFile from './pages/CreateDeckPage/CreateDeck.jsx'
 import DisplayFiles from './pages/DisplayFilesPage/DisplayFiles.jsx';
-import EditFlashCardPage from './pages/EditFlashCardPage/EditFlashCardPage.jsx';
 
 import "tailwindcss/tailwind.css";
 
 
-// auth
-import { auth } from './api/firebase.js';
-import { onAuthStateChanged } from 'firebase/auth';
 
 
 // Try Now page
@@ -212,7 +206,6 @@ function AppContent(){
               <Routes>
                   {/* <Route path="/signin" element={<SignIn />} />
                   <Route path="/signup" element={<SignUp />} /> */}
-                  {/* <Route path="/authdetails" element={<AuthDetails />} /> */}
                   <Route path="/" element={<RootPage onCreateDeckClick={handleShowCreateDeckModal} onCreateWithAIModalClick={handleShowCreateWithAIModalClick}/>} />
                   <Route path="/about" element={<About />} />
                   <Route path="/createfolder" element={<CreateFolder />} />

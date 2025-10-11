@@ -12,8 +12,12 @@ import { useAuthContext } from '../../contexts/AuthContext';
 
 // Tutorial
 import { useTutorials } from '../../contexts/TutorialContext';
+import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 function CreateDeck() {
+    
+    // Decks Context
+    const {invalidateFolderDecks, invalidateCards} = useDeckCache();
 
     const { getCardLimits, isPremium, user } = useAuthContext();
 
@@ -268,6 +272,10 @@ function CreateDeck() {
             // Commit the batch operation
             await batch.commit();
 
+            invalidateFolderDecks(folderId);
+            invalidateCards(deckId);
+            
+            
             // Navigate back to deck view
             navigate(`/flashcards/${deckId}`, {
                 state: {
@@ -331,6 +339,8 @@ function CreateDeck() {
             // 2. Increment folder's deck count
     
             completeTutorial('create-deck');
+
+            invalidateFolderDecks(folderId);
     
             navigate(`/flashcards/${deckRef.id}`, {
                 state: {
