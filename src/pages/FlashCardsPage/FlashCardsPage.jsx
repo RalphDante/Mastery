@@ -14,6 +14,9 @@ import DeckActionsDropdown from './DeckActionsDropdown';
 import BattleSection from './BattleSection';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 
+import Boss from '../HomePage/Boss/Boss.jsx';
+
+
 function FlashCardsPage() {
     const { user } = useAuthContext();
     const { fetchDeckAndCards } = useDeckCache();

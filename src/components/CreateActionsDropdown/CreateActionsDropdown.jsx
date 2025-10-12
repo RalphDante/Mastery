@@ -94,7 +94,6 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
                     className="flex px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
                     Create Deck with AI
-                    <Wand2 className="w-4 h-4 ml-2 text-yellow-500" />
                 </a>
             </div>
         </div>

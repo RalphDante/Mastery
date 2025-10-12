@@ -179,7 +179,8 @@ function FlashCardUI({
                 setFlashCards(prevCards => [...prevCards, currentCard]);
             }
 
-            trackCardReview();
+            // 🎯 KEY CHANGE: Pass isCorrect to track the card with rewards
+            trackCardReview(isCorrect);
 
             setTimeout(() => {
                 setCurrentIndex(prev => prev + 1);

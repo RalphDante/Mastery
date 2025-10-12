@@ -15,7 +15,7 @@ import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 function CreateDeck() {
-    const { invalidateFolderDecks, invalidateCards } = useDeckCache();
+    const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
     const { getCardLimits, isPremium, user } = useAuthContext();
     const { completeTutorial } = useTutorials();
 
@@ -291,6 +291,7 @@ function CreateDeck() {
             await batch.commit();
 
             invalidateFolderDecks(folderId);
+            invalidateDeckMetadata(deckId);
             invalidateCards(deckId);
 
             navigate(`/flashcards/${deckId}`, {
