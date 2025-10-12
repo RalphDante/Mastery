@@ -178,7 +178,7 @@ const TryNowPage = () => {
             
 
             {/* Social Proof Section */}
-            <TestimonialsCarousel />
+            {/* <TestimonialsCarousel /> */}
 
             
 

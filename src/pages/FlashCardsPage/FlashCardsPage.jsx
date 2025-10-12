@@ -1,169 +1,190 @@
-import { ArrowLeft, Globe, RotateCcw} from 'lucide-react';
+// FlashCardsPage.jsx - Parent handles ALL data fetching
 
+import { ArrowLeft, Globe, RotateCcw } from 'lucide-react';
 import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
-import { app, auth } from '../../api/firebase';
-import { onAuthStateChanged } from "firebase/auth";
+import { app } from '../../api/firebase';
 import { useEffect, useState, useCallback } from "react"; 
 import { useParams } from "react-router-dom";
-
-import { Timestamp } from "firebase/firestore";
-
 
 import FlashCardUI from "./FlashCardUI";
 import styles from './FlashCardsPage.module.css'
 import { useAuthContext } from '../../contexts/AuthContext';
-
-import EditDeckBtn from './EditFlashCardBtn';
 import DeckActionsDropdown from './DeckActionsDropdown';
 import BattleSection from './BattleSection';
+import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 function FlashCardsPage() {
-    const {user} = useAuthContext();
-
-    // Public Deck data
-    const [publicDeckData, setPublicDeckData] = useState(null)
-    const [deckOwnerData, setDeckOwnerData] = useState(null)
-
+    const { user } = useAuthContext();
+    const { fetchDeckAndCards } = useDeckCache();
     const navigate = useNavigate();
-    const [redoDeck, setRedoDeck] = useState(false);
-    const [studyMode, setStudyMode] = useState('cramming'); // 'cramming' or 'spaced'
     const location = useLocation();
-    // Rename deckId from useParams to paramDeckId to avoid confusion with global mode
     const { deckId: paramDeckId } = useParams(); 
-
-    // Get additional data from navigation state if available
-    const { deckTitle, folderId, folderName } = location.state || {};
-
     const db = getFirestore(app); 
-    
-    // States for progress tracking, passed to FlashCardUI as setters
+
+    // ==========================================
+    // STATE - Progress Tracking
+    // ==========================================
     const [knowAnswer, setKnowAnswer] = useState(0);
     const [dontKnowAnswer, setDontKnowAnswer] = useState(0);
     const [percent, setPercent] = useState(0);
-    
-    // Deck information from Firestore (metadata for current deck context)
-    const [deckData, setDeckData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [dueCardsCount, setDueCardsCount] = useState(0); // Track due cards count
-
-    // Communication with FlashCardUI for current card index
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [redoDeck, setRedoDeck] = useState(false);
 
-    // Effect to calculate percentage when knowAnswer or dontKnowAnswer changes
+    // ==========================================
+    // STATE - Data (fetched by parent)
+    // ==========================================
+    const [deckData, setDeckData] = useState(null);
+    const [flashCards, setFlashCards] = useState([]);
+    const [deckOwnerData, setDeckOwnerData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // ==========================================
+    // EFFECT - Calculate percentage
+    // ==========================================
     useEffect(() => {
         const totalAttempted = knowAnswer + dontKnowAnswer;
         if (totalAttempted > 0) {
             setPercent(Math.floor((knowAnswer / totalAttempted) * 100));
         } else {
-            setPercent(0); // If no cards attempted, percentage is 0
+            setPercent(0);
         }
-    }, [knowAnswer, dontKnowAnswer]); // Dependencies: recalculate when these values change
+    }, [knowAnswer, dontKnowAnswer]);
 
-    
+    // ==========================================
+    // MAIN FETCH FUNCTION (Parent-controlled)
+    // ==========================================
+    const loadDeckData = useCallback(async () => {
+        if (user === undefined) {
+            console.log('Auth state still loading...');
+            return;
+        }
 
-    // --- Fetch deck metadata based on paramDeckId (if exists) and studyMode ---
-    useEffect(() => {
-        const fetchDeckMetadata = async () => {
-            if (!user) {
+        if (!paramDeckId) {
+            setLoading(false);
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            // Fetch both deck metadata and cards from cache context
+            const result = await fetchDeckAndCards(paramDeckId);
+
+            if (result.error) {
+                setError(result.error);
                 setLoading(false);
                 return;
             }
 
+            // Set deck metadata
+            setDeckData(result.deck);
 
-            // If we are on a specific deck page (paramDeckId exists), fetch its metadata
-            if (paramDeckId) {
+            // Set cards
+            setFlashCards(result.cards);
+
+            // Fetch owner info if it's a public deck
+            if (result.isPublic && result.deck?.ownerId) {
                 try {
-                    const deckRef = doc(db, 'decks', paramDeckId);
-                    const deckSnap = await getDoc(deckRef);
-                    
-                    if (deckSnap.exists()) {
-                        setDeckData(deckSnap.data());
-                    } else {
-                        console.error("Deck not found");
-                        setDeckData(null);
+                    const ownerDoc = await getDoc(doc(db, 'users', result.deck.ownerId));
+                    if (ownerDoc.exists()) {
+                        setDeckOwnerData({
+                            displayName: ownerDoc.data().displayName || 'Anonymous User',
+                            email: ownerDoc.data().email
+                        });
                     }
-                } catch (error) {
-                    console.error("Error fetching deck:", error);
-                    setDeckData(null);
-                } finally {
-                    setLoading(false); // Done fetching deck metadata
+                } catch (err) {
+                    console.log('Could not fetch owner info:', err);
                 }
-            } else if (studyMode === 'spaced') {
-                // If no specific deckId and in 'spaced' mode, we are on a global review page.
-                // No specific deck metadata to fetch here. FlashCardUI handles card fetching.
-                setDeckData(null); 
-                setLoading(false);
-            } else {
-                 setLoading(false); // Not in spaced mode and no deckId, nothing to load for metadata.
             }
-        };
 
-        fetchDeckMetadata();
-    }, [paramDeckId, db, user]); // Re-run if these dependencies change
+            setLoading(false);
 
-    // This function will now be called by StudyModeSelector internally
-    // and will only manage the local state for FlashCardsPage.
-    
+        } catch (err) {
+            console.error('Error loading deck data:', err);
+            setError('Failed to load deck');
+            setLoading(false);
+        }
+    }, [user, paramDeckId, fetchDeckAndCards, db]);
 
+    // ==========================================
+    // EFFECT - Initial load
+    // ==========================================
+    useEffect(() => {
+        loadDeckData();
+    }, [loadDeckData]);
+
+    // ==========================================
+    // EFFECT - Handle redo deck
+    // ==========================================
+    useEffect(() => {
+        if (redoDeck) {
+            loadDeckData();
+            setRedoDeck(false);
+            // Reset progress
+            setKnowAnswer(0);
+            setDontKnowAnswer(0);
+            setCurrentIndex(0);
+        }
+    }, [redoDeck, loadDeckData]);
+
+    // ==========================================
+    // HANDLERS - Public/Private toggle
+    // ==========================================
     const handleSetToPublic = async () => {
-        if (!publicDeckData || !user) return;
+        if (!deckData || !user) return;
 
-        try{
-            const deckRef = doc(db, 'decks', publicDeckData.id)
-
+        try {
+            const deckRef = doc(db, 'decks', paramDeckId);
             const userDoc = await getDoc(doc(db, "users", user.uid));
             const firestoreDisplayName = userDoc.exists() ? userDoc.data().displayName : user.displayName;
 
-            // Only set copies: 0 if it doesn't exist yet
             const updateData = {
                 isPublic: true,
                 publishedAt: serverTimestamp(),
                 ownerDisplayName: firestoreDisplayName
             };
-            if (publicDeckData.copies === undefined) {
+            if (deckData.copies === undefined) {
                 updateData.copies = 0;
             }
 
             await updateDoc(deckRef, updateData);
-                
-            // Update local state to reflect the change
-            setPublicDeckData(prev => ({
+            
+            setDeckData(prev => ({
                 ...prev,
                 isPublic: true,
-                publishedAt: new Date() // For immediate UI update
+                publishedAt: new Date()
             }));
         
             console.log("Deck set to public successfully!");
-        } catch(error){
-            console.log("error: ", error)
+        } catch (error) {
+            console.log("Error setting deck to public:", error);
         }
-
-    }
+    };
 
     const handleSetToPrivate = async () => {
-        if (!publicDeckData || !user) return;
+        if (!deckData || !user) return;
 
-        try{
-            const deckRef = doc(db, 'decks', publicDeckData.id)
-
-            await updateDoc(deckRef, {
-                isPublic: false,
-            });
+        try {
+            const deckRef = doc(db, 'decks', paramDeckId);
+            await updateDoc(deckRef, { isPublic: false });
             
-            // Update local state to reflect the change
-            setPublicDeckData(prev => ({
+            setDeckData(prev => ({
                 ...prev,
                 isPublic: false,
             }));
         
             console.log("Deck set to private successfully!");
-        } catch(error){
-            console.log("error: ", error)
+        } catch (error) {
+            console.log("Error setting deck to private:", error);
         }
-    }
+    };
 
-    // Show loading state for the page
+    // ==========================================
+    // RENDER - Loading state
+    // ==========================================
     if (loading) {
         return (
             <div className={`${styles.flashCardsPageContainer}`}>
@@ -174,185 +195,168 @@ function FlashCardsPage() {
         );
     }
 
-    // Determine the display name for the header
-    const displayName = studyMode === 'spaced' && !paramDeckId 
-                        ? "Global Smart Review" // For global spaced review
-                        : (publicDeckData?.title ? publicDeckData?.title : null) || "Unknown Boss"; // For specific deck
-                        
-    const isPublicDeck = publicDeckData?.title && publicDeckData?.ownerId !== user?.uid;
+    // ==========================================
+    // RENDER - Error state
+    // ==========================================
+    if (error) {
+        return (
+            <div className={`${styles.flashCardsPageContainer}`}>
+                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
+                    <h1 className="text-2xl font-bold text-red-400 mb-2">Error: {error}</h1>
+                    <button 
+                        onClick={loadDeckData}
+                        className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
+                    >
+                        Retry
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
-    // Only show deck description if we're on a specific deck page OR it's cramming mode
-    const showDescription = studyMode === 'cramming' || (studyMode === 'spaced' && paramDeckId);
+    // ==========================================
+    // RENDER - Display variables
+    // ==========================================
+    const displayName = deckData?.title || "Unknown Deck";
+    const isPublicDeck = deckData?.isPublic && deckData?.ownerId !== user?.uid;
 
+    // ==========================================
+    // MAIN RENDER
+    // ==========================================
     return (
-        <>  
-            
-            <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
-                
-           
-                <div className={`${styles.leftSideFlashCardsPageContainer} `}>
-
-                    {/* Buttons */}
-                    <div className={`flex justify-between mb-1`}>
-                        <button
-                            onClick={() => navigate('/')}
-                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                        </button>
-        
-                        
-                        <DeckActionsDropdown
-                            deckId={paramDeckId}
-                        />
-                    </div>
-
-                    <BattleSection
-                        deckData = {deckData}
-                        knowAnswer = {knowAnswer}
-                        dontKnowAnswer = {dontKnowAnswer}
-                    />
-
-
+        <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
+            <div className={`${styles.leftSideFlashCardsPageContainer}`}>
+                {/* Buttons */}
+                <div className="flex justify-between mb-1">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
                     
-                    <FlashCardUI 
-                        knowAnswer={setKnowAnswer}
-                        dontKnowAnswer={setDontKnowAnswer}
-                        // percent is no longer passed as a setter to FlashCardUI as FlashCardsPage calculates it
-                        redoDeck={redoDeck}
-                        setRedoDeck={setRedoDeck}
-                        studyMode={studyMode}
-                        currentIndex={currentIndex}
-                        setCurrentIndex={setCurrentIndex}
-                        deckId={paramDeckId} // Pass deckId from params (can be null for global review)
-                        db={db} // Pass Firestore instance to FlashCardUI
-                        publicDeckData={setPublicDeckData}
-                        deckOwnerData={setDeckOwnerData}
+                    <DeckActionsDropdown 
+                        deckId={paramDeckId}
+                        deckData={deckData}
+                        flashCards={flashCards}
                     />
                 </div>
-                
-                <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
-                    <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
-                        {/* Show notification if auto-switched to spaced mode */}
 
-                       
-                        <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
-                            {isPublicDeck && <Globe className="w-6 h-6" />}
-                            {displayName}
-                        </div>
+                <BattleSection
+                    deckData={deckData}
+                    knowAnswer={knowAnswer}
+                    dontKnowAnswer={dontKnowAnswer}
+                />
 
-                        {!publicDeckData && showDescription && deckData?.description && deckData.description !== "No Description" && (
-                            <p className="text-gray-400 mb-4">{deckData.description}</p> 
+                {/* Pass all data as props to FlashCardUI */}
+                <FlashCardUI 
+                    // Data props (fetched by parent)
+                    flashCards={flashCards}
+                    deckData={deckData}
+                    
+                    // Progress setters
+                    setKnowAnswer={setKnowAnswer}
+                    setDontKnowAnswer={setDontKnowAnswer}
+                    
+                    // Control props
+                    redoDeck={redoDeck}
+                    setRedoDeck={setRedoDeck}
+                    currentIndex={currentIndex}
+                    setCurrentIndex={setCurrentIndex}
+                    
+                    // Firestore instance for session tracking
+                    db={db}
+                    
+                    // Reload function for child to trigger parent refresh
+                    onReload={loadDeckData}
+                />
+            </div>
+            
+            <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
+                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
+                    <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
+                        {isPublicDeck && <Globe className="w-6 h-6" />}
+                        {displayName}
+                    </div>
+
+                    {deckData?.description && deckData.description !== "No Description" && (
+                        <p className="text-gray-400 mb-4">{deckData.description}</p> 
+                    )}
+
+                    {deckOwnerData && (
+                        <p className="text-white/70 text-sm mb-4">
+                            Created by: {deckOwnerData.displayName}
+                        </p>
+                    )}
+                    
+                    <div className="space-y-4">
+                        {deckData?.cardCount && (
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                <span className="text-gray-400">Total Cards:</span>
+                                <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
+                            </div>
                         )}
 
-                        {deckOwnerData && (
-                            <p className="text-white/70 text-sm">
-                                Created by: {deckOwnerData.displayName}
-                            </p>
-                        )}
-                        
-                        <div className="space-y-4">
-                            {/* Only show total cards count for 'cramming' mode on a specific deck */}
-                            {deckData?.cardCount && studyMode === 'cramming' && ( 
-                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                    <span className="text-gray-400">Total Cards:</span>
-                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
-                                </div>
-                            )}
-
-                            {/* Show due cards count in spaced mode */}
-                            {studyMode === 'spaced' && dueCardsCount > 0 && (
-                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                    <span className="text-gray-400">Cards Due:</span>
-                                    <span className="font-bold text-lg text-yellow-400">{dueCardsCount}</span>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Correct:</span>
-                                <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Wrong:</span>
-                                <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Accuracy:</span>
-                                <span className="font-bold text-lg text-violet-400">{percent}%</span>
-                            </div>
-                            
-                            
-                            
-                            
+                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                            <span className="text-gray-400">Correct:</span>
+                            <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
                         </div>
-
-                        {/* Progress Bar */}
-                        <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-4">
-                            <div 
-                                className="h-full bg-violet-500 rounded-full transition-all duration-500"
-                                style={{ width: `${percent}%` }}
-                            ></div>
+                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                            <span className="text-gray-400">Wrong:</span>
+                            <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                         </div>
+                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                            <span className="text-gray-400">Accuracy:</span>
+                            <span className="font-bold text-lg text-violet-400">{percent}%</span>
+                        </div>
+                    </div>
 
-                        {/* Quick Actions */}
-                        <div className="mt-6">
-                            <h4 className="text-gray-300 mb-4 font-medium">⚡ Quick Actions</h4>
-                            <div className="space-y-3">
-                                {/* "Redo Deck" button is primarily for 'cramming' mode to re-shuffle a single deck */}
-                                {studyMode === 'cramming' && (
+                    {/* Progress Bar */}
+                    <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-4">
+                        <div 
+                            className="h-full bg-violet-500 rounded-full transition-all duration-500"
+                            style={{ width: `${percent}%` }}
+                        ></div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="mt-6">
+                        <h4 className="text-gray-300 mb-4 font-medium">⚡ Quick Actions</h4>
+                        <div className="space-y-3">
+                            <button 
+                                onClick={() => setRedoDeck(true)}
+                                className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                            >
+                                <RotateCcw className="w-5 h-5 mr-2" />
+                                <span>Redo Deck</span>
+                            </button>
+
+                            {deckData && deckData.ownerId === user?.uid && (
+                                !deckData.isPublic ? (
                                     <button 
-                                        onClick={() => {setRedoDeck(true)}}
-                                        className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                        onClick={handleSetToPublic}
                                     >
-                                        <RotateCcw className="w-5 h-5 mr-2" />
-                                        <span>Redo Deck</span>
+                                        <Globe />
+                                        <span>Make Public</span>
                                     </button>
-                                )}
-
-                                {publicDeckData && publicDeckData.ownerId === user?.uid ? (
-                                    !publicDeckData?.isPublic ? (
-                                        <button id="publishBtn" class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                            onClick={handleSetToPublic}
-                                        >
-                                            <Globe />
-                                            <span>Make Public</span>
-                                        </button>
-
-                                    ) : (
-                                         <button id="privateBtn" class="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                            onClick={handleSetToPrivate}
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                            </svg>
-                                            <span>Make Private</span>
-                                        </button>
-                                    )
-                                   
-                                
                                 ) : (
-                                    <div></div>
+                                    <button 
+                                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                        onClick={handleSetToPrivate}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                        <span>Make Private</span>
+                                    </button>
                                 )
-                                
-                            }
-                                
-                                {/* Show priority indicator for spaced mode */}
-                                {studyMode === 'spaced' && dueCardsCount > 0 && (
-                                    <div className="w-full bg-blue-600/20 border border-blue-600 px-4 py-3 rounded-lg">
-                                        <div className="text-blue-300 text-sm font-medium">
-                                            🎯 Priority: Spaced Review
-                                        </div>
-                                        <div className="text-blue-400 text-xs mt-1">
-                                            Focus on due cards for optimal learning
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            )}
                         </div>
                     </div>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 

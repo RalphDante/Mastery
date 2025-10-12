@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react'; // Import useRef
-import { getFirestore, collection, addDoc, doc, setDoc, getDocs, query, onSnapshot, serverTimestamp, getDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore'; // Import writeBatch
-import { app } from '../../api/firebase';
+// CreateDeck.jsx - Optimized to use cached data from navigation state
+
+import { useState, useEffect, useRef } from 'react';
+import { getFirestore, collection, addDoc, doc, setDoc, getDocs, query, onSnapshot, serverTimestamp, getDoc, updateDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import { app, db } from '../../api/firebase';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import DisplayFlashCards from './DisplayFlashCards';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -9,19 +11,12 @@ import styles from './CreateFilePage.module.css'
 import CreateFlashCards from './CreateFlashCards';
 
 import { useAuthContext } from '../../contexts/AuthContext';
-
-// Tutorial
 import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 function CreateDeck() {
-    
-    // Decks Context
-    const {invalidateFolderDecks, invalidateCards} = useDeckCache();
-
+    const { invalidateFolderDecks, invalidateCards } = useDeckCache();
     const { getCardLimits, isPremium, user } = useAuthContext();
-
-    // Tutorial
     const { completeTutorial } = useTutorials();
 
     const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
@@ -37,14 +32,22 @@ function CreateDeck() {
     const [folderName, setFolderName] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
-    // Use useRef to store the original cards loaded in edit mode.
-    // This allows us to compare current edits against the initial state without re-rendering issues.
     const originalFlashCardsRef = useRef([]);
 
     const navigate = useNavigate();
-    const db = getFirestore(app);
+    const location = useLocation();
     const { deckId } = useParams();
     const isEditMode = Boolean(deckId);
+
+    // Get data from navigation state (could be from cache or new deck)
+    const { 
+        deckData: passedDeckData, 
+        flashCards: passedFlashCards, 
+        fromCache,
+        folderName: passedFolderName, 
+        folderId: passedFolderId, 
+        isNewFolder 
+    } = location.state || {};
 
     const autoResize = (e) => {
         setTimeout(() => {
@@ -53,15 +56,8 @@ function CreateDeck() {
         }, 0);
     };
 
-   
-
-    // Get folder info from navigation state (for create mode)
-    const location = useLocation();
-    const { folderName: passedFolderName, folderId: passedFolderId, isNewFolder } = location.state || {};
-
     // Set folderId from navigation state (create mode)
     useEffect(() => {
-        
         if (passedFolderId && !isEditMode) {
             setFolderId(passedFolderId);
         }
@@ -70,21 +66,71 @@ function CreateDeck() {
         }
     }, [passedFolderId, passedFolderName, isEditMode]);
 
-    // Load existing deck data in edit mode
+    // Load deck data in edit mode
     useEffect(() => {
-        if(!user){
+        if (!user) {
             alert("You need to be logged in!");
             navigate("/");
+            return;
         }
-        if (isEditMode && deckId && user) {
-            loadExistingDeck(deckId);
-        }
-    }, [isEditMode, deckId, user]);
 
+        if (isEditMode && deckId) {
+            // Check if we have cached data from navigation
+            if (fromCache && passedDeckData && passedFlashCards) {
+                console.log('✅ Using cached data from FlashCardsPage - no fetch needed!');
+                loadFromCachedData(passedDeckData, passedFlashCards);
+            } else {
+                console.log('🔍 No cached data - fetching from Firestore...');
+                loadExistingDeck(deckId);
+            }
+        }
+    }, [isEditMode, deckId, user, fromCache]);
+
+    // NEW: Load from cached data passed via navigation
+    const loadFromCachedData = (deckData, cards) => {
+        // Set deck info
+        setFileName(deckData.title);
+        setFileDescription(deckData.description === "No Description" ? "" : deckData.description);
+        setFolderId(deckData.folderId);
+
+        // You might need to fetch folder name if not included
+        if (deckData.folderName) {
+            setFolderName(deckData.folderName);
+        } else {
+            fetchFolderName(deckData.folderId);
+        }
+
+        // Set cards
+        if (cards && cards.length > 0) {
+            setFlashCards(cards);
+            originalFlashCardsRef.current = cards;
+        } else {
+            setFlashCards([
+                { question: "", answer: "", question_type: "text", answer_type: "text" },
+                { question: "", answer: "", question_type: "text", answer_type: "text" },
+                { question: "", answer: "", question_type: "text", answer_type: "text" }
+            ]);
+            originalFlashCardsRef.current = [];
+        }
+    };
+
+    // Helper to fetch folder name if not in cached data
+    const fetchFolderName = async (folderId) => {
+        try {
+            const folderRef = doc(db, 'folders', folderId);
+            const folderSnap = await getDoc(folderRef);
+            if (folderSnap.exists()) {
+                setFolderName(folderSnap.data().name);
+            }
+        } catch (error) {
+            console.error("Error fetching folder name:", error);
+        }
+    };
+
+    // EXISTING: Fallback fetch from Firestore if no cached data
     const loadExistingDeck = async (deckId) => {
         setIsLoading(true);
         try {
-            // Get deck document
             const deckRef = doc(db, 'decks', deckId);
             const deckSnap = await getDoc(deckRef);
 
@@ -96,26 +142,22 @@ function CreateDeck() {
 
             const deckData = deckSnap.data();
 
-            // Check if user owns this deck
             if (deckData.ownerId !== user.uid) {
                 alert("You don't have permission to edit this deck!");
                 navigate('/');
                 return;
             }
 
-            // Set deck info
             setFileName(deckData.title);
             setFileDescription(deckData.description === "No Description" ? "" : deckData.description);
             setFolderId(deckData.folderId);
 
-            // Get folder name
             const folderRef = doc(db, 'folders', deckData.folderId);
             const folderSnap = await getDoc(folderRef);
             if (folderSnap.exists()) {
                 setFolderName(folderSnap.data().name);
             }
 
-            // Get cards from subcollection
             const cardsRef = collection(db, 'decks', deckId, 'cards');
             const cardsQuery = query(cardsRef);
             const cardsSnapshot = await getDocs(cardsQuery);
@@ -123,7 +165,7 @@ function CreateDeck() {
             const cards = [];
             cardsSnapshot.forEach((doc) => {
                 cards.push({
-                    id: doc.id, // Keep the Firestore document ID
+                    id: doc.id,
                     question: doc.data().question,
                     answer: doc.data().answer,
                     question_type: doc.data().question_type || "text",
@@ -132,20 +174,18 @@ function CreateDeck() {
                 });
             });
 
-            // Sort cards by order
             cards.sort((a, b) => a.order - b.order);
 
             if (cards.length > 0) {
                 setFlashCards(cards);
-                originalFlashCardsRef.current = cards; // Store original cards for comparison
+                originalFlashCardsRef.current = cards;
             } else {
-                // If a deck exists but has no cards, initialize with default empty cards
                 setFlashCards([
                     { question: "", answer: "", question_type: "text", answer_type: "text" },
                     { question: "", answer: "", question_type: "text", answer_type: "text" },
                     { question: "", answer: "", question_type: "text", answer_type: "text" }
                 ]);
-                originalFlashCardsRef.current = []; // No original cards to track
+                originalFlashCardsRef.current = [];
             }
 
         } catch (error) {
@@ -157,17 +197,11 @@ function CreateDeck() {
         }
     };
 
-    
-
     const addFlashCard = (flashcard) => {
-        // When adding a new card, it won't have an 'id' yet, Firestore will assign one
         setFlashCards([...flashCards, flashcard])
     };
 
     const deleteFlashCard = async (index) => {
-        
-        
-
         const newFlashCard = flashCards.filter((element, idx) => idx !== index);
         setFlashCards(newFlashCard)
     }
@@ -181,7 +215,6 @@ function CreateDeck() {
         return false;
     }
 
-    // Function to create a new folder
     const createNewFolder = async (folderName, userId) => {
         try {
             const folderRef = await addDoc(collection(db, 'folders'), {
@@ -189,9 +222,8 @@ function CreateDeck() {
                 ownerId: userId,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                subscriptionTier: "free", // Default value
+                subscriptionTier: "free",
                 isPublic: false,
-                // deckCount: 1
             });
             return folderRef.id;
         } catch (error) {
@@ -201,82 +233,66 @@ function CreateDeck() {
     };
 
     const updateExistingDeck = async () => {
-        const batch = writeBatch(db); // Initialize a Firestore write batch
+        const batch = writeBatch(db);
 
         try {
-            // --- 1. Update Deck Metadata ---
             const deckRef = doc(db, 'decks', deckId);
             batch.update(deckRef, {
                 title: fileName,
                 description: fileDescription === "" ? "No Description" : fileDescription,
                 updatedAt: serverTimestamp(),
-                // cardCount: flashCards.length
             });
 
-            // --- 2. Process Cards (Add, Update, Delete) ---
             const cardsCollectionRef = collection(db, 'decks', deckId, 'cards');
-
-            // Create maps for efficient lookup
             const originalCardsMap = new Map(originalFlashCardsRef.current.map(card => [card.id, card]));
-            const currentCardsMap = new Map(flashCards.filter(card => card.id).map(card => [card.id, card])); // Only existing cards from current state
+            const currentCardsMap = new Map(flashCards.filter(card => card.id).map(card => [card.id, card]));
 
-            // Cards to Delete: Iterate over original cards to find those removed
             originalFlashCardsRef.current.forEach(originalCard => {
                 if (!currentCardsMap.has(originalCard.id)) {
                     const cardToDeleteRef = doc(cardsCollectionRef, originalCard.id);
                     batch.delete(cardToDeleteRef);
-                    // TODO: Consider deleting associated cardProgress for this user/card via Cloud Function
-                    // If you delete card here, cardProgress will become orphaned.
-                    // A Cloud Function triggered on card deletion is ideal for cleaning up associated progress.
                 }
             });
 
-            // Cards to Add/Update: Iterate over current flashCards state
             flashCards.forEach((currentCard, index) => {
                 const cardDataToSave = {
                     question: currentCard.question,
                     answer: currentCard.answer,
                     question_type: currentCard.question_type || "text",
                     answer_type: currentCard.answer_type || "text",
-                    order: index, // Update order based on current display order
+                    order: index,
                 };
 
                 if (currentCard.id) {
-                    // Existing card: Check if it's updated, then update it
                     const originalCard = originalCardsMap.get(currentCard.id);
-                    // Simple check if anything important changed. You might make this more robust.
                     const isCardModified = !originalCard ||
                         originalCard.question !== currentCard.question ||
                         originalCard.answer !== currentCard.answer ||
                         originalCard.question_type !== currentCard.question_type ||
                         originalCard.answer_type !== currentCard.answer_type ||
-                        originalCard.order !== index; // Check order change as well
+                        originalCard.order !== index;
 
                     if (isCardModified) {
                         const cardToUpdateRef = doc(cardsCollectionRef, currentCard.id);
                         batch.update(cardToUpdateRef, {
                             ...cardDataToSave,
-                            updatedAt: serverTimestamp() // Add an updatedAt for cards
+                            updatedAt: serverTimestamp()
                         });
                     }
                 } else {
-                    // New card: add it
-                    const newCardRef = doc(cardsCollectionRef); // Let Firestore generate ID for new card
-                    batch.set(newCardRef, { // Use set with generated ID
+                    const newCardRef = doc(cardsCollectionRef);
+                    batch.set(newCardRef, {
                         ...cardDataToSave,
                         createdAt: serverTimestamp()
                     });
                 }
             });
 
-            // Commit the batch operation
             await batch.commit();
 
             invalidateFolderDecks(folderId);
             invalidateCards(deckId);
-            
-            
-            // Navigate back to deck view
+
             navigate(`/flashcards/${deckId}`, {
                 state: {
                     deckId: deckId,
@@ -295,17 +311,14 @@ function CreateDeck() {
 
     const createNewDeck = async () => {
         const batch = writeBatch(db);
-        
+
         try {
             let actualFolderId = folderId;
-    
-            // If we need to create a new folder, do it first
+
             if (isNewFolder) {
                 actualFolderId = await createNewFolder(folderName, user.uid);
             }
-            // REMOVED: Manual folder deckCount increment - let Cloud Function handle it
-    
-            // Create the deck document
+
             const deckRef = doc(collection(db, 'decks'));
             batch.set(deckRef, {
                 title: fileName,
@@ -315,11 +328,9 @@ function CreateDeck() {
                 isPublic: false,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                // cardCount: flashCards.length, // This is fine - it's initial data
                 tags: []
             });
-    
-            // Add cards to the deck's cards subcollection
+
             const cardsRef = collection(db, 'decks', deckRef.id, 'cards');
             flashCards.forEach((flashCard, index) => {
                 const newCardDocRef = doc(cardsRef);
@@ -332,16 +343,12 @@ function CreateDeck() {
                     order: index
                 });
             });
-    
-            await batch.commit();
-            // Cloud Functions will automatically:
-            // 1. Increment user's deck count and card count
-            // 2. Increment folder's deck count
-    
-            completeTutorial('create-deck');
 
+            await batch.commit();
+
+            completeTutorial('create-deck');
             invalidateFolderDecks(folderId);
-    
+
             navigate(`/flashcards/${deckRef.id}`, {
                 state: {
                     deckId: deckRef.id,
@@ -350,7 +357,7 @@ function CreateDeck() {
                     deckTitle: fileName
                 }
             });
-    
+
         } catch (error) {
             console.error("Error creating deck:", error);
             alert("Error creating deck. Please try again.");
@@ -358,7 +365,6 @@ function CreateDeck() {
         }
     };
 
-    
     const saveData = async () => {
         const isEmpty = checkEmpty()
         if (isEmpty) {
@@ -366,7 +372,6 @@ function CreateDeck() {
             return;
         }
 
-        // Only check for duplicates if we're not creating a new folder and not in edit mode
         if (!isNewFolder && !isEditMode && fileList.some(file => file.name === fileName)) {
             alert(`You already have a file named ${fileName}. Please make another name.`);
             return;
@@ -380,21 +385,18 @@ function CreateDeck() {
             return;
         }
 
-        // Card limit check
         const cardLimits = getCardLimits();
-        
-        if (cardLimits.maxCards !== -1) { // -1 means unlimited (premium users)
+
+        if (cardLimits.maxCards !== -1) {
             const currentCardCount = cardLimits.currentUsage || 0;
-            const newTotalCards = isEditMode 
-                ? currentCardCount - originalFlashCardsRef.current.length + flashCards.length 
+            const newTotalCards = isEditMode
+                ? currentCardCount - originalFlashCardsRef.current.length + flashCards.length
                 : currentCardCount + flashCards.length;
-            
+
             if (newTotalCards > cardLimits.maxCards) {
                 const cardsOverLimit = newTotalCards - cardLimits.maxCards;
-                
-                if (isEditMode) {
-                    // In edit mode, suggest removing cards or upgrading
-                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
+
+                const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
 but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
 
 Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
@@ -402,38 +404,14 @@ Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
 Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
 or Cancel to go back and remove ${cardsOverLimit} cards.`;
 
-                    if (window.confirm(confirmMessage)) {
-                    // OK → upgrade or support
-                    if (isPremium()) {
-                        window.location.href = "/contactme";
-                    } else {
-                        window.location.href = "/pricing";
-                    }
-                    } else {
-                        // Cancel → just let them keep editing
-                        return;
-                    }
-                } else {
-                    // In create mode, suggest removing cards or upgrading
-                    const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
-but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
-
-Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
-
-Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
-or Cancel to go back and remove ${cardsOverLimit} cards.`;
-
-                    if (window.confirm(confirmMessage)) {
-                    // OK → upgrade or support
+                if (window.confirm(confirmMessage)) {
                     if (isPremium()) {
                         window.location.href = "/contact-me";
                     } else {
                         window.location.href = "/pricing";
                     }
-                    } else {
-                        // Cancel → just let them keep editing
-                        return;
-                    }
+                } else {
+                    return;
                 }
             }
         }
@@ -447,12 +425,10 @@ or Cancel to go back and remove ${cardsOverLimit} cards.`;
                 await createNewDeck();
             }
         } catch (error) {
-            // Re-show amount if an error occurred, useful for user feedback
             setShowFlashCardAmount(true);
         }
     }
 
-    // Show loading state
     if (isLoading) {
         return (
             <div className={styles.createFilePage}>
@@ -468,12 +444,12 @@ or Cancel to go back and remove ${cardsOverLimit} cards.`;
             </h1>
             <h3>Name the file:</h3>
 
-            <input className={`${styles.fileNameInput} bg-gray-800  rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileName}
+            <input className={`${styles.fileNameInput} bg-gray-800 rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileName}
                 onChange={(e) => setFileName(e.target.value)}
                 placeholder='Enter Deck Name'
             ></input>
             <br></br>
-            <textarea className={`${styles.fileNameInput} bg-gray-800  rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileDescription}
+            <textarea className={`${styles.fileNameInput} bg-gray-800 rounded-2xl shadow-lg border border-gray-700`} type="text" value={fileDescription}
                 onChange={(e) => {
                     setFileDescription(e.target.value)
                     autoResize(e)

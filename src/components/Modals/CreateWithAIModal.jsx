@@ -10,11 +10,14 @@ import { useAuthContext } from "../../contexts/AuthContext";
 
 // Tutorials
 import { useTutorials } from "../../contexts/TutorialContext";
+import { useDeckCache } from "../../contexts/DeckCacheContext";
 
 function CreateWithAIModal({ onClose, isOpen }) {
 
   // Context
-  const { folders, getFolderLimits, getDeckLimits, getCardLimits, isPremium, user } = useAuthContext();
+  const { getFolderLimits, getDeckLimits, getCardLimits, isPremium, user } = useAuthContext();
+
+  const {folders} = useDeckCache();
   const userIsPremium = isPremium();
   // Tutorials
   const {goBackAStep, completeTutorial} = useTutorials();
