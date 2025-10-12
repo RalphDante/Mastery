@@ -89,6 +89,12 @@ export const useSessionTracking = (user, db, isFinished) => {
             return;
         }
         
+        // stats
+        let newBossHealth = null;
+        let newMemberDamage = null;
+        let newExp, newLevel, newHealth, newMana;
+        let now;
+        
         // Set lock IMMEDIATELY (synchronous)
         trackingInProgressRef.current = true;
         

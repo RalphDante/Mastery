@@ -92,8 +92,7 @@ function Timer({
             memberRef = doc(db, 'parties', currentData.currentPartyId, 'members', authUser.uid);
             memberDoc = await transaction.get(memberRef);
             
-            const membersRef = collection(db, 'parties', currentData.currentPartyId, 'members');
-            allMembersSnapshot = await getDocs(membersRef);
+            
           }
 
           const currentExp = currentData.exp || 0;
@@ -180,6 +179,9 @@ function Timer({
                 }
 
                 if (newBossHealth <= 0) {
+                  const membersRef = collection(db, 'parties', currentData.currentPartyId, 'members');
+                  allMembersSnapshot = await getDocs(membersRef);
+                  
                   console.log('Boss defeated!', currentBoss.name);
                   await handleBossDefeat(
                     transaction, 
