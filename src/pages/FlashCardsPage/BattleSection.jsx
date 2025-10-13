@@ -1,15 +1,26 @@
 import { useAuthContext } from "../../contexts/AuthContext";
-import { useState } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { PLAYER_CONFIG, getExpProgressForCurrentLevel } from "../../utils/playerStatsUtils";
 
 
 
-function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
+function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths}){
 
     const {partyProfile, partyMembers, user} = useAuthContext();
     const [showModal, setShowModal] = useState(false);
-  
-  
+    const cardCount = deckData?.cardCount * (1 + deaths);
+    const playerHealth = Math.round((cardCount - dontKnowAnswer) / deckData?.cardCount * 100);
+
+    useEffect(() => {
+        if (dontKnowAnswer >= cardCount) {
+            setDeaths(prev => prev + 1);
+            console.log("deaths: ", deaths + 1)
+        } 
+        if(dontKnowAnswer === 0){
+            setDeaths(0)
+        }
+    }, [dontKnowAnswer]);
+    
 
 
     const currentUser = user?.uid ? partyMembers[user.uid] : null;
@@ -39,19 +50,35 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
                     className="relative cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={openModal}
                     >
-                    <div className={`w-28 h-28 border-2 overflow-hidden bg-slate-700 mr-2 border-red-700/50`}>
-                        {
-                        true ? 
-                            <img 
-                            src={`/images/bosses/${"ancient-scholar"}.png`}
-                            alt={deckData?.title}
-                            className="w-full h-full object-cover"
-                        /> :
-                        ""
-                        }
-                    </div>
-                    </div>
+                        {Math.round((deckData?.cardCount - knowAnswer)/deckData?.cardCount * 100) === 0 ? 
+                            <div className="relative">
+                                <div className="w-28 h-28 mr-2 rounded-lg bg-slate-900 border-2 border-slate-700 overflow-hidden opacity-60">
+                                <img 
+                                    src={`/images/bosses/${"ancient-scholar"}.png`} 
+                                    alt={deckData?.title}
+                                    className="w-full h-full object-cover grayscale"
+                                />
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-4xl rotate-12">❌</span>
+                                </div>
+                            </div>
                     
+                            :
+                            <div className={`w-28 h-28 border-2 rounded-lg overflow-hidden bg-slate-700 mr-2 border-red-700/50`}>
+                            
+                                <img 
+                                src={`/images/bosses/${"ancient-scholar"}.png`}
+                                alt={deckData?.title}
+                                className="w-full h-full object-cover"
+                                /> 
+                            </div>
+                        }
+
+                        
+                    </div>
+
+                   
                     <div className='flex flex-col w-full'>
                         {/* Boss Info */}
                         <div className="text-left">
@@ -59,7 +86,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
                             {deckData?.title}
                         </p>
                         <p className="text-xs text-slate-400">
-                            {deckData?.cardCount} cards
+                            {deckData?.description}
                         </p>
                         </div>
 
@@ -68,7 +95,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
                         <div className="flex-1 bg-slate-700 h-3 relative overflow-hidden">
                             <div 
                             className="h-full transition-all duration-300 bg-red-500"
-                            style={{ width: `${(deckData?.cardCount - knowAnswer)/deckData?.cardCount * 100}%` }}
+                            style={{ width: `${Math.round((deckData?.cardCount - knowAnswer)/deckData?.cardCount * 100)}%` }}
                             ></div>
                         </div>
                         <p className="text-xs text-slate-400 min-w-[60px] text-right">
@@ -95,7 +122,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
                     className="relative cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={openModal}
                     >
-                    <div className={`w-20 h-20 border-2 overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
+                    <div className={`w-20 h-20 border-2 rounded-lg overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
                         {
                         currentUser?.avatar ? 
                             <img 
@@ -123,11 +150,11 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer}){
                                 <div className="flex-1 bg-slate-700 h-3 relative overflow-hidden">
                                     <div 
                                     className="h-full transition-all duration-300 bg-red-500"
-                                    style={{ width: `${(deckData?.cardCount - dontKnowAnswer) / deckData?.cardCount * 100}%` }}
+                                    style={{ width: `${playerHealth}%` }}
                                     ></div>
                                 </div>
                                 <p className="text-xs text-slate-400 min-w-[60px] text-right">
-                                    {Math.round((deckData?.cardCount - dontKnowAnswer) / deckData?.cardCount * 100)}%
+                                    {playerHealth}%
 
                                 </p>
                             </div>

@@ -7,10 +7,12 @@ import styles from './FlashCardsPage.module.css';
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useSessionTracking } from "../../hooks/useSessionTracking";
 import { db } from "../../api/firebase";
+import BattleResult from "./BattleResult";
 
 function FlashCardUI({
     // Data from parent
-    flashCards: initialCards,
+    flashCards,  // ✅ Use directly from parent, no local state
+    setFlashCards,  // ✅ Modify parent's state
     deckData,
     
     // Progress setters
@@ -24,14 +26,23 @@ function FlashCardUI({
     setCurrentIndex,
     
     // Reload function
-    onReload
+    onReload,
+
+    phaseOneComplete,
+    setPhaseOneComplete,
+
+    originalDeckSize,
+    setOriginalDeckSize,
+
+    result,
+
+    deaths
 }) {
     const { user } = useAuthContext();
     
     // ==========================================
-    // STATE - UI & Study Logic
+    // STATE - UI & Study Logic (NO flashCards state!)
     // ==========================================
-    const [flashCards, setFlashCards] = useState([]);
     const [showAnswer, setShowAnswer] = useState(false);
     const [answers, setAnswers] = useState([]);
     const [processing, setProcessing] = useState(false);
@@ -43,46 +54,37 @@ function FlashCardUI({
     const [cardAnimKey, setCardAnimKey] = useState(0);
     
     // Cramming mode tracking
-    const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [uniqueCardsAttempted, setUniqueCardsAttempted] = useState(new Set());
-    const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     
     // Refs for processing guard
     const processingRef = useRef(false);
     const processingIndexRef = useRef(null);
     
-    // Session tracking (pass db if needed)
+    // Session tracking
     const { trackCardReview } = useSessionTracking(user, db, isFinished);
     
     // Cloudinary
     const cld = new Cloudinary({ cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME } });
 
     // ==========================================
-    // EFFECT - Initialize cards from parent
+    // EFFECT - Initialize when flashCards change
     // ==========================================
     useEffect(() => {
-        if (initialCards && initialCards.length > 0) {
-            const shuffled = shuffleCards(initialCards);
-            setFlashCards(shuffled);
-            setOriginalDeckSize(shuffled.length);
-            
-            // Reset study state
-            setCurrentIndex(0);
+        if (flashCards && flashCards.length > 0) {
+            // Reset study state when new cards arrive
             setShowAnswer(false);
             setAnswers([]);
-            setKnowAnswer(0);
-            setDontKnowAnswer(0);
             setUniqueCardsAttempted(new Set());
             setPhaseOneComplete(false);
             setIsFinished(false);
         }
-    }, [initialCards]); // Only re-run when parent provides new cards
+    }, [flashCards.length]); // Watch for length changes
 
     // ==========================================
     // EFFECT - Handle redo deck
     // ==========================================
     useEffect(() => {
-        if (redoDeck && initialCards.length > 0) {
+        if (redoDeck && flashCards.length > 0) {
             handleShuffle();
             setRedoDeck(false);
         }
@@ -135,7 +137,7 @@ function FlashCardUI({
         );
         
         const shuffled = shuffleCards(uniqueCards);
-        setFlashCards(shuffled);
+        setFlashCards(shuffled);  // ✅ Update parent state
         setOriginalDeckSize(shuffled.length);
         setUniqueCardsAttempted(new Set());
         setPhaseOneComplete(false);
@@ -147,7 +149,8 @@ function FlashCardUI({
         setAnswers([]);
         setProcessing(false);
         setIsFinished(false);
-    }, [flashCards, shuffleCards, setCurrentIndex, setKnowAnswer, setDontKnowAnswer]);
+    }, [flashCards, shuffleCards, setFlashCards, setOriginalDeckSize, 
+        setCurrentIndex, setKnowAnswer, setDontKnowAnswer, setPhaseOneComplete]);
 
     const handleCrammingResponse = useCallback(async (isCorrect) => {
         if (processingRef.current || 
@@ -174,12 +177,12 @@ function FlashCardUI({
             } else {
                 if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCard.id)) {
                     setDontKnowAnswer(prev => prev + 1);
+                    
                 }
                 setAnswers(prev => [...prev, false]);
-                setFlashCards(prevCards => [...prevCards, currentCard]);
+                
             }
 
-            // 🎯 KEY CHANGE: Pass isCorrect to track the card with rewards
             trackCardReview(isCorrect);
 
             setTimeout(() => {
@@ -190,12 +193,17 @@ function FlashCardUI({
                 if (shouldCompletePhaseOne) {
                     setPhaseOneComplete(true);
                 }
-                
                 setShowAnswer(false);
+
+                if(!isCorrect){
+                    setFlashCards(prevCards => [...prevCards, currentCard]);
+                }
+                
                 setProcessing(false);
                 processingRef.current = false;
                 processingIndexRef.current = null;
             }, 200);
+
 
         } catch (error) {
             console.error("Error in cramming response:", error);
@@ -203,9 +211,9 @@ function FlashCardUI({
             processingRef.current = false;
             processingIndexRef.current = null;
         }
-    }, [currentIndex, flashCards, setKnowAnswer, setDontKnowAnswer, 
+    }, [currentIndex, flashCards, setFlashCards, setKnowAnswer, setDontKnowAnswer, 
         originalDeckSize, uniqueCardsAttempted, phaseOneComplete, 
-        trackCardReview, setCurrentIndex]);
+        trackCardReview, setCurrentIndex, setPhaseOneComplete]);
 
     const handleShowAnswer = () => setShowAnswer(!showAnswer);
 
@@ -285,33 +293,10 @@ function FlashCardUI({
         );
     };
 
-    const CompletionMessage = () => (
-        <div className="text-center py-8 space-y-4">
-            <div className="text-5xl animate-bounce">🏆</div>
-            <h2 className="text-2xl font-bold text-purple-400">
-                Session Complete!
-            </h2>
-            <div className="bg-white/10 rounded-lg p-4 max-w-sm mx-auto">
-                <div className="text-sm text-gray-300 mb-2">Your Progress:</div>
-                <div className="flex justify-between text-lg">
-                    <span>Cards Studied: <span className="text-green-400 font-bold">{answers.length}</span></span>
-                </div>
-                {finalTime && (
-                    <div className="flex justify-between text-lg">
-                        <span>Time: <span className="text-blue-400 font-bold">{finalTime}</span></span>
-                    </div>
-                )}
-            </div>
-            <p className="text-sm text-gray-400">
-                Great job! The hard work will be worth it.
-            </p>
-        </div>
-    );
-
     // ==========================================
     // LOADING & ERROR STATES
     // ==========================================
-    if (!initialCards || initialCards.length === 0) {
+    if (!flashCards || flashCards.length === 0) {
         return (
             <div className={styles.emptyContainer}>
                 <h2>No flashcards available.</h2>
@@ -325,40 +310,47 @@ function FlashCardUI({
     // ==========================================
     return (
         <>
-            <div
-                key={cardAnimKey}
-                className={`${styles.flashCardTextContainer} ${
-                    cardAnimDirection === "forward"
-                        ? styles.cardTransitionForward
-                        : styles.cardTransitionBackward
-                }`}
-                onClick={handleShowAnswer}
-            >
-                <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
-                    <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
-                        {isComplete ? (
-                            <CompletionMessage />
-                        ) : (
-                            renderContent(
-                                currentCard?.question,
-                                currentCard?.question_type || 'text',
-                                styles.questionImage
-                            )
-                        )}
+            {!isComplete ? 
+                <div
+                    key={cardAnimKey}
+                    className={`${styles.flashCardTextContainer} ${
+                        cardAnimDirection === "forward"
+                            ? styles.cardTransitionForward
+                            : styles.cardTransitionBackward
+                    }`}
+                    style={isComplete ? { pointerEvents: "none" } : {}}
+                    onClick={handleShowAnswer}
+                >
+                    <div className={`${styles.flipCardInner} ${showAnswer ? styles.flipped : ''}`}>
+                        <div className={`${styles.flipCardFront} bg-white/5 border border-white/10`}>
+                            
+                                {renderContent(
+                                    currentCard?.question,
+                                    currentCard?.question_type || 'text',
+                                    styles.questionImage
+                                )}
+                           
+                        </div>
+                        <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
+                           
+                                {renderContent(
+                                    currentCard?.answer,
+                                    currentCard?.answer_type || 'text',
+                                    styles.questionImage
+                                )}
+                          
+                        </div>
                     </div>
-                    <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
-                        {isComplete ? (
-                            <CompletionMessage />
-                        ) : (
-                            renderContent(
-                                currentCard?.answer,
-                                currentCard?.answer_type || 'text',
-                                styles.questionImage
-                            )
-                        )}
-                    </div>
-                </div>
-            </div>
+                </div> :
+
+                <BattleResult 
+                    result={result}
+                    currentIndex={currentIndex}
+                    deaths={deaths}
+                />
+        
+            }
+            
             
             {renderStudyButtons()}
         </>

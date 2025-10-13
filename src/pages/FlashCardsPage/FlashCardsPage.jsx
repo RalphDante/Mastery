@@ -18,6 +18,10 @@ import Boss from '../HomePage/Boss/Boss.jsx';
 
 
 function FlashCardsPage() {
+    const [deaths, setDeaths] = useState(0);
+
+    const [originalDeckSize, setOriginalDeckSize] = useState(0);
+    const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     const { user } = useAuthContext();
     const { fetchDeckAndCards } = useDeckCache();
     const navigate = useNavigate();
@@ -56,6 +60,62 @@ function FlashCardsPage() {
     }, [knowAnswer, dontKnowAnswer]);
 
     // ==========================================
+    // HELPER FUNCTION - Calculate Grade
+    // ==========================================
+    const calculateGrade = (currentIndex, knowAnswer)=>{
+        const percentage = Math.round((knowAnswer/currentIndex) * 100);
+        let grade;
+
+       
+        if (percentage === 100) grade = "S";
+        else if (percentage >= 80) grade = "A";
+        else if (percentage >= 60) grade = "B";
+        else if (percentage >= 40) grade = "C";
+        else grade = "D";
+
+        const val = {
+            percentage,
+            grade
+        }
+
+
+        return val;
+    }
+
+    // Render Score Container
+    const renderScoreContainer = () => {
+       
+        const remainingCards = flashCards.length - currentIndex;
+        const progressThroughOriginal = Math.min(currentIndex + 1, originalDeckSize);
+        const isInReviewPhase = phaseOneComplete || currentIndex >= originalDeckSize;
+        
+        return (
+            <div className={`${styles.scoreContainer}`}>
+                <div style={{ margin: '0px', textAlign: 'center' }}>
+                    {isInReviewPhase ? (
+                        <>
+                            <span className="text-white/70 text-sm">Review Phase</span>
+                            <div style={{ 
+                                fontSize: '0.7rem', 
+                                color: '#F59E0B', 
+                                marginTop: '0.5px'
+                            }}>
+                                {remainingCards} left
+                            </div>
+                        </>
+                    ) : (
+                        <div className="text-center text-white/70 text-sm my-3">
+                            Card {progressThroughOriginal} of {originalDeckSize}
+                        </div>
+                    )}
+                </div>
+               
+            </div>
+        );
+    }
+    
+
+    // ==========================================
     // MAIN FETCH FUNCTION (Parent-controlled)
     // ==========================================
     const loadDeckData = useCallback(async () => {
@@ -75,6 +135,7 @@ function FlashCardsPage() {
         try {
             // Fetch both deck metadata and cards from cache context
             const result = await fetchDeckAndCards(paramDeckId);
+            const flashCards = result.cards;
 
             if (result.error) {
                 setError(result.error);
@@ -86,7 +147,9 @@ function FlashCardsPage() {
             setDeckData(result.deck);
 
             // Set cards
-            setFlashCards(result.cards);
+            setFlashCards(flashCards);
+            setOriginalDeckSize(flashCards.length)
+
 
             // Fetch owner info if it's a public deck
             if (result.isPublic && result.deck?.ownerId) {
@@ -245,16 +308,21 @@ function FlashCardsPage() {
                     />
                 </div>
 
+                {renderScoreContainer()}
+
                 {/* <BattleSection
                     deckData={deckData}
                     knowAnswer={knowAnswer}
                     dontKnowAnswer={dontKnowAnswer}
                 /> */}
 
+                
+
                 {/* Pass all data as props to FlashCardUI */}
                 <FlashCardUI 
                     // Data props (fetched by parent)
                     flashCards={flashCards}
+                    setFlashCards={setFlashCards}
                     deckData={deckData}
                     
                     // Progress setters
@@ -272,6 +340,17 @@ function FlashCardsPage() {
                     
                     // Reload function for child to trigger parent refresh
                     onReload={loadDeckData}
+
+                    // Phase Tracking
+                    phaseOneComplete = {phaseOneComplete}
+                    setPhaseOneComplete = {setPhaseOneComplete}
+
+                    originalDeckSize={originalDeckSize}
+                    setOriginalDeckSize={setOriginalDeckSize}
+
+                    result={calculateGrade(currentIndex, knowAnswer)}
+
+                    deaths={deaths}
                 />
             </div>
             
@@ -282,6 +361,8 @@ function FlashCardsPage() {
                         deckData={deckData}
                         knowAnswer={knowAnswer}
                         dontKnowAnswer={dontKnowAnswer}
+                        deaths={deaths}
+                        setDeaths={setDeaths}
                     />
                     {/* <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
                         {isPublicDeck && <Globe className="w-6 h-6" />}
