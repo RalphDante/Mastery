@@ -245,11 +245,11 @@ function FlashCardsPage() {
                     />
                 </div>
 
-                <BattleSection
+                {/* <BattleSection
                     deckData={deckData}
                     knowAnswer={knowAnswer}
                     dontKnowAnswer={dontKnowAnswer}
-                />
+                /> */}
 
                 {/* Pass all data as props to FlashCardUI */}
                 <FlashCardUI 
@@ -276,15 +276,21 @@ function FlashCardsPage() {
             </div>
             
             <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
+                
                 <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
-                    <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
+                    <BattleSection
+                        deckData={deckData}
+                        knowAnswer={knowAnswer}
+                        dontKnowAnswer={dontKnowAnswer}
+                    />
+                    {/* <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
                         {isPublicDeck && <Globe className="w-6 h-6" />}
                         {displayName}
-                    </div>
+                    </div> */}
 
-                    {deckData?.description && deckData.description !== "No Description" && (
+                    {/* {deckData?.description && deckData.description !== "No Description" && (
                         <p className="text-gray-400 mb-4">{deckData.description}</p> 
-                    )}
+                    )} */}
 
                     {deckOwnerData && (
                         <p className="text-white/70 text-sm mb-4">
@@ -293,12 +299,12 @@ function FlashCardsPage() {
                     )}
                     
                     <div className="space-y-4">
-                        {deckData?.cardCount && (
+                        {/* {deckData?.cardCount && (
                             <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Total Cards:</span>
                                 <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
                             </div>
-                        )}
+                        )} */}
 
                         <div className="flex justify-between items-center py-3 border-b border-gray-700">
                             <span className="text-gray-400">Correct:</span>
@@ -308,23 +314,23 @@ function FlashCardsPage() {
                             <span className="text-gray-400">Wrong:</span>
                             <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                         </div>
-                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                        {/* <div className="flex justify-between items-center py-3 border-b border-gray-700">
                             <span className="text-gray-400">Accuracy:</span>
                             <span className="font-bold text-lg text-violet-400">{percent}%</span>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Progress Bar */}
-                    <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-4">
+                    {/* <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-4">
                         <div 
                             className="h-full bg-violet-500 rounded-full transition-all duration-500"
                             style={{ width: `${percent}%` }}
                         ></div>
-                    </div>
+                    </div> */}
 
                     {/* Quick Actions */}
                     <div className="mt-6">
-                        <h4 className="text-gray-300 mb-4 font-medium">⚡ Quick Actions</h4>
+                        <h4 className="text-gray-300 mb-4 font-medium">Quick Actions</h4>
                         <div className="space-y-3">
                             <button 
                                 onClick={() => setRedoDeck(true)}
@@ -334,7 +340,7 @@ function FlashCardsPage() {
                                 <span>Redo Deck</span>
                             </button>
 
-                            {deckData && deckData.ownerId === user?.uid && (
+                            {/* {deckData && deckData.ownerId === user?.uid && (
                                 !deckData.isPublic ? (
                                     <button 
                                         className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
@@ -354,7 +360,7 @@ function FlashCardsPage() {
                                         <span>Make Private</span>
                                     </button>
                                 )
-                            )}
+                            )} */}
                         </div>
                     </div>
                 </div>
