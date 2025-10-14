@@ -170,7 +170,11 @@ function AppContent(){
             className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-800/80 hover:bg-purple-600/90 backdrop-blur-sm text-white rounded-full border border-gray-700/50 hover:border-purple-500/50 transition-all duration-300 hover:scale-110 active:scale-95 shadow-lg flex items-center justify-center touch-manipulation"
             aria-label="Bug report"
           >
-            <span className="text-base sm:text-lg">🐛</span>
+            <img
+              src="https://cdn.simpleicons.org/discord/5865F2"
+              alt="Discord Logo"
+              className="w-5 h-5 sm:w-6 sm:h-6"
+            />
           </button>
         </div>
       </div>
