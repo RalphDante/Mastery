@@ -957,9 +957,9 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
     const snap = event.data;
     const userData = snap.data();
 
-    // if (userData.email) {
-    //   await addToMailerLite(userData.email, userData.displayName);
-    // }
+    if (userData.email) {
+      await addToMailerLite(userData.email, userData.displayName);
+    }
     
     // Initialize limits if they don't exist
     if (!userData.limits) {
