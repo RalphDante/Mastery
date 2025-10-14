@@ -76,8 +76,9 @@ function BossVictoryScreen({rankings}) {
             </div>
           </div>
           <div className="text-left">
-            <p className="text-lg font-semibold text-slate-300">{victoryData.bossName}</p>
-            <p className="text-sm text-slate-400">Level {victoryData.bossLevel} - Defeated</p>
+            <p className="text-base sm:text-xl font-semibold text-slate-300">{victoryData.bossName}</p>
+            <p className="text-xs sm:text-smtext-sm text-slate-400">Level {victoryData.bossLevel} - Defeated</p>
+            
           </div>
           <BossSpawnCountdown />
         </div>
@@ -86,44 +87,43 @@ function BossVictoryScreen({rankings}) {
 
 
       {/* MVP Highlight */}
-      <div className="bg-yellow-600  rounded-lg p-4 mb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="relative">
+      <div className="bg-yellow-600 rounded-lg p-3 sm:p-4 mb-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="relative flex-shrink-0">
               {/* MVP Avatar */}
-              <div className="w-16 h-16 rounded-lg border-2 border-yellow-400 overflow-hidden bg-slate-800">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border-2 border-yellow-400 overflow-hidden bg-slate-800">
                 <img 
                   src={victoryData.contributors[0].avatar} 
                   alt={victoryData.contributors[0].displayName}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute -top-2 -right-2 bg-yellow-400 rounded-full p-1">
-                <Award className="w-4 h-4 text-yellow-900" />
+              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-yellow-400 rounded-full p-1">
+                <Award className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-900" />
               </div>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="bg-orange-600 text-white font-mono text-xs px-2 py-1 border-2 border-orange-800 shadow-[2px_2px_0px_#000]">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-orange-600 text-white font-mono text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 border-2 border-orange-800 shadow-[2px_2px_0px_#000]">
                   MVP
                 </span>
-                {/* <span className="text-2xl">👑</span> */}
               </div>
-              <p className="text-xl font-semibold text-slate-100">
+              <p className="text-base sm:text-xl font-semibold text-slate-100 truncate">
                 {victoryData.contributors[0].displayName}
               </p>
-              <p className="text-sm text-slate-300">
+              <p className="text-xs sm:text-sm text-slate-300">
                 Level {victoryData.contributors[0].level}
               </p>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-3xl font-bold text-red-600">
-              {victoryData.contributors[0].damage}
+          <div className="text-right flex-shrink-0">
+            <p className="text-xl sm:text-3xl font-bold text-red-600 leading-tight">
+              {victoryData.contributors[0].damage.toLocaleString()}
             </p>
-            <p className="text-xs text-slate-300">Total Damage</p>
-            <p className="text-sm text-red-700 mt-1">
-              {Math.round((victoryData.contributors[0].damage / victoryData.totalDamage) * 100)}% of total
+            <p className="text-[10px] sm:text-xs text-slate-300">Damage</p>
+            <p className="text-xs sm:text-sm text-red-700 mt-0.5 sm:mt-1">
+              {Math.round((victoryData.contributors[0].damage / victoryData.totalDamage) * 100)}%
             </p>
           </div>
         </div>

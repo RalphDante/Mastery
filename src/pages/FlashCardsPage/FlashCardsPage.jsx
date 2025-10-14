@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
 import { useEffect, useState, useCallback } from "react"; 
 import { useParams } from "react-router-dom";
+import { X } from 'lucide-react';
 
 import FlashCardUI from "./FlashCardUI";
 import styles from './FlashCardsPage.module.css'
@@ -15,10 +16,12 @@ import BattleSection from './BattleSection';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 import Boss from '../HomePage/Boss/Boss.jsx';
+import { createPortal } from 'react-dom';
 
 
 function FlashCardsPage() {
     const [deaths, setDeaths] = useState(0);
+
 
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
@@ -46,6 +49,9 @@ function FlashCardsPage() {
     const [deckOwnerData, setDeckOwnerData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+
+    
 
     // ==========================================
     // EFFECT - Calculate percentage
@@ -310,12 +316,18 @@ function FlashCardsPage() {
 
                 {renderScoreContainer()}
 
-                {/* <BattleSection
-                    deckData={deckData}
-                    knowAnswer={knowAnswer}
-                    dontKnowAnswer={dontKnowAnswer}
-                /> */}
+                <div className="block lg:hidden">
+                    <BattleSection
+                        deckData={deckData}
+                        knowAnswer={knowAnswer}
+                        dontKnowAnswer={dontKnowAnswer}
+                        deaths={deaths}
+                        setDeaths={setDeaths}
+                        cardCount={originalDeckSize}
+                    />
+                </div>
 
+                
                 
 
                 {/* Pass all data as props to FlashCardUI */}
@@ -354,16 +366,73 @@ function FlashCardsPage() {
                 />
             </div>
             
-            <div className={`${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
+            <div className={`hidden lg:block ${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
                 
-                <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 h-fit">
                     <BattleSection
                         deckData={deckData}
                         knowAnswer={knowAnswer}
                         dontKnowAnswer={dontKnowAnswer}
                         deaths={deaths}
                         setDeaths={setDeaths}
-                    />
+                        cardCount={originalDeckSize} 
+                    >
+                        <div className="space-y-4">
+                            {/* {deckData?.cardCount && (
+                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                    <span className="text-gray-400">Total Cards:</span>
+                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
+                                </div>
+                            )} */}
+
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                <span className="text-gray-400">Correct:</span>
+                                <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
+                            </div>
+                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                <span className="text-gray-400">Wrong:</span>
+                                <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
+                            </div>
+                            {/* <div className="flex justify-between items-center py-3 border-b border-gray-700">
+                                <span className="text-gray-400">Accuracy:</span>
+                                <span className="font-bold text-lg text-violet-400">{percent}%</span>
+                            </div> */}
+                        </div>
+                        {/* Quick Actions */}
+                        <div className="mt-6">
+                            <h4 className="text-gray-300 mb-4 font-medium">Quick Actions</h4>
+                            <div className="space-y-3">
+                                <button 
+                                    onClick={() => setRedoDeck(true)}
+                                    className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                                >
+                                    <RotateCcw className="w-5 h-5 mr-2" />
+                                    <span>Restart</span>
+                                </button>
+
+                                {/* {deckData && deckData.ownerId === user?.uid && (
+                                    !deckData.isPublic ? (
+                                        <button 
+                                            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                            onClick={handleSetToPublic}
+                                        >
+                                            <Globe />
+                                            <span>Make Public</span>
+                                        </button>
+                                    ) : (
+                                        <button 
+                                            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                                            onClick={handleSetToPrivate}
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                            </svg>
+                                            <span>Make Private</span>
+                                        </button>
+                                    )
+                                )} */}
+                            </div>
+                        </div>
+                    </BattleSection>
                     {/* <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
                         {isPublicDeck && <Globe className="w-6 h-6" />}
                         {displayName}
@@ -379,72 +448,7 @@ function FlashCardsPage() {
                         </p>
                     )}
                     
-                    <div className="space-y-4">
-                        {/* {deckData?.cardCount && (
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Total Cards:</span>
-                                <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
-                            </div>
-                        )} */}
-
-                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                            <span className="text-gray-400">Correct:</span>
-                            <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
-                        </div>
-                        <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                            <span className="text-gray-400">Wrong:</span>
-                            <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
-                        </div>
-                        {/* <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                            <span className="text-gray-400">Accuracy:</span>
-                            <span className="font-bold text-lg text-violet-400">{percent}%</span>
-                        </div> */}
-                    </div>
-
-                    {/* Progress Bar */}
-                    {/* <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mt-4">
-                        <div 
-                            className="h-full bg-violet-500 rounded-full transition-all duration-500"
-                            style={{ width: `${percent}%` }}
-                        ></div>
-                    </div> */}
-
-                    {/* Quick Actions */}
-                    <div className="mt-6">
-                        <h4 className="text-gray-300 mb-4 font-medium">Quick Actions</h4>
-                        <div className="space-y-3">
-                            <button 
-                                onClick={() => setRedoDeck(true)}
-                                className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-                            >
-                                <RotateCcw className="w-5 h-5 mr-2" />
-                                <span>Redo Deck</span>
-                            </button>
-
-                            {/* {deckData && deckData.ownerId === user?.uid && (
-                                !deckData.isPublic ? (
-                                    <button 
-                                        className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                        onClick={handleSetToPublic}
-                                    >
-                                        <Globe />
-                                        <span>Make Public</span>
-                                    </button>
-                                ) : (
-                                    <button 
-                                        className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                        onClick={handleSetToPrivate}
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                        </svg>
-                                        <span>Make Private</span>
-                                    </button>
-                                )
-                            )} */}
-                        </div>
-                    </div>
-                </div>
+                    
             </div>
         </div>
     );

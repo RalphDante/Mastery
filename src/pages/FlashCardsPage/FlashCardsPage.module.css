@@ -20,7 +20,7 @@
     /* background-color: red; */
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
     .flashCardsPageContainer {
         flex-direction: column; /* Stack containers vertically */
         padding: 0 20px; /* Adjust padding for smaller screens */

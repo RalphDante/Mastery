@@ -8,6 +8,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useSessionTracking } from "../../hooks/useSessionTracking";
 import { db } from "../../api/firebase";
 import BattleResult from "./BattleResult";
+import { RotateCcw } from "lucide-react";
 
 function FlashCardUI({
     // Data from parent
@@ -246,51 +247,66 @@ function FlashCardUI({
     const isComplete = currentIndex >= flashCards.length && flashCards.length > 0;
 
     const renderStudyButtons = () => {
-        const isDisabled = processing || flashCards.length === 0 || currentIndex >= flashCards.length;
-
-        return (
-            <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
-                <button 
-                    className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
-                    disabled={isDisabled || currentIndex === 0} 
-                    onClick={handleGoBack}
-                >
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        Previous Card
-                    </div>
-                    ←
-                </button>
-
-                <div className="flex gap-2">
+        const isDisabled = processing || flashCards.length === 0 || currentIndex >= flashCards.length || !showAnswer;
+        if(!isComplete){
+            return (
+                <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
                     <button 
-                        className="group relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
-                        disabled={isDisabled}
-                        onClick={() => handleCrammingResponse(false)}
+                        className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                        disabled={isDisabled || currentIndex === 0} 
+                        onClick={handleGoBack}
                     >
-                        ✕ Incorrect
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Previous Card  
+                        </div>
+                        ←
                     </button>
 
+                    <div className="flex gap-2">
+                        <button 
+                            className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isDisabled}
+                            onClick={() => handleCrammingResponse(false)}
+                        >
+                            ✕ <span className="hidden sm:block">Incorrect</span>
+                        </button>
+
+                        <button 
+                            className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isDisabled}
+                            onClick={() => handleCrammingResponse(true)}
+                        >
+                            ✓ <span className="hidden sm:block">Correct</span>
+                        </button>
+                    </div>
+                    
                     <button 
-                        className="group relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2"
-                        disabled={isDisabled}
-                        onClick={() => handleCrammingResponse(true)}
+                        className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                        disabled={isDisabled} 
+                        onClick={handleShuffle}
                     >
-                        ✓ Correct
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Shuffle Deck
+                        </div>
+                        <i className="fas fa-shuffle"></i>
                     </button>
                 </div>
-                
-                <button 
-                    className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
-                    disabled={isDisabled} 
-                    onClick={handleShuffle}
-                >
-                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                        Shuffle Deck
-                    </div>
-                    <i className="fas fa-shuffle"></i>
-                </button>
-            </div>
-        );
+            );
+        } else {
+            return(
+                <div className="flex justify-center items-center">
+                    <button 
+                    onClick={() => setRedoDeck(true)}
+                    className="min-w-80 bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+                    >
+                        <RotateCcw className="w-5 h-5 mr-2" />
+                        <span>Rematch</span>
+                    </button>
+                </div>
+               
+            )
+        }
+      
     };
 
     // ==========================================
@@ -329,6 +345,12 @@ function FlashCardUI({
                                     currentCard?.question_type || 'text',
                                     styles.questionImage
                                 )}
+
+                                {currentIndex === 0 && !showAnswer && (
+                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white/40 text-sm pointer-events-none">
+                                        Tap to reveal answer
+                                    </div>
+                                )}
                            
                         </div>
                         <div className={`${styles.flipCardBack} bg-white/5 border border-white/10`}>
@@ -338,7 +360,13 @@ function FlashCardUI({
                                     currentCard?.answer_type || 'text',
                                     styles.questionImage
                                 )}
-                          
+
+                                {currentIndex === 0 && showAnswer && (
+                                    <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white/40 text-sm pointer-events-none">
+                                        Tap to flip back
+                                    </div>
+                                )}
+                                                    
                         </div>
                     </div>
                 </div> :
