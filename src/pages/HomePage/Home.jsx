@@ -19,6 +19,7 @@ import PartySection from './PartySection/PartySection.jsx';
 import Boss from './Boss/Boss.jsx';
 import Timer from './Timer/Timer.jsx';
 import ServerCostBanner from './ServerCostBanner.jsx';
+import Options from './Timer/Options.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -66,10 +67,11 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
             <PartySection />
             <div class="grid grid-cols-1 h-30 lg:grid-cols-2 gap-6 mb-6">
-              <Timer 
+              <Options 
                 db = {db}
                 authUser = {authUser}
               />
+              
               <Boss />
             </div>
 

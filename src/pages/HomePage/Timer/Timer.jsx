@@ -525,11 +525,6 @@ function Timer({
     <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
       {!isSessionActive ? (
         <>
-          <div className="text-left">
-            <h2 className="text-xl font-semibold mb-1">⚔️ Study Timer</h2>
-            {/* <p className="text-slate-400 text-sm">Choose your battle session</p> */}
-          </div>
-         
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
             <p className="text-slate-400 text-sm text-center max-w-md">
               <span className='text-yellow-400'>Pro tip:</span> Add to home screen for instant battles - quick access = more XP!
