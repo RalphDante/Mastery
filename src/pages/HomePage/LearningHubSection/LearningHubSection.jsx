@@ -270,41 +270,35 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
     return (
         <section id="learning-hub-section">
-            <div className="mb-8">
+            {/* <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-100">Your Learning Hub</h2>
                 <p className="text-md text-slate-400">Quickly jump back into your studies or create something new.</p>
-            </div>
+            </div> */}
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Main Content Section */}
                 <div className="lg:col-span-2 bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
-                    {/* Breadcrumb Navigation */}
-                    <div className="flex items-center mb-4 text-sm text-slate-400">
-                        <button
-                            onClick={handleBackToFolders}
-                            className={`hover:text-violet-400 transition-colors ${currentView === 'folders' ? 'text-violet-400' : ''}`}
-                        >
-                            <i className="fa-solid fa-home mr-2"></i>
-                            Your Folders
-                        </button>
-                        {currentView === 'folder-contents' && currentFolder && (
-                            <>
-                                <i className="fa-solid fa-chevron-right mx-2"></i>
-                                <span className="text-slate-300">{currentFolder.name}</span>
-                            </>
-                        )}
-                    </div>
+                    
 
                     {/* Folders View */}
                     {currentView === 'folders' && (
                         <>
                             <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-end gap-2">
-                                    <h3 className="text-xl font-semibold text-slate-100">Your Folders</h3>
-                                    <span className="text-sm text-slate-500 mb-0.5">
-                                        (First 6 are recently updated)
-                                    </span>
-                                </div>
+                                <div className="flex items-center mb-4 text-sm text-slate-400">
+                                <button
+                                    onClick={handleBackToFolders}
+                                    className={`hover:text-violet-400 transition-colors ${currentView === 'folders' ? 'text-violet-400' : ''}`}
+                                >
+                                    <i className="fa-solid fa-home mr-2"></i>
+                                    Your Folders
+                                </button>
+                                {currentView === 'folder-contents' && currentFolder && (
+                                    <>
+                                        <i className="fa-solid fa-chevron-right mx-2"></i>
+                                        <span className="text-slate-300">{currentFolder.name}</span>
+                                    </>
+                                )}
+                            </div>
                                 <button
                                     onClick={() => setIsCreating(true)}
                                     className="text-sm font-medium text-violet-400 hover:text-violet-300 bg-violet-400/10 px-3 py-1 rounded-lg hover:bg-violet-400/20 transition-colors"
@@ -351,10 +345,18 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             )}
 
                             {!loading && (!folders || folders.length === 0) && (
-                                <div className="flex flex-col items-center justify-center h-32 text-slate-400">
-                                    <i className="fa-solid fa-folder-open text-3xl mb-2"></i>
-                                    <p>No folders yet. Create your first folder to get started!</p>
-                                </div>
+                                <button 
+                                    onClick={()=>{}}
+                                    className="group relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50"
+                                >
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                                    <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
+                                        <div className="text-5xl animate-bounce">⚔️</div>
+                                        <h3 className="text-2xl font-bold text-white">Create First Boss</h3>
+                                        <p className="text-sm text-white/80">Battle through your flashcards</p>
+                                    </div>
+                                    <div className="absolute -bottom-2 -right-2 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🐉</div>
+                                </button>
                             )}
 
                             {!loading && folders && folders.length > 0 && (
@@ -402,9 +404,21 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                     {currentView === 'folder-contents' && currentFolder && (
                         <>
                             <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center gap-3">
-                                    <i className="fa-solid fa-folder-open text-xl text-violet-400"></i>
-                                    <h3 className="text-xl font-semibold text-slate-100">{currentFolder.name}</h3>
+                                {/* Breadcrumb Navigation */}
+                                <div className="flex items-center mb-4 text-sm text-slate-400">
+                                    <button
+                                        onClick={handleBackToFolders}
+                                        className={`hover:text-violet-400 transition-colors ${currentView === 'folders' ? 'text-violet-400' : ''}`}
+                                    >
+                                        <i className="fa-solid fa-home mr-2"></i>
+                                        Your Folders
+                                    </button>
+                                    {currentView === 'folder-contents' && currentFolder && (
+                                        <>
+                                            <i className="fa-solid fa-chevron-right mx-2"></i>
+                                            <span className="text-slate-300">{currentFolder.name}</span>
+                                        </>
+                                    )}
                                 </div>
                                 <button
                                     onClick={() => {navigate(`/create-deck`, {state: {
@@ -491,7 +505,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 </div>
 
                 {/* Quick Actions */}
-                <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                {/* <div className="bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
                     <h3 className="text-xl font-semibold text-slate-100 mb-4">Quick Actions</h3>
                     <div className="space-y-3">
                         {currentView === 'folders' ? (
@@ -548,7 +562,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             <span className="font-semibold text-slate-200">Browse Public Decks</span>
                         </button>
                     </div>
-                </div>
+                </div> */}
             </div>
         </section>
     );

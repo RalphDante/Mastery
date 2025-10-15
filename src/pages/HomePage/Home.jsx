@@ -66,10 +66,12 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
         <div className="space-y-8">
 
             <PartySection />
-            <div class="grid grid-cols-1 h-30 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
               <Options 
                 db = {db}
                 authUser = {authUser}
+                onCreateDeckClick={onCreateDeckClick}
+                onCreateWithAIModalClick={onCreateWithAIModalClick}
               />
               
               <Boss />
@@ -81,10 +83,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               onCreateDeckClick={onCreateDeckClick}
               onCreateWithAIModalClick={onCreateWithAIModalClick}
             />
-
-
-
-          
 
         </div>
 

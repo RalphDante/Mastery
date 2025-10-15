@@ -64,7 +64,7 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
               
                 `}
             >
-                Create
+                Create Boss
             </button>
             
             <div className={`${isDropdownOpen ? 'block' : 'hidden'} absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5`}>
@@ -86,14 +86,14 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
                     onClick={(e) => handleItemClick(onCreateDeckClick, e)} 
                     className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create Deck Manually
+                    Create Boss Manually
                 </a>
                 <a 
                     href="#" 
                     onClick={(e) => handleItemClick(onCreateWithAIModalClick, e)} 
                     className="flex px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create Deck with AI
+                    Create Boss with AI
                 </a>
             </div>
         </div>

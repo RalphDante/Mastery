@@ -1360,14 +1360,14 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             </button>
                         </div>
                         
-                        <div className="text-center mt-2">
+                        {/* <div className="text-center mt-2">
                             <button 
                                 onClick={() => navigate('/browse-decks')}
                                 className="text-purple-400 hover:text-purple-300 text-xs font-medium inline-flex items-center gap-1 transition-colors duration-200"
                             >
                                 💡 Need inspiration?
                             </button>
-                        </div>
+                        </div> */}
                     </div>
                     
                     {/* Status indicator */}
