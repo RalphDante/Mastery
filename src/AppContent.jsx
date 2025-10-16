@@ -91,6 +91,7 @@ function AppContent(){
   const [isDeckModalOpen, setIsDeckModalOpen] = useState(false);
   const [isCreateWithAIModalOpen, setIsCreateWithAIModalOpen] = useState(false);
   const [isCreateWithAIDemoModalOpen, setIsCreateWithAIDemoModalOpen] = useState();
+  const [isAutoAssignedFolder, setIsAutoAssignedFolder] = useState(false);
 
   
 
@@ -113,7 +114,15 @@ function AppContent(){
   };
 
   // Deck Modal handlers
-  const handleShowCreateDeckModal = () => {
+  const handleShowCreateDeckModal = (folderName = null) => {
+    if(!currentUserId){
+      if(folderName){
+        setIsAutoAssignedFolder(folderName) // Pass the folder name
+      }
+      setIsDeckModalOpen(true);
+      return;
+    }
+    setIsAutoAssignedFolder(folderName); // Set the folder name for logged-in users too
     setIsDeckModalOpen(true);
   };
 
@@ -121,11 +130,15 @@ function AppContent(){
     setIsDeckModalOpen(false);
   };
 
-  const handleShowCreateWithAIModalClick = () => {
+  const handleShowCreateWithAIModalClick = (folderName = null) => {
     if(!currentUserId){
+      if(folderName){
+        setIsAutoAssignedFolder(folderName) // Pass the folder name
+      }
       setIsCreateWithAIDemoModalOpen(true)
       return;
     }
+    setIsAutoAssignedFolder(folderName); // Set the folder name for logged-in users too
     setIsCreateWithAIModalOpen(true);
   }
 
@@ -283,11 +296,13 @@ function AppContent(){
                   uid={currentUserId}
                   isOpen={isDeckModalOpen}
                   onClose={handleDeckModalClose}
+                  isAutoAssignedFolder={isAutoAssignedFolder}
               />
 
               <CreateWithAIModal 
                   onClose={handleCreateWithAIModalClose}
                   isOpen={isCreateWithAIModalOpen}
+                  isAutoAssignedFolder={isAutoAssignedFolder}
               />
 
               <CreateWithAIDemoModal 

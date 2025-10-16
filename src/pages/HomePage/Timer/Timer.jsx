@@ -527,7 +527,7 @@ function Timer({
         <>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
             <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Add to home screen for instant battles - quick access = more XP!
+              <span className='text-yellow-400'>Pro tip:</span> Bookmark screen for instant battles - quick access = more XP!
             </p>
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (

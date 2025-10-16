@@ -7,7 +7,7 @@ import { useTutorials } from "../../contexts/TutorialContext";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 
-function CreateDeckModal({ uid, onClose, isOpen }) {
+function CreateDeckModal({ uid, onClose, isOpen, isAutoAssignedFolder }) {
 
   //Context
   const { getFolderLimits, getDeckLimits, user } = useAuthContext();
@@ -64,18 +64,64 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
 //     selectedFolder,
 //     folder,
 // ]);
-
+ 
  
 
   // Reset form when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+     
+
+    if (isOpen) {
+      // When opening with auto-assigned folder, skip to step 2
+      if(isAutoAssignedFolder){
+        setNewFolderName(isAutoAssignedFolder);
+        setIsCreatingNewFolder(true);
+        // setStep(2);
+        setSelectedFolder('');
+        // setFlashcards([]);
+        // setDeckName('');
+        setLoading(false);
+      } else {
+        // Normal opening - start at step 1
+        setNewFolderName('');
+        setSelectedFolder('');
+        setIsCreatingNewFolder(false);
+        // setStep(1);
+        // setFlashcards([]);
+        // setDeckName('');
+        setLoading(false);
+      }
+    } else {
+      // When closing, reset everything
       setNewFolderName('');
       setSelectedFolder('');
       setIsCreatingNewFolder(false);
+      // setStep(1);  
+      // setFlashcards([]);
+      // setDeckName('');
       setLoading(false);
     }
-  }, [isOpen]);
+
+    // if (!isOpen) {
+
+
+    //   setNewFolderName('');
+    //   setSelectedFolder('');
+    //   setIsCreatingNewFolder(false);
+    //   setLoading(false);
+    // }
+  }, [isOpen, isAutoAssignedFolder]);
+
+  // Auto-navigate when auto-assigned folder is set
+  useEffect(() => {
+    if (isOpen && isAutoAssignedFolder && newFolderName && user) {
+      // Small delay to ensure state is set
+      const timer = setTimeout(() => {
+        handleFolderSelection();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, isAutoAssignedFolder, newFolderName, user]);
 
   if (!isOpen) return null;
 
@@ -152,7 +198,15 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
     onClose();
   };
 
+  if (!isOpen) return null;
+
+  // Don't render modal if auto-navigating
+  if (isAutoAssignedFolder && user) {
+    return null;
+  }
+
   return (
+    
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 
@@ -260,6 +314,7 @@ function CreateDeckModal({ uid, onClose, isOpen }) {
         </div>
       </div>
     </div>
+    
   );
 }
 

@@ -12,7 +12,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 
-function CreateWithAIModal({ onClose, isOpen }) {
+function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
 
   // Context
   const { getFolderLimits, getDeckLimits, getCardLimits, isPremium, user } = useAuthContext();
@@ -60,8 +60,30 @@ function CreateWithAIModal({ onClose, isOpen }) {
   
 
   // Reset form when modal opens/closes
+    // Reset form when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
+    if (isOpen) {
+      // When opening with auto-assigned folder, skip to step 2
+      if(isAutoAssignedFolder){
+        setNewFolderName(isAutoAssignedFolder);
+        setIsCreatingNewFolder(true);
+        setStep(2);
+        setSelectedFolder('');
+        setFlashcards([]);
+        setDeckName('');
+        setLoading(false);
+      } else {
+        // Normal opening - start at step 1
+        setNewFolderName('');
+        setSelectedFolder('');
+        setIsCreatingNewFolder(false);
+        setStep(1);
+        setFlashcards([]);
+        setDeckName('');
+        setLoading(false);
+      }
+    } else {
+      // When closing, reset everything
       setNewFolderName('');
       setSelectedFolder('');
       setIsCreatingNewFolder(false);
@@ -70,7 +92,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
       setDeckName('');
       setLoading(false);
     }
-  }, [isOpen]);
+  }, [isOpen, isAutoAssignedFolder]);
 
   if (!isOpen) return null;
 
@@ -251,7 +273,7 @@ function CreateWithAIModal({ onClose, isOpen }) {
         </button>
 
         {/* Step 1: Choose Folder */}
-        {step === 1 && (
+        {step === 1 && (!isAutoAssignedFolder) && (
           <>
             <h2 className="text-2xl font-bold text-slate-100 mb-6 text-center">Choose/Create a Folder</h2>
             <p className="text-slate-300 mb-6 text-center">Folders help you organize your decks for the best experience</p>

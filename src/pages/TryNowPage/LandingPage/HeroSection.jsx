@@ -16,7 +16,7 @@ const HeroSection = ({setShowModal, signIn}) => {
           <div className={`transition-all duration-1000 delay-300 lg:delay-700 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <img 
               src="/images/bosses-headline-image.webp" 
-              alt="Stressed student overwhelmed by textbooks - representing the panic before using Mastery"
+              alt="A picture of the bosses in the game"
               className="w-full h-auto rounded-2xl"
               loading="eager"
               width="600"

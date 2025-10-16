@@ -35,7 +35,7 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
         event.preventDefault();
         setIsDropdownOpen(false);
         if (callback) {
-            callback(event);
+            callback();
         }
         // advanceStep('create-deck')
     };
