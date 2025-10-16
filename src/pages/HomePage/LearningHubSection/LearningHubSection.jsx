@@ -347,18 +347,10 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                             )}
 
                             {!loading && (!folders || folders.length === 0) && (
-                                <button 
-                                    onClick={()=>{}}
-                                    className="group relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50"
-                                >
-                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-                                    <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
-                                        <div className="text-5xl animate-bounce">⚔️</div>
-                                        <h3 className="text-2xl font-bold text-white">Create First Boss</h3>
-                                        <p className="text-sm text-white/80">Battle through your flashcards</p>
-                                    </div>
-                                    <div className="absolute -bottom-2 -right-2 text-6xl opacity-10 group-hover:opacity-20 transition-opacity">🐉</div>
-                                </button>
+                                <div className="flex flex-col items-center justify-center h-32 text-slate-400">
+                                    <i className="fa-solid fa-folder-open text-3xl mb-2"></i>
+                                    <p>No folders yet. Create your first folder to get started!</p>
+                                </div>
                             )}
 
                             {!loading && folders && folders.length > 0 && (
