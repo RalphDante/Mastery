@@ -277,14 +277,14 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Main Content Section */}
-                <div className="lg:col-span-2 bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-700">
+                <div className="lg:col-span-2 ">
                     
 
                     {/* Folders View */}
                     {currentView === 'folders' && (
                         <>
-                            <div className="flex justify-between items-center mb-4">
-                                <div className="flex items-center mb-4 text-sm text-slate-400">
+                            <div className="flex justify-between items-center mb-2">
+                                <div className="flex items-center  text-sm text-slate-400">
                                 <button
                                     onClick={handleBackToFolders}
                                     className={`hover:text-violet-400 transition-colors ${currentView === 'folders' ? 'text-violet-400' : ''}`}
@@ -298,7 +298,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                         <span className="text-slate-300">{currentFolder.name}</span>
                                     </>
                                 )}
-                            </div>
+                                </div>
                                 <button
                                     onClick={() => setIsCreating(true)}
                                     className="text-sm font-medium text-violet-400 hover:text-violet-300 bg-violet-400/10 px-3 py-1 rounded-lg hover:bg-violet-400/20 transition-colors"
@@ -309,31 +309,33 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
                             {isCreating && (
                                 <form onSubmit={handleCreateFolder} className="mb-4 p-4 bg-gray-700 rounded-lg">
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col gap-2">
                                         <input
                                             type="text"
                                             value={newFolderName}
                                             onChange={(e) => setNewFolderName(e.target.value)}
                                             placeholder="Enter folder name..."
-                                            className="flex-1 px-3 py-2 bg-gray-600 text-slate-200 rounded-lg border border-gray-500 focus:border-violet-400 focus:outline-none"
+                                            className="w-full px-3 py-2 bg-gray-600 text-slate-200 rounded-lg border border-gray-500 focus:border-violet-400 focus:outline-none"
                                             autoFocus
                                         />
-                                        <button
-                                            type="submit"
-                                            className="px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors"
-                                        >
-                                            Create
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setIsCreating(false);
-                                                setNewFolderName("");
-                                            }}
-                                            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="submit"
+                                                className="flex-1 px-4 py-2 bg-violet-500 text-white rounded-lg hover:bg-violet-600 transition-colors"
+                                            >
+                                                Create
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setIsCreating(false);
+                                                    setNewFolderName("");
+                                                }}
+                                                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
                                 </form>
                             )}
@@ -405,7 +407,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                         <>
                             <div className="flex justify-between items-center mb-4">
                                 {/* Breadcrumb Navigation */}
-                                <div className="flex items-center mb-4 text-sm text-slate-400">
+                                <div className="flex items-center text-sm text-slate-400">
                                     <button
                                         onClick={handleBackToFolders}
                                         className={`hover:text-violet-400 transition-colors ${currentView === 'folders' ? 'text-violet-400' : ''}`}

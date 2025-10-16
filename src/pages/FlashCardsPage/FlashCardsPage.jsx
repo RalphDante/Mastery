@@ -298,7 +298,7 @@ function FlashCardsPage() {
     return (
         <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
             <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                {/* Buttons */}
+                {/* HEADER */}
                 <div className="flex justify-between mb-1">
                     <button
                         onClick={() => navigate('/')}

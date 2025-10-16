@@ -13,6 +13,7 @@ import CreateFlashCards from './CreateFlashCards';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
+import { ArrowLeft } from 'lucide-react';
 
 function CreateDeck() {
     const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
@@ -440,6 +441,17 @@ or Cancel to go back and remove ${cardsOverLimit} cards.`;
 
     return (
         <div className={styles.createFilePage}>
+            {/* HEADER */}
+            <div className="flex justify-end mb-1">
+                <button
+                    onClick={() => navigate('/')}
+                    className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                </button>
+                
+              
+            </div>
             <h1>
                 {isEditMode ? `Edit: ${fileName || 'Deck'}` : `${folderName} ${isNewFolder ? "(New Folder)" : ""}`}
             </h1>
