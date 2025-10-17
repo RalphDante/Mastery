@@ -67,7 +67,7 @@ async function updateUserInParties(userId, updates, currentPartyId) {
 
     // Update the member document in the party
     const memberRef = db.collection('parties').doc(currentPartyId).collection('members').doc(userId);
-    await memberRef.update(updates);
+    await memberRef.set(updates, { merge: true });
   
     
     console.log(`✅ Updated party membership in ${currentPartyId}`);
