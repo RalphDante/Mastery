@@ -41,3 +41,17 @@ h1, h2, h3, h4, h5, h6{
     display: none;  /* Safari and Chrome */
   }
 
+
+@keyframes knight-idle {
+  to { background-position: -672px 0px; }  /* Full width of sprite sheet */
+}
+
+.knight-idle {
+  width: 85px;  /* One frame width */
+  height: 70px; /* Full height */
+  background-image: url('/images/premium-avatars/knight-idle.png');
+  background-repeat: no-repeat;
+  background-position: 0 0;
+  animation: knight-idle 0.7s steps(7) infinite;  /* 7 frames */
+  image-rendering: pixelated;
+}

@@ -1,9 +1,9 @@
 // functions/index.cjs
 const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https');
-const { onDocumentCreated, onDocumentDeleted } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentDeleted, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
-const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp, FieldPath } = require('firebase-admin/firestore');
 const crypto = require('crypto');
 const functions = require('firebase-functions');
 
@@ -11,6 +11,7 @@ const axios = require('axios');
 
 initializeApp();
 const db = getFirestore();
+
 
 // ======================
 // MAILER LITE HELPER FUNCTION
@@ -37,6 +38,45 @@ async function addToMailerLite(email, displayName = 'New User') {
     console.error('❌ MailerLite API error:', error.response?.data || error.message);
   }
 }
+
+
+// ======================
+// AVATAR UPDATE HELPERS
+// ======================
+
+// Define which avatars are premium-only
+const PREMIUM_AVATARS = ['knight-idle', 'paladin-idle', 'mage-idle', 'assassin-idle'];
+const DEFAULT_FREE_AVATAR = 'warrior_01';
+
+// Helper function to check if avatar is premium
+function isPremiumAvatar(avatar) {
+  return PREMIUM_AVATARS.includes(avatar);
+}
+
+
+async function updateUserInParties(userId, updates, currentPartyId) {
+  try {
+    console.log(`🔄 Updating party memberships for user ${userId}:`, updates);
+    
+    // If user is not in any party, nothing to update
+    if (!currentPartyId) {
+      console.log(`ℹ️ User ${userId} is not in any party`);
+      return;
+    }
+  
+
+    // Update the member document in the party
+    const memberRef = db.collection('parties').doc(currentPartyId).collection('members').doc(userId);
+    await memberRef.update(updates);
+  
+    
+    console.log(`✅ Updated party membership in ${currentPartyId}`);
+  } catch (error) {
+    console.error('❌ Error updating party memberships:', error);
+    // Don't throw - we don't want party denormalization failures to break subscription updates
+  }
+}
+
 
 // ======================
 // PADDLE WEBHOOK CODE
@@ -297,6 +337,12 @@ async function handleSubscriptionUpdate(data, environment) {
       updateData['limits.maxDecks'] = -1;
       updateData['limits.maxSmartReviewDecks'] = -1;
       updateData['limits.maxFolders'] = -1;
+
+      // 🆕 ALWAYS UPDATE AVATAR TO KNIGHT WHEN UPGRADING TO PRO
+      // This is a premium perk - show off that pro status!
+      updateData['avatar'] = 'knight-idle';
+      console.log(`🛡️ Upgrading avatar to knight-idle for pro user ${userId}`);
+
     } else {
       // Free tier limits
       updateData['limits.maxAiGenerations'] = 20;
@@ -304,7 +350,26 @@ async function handleSubscriptionUpdate(data, environment) {
       updateData['limits.maxDecks'] = 5;
       updateData['limits.maxSmartReviewDecks'] = 2;
       updateData['limits.maxFolders'] = 10; 
+
+      // 🆕 REVERT PREMIUM AVATARS WHEN DOWNGRADING
+      if (isPremiumAvatar(currentUserData.avatar)) {
+        updateData['avatar'] = DEFAULT_FREE_AVATAR;
+        console.log(`⬇️ Reverting premium avatar (${currentUserData.avatar}) to ${DEFAULT_FREE_AVATAR} for downgraded user ${userId}`);
+      }
     }
+
+  
+
+    // 🆕 DENORMALIZE AVATAR AND TIER TO PARTY MEMBERSHIP
+    // Pass the currentPartyId to avoid extra read
+    await updateUserInParties(
+      userId, 
+      {
+        avatar: updateData['avatar'] || currentUserData.avatar,
+        tier: tier
+      },
+      currentUserData.currentPartyId // Pass party ID directly
+    );
 
     await db.collection('users').doc(userId).update(updateData);
 
@@ -313,6 +378,57 @@ async function handleSubscriptionUpdate(data, environment) {
     console.error('Error updating subscription:', error);
   }
 }
+
+
+
+
+// 🆕 TRIGGER: When user manually changes avatar or tier, update their party membership
+exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) => {
+  try {
+    const beforeData = event.data.before.data();
+    const afterData = event.data.after.data();
+    
+    const avatarChanged = beforeData.avatar !== afterData.avatar;
+    const tierChanged = beforeData.subscription?.tier !== afterData.subscription?.tier;
+    
+    // Only proceed if avatar or tier changed
+    if (!avatarChanged && !tierChanged) {
+      return;
+    }
+    
+    // Also skip if user isn't in a party
+    if (!afterData.currentPartyId) {
+      console.log(`ℹ️ User ${event.params.userId} avatar/tier changed but not in a party`);
+      return;
+    }
+    
+    const userId = event.params.userId;
+    
+    console.log(`👤 User ${userId} data changed:`, {
+      avatarChanged,
+      tierChanged,
+      newAvatar: afterData.avatar,
+      newTier: afterData.subscription?.tier
+    });
+    
+    // Build update object
+    const updates = {};
+    
+    if (avatarChanged) {
+      updates.avatar = afterData.avatar;
+    }
+    
+    if (tierChanged) {
+      updates.tier = afterData.subscription?.tier || 'free';
+    }
+    
+    // Sync to party membership (pass partyId to avoid extra read)
+    await updateUserInParties(userId, updates, afterData.currentPartyId);
+    
+  } catch (error) {
+    console.error('Error in onUserAvatarUpdate:', error);
+  }
+});
 
 async function handleSubscriptionCancellation(data, environment) {
   console.log(`=== ${environment.toUpperCase()} SUBSCRIPTION CANCELLATION ===`);
@@ -975,7 +1091,8 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
     const snap = event.data;
     const userData = snap.data();
 
-    if (userData.email) {
+    const isInProduction = process.env.ENVIRONMENT === "production" ? true : false;
+    if (isInProduction && userData.email) {
       await addToMailerLite(userData.email, userData.displayName);
     }
     
