@@ -86,19 +86,13 @@ function verifyPaddleWebhook(rawBody, paddleSignature, webhookSecret) {
   return expectedHash === hash;
 }
 
-// Updated main webhook handler
-exports.handlePaddleWebhook = onRequest(async (req, res) => {
-  console.log('=== WEBHOOK RECEIVED ===');
+// Extract webhook logic into shared function
+async function processPaddleWebhook(req, res, webhookSecret, environment) {
+  console.log(`=== ${environment.toUpperCase()} WEBHOOK RECEIVED ===`);
   console.log('Method:', req.method);
-  console.log('Content-Type:', req.get('content-type'));
   
   try {
-    // Get signature from header
     const paddleSignature = req.get('paddle-signature');
-    const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
-    
-    console.log('Signature from header:', paddleSignature);
-    console.log('Webhook secret exists:', !!webhookSecret);
     
     if (!paddleSignature) {
       console.error('No paddle-signature header found');
@@ -106,22 +100,19 @@ exports.handlePaddleWebhook = onRequest(async (req, res) => {
     }
     
     if (!webhookSecret) {
-      console.error('No webhook secret configured');
+      console.error('No webhook secret configured for', environment);
       return res.status(500).send('Webhook secret not configured');
     }
 
-    // Get raw body as string - this is crucial for signature verification
+    // Get raw body
     let rawBody;
     if (typeof req.rawBody !== 'undefined') {
-      // Cloud Functions provides rawBody
       rawBody = req.rawBody.toString('utf8');
     } else {
-      // Fallback to JSON.stringify (less reliable)
       rawBody = JSON.stringify(req.body);
     }
     
     console.log('Using raw body, length:', rawBody.length);
-    console.log('Raw body preview:', rawBody.substring(0, 200) + '...');
 
     // Verify signature
     if (!verifyPaddleWebhook(rawBody, paddleSignature, webhookSecret)) {
@@ -137,14 +128,14 @@ exports.handlePaddleWebhook = onRequest(async (req, res) => {
     switch (event_type) {
       case 'subscription.created':
       case 'subscription.updated':
-        await handleSubscriptionUpdate(data);
+        await handleSubscriptionUpdate(data, environment);
         break;
       case 'subscription.canceled':
       case 'subscription.paused':
-        await handleSubscriptionCancellation(data);
+        await handleSubscriptionCancellation(data, environment);
         break;
       case 'transaction.completed':
-        await handleTransactionCompleted(data);
+        await handleTransactionCompleted(data, environment);
         break;
       default:
         console.log('Unhandled webhook event:', event_type);
@@ -156,10 +147,24 @@ exports.handlePaddleWebhook = onRequest(async (req, res) => {
     console.error('Webhook error:', error);
     res.status(500).send('Error processing webhook');
   }
+}
+
+// PRODUCTION WEBHOOK HANDLER
+exports.handlePaddleWebhook = onRequest(async (req, res) => {
+  const webhookSecret = process.env.PADDLE_WEBHOOK_SECRET;
+  await processPaddleWebhook(req, res, webhookSecret, 'production');
 });
 
-async function handleSubscriptionUpdate(data) {
-  console.log('=== SUBSCRIPTION UPDATE DEBUG ===');
+// SANDBOX WEBHOOK HANDLER
+exports.handlePaddleWebhookSandbox = onRequest(async (req, res) => {
+  const webhookSecret = process.env.SANDBOX_PADDLE_WEBHOOK_SECRET;
+  await processPaddleWebhook(req, res, webhookSecret, 'sandbox');
+});
+
+
+
+async function handleSubscriptionUpdate(data, environment) {
+  console.log(`=== ${environment.toUpperCase()} SUBSCRIPTION UPDATE DEBUG ===`);
   console.log('Full data object:', JSON.stringify(data, null, 2));
   
   // Log the structure to understand what we're dealing with
@@ -222,11 +227,20 @@ async function handleSubscriptionUpdate(data) {
 
     // Determine subscription tier from price ID
     const priceId = items[0]?.price?.id;
+
+    // Get the correct price IDs based on environment
+    const proMonthlyId = environment === 'production' 
+      ? process.env.PRICE_PRO_MONTHLY 
+      : process.env.SANDBOX_PADDLE_PRICE_PRO_MONTHLY;
+    const proYearlyId = environment === 'production'
+      ? process.env.PRICE_PRO_YEARLY
+      : process.env.SANDBOX_PADDLE_PRICE_PRO_YEARLY;
+
     let tier = 'free';
     let expiresAt = null;
     let subscriptionStatus = status; // Default to Paddle's status
 
-    if (priceId === 'pri_01k2fc167nrk5f73hm7wz7dx6w' || priceId === 'pri_01k2fbyrdgvshyd5aqs3y34ymn') {
+    if (priceId === proMonthlyId || priceId === proYearlyId) {
       tier = 'pro';
     }
 
@@ -300,8 +314,8 @@ async function handleSubscriptionUpdate(data) {
   }
 }
 
-async function handleSubscriptionCancellation(data) {
-  console.log('=== SUBSCRIPTION CANCELLATION ===');
+async function handleSubscriptionCancellation(data, environment) {
+  console.log(`=== ${environment.toUpperCase()} SUBSCRIPTION CANCELLATION ===`);
   console.log('Full data object:', JSON.stringify(data, null, 2));
   
   // Extract email (same logic as handleSubscriptionUpdate)
@@ -348,8 +362,8 @@ async function handleSubscriptionCancellation(data) {
   }
 }
 
-async function handleTransactionCompleted(data) {
-  console.log('Transaction completed:', data.id);
+async function handleTransactionCompleted(data, environment) {
+  console.log(`=== ${environment.toUpperCase()} TRANSACTION COMPLETED ===`);
 }
 
 exports.cancelSubscription = onCall(async (request) => {
@@ -379,8 +393,12 @@ exports.cancelSubscription = onCall(async (request) => {
       throw new HttpsError('failed-precondition', 'No active subscription found');
     }
     
-    const paddleApiKey = process.env.PADDLE_API_KEY;
     const environment = process.env.ENVIRONMENT || 'sandbox';
+    const paddleApiKey = environment === "production" ? 
+        process.env.PADDLE_API_KEY
+      : process.env.SANDBOX_PADDLE_API_KEY
+    ;
+
     
     console.log('🔑 Paddle API key exists:', !!paddleApiKey);
     console.log('🌍 Environment:', environment);
@@ -957,9 +975,9 @@ exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
     const snap = event.data;
     const userData = snap.data();
 
-    // if (userData.email) {
-    //   await addToMailerLite(userData.email, userData.displayName);
-    // }
+    if (userData.email) {
+      await addToMailerLite(userData.email, userData.displayName);
+    }
     
     // Initialize limits if they don't exist
     if (!userData.limits) {

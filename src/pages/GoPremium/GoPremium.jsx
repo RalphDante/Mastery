@@ -11,13 +11,21 @@ function GoPremium() {
   const [billingCycle, setBillingCycle] = useState('year'); // Default to annual for better conversion
   const [showFeatures, setShowFeatures] = useState(false);
 
+  const env = import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox";
+
   // Product ID
-  const masteryStudyPro = 'pro_01k2fbw2wkgbp8d87cb5ntgds1';
+  const masteryStudyPro = env === "production" 
+    ? import.meta.env.VITE_PADDLE_PRODUCT_ID
+    : import.meta.env.VITE_SANDBOX_PADDLE_PRODUCT_ID
   
   // Price IDs - only Pro tier now
   const priceIds = {
-    proMonthly: 'pri_01k2fc167nrk5f73hm7wz7dx6w',
-    proYearly: 'pri_01k2fbyrdgvshyd5aqs3y34ymn'
+    proMonthly: env === "production" 
+      ? import.meta.env.VITE_PADDLE_PRICE_PRO_MONTHLY 
+      : import.meta.env.VITE_SANDBOX_PADDLE_PRICE_PRO_MONTHLY,
+    proYearly: env === "production" 
+      ? import.meta.env.VITE_PADDLE_PRICE_PRO_YEARLY
+      : import.meta.env.VITE_SANDBOX_PADDLE_PRICE_PRO_YEARLY
   };
 
   const monthItems = [{
@@ -61,10 +69,14 @@ function GoPremium() {
 
   const initializePaddle = () => {
     try {
-      window.Paddle.Environment.set("production");
-      window.Paddle.Initialize({ 
-        token: "live_b21f845ca0bca27b7b2601c8e27"
-      });
+      const environment = import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox";
+      const token = environment === "production"
+      ? import.meta.env.VITE_PADDLE_TOKEN :
+        import.meta.env.VITE_SANDBOX_PADDLE_TOKEN;
+
+      window.Paddle.Environment.set(environment);
+      window.Paddle.Initialize({ token: token });
+      
       setPaddleLoaded(true);
     } catch (error) {
       console.error('Failed to initialize Paddle:', error);
