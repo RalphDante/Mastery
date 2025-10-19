@@ -167,7 +167,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick}){
                                 <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 24 24"><path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/><path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/></svg>
                                 {/* <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 12 12"><path fill="#9e9fdcff" d="M3 3H2v1h1Zm0 0h5V2H6V1H5v1H3Zm-1 9h1v-1H2Zm0-2h1V9H2ZM1 9h1V4H1Zm2 2h5v-1H3Zm5 1h1v-1H8ZM0 4h1V3h1V2H0Zm8 6h1V9H8ZM5 7h3V6H6V4H5Zm4 2h1V4H9ZM8 4h1V3H8Zm2 0h1V2H9v1h1Zm0 0"/></svg> */}
                             </div>
-                            <h3 className="text-2xl font-bold text-white">Endurance Test</h3>
+                            <h3 className="text-2xl font-bold text-white">Study Timer</h3>
                             <p className="text-sm text-white/80">Push your study limits</p>
                         </div>
                         <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">

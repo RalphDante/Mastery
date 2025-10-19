@@ -600,7 +600,7 @@ function Timer({
             </div>
           </div>
 
-          <ServerCostBanner />
+          {/* <ServerCostBanner /> */}
 
           <button onClick={resetTimer} className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg">
             Start New Session

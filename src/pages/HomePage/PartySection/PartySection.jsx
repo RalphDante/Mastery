@@ -5,6 +5,7 @@ import { getExpProgressForCurrentLevel } from '../../../utils/playerStatsUtils';
 import { PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import EditProfile from '../../../components/EditProfile/EditProfile';
 
 function PartySection() {
   const {partyProfile, partyMembers, user} = useAuthContext();
@@ -83,9 +84,13 @@ function PartySection() {
           <div className='flex flex-col w-full'>
             {/* User Info */}
             <div className="text-left">
-              <p className={`text-xs font-medium text-blue-400`}>
-                {currentUser?.displayName}
-              </p>
+              <div className='flex flex-row items-center align-center gap-1'>
+                <p className={`text-xs font-medium text-blue-400`}>
+                  {currentUser?.displayName}
+                </p>
+                <EditProfile />
+              </div>
+
               <p className="text-xs text-slate-400">Lv.{currentUser?.level}</p>
             </div>
 
@@ -239,17 +244,23 @@ function PartySection() {
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
                       <div className="w-20 h-20 border-2 overflow-hidden bg-slate-700 border-slate-600">
-                        {
-                          member?.avatar ? member?.avatar === "knight-idle" ?
-                            (<div className="knight-idle" style={{ transform: 'scale(1.5)', imageRendering: 'pixelated' }}></div>)
-                            : <img 
-                            src={`/images/avatars/${member.avatar}.png`}
-                            alt={member?.displayName}
-                            className="w-full h-full p-2 object-cover"
-                            /> :
-                            ""
-                            
-                        }
+                         {
+                            member?.avatar ? member.avatar === "knight-idle" ?
+                              (<div className="knight-idle" 
+                                style={{ 
+                                  transform: 'scale(2.0)', 
+                                  imageRendering: 'pixelated',
+                                  position: 'relative',
+                                  top: '0px',      // Move down
+                                  left: '-13px' }}
+                                >
+                              </div>) : <img 
+                              src={`/images/avatars/${member.avatar}.png`}
+                              alt={currentUser?.displayName}
+                              className="w-full h-full p-2 object-cover"
+                              /> :
+                              ""
+                          }
                         <div 
                           className="w-full h-full flex items-center justify-center text-white font-bold text-lg bg-slate-600"
                           style={{ display: member.avatar ? 'none' : 'flex' }}
@@ -276,7 +287,7 @@ function PartySection() {
                             {member?.tier === "pro" ? 
                                 <img
                                   src="/images/icons/pro-badge.png"
-                                  className="w-8 h-8"
+                                  className="w-8 h-8 hover:cursor-pointer"
                                   onClick={()=>navigate("/pricing")}
                                 />
                                 : ""

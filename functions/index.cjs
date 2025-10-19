@@ -390,9 +390,11 @@ exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) =
     
     const avatarChanged = beforeData.avatar !== afterData.avatar;
     const tierChanged = beforeData.subscription?.tier !== afterData.subscription?.tier;
+    const nameChanged = beforeData.displayName !== afterData.displayName;
+
     
     // Only proceed if avatar or tier changed
-    if (!avatarChanged && !tierChanged) {
+    if (!avatarChanged && !tierChanged && !nameChanged) {
       return;
     }
     
@@ -414,13 +416,9 @@ exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) =
     // Build update object
     const updates = {};
     
-    if (avatarChanged) {
-      updates.avatar = afterData.avatar;
-    }
-    
-    if (tierChanged) {
-      updates.tier = afterData.subscription?.tier || 'free';
-    }
+    if (avatarChanged) updates.avatar = afterData.avatar;
+    if (tierChanged) updates.tier = afterData.subscription?.tier || 'free';
+    if (nameChanged) updates.displayName = afterData.displayName;
     
     // Sync to party membership (pass partyId to avoid extra read)
     await updateUserInParties(userId, updates, afterData.currentPartyId);

@@ -28,7 +28,7 @@ function ContactMe() {
                 </div>
 
                 {/* Contact Cards */}
-                <div className="grid md:grid-cols-3 gap-8 mb-12">
+                <div className="grid md:grid-cols-2 gap-8 mb-12">
                     {/* Discord Card */}
                     <div className="bg-slate-800 rounded-lg p-6 hover:bg-slate-700 transition-colors cursor-pointer border border-slate-700 hover:border-purple-500"
                          onClick={handleDiscordClick}>
@@ -64,7 +64,7 @@ function ContactMe() {
                     </div>
 
                     {/* Email Card */}
-                    <div className="bg-slate-800 rounded-lg p-6 hover:bg-slate-700 transition-colors cursor-pointer border border-slate-700 hover:border-purple-500"
+                    {/* <div className="bg-slate-800 rounded-lg p-6 hover:bg-slate-700 transition-colors cursor-pointer border border-slate-700 hover:border-purple-500"
                          onClick={handleEmailClick}>
                         <div className="flex items-center justify-center mb-4">
                             <div className="w-16 h-16 bg-red-600 rounded-full flex items-center justify-center">
@@ -78,7 +78,7 @@ function ContactMe() {
                         <div className="text-center">
                             <span className="text-purple-400 text-sm">ralphcomandante.mastery@gmail.com</span>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Additional Info Section */}

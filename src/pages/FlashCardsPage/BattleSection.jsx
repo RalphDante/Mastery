@@ -122,12 +122,22 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                         onClick={openModal}
                     >
                         <div className={`w-20 h-20 border-2 rounded-lg overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
-                            {currentUser?.avatar ? 
-                                <img 
-                                    src={`/images/avatars/${currentUser?.avatar}.png`}
-                                    alt={currentUser?.displayName}
-                                    className="w-full h-full object-cover"
-                                /> : ""
+                            {
+                                currentUser?.avatar ? currentUser.avatar === "knight-idle" ?
+                                (<div className="knight-idle" style={{ 
+                                    transform: 'scale(2.5)', 
+                                    imageRendering: 'pixelated',
+                                    position: 'relative',
+                                    top: '0px',      // Move down
+                                    left: '-13px'       // Move right
+                                }}></div>)
+                                : <img 
+                                src={`/images/avatars/${currentUser.avatar}.png`}
+                                alt={currentUser?.displayName}
+                                className="w-full h-full p-2 object-cover"
+                                
+                                /> :
+                                ""
                             }
                         </div>
                     </div>
@@ -269,13 +279,21 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                                 >
                                 <div className={`w-20 h-20 border-2 rounded-lg overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
                                     {
-                                    currentUser?.avatar ? 
-                                        <img 
-                                        src={`/images/avatars/${currentUser?.avatar}.png`}
+                                        currentUser?.avatar ? currentUser.avatar === "knight-idle" ?
+                                        (<div className="knight-idle" style={{ 
+                                            transform: 'scale(2.5)', 
+                                            imageRendering: 'pixelated',
+                                            position: 'relative',
+                                            top: '0px',      // Move down
+                                            left: '-13px'       // Move right
+                                        }}></div>)
+                                        : <img 
+                                        src={`/images/avatars/${currentUser.avatar}.png`}
                                         alt={currentUser?.displayName}
-                                        className="w-full h-full object-cover"
-                                    /> :
-                                    ""
+                                        className="w-full h-full p-2 object-cover"
+                                        
+                                        /> :
+                                        ""
                                     }
                                 </div>
                                 </div>

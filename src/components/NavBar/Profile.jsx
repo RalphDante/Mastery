@@ -66,6 +66,14 @@ function Profile(){
               >
                 Settings
               </button>
+              <button 
+                onClick={() => {
+                    navigate('/pricing');
+                }}
+              className={`block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors `}
+              >
+                Pricing
+              </button>
               <SignUpBtn />
             </div>
         </div>

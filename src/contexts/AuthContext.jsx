@@ -322,6 +322,7 @@ export const AuthProvider = ({ children }) => {
                     createdAt: auth.currentUser?.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime) : now,
                     lastActiveAt: now,
                     lastStudyDate: null,
+                    lastNameChangeAt: null,
                     
                     level: 1,
                     exp: 0,
