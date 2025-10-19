@@ -22,6 +22,7 @@ export const useAuthContext = () => {
 };
 
 export const AuthProvider = ({ children }) => {
+    console.log('🔁 AuthProvider rendered');
     const [user, setUser] = useState(null);
     const [userProfile, setUserProfile] = useState(null);
     const [loading, setLoading] = useState(true);
