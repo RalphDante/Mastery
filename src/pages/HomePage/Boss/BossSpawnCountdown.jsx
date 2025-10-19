@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
-import { useAuthContext } from '../../../contexts/AuthContext';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function BossSpawnCountdown() {
-  const {partyProfile} = useAuthContext();
+  const {partyProfile} = usePartyContext();
 
   const spawnTime = partyProfile?.nextBossSpawnsAt;
   const [timeRemaining, setTimeRemaining] = useState('');

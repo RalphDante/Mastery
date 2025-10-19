@@ -3,11 +3,13 @@ import { useCallback, useState, useEffect } from "react";
 import { PLAYER_CONFIG, getExpProgressForCurrentLevel } from "../../utils/playerStatsUtils";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { usePartyContext } from "../../contexts/PartyContext";
 
 
 function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths, cardCount, children}){
 
-    const {partyProfile, partyMembers, user} = useAuthContext();
+    const {user} = useAuthContext();
+    const {partyMembers} = usePartyContext();
     const [showModal, setShowModal] = useState(false);
     const doubledCardCount = cardCount * (1 + deaths);
     const playerHealth = Math.round((doubledCardCount - dontKnowAnswer) / cardCount * 100);

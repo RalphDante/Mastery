@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Trophy, Sparkles, Swords, Award } from 'lucide-react';
-import { useAuthContext } from '../../../contexts/AuthContext';
 import { bosses } from '../../../utils/bossUtils';
 import BossSpawnCountdown from './BossSpawnCountDown';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function BossVictoryScreen({rankings}) {
-  const {partyProfile, partyMembers} = useAuthContext();
+  const {partyProfile, partyMembers} = usePartyContext();
 
   const lastBossResults = partyProfile?.lastBossResults;
 
@@ -30,7 +30,7 @@ function BossVictoryScreen({rankings}) {
         displayName: ranking.displayName,
         damage: ranking.damage,
         level: member?.level || 1,
-        avatar: member?.avatar ? `/images/avatars/${member.avatar}.png` : `https://api.dicebear.com/7.x/pixel-art/svg?seed=${ranking.displayName}`,
+        avatar: member?.avatar ? member.avatar : `https://api.dicebear.com/7.x/pixel-art/svg?seed=${ranking.displayName}`,
         isMVP: index === 0
       };
     }),
@@ -93,11 +93,23 @@ function BossVictoryScreen({rankings}) {
             <div className="relative flex-shrink-0">
               {/* MVP Avatar */}
               <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border-2 border-yellow-400 overflow-hidden bg-slate-800">
-                <img 
-                  src={victoryData.contributors[0].avatar} 
+                {victoryData.contributors[0].avatar === 'knight-idle' 
+                  ? (<div className="knight-idle" 
+                      style={{ 
+                        transform: 'scale(1.5)', 
+                        imageRendering: 'pixelated',
+                        position: 'relative',
+                        top: '-10px',      // Move down
+                        left: '-20px' }}
+                      >
+                    </div>)
+                  : <img 
+                  src={`/images/avatars/${victoryData.contributors[0].avatar}`} 
                   alt={victoryData.contributors[0].displayName}
                   className="w-full h-full object-cover"
                 />
+                }
+                
               </div>
               <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 bg-yellow-400 rounded-full p-1">
                 <Award className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-900" />
@@ -152,7 +164,7 @@ function BossVictoryScreen({rankings}) {
                 {/* Contributor Avatar */}
                 <div className="w-10 h-10 rounded-lg border border-slate-600 overflow-hidden bg-slate-700">
                   <img 
-                    src={contributor.avatar} 
+                    src={`/images/avatars/${contributor.avatar}.png`} 
                     alt={contributor.displayName}
                     className="w-full h-full object-cover"
                   />

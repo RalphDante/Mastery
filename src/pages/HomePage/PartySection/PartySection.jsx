@@ -6,9 +6,11 @@ import { PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EditProfile from '../../../components/EditProfile/EditProfile';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function PartySection() {
-  const {partyProfile, partyMembers, user} = useAuthContext();
+  const {user} = useAuthContext();
+  const {partyProfile, partyMembers} = usePartyContext();
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();

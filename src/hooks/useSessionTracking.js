@@ -4,6 +4,7 @@ import { doc, setDoc, runTransaction, serverTimestamp, increment, collection, ge
 import { useAuthContext } from "../contexts/AuthContext";
 import { calculateLevelUp, PLAYER_CONFIG } from "../utils/playerStatsUtils";
 import { handleBossDefeat } from "../utils/bossUtils";
+import { usePartyContext } from "../contexts/PartyContext";
 
 // Reward configuration for flashcard reviews
 const CARD_REWARDS = {
@@ -37,7 +38,7 @@ export const useSessionTracking = (user, db, isFinished) => {
         updateLastBossResults, 
         resetAllMembersBossDamage, 
         updateUserProfile
-    } = useAuthContext();
+    } = usePartyContext();
 
     // Refs for counters to avoid async state issues
     const pendingCorrectRef = useRef(0);

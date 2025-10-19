@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useAuthContext } from '../../../contexts/AuthContext';
 import { bosses } from '../../../utils/bossUtils';
 import BossVictoryScreen from './BossVictoryScreen';
 import CurrentBossFight from './currentBossFight';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function Boss() {
   // Mock data - replace with real data from your backend
-  const {partyProfile, partyMembers} = useAuthContext();
+  const {partyProfile, partyMembers} = usePartyContext();
 
   if (!partyProfile || partyProfile.currentBoss === undefined) {
     return (
@@ -18,7 +18,6 @@ function Boss() {
 
   const bossStatus = partyProfile.currentBoss.isAlive;
   
-  // const bossStatus = true;
 
 
   return (

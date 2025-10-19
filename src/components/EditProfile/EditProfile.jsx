@@ -5,9 +5,11 @@ import { getExpProgressForCurrentLevel, PLAYER_CONFIG } from "../../utils/player
 import AvatarSelection from "./AvatarSection";
 import { db } from "../../api/firebase";
 import { setDoc, doc } from "firebase/firestore";
+import { usePartyContext } from "../../contexts/PartyContext";
 
 function EditProfile() {
-    const { userProfile, updateUserProfile, user } = useAuthContext();
+    const {user, userProfile, updateUserProfile} = useAuthContext();
+    const { updateUserProfile: updatePartyProfile } = usePartyContext();
 
     const [selectedAvatar, setSelectedAvatar] = useState(userProfile?.avatar || "");
     const [displayName, setDisplayName] = useState(userProfile?.displayName || "");
@@ -97,6 +99,7 @@ function EditProfile() {
             
             // ✅ Update the context so UI reflects changes immediately
             updateUserProfile(updates);
+            updatePartyProfile(updates);
             
             console.log(`✅ Profile updated successfully`, updates);
             closeModal();

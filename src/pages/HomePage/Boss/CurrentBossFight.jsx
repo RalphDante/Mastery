@@ -2,17 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { bosses } from '../../../utils/bossUtils';
 import BossVictoryScreen from './BossVictoryScreen';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function CurrentBossFight() {
   // Mock data - replace with real data from your backend
-  const {partyProfile, partyMembers, user} = useAuthContext();
-  const [bossData, setBossData] = useState({
-    name: "Crimson Drake",
-    currentHP: 2450,
-    maxHP: 5000,
-    level: 12,
-    timeLeft: "2h 34m"
-  });
+  const {partyProfile, partyMembers, } = usePartyContext();
+  const {user} = useAuthContext();
 
   const bossNumber = partyProfile?.currentBoss.bossNumber;
   const bossHealth = partyProfile?.currentBoss.currentHealth;

@@ -1,6 +1,6 @@
 // OptimizedWelcomeSection.js
 import React from 'react';
-import { useAuthContext, useCardsDue, useStudyStats, getTimeUntilNextReview } from '../../../contexts/AuthContext';
+import { useAuthContext } from '../../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import ProBanner from './ProBanner';
@@ -12,7 +12,6 @@ function WelcomeSection() {
 
   // Updated: Use merged AuthContext instead of UserDataContext
   const { user, userProfile, loading, authLoading } = useAuthContext();
-  const { cardsDue, cardsReviewedToday, nextReviewTime } = useCardsDue();
   const { currentStreak, longestStreak } = useStudyStats();
   const navigate = useNavigate();
 

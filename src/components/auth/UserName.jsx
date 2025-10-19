@@ -3,7 +3,7 @@ import { auth } from "../../api/firebase"
 import { useAuthContext } from "../../contexts/AuthContext";
 
 function UserName(){
-    const {user} = useAuthContext();
+    const {userProfile} = useAuthContext();
 
         
    
@@ -11,7 +11,7 @@ function UserName(){
 
     return(
         <>
-            <h4 style={{margin: '0px'}}>{user ? user?.displayName: 'Guest'}</h4>
+            <h4 style={{margin: '0px'}}>{userProfile ? userProfile?.displayName: 'Guest'}</h4>
         </>
     )
 

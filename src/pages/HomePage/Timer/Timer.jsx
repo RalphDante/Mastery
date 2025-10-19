@@ -5,8 +5,8 @@ import { runTransaction, doc, increment, collection, query, getDocs, getDoc, upd
 import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
-import { useAuthContext } from '../../../contexts/AuthContext';
 import ServerCostBanner from '../ServerCostBanner';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function Timer({
   authUser,
@@ -14,7 +14,7 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
-  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = useAuthContext();
+  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = usePartyContext();
   
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
