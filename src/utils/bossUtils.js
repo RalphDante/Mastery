@@ -1,7 +1,6 @@
 import { doc, updateDoc, getDocs, collection, query, increment, serverTimestamp } from 'firebase/firestore';
 import { db } from '../api/firebase';
 import { PLAYER_CONFIG, getTotalExpForLevel, getExpProgressForCurrentLevel } from './playerStatsUtils';
-import { useAuthContext } from '../contexts/AuthContext';
 
 
 export const bosses = [

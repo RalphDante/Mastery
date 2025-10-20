@@ -167,7 +167,7 @@ function GoPremium() {
         {/* Hero Section */}
         <div className="text-center mb-8">
           <h2 className="text-5xl md:text-6xl font-bold mb-4 pb-3 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
-            Your study sessions are about to get way better
+            Start studying like a top 1 Dean's Lister
           </h2>
         
         </div>

@@ -7,11 +7,13 @@ import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import EditProfile from '../../../components/EditProfile/EditProfile';
 import { usePartyContext } from '../../../contexts/PartyContext';
+import InviteModal from './InviteModal';
 
 function PartySection() {
   const {user} = useAuthContext();
   const {partyProfile, partyMembers} = usePartyContext();
   const [showModal, setShowModal] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -31,6 +33,9 @@ function PartySection() {
   // Filter out current user from the list
   const otherMembers = partyMembersArray.filter(m => m.userId !== user?.uid);
 
+  const openInviteModal = ()=>{
+    setShowInviteModal(true);
+  }
   const openModal = () => {
     setShowModal(true);
   };
@@ -196,6 +201,13 @@ function PartySection() {
           >
             View Party
           </button>
+          <button 
+            onClick={openInviteModal}
+            className="hidden md:block px-3 py-1 bg-blue-700 hover:bg-blue-600 text-slate-200 text-sm rounded transition-colors"
+          >
+            Invite to Party
+          </button>
+
         </div>
       </div>
       
@@ -347,6 +359,13 @@ function PartySection() {
         </div>,
         document.body
       )}
+
+      <InviteModal 
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        partyId={partyProfile?.id}
+        partyTitle={partyProfile?.title || "Your Party"}
+      />
     </>
   );
 }

@@ -33,15 +33,20 @@ export const findAvailableParty = async () => {
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
-      limit(1)
+      limit(10) // Get more results to filter in-memory
     );
     
     const querySnapshot = await getDocs(q);
     
-    if (!querySnapshot.empty) {
-      // Return first available party
-      const partyDoc = querySnapshot.docs[0];
-      return { id: partyDoc.id, ...partyDoc.data() };
+    // Filter in-memory for isPublic (handles null/undefined legacy parties)
+    const availableParty = querySnapshot.docs.find(doc => {
+      const data = doc.data();
+      // Treat null/undefined as true (legacy parties were effectively public)
+      return data.isPublic !== false;
+    });
+    
+    if (availableParty) {
+      return { id: availableParty.id, ...availableParty.data() };
     }
     
     return null;
@@ -64,6 +69,7 @@ export const createNewParty = async (leaderId, leaderDisplayName, userStats = {}
         memberCount: 1,
         createdAt: now,
         isActive: true,
+        isPublic: true,  // ← ADD THIS
         currentBoss: {
           ...PARTY_CONFIG.DEFAULT_BOSS,
           createdAt: now
@@ -81,7 +87,6 @@ export const createNewParty = async (leaderId, leaderDisplayName, userStats = {}
         currentBossStudyMinutes: 0,
         lastDamageAt: null,
         lastStudyAt: null,
-        // Denormalized data
         level: userStats.level,
         exp: userStats.exp,
         health: userStats.health,
@@ -165,6 +170,29 @@ export const assignUserToParty = async (userId, displayName, userStats = {}) => 
     console.error('Error assigning user to party:', error);
     throw error;
   }
+};
+
+export const joinPartyByInvite = async (partyId, userId, displayName, userStats) => {
+  const party = await getUserParty(partyId);
+  
+  if (!party) throw new Error('Party not found');
+  if (!party.isActive) throw new Error('Party is no longer active');
+  if (party.memberCount >= PARTY_CONFIG.MAX_MEMBERS) {
+    throw new Error('Party is full');
+  }
+  
+  // Add user to party
+  await addUserToParty(partyId, userId, displayName, userStats);
+  
+  // Update user document
+  const userRef = doc(db, 'users', userId);
+  await updateDoc(userRef, {
+    currentPartyId: partyId,
+    joinedViaInvite: true,
+    joinedAt: new Date()
+  });
+  
+  return party;
 };
 
 export const getUserParty = async (partyId) => {

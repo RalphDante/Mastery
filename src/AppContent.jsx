@@ -78,6 +78,7 @@ import CreateDeckTutorial from './components/tutorials/CustomTutorials/CreateDec
 import Settings from './components/NavBar/ProfileQuickActionsDropDown/Settings.jsx';
 import ProBanner from './pages/HomePage/WelcomeAndQuickStats/ProBanner.jsx';
 import KofiWidget from './components/KofiWidget.jsx';
+import JoinPage from './pages/JoinPage/JoinPage.jsx';
 
 
 
@@ -231,6 +232,7 @@ function AppContent(){
 
                   <Route path="/displayfiles" element={<DisplayFiles />} />
                   <Route path="/flashcards/:deckId?" element={<FlashCardsPage />}/>
+                  <Route path="/join/:partyId?" element={<JoinPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />
                   <Route path='/publicFlashCards/:publicKeyCredential' element={<PublicKeyCredentialFlashCardsPage />} />

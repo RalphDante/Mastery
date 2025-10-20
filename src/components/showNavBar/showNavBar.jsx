@@ -37,7 +37,9 @@ function ShowNavBar({children}){
             location.pathname === '/newflashcardui' || 
             location.pathname === '/flashcards-demo' || 
             location.pathname.startsWith('/flashcards') ||
-            location.pathname.startsWith('/create-deck') 
+            location.pathname.startsWith('/create-deck') ||
+            location.pathname.startsWith('/join') 
+
         ) {
             setShowNavBar(false);
         } else {

@@ -74,6 +74,16 @@ export const PartyProvider = ({ children }) => {
         const initializeParty = async () => {
             if (!userProfile || isInitialized) return;
 
+            const pendingPartyInvite = sessionStorage.getItem('pendingPartyInvite');
+            const skipAutoAssign = sessionStorage.getItem('skipAutoAssign');
+            
+            if ((pendingPartyInvite || skipAutoAssign) && !userProfile.currentPartyId && user?.uid) {
+                console.log('🎟️ User has pending invite, skipping auto-assignment');
+                // Don't auto-assign! Let the JoinPage handle the party join
+                setIsInitialized(true);
+                return;
+            }
+
             // Check if user needs to be assigned to a party
             if (!userProfile.currentPartyId && user?.uid) {
                 console.log('👤 User has no party, assigning...');
