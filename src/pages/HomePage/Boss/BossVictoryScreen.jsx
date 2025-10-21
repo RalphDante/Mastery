@@ -104,7 +104,7 @@ function BossVictoryScreen({rankings}) {
                       >
                     </div>)
                   : <img 
-                  src={`/images/avatars/${victoryData.contributors[0].avatar}`} 
+                  src={`/images/avatars/${victoryData.contributors[0].avatar}.png`} 
                   alt={victoryData.contributors[0].displayName}
                   className="w-full h-full object-cover"
                 />

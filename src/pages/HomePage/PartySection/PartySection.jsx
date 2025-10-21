@@ -9,11 +9,11 @@ import EditProfile from '../../../components/EditProfile/EditProfile';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
-import { leaveParty } from '../../../utils/partyUtils';
+import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
 
 
 function PartySection() {
-  const {user} = useAuthContext();
+  const {user, refreshUserProfile} = useAuthContext();
   const {partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
   const [showModal, setShowModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -69,14 +69,7 @@ function PartySection() {
         }
       );
       
-      if (result.success) {
-        // Refresh party profile to load new party
-        await refreshPartyProfile();
-        
-        // Close modal and show success
-        setShowModal(false);
-        alert(result.message);
-      }
+      window.location.href = "/"
       
     } catch (error) {
       console.error('Failed to leave party:', error);
