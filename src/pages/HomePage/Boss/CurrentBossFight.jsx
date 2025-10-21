@@ -77,7 +77,7 @@ function CurrentBossFight() {
     <div>
       {/* Header */}
       <div className="text-left">
-        <h2 className="text-xl font-semibold mb-1 text-slate-100">{partyProfile.title}</h2>
+        <h2 className="text-xl font-semibold mb-1 text-slate-100">Party Boss</h2>
       </div>
 
       {/* Boss Display */}

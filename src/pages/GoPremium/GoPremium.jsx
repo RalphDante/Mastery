@@ -218,13 +218,7 @@ function GoPremium() {
       <div className="text-gray-500 text-xs">Organize every class and topic perfectly</div>
     </div>
   </li>
-  <li className="flex items-start">
-    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
-    <div>
-      <div className="font-medium">Unlimited Smart Review decks</div>
-      <div className="text-gray-500 text-xs">Focus on what you're struggling with using spaced repetition</div>
-    </div>
-  </li>
+ 
   <li className="flex items-start">
     <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
     <div>
@@ -279,13 +273,7 @@ function GoPremium() {
       <div className="text-gray-500 text-xs">Organize every class and topic perfectly</div>
     </div>
   </li>
-  <li className="flex items-start">
-    <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
-    <div>
-      <div className="font-medium">Unlimited Smart Review decks</div>
-      <div className="text-gray-500 text-xs">Focus on what you're struggling with using spaced repetition</div>
-    </div>
-  </li>
+ 
   <li className="flex items-start">
     <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
     <div>

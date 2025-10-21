@@ -3,13 +3,24 @@ import { useTutorials } from "../../contexts/TutorialContext";
 import TutorialOverlay from "../tutorials/TutorialOverlay";
 import { Wand2 } from 'lucide-react'
 
-function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalClick }) {
+function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalClick, renderTrigger }) {
 
     const { isTutorialAtStep, advanceStep, completeTutorial, isInTutorial } = useTutorials();
     const isCreateDeckNotCompleted = isInTutorial('create-deck');
     const isAtCreateDeckFirstStep = isTutorialAtStep('create-deck', 1);
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+
+    const [isOpen, setIsOpen] = useState(false);
+
+    // Default trigger if none provided
+    const defaultTrigger = (onClick) => (
+        <button onClick={onClick} className="bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm">
+            Create Boss
+        </button>
+    );
+
+    const trigger = renderTrigger || defaultTrigger;
 
     // Handle dropdown toggle
     const toggleDropdown = useCallback((event) => {
@@ -58,14 +69,8 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
             </div>
         </TutorialOverlay> */}
         <div className="relative" ref={dropdownRef}>
-            <button 
-                onClick={toggleDropdown} 
-                className={`bg-violet-600 text-white px-4 py-2 rounded-full font-semibold hover:bg-violet-700 transition-all transform hover:scale-105 shadow-sm
-              
-                `}
-            >
-                Create Boss
-            </button>
+            {trigger(()=>setIsDropdownOpen(!isDropdownOpen))}
+            
             
             <div className={`${isDropdownOpen ? 'block' : 'hidden'} absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5`}>
                 <a 
