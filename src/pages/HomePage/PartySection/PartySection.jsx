@@ -8,14 +8,83 @@ import { useNavigate } from 'react-router-dom';
 import EditProfile from '../../../components/EditProfile/EditProfile';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import InviteModal from './InviteModal';
+import PartyInfoSection from './PartyInfoSection';
+import { leaveParty } from '../../../utils/partyUtils';
+
 
 function PartySection() {
   const {user} = useAuthContext();
-  const {partyProfile, partyMembers} = usePartyContext();
+  const {partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
   const [showModal, setShowModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const {userProfile} = useAuthContext();
 
   const navigate = useNavigate();
+
+  // Handler for toggling privacy
+  const handleTogglePrivacy = async () => {
+    if (!partyProfile?.id || !user?.uid) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await togglePartyPrivacy(partyProfile.id, user.uid);
+      
+      // Refresh party profile to get updated data
+      await refreshPartyProfile();
+      
+      // Show success message
+      alert(result.message);
+      
+    } catch (error) {
+      console.error('Failed to toggle privacy:', error);
+      alert(error.message || 'Failed to change party privacy');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for leaving party
+  const handleLeaveParty = async () => {
+    if (!user?.uid || !userProfile) return;
+    
+    // Confirm before leaving
+    const confirmed = window.confirm(
+      'Are you sure you want to leave this party? You will be moved to a new party.'
+    );
+    
+    if (!confirmed) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await leaveParty(
+        user.uid,
+        userProfile.displayName,
+        {
+          level: userProfile.level,
+          exp: userProfile.exp,
+          health: userProfile.health,
+          mana: userProfile.mana,
+          avatar: userProfile.avatar
+        }
+      );
+      
+      if (result.success) {
+        // Refresh party profile to load new party
+        await refreshPartyProfile();
+        
+        // Close modal and show success
+        setShowModal(false);
+        alert(result.message);
+      }
+      
+    } catch (error) {
+      console.error('Failed to leave party:', error);
+      alert(error.message || 'Failed to leave party');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Convert object to array of members with their userId
   const partyMembersArray = Object.entries(partyMembers).map(([userId, data]) => ({
@@ -234,15 +303,17 @@ function PartySection() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-4 z-10 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-purple-400">Party Members</h2>
-              <button
-                onClick={closeModal}
-                className="text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                <X size={24} />
-              </button>
-            </div>
+            
+
+            <PartyInfoSection
+              partyProfile={partyProfile}
+              user={user}
+              onInvite={() => {setShowInviteModal(true)}}
+              onLeave={handleLeaveParty}
+              onTogglePrivacy={handleTogglePrivacy}
+              closeModal={closeModal}
+              isLoading={isLoading}
+            />
 
             {/* Members List */}
             <div className="p-4 flex flex-col gap-4">

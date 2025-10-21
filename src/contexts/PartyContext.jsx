@@ -22,6 +22,7 @@ export const PartyProvider = ({ children }) => {
     const [partyProfile, setPartyProfile] = useState(null);
     const [partyMembers, setPartyMembers] = useState({});
     const [isInitialized, setIsInitialized] = useState(false);
+    const initializingRef = React.useRef(false); // 🔒 Prevent double execution
 
     // Fetch party profile and its members
     const fetchPartyProfile = useCallback(async (partyId) => {
@@ -72,7 +73,9 @@ export const PartyProvider = ({ children }) => {
     // Initialize party when user profile is available
     useEffect(() => {
         const initializeParty = async () => {
-            if (!userProfile || isInitialized) return;
+            if (!userProfile || isInitialized || initializingRef.current) return;
+
+            initializingRef.current = true; // 🔒 Lock to prevent double execution
 
             const pendingPartyInvite = sessionStorage.getItem('pendingPartyInvite');
             const skipAutoAssign = sessionStorage.getItem('skipAutoAssign');
@@ -97,12 +100,13 @@ export const PartyProvider = ({ children }) => {
                 };
                 
                 await assignUserToParty(user.uid, displayName, userData);
-                // User profile will be refreshed by AuthContext
-
-                // ✅ Refresh user profile to get the updated currentPartyId from AuthContext
+                
+                // ✅ Refresh user profile to get the updated currentPartyId
                 await refreshUserProfile();
-                console.log('🔄 User profile refreshed');
-
+                console.log('🔄 User profile refreshed, party assignment complete');
+                
+                // 🔓 Reset the ref so the effect can run again with the updated userProfile
+                initializingRef.current = false;
                 return;
             }
 
