@@ -9,6 +9,8 @@ import { useSessionTracking } from "../../hooks/useSessionTracking";
 import { db } from "../../api/firebase";
 import BattleResult from "./BattleResult";
 import { RotateCcw } from "lucide-react";
+import { useTutorials } from "../../contexts/TutorialContext";
+import { useTutorialState } from "../../utils/tutorials/hooks";
 
 function FlashCardUI({
     // Data from parent
@@ -37,9 +39,20 @@ function FlashCardUI({
 
     result,
 
-    deaths
+    deaths,
+    onCreateWithAIModalClick,
+
+    knowAnswer,
+    dontKnowAnswer,
+    isMuted
+    
 }) {
     const { user } = useAuthContext();
+
+    const {advanceStep, updateTutorial, isTutorialAtStep} = useTutorials();
+
+    const isFirstTime = isTutorialAtStep('create-deck', 1)
+    const goingThrougCards = isTutorialAtStep('create-deck', 2)
     
     // ==========================================
     // STATE - UI & Study Logic (NO flashCards state!)
@@ -49,6 +62,9 @@ function FlashCardUI({
     const [processing, setProcessing] = useState(false);
     const [isFinished, setIsFinished] = useState(false);
     const [finalTime, setFinalTime] = useState("");
+
+    const isComplete = currentIndex >= flashCards.length && flashCards.length > 0;
+
     
     // Card animations
     const [cardAnimDirection, setCardAnimDirection] = useState("forward");
@@ -68,6 +84,36 @@ function FlashCardUI({
     const cld = new Cloudinary({ cloud: { cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME } });
 
     // ==========================================
+    // SOUND EFFECTS REFS
+    // ==========================================
+    const correctSoundEffect = useRef();
+    const wrongSoundEffect = useRef();
+    const flipCardSoundEffect = useRef();
+    const victorySoundEffect = useRef();
+    const daggerWooshSFX = useRef();
+
+    // ==========================================
+    // SOUND EFFECTS
+    // ==========================================
+    useEffect(()=>{
+        correctSoundEffect.current = new Audio("https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3");
+        correctSoundEffect.current.volume = 0.4;
+
+        daggerWooshSFX.current = new Audio('/sfx/mixkit-dagger-woosh-1487.wav'); // your file path or CDN URL
+        daggerWooshSFX.current.volume = 0.3;
+
+        // ❌ Incorrect (buzzer tone)
+        wrongSoundEffect.current = new Audio("https://cdn.freesound.org/previews/156/156859_2538033-lq.mp3");
+        wrongSoundEffect.current.volume = 0.1
+
+        // 🌀 Flip card (soft whoosh)
+        flipCardSoundEffect.current = new Audio("/sfx/flipCard.mp3");
+        flipCardSoundEffect.current.volume = 0.5
+
+        victorySoundEffect.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3")
+    },[])
+
+    // ==========================================
     // EFFECT - Initialize when flashCards change
     // ==========================================
     useEffect(() => {
@@ -78,8 +124,23 @@ function FlashCardUI({
             setUniqueCardsAttempted(new Set());
             setPhaseOneComplete(false);
             setIsFinished(false);
+            if(isFirstTime){
+                advanceStep('create-deck')
+            }
         }
     }, [flashCards.length]); // Watch for length changes
+
+    useEffect(() => {
+
+        if (isComplete && goingThrougCards) {
+            advanceStep('create-deck');
+        }
+        if (isComplete){
+            playSoundEffect(victorySoundEffect)
+        }
+
+       
+    }, [isComplete]);
 
     // ==========================================
     // EFFECT - Handle redo deck
@@ -97,6 +158,14 @@ function FlashCardUI({
     useEffect(() => {
         setIsFinished(currentIndex >= flashCards.length && flashCards.length > 0);
     }, [currentIndex, flashCards.length]);
+
+
+    const playSoundEffect = useCallback((soundRef) => {
+        if (!isMuted && soundRef.current) {
+            soundRef.current.currentTime = 0;
+            soundRef.current.play().catch(err => console.log('Audio play failed:', err));
+        }
+    }, [isMuted]);
 
     // ==========================================
     // HELPER - Shuffle cards
@@ -174,12 +243,20 @@ function FlashCardUI({
                 if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCard.id)) {
                     setKnowAnswer(prev => prev + 1);
                 }
+               
+                playSoundEffect(correctSoundEffect)
+                if(!isMuted){
+                    daggerWooshSFX.current.play().catch(err=>console.log(err));
+                 }
+
+               
                 setAnswers(prev => [...prev, true]);
             } else {
                 if (!phaseOneComplete || !uniqueCardsAttempted.has(currentCard.id)) {
                     setDontKnowAnswer(prev => prev + 1);
                     
                 }
+                playSoundEffect(wrongSoundEffect);
                 setAnswers(prev => [...prev, false]);
                 
             }
@@ -216,18 +293,37 @@ function FlashCardUI({
         originalDeckSize, uniqueCardsAttempted, phaseOneComplete, 
         trackCardReview, setCurrentIndex, setPhaseOneComplete]);
 
-    const handleShowAnswer = () => setShowAnswer(!showAnswer);
+    const handleShowAnswer = () => {
+        setShowAnswer(!showAnswer)
+        playSoundEffect(flipCardSoundEffect)
+     
+
+      
+    };
 
     const handleGoBack = useCallback(() => {
         setProcessing(true);
         if (currentIndex > 0) {
             setTimeout(() => {
                 const lastAnswerWasCorrect = answers[currentIndex - 1];
+                const previousCard = flashCards[currentIndex - 1];
+                
                 if (lastAnswerWasCorrect) {
                     setKnowAnswer(prev => prev - 1);
                 } else {
                     setDontKnowAnswer(prev => prev - 1);
+                    
+                    // Remove the duplicate that was added to the end when marked incorrect
+                    setFlashCards(prevCards => {
+                        const lastOccurrenceIndex = prevCards.map(card => card.id)
+                            .lastIndexOf(previousCard.id);
+                        if (lastOccurrenceIndex > currentIndex) {
+                            return prevCards.filter((_, idx) => idx !== lastOccurrenceIndex);
+                        }
+                        return prevCards;
+                    });
                 }
+                
                 setCurrentIndex(currentIndex - 1);
                 setAnswers(answers.slice(0, -1));
                 setCardAnimDirection("backward");
@@ -238,22 +334,23 @@ function FlashCardUI({
         } else {
             setProcessing(false);
         }
-    }, [currentIndex, answers, setKnowAnswer, setDontKnowAnswer, setCurrentIndex]);
+    }, [currentIndex, answers, flashCards, setKnowAnswer, setDontKnowAnswer, setCurrentIndex, setFlashCards]);
 
     // ==========================================
     // RENDER HELPERS
     // ==========================================
     const currentCard = flashCards[currentIndex];
-    const isComplete = currentIndex >= flashCards.length && flashCards.length > 0;
 
     const renderStudyButtons = () => {
+        const isInReviewPhase = phaseOneComplete || currentIndex >= originalDeckSize;
+
         const isDisabled = processing || flashCards.length === 0 || currentIndex >= flashCards.length || !showAnswer;
         if(!isComplete){
             return (
                 <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
                     <button 
                         className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
-                        disabled={isDisabled || currentIndex === 0} 
+                        disabled={isInReviewPhase || isDisabled || currentIndex === 0} 
                         onClick={handleGoBack}
                     >
                         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -293,8 +390,9 @@ function FlashCardUI({
                 </div>
             );
         } else {
+            // advanceStep('create-deck')
             return(
-                <div className="flex justify-center items-center">
+                <div className="flex justify-center items-center lg:hidden">
                     <button 
                     onClick={() => setRedoDeck(true)}
                     className="min-w-80 bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
@@ -308,6 +406,8 @@ function FlashCardUI({
         }
       
     };
+
+   
 
     // ==========================================
     // LOADING & ERROR STATES
@@ -375,6 +475,9 @@ function FlashCardUI({
                     result={result}
                     currentIndex={currentIndex}
                     deaths={deaths}
+                    onCreateWithAIModalClick={onCreateWithAIModalClick}
+                    knowAnswer={knowAnswer}
+                    dontKnowAnswer={dontKnowAnswer}
                 />
         
             }

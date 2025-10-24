@@ -231,7 +231,7 @@ function AppContent(){
                   <Route path="/edit-deck/:deckId" element={<CreateDeck />}/>
 
                   <Route path="/displayfiles" element={<DisplayFiles />} />
-                  <Route path="/flashcards/:deckId?" element={<FlashCardsPage />}/>
+                  <Route path="/flashcards/:deckId?" element={<FlashCardsPage onCreateWithAIModalClick={handleShowCreateWithAIModalClick}/>} />
                   <Route path="/join/:partyId?" element={<JoinPage />}/>
                   <Route path="/contactme" element={<ContactMe />}/>
                   <Route path='/mastery' element={<Mastery />} />

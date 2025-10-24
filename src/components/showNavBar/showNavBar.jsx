@@ -38,7 +38,8 @@ function ShowNavBar({children}){
             location.pathname === '/flashcards-demo' || 
             location.pathname.startsWith('/flashcards') ||
             location.pathname.startsWith('/create-deck') ||
-            location.pathname.startsWith('/join') 
+            location.pathname.startsWith('/join')  || 
+            location.pathname.startsWith('/edit-deck')
 
         ) {
             setShowNavBar(false);

@@ -225,8 +225,6 @@ async function handleSubscriptionUpdate(data, environment) {
     console.log('Found email in data.custom_data.userEmail:', userEmail);
   } else if (data.customer_id) {
     console.log('No direct email found, customer_id available:', data.customer_id);
-    // We might need to fetch customer details from Paddle API here
-    // For now, let's see if we can use custom_data
   }
 
   if (!userEmail) {
@@ -253,7 +251,7 @@ async function handleSubscriptionUpdate(data, environment) {
     const userId = userDoc.id;
     const currentUserData = userDoc.data();
 
-    // CRITICAL FIX: Check if we have a pending cancellation
+    // Check if we have a pending cancellation
     const currentSubscription = currentUserData.subscription || {};
     const hasScheduledCancellation = scheduled_change && scheduled_change.action === 'cancel';
     const isCurrentlyCancelRequested = currentSubscription.status === 'cancel_requested';
@@ -280,11 +278,15 @@ async function handleSubscriptionUpdate(data, environment) {
     let expiresAt = null;
     let subscriptionStatus = status; // Default to Paddle's status
 
+    // ✅ FIXED: Determine tier BEFORE status logic
     if (priceId === proMonthlyId || priceId === proYearlyId) {
       tier = 'pro';
+      console.log(`✅ Detected PRO tier from priceId: ${priceId}`);
+    } else {
+      console.log(`⚠️ No matching PRO priceId found. Using free tier. PriceId: ${priceId}`);
     }
 
-    // CRITICAL FIX: Handle expiration and status logic properly
+    // ✅ FIXED: Handle expiration and status logic properly
     if (hasScheduledCancellation) {
       // Paddle has a scheduled cancellation
       subscriptionStatus = 'cancel_requested';
@@ -300,10 +302,12 @@ async function handleSubscriptionUpdate(data, environment) {
       // Actually canceled
       subscriptionStatus = 'canceled';
       expiresAt = Timestamp.fromDate(new Date(canceled_at));
-    } else if (next_billed_at && status === 'active') {
-      // Normal active subscription
-      subscriptionStatus = 'active';
+      console.log('📅 Subscription canceled at:', canceled_at);
+    } else if (next_billed_at && (status === 'active' || status === 'trialing')) {
+      // ✅ CRITICAL FIX: Handle BOTH active AND trialing subscriptions
+      subscriptionStatus = status; // Preserve 'trialing' or 'active' from Paddle
       expiresAt = Timestamp.fromDate(new Date(next_billed_at));
+      console.log(`📅 Setting subscription as ${status} with next billing/trial end:`, next_billed_at);
     }
 
     // If no expiration date determined, keep the existing one
@@ -322,7 +326,7 @@ async function handleSubscriptionUpdate(data, environment) {
     const updateData = {
       subscription: {
         tier: tier,
-        status: subscriptionStatus, // Use our determined status, not always Paddle's
+        status: subscriptionStatus,
         expiresAt: expiresAt,
         priceId: priceId,
         paddleSubscriptionId: data.id,
@@ -333,16 +337,14 @@ async function handleSubscriptionUpdate(data, environment) {
     // Update tier-based limits based on new subscription
     if (tier === 'pro') {
       updateData['limits.maxAiGenerations'] = -1;
-      updateData['limits.maxCards'] = -1; // unlimited
+      updateData['limits.maxCards'] = -1;
       updateData['limits.maxDecks'] = -1;
       updateData['limits.maxSmartReviewDecks'] = -1;
       updateData['limits.maxFolders'] = -1;
 
-      // 🆕 ALWAYS UPDATE AVATAR TO KNIGHT WHEN UPGRADING TO PRO
-      // This is a premium perk - show off that pro status!
+      // Update avatar to knight when upgrading to pro
       updateData['avatar'] = 'knight-idle';
       console.log(`🛡️ Upgrading avatar to knight-idle for pro user ${userId}`);
-
     } else {
       // Free tier limits
       updateData['limits.maxAiGenerations'] = 20;
@@ -351,24 +353,21 @@ async function handleSubscriptionUpdate(data, environment) {
       updateData['limits.maxSmartReviewDecks'] = 2;
       updateData['limits.maxFolders'] = 10; 
 
-      // 🆕 REVERT PREMIUM AVATARS WHEN DOWNGRADING
+      // Revert premium avatars when downgrading
       if (isPremiumAvatar(currentUserData.avatar)) {
         updateData['avatar'] = DEFAULT_FREE_AVATAR;
-        console.log(`⬇️ Reverting premium avatar (${currentUserData.avatar}) to ${DEFAULT_FREE_AVATAR} for downgraded user ${userId}`);
+        console.log(`⬇️ Reverting premium avatar to ${DEFAULT_FREE_AVATAR}`);
       }
     }
 
-  
-
-    // 🆕 DENORMALIZE AVATAR AND TIER TO PARTY MEMBERSHIP
-    // Pass the currentPartyId to avoid extra read
+    // Denormalize avatar and tier to party membership
     await updateUserInParties(
       userId, 
       {
         avatar: updateData['avatar'] || currentUserData.avatar,
         tier: tier
       },
-      currentUserData.currentPartyId // Pass party ID directly
+      currentUserData.currentPartyId
     );
 
     await db.collection('users').doc(userId).update(updateData);
@@ -655,7 +654,6 @@ exports.cancelSubscription = onCall(async (request) => {
 // MANUAL DOWNGRADE TEST
 exports.manuallyProcessExpired = onCall(async (request) => {
   try {
-    // Optional: Add admin check or remove for testing
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
@@ -664,10 +662,9 @@ exports.manuallyProcessExpired = onCall(async (request) => {
     
     const now = Timestamp.now();
     
-    // Find users with expired subscriptions that haven't been downgraded yet
     const expiredQuery = await db.collection('users')
       .where('subscription.expiresAt', '<=', now)
-      .where('subscription.tier', '==', 'pro') // Still marked as pro
+      .where('subscription.tier', '==', 'pro')
       .get();
     
     console.log(`Found ${expiredQuery.size} expired subscriptions for manual processing`);
@@ -680,39 +677,51 @@ exports.manuallyProcessExpired = onCall(async (request) => {
       };
     }
     
-    const batch = db.batch();
     const processedUsers = [];
     
-    expiredQuery.docs.forEach((userDoc) => {
+    // ✅ FIXED: Process each user individually (not in batch) to handle party updates
+    for (const userDoc of expiredQuery.docs) {
       const userId = userDoc.id;
       const userData = userDoc.data();
       
       console.log(`⬇️ MANUAL: Downgrading expired subscription for user ${userId}`);
       
-      // Apply grandfather method - keep existing content but apply free limits
       const updateData = {
         'subscription.tier': 'free',
         'subscription.status': 'expired',
         'subscription.updatedAt': FieldValue.serverTimestamp(),
-        'subscription.manuallyProcessed': true, // Flag to show this was manual
+        'subscription.manuallyProcessed': true,
         
-        // Reset to free tier limits (grandfather existing content)
         'limits.maxAiGenerations': 20,
-        'limits.maxCards': 100, // They keep existing cards but can't add more
+        'limits.maxCards': 100,
         'limits.maxDecks': 5,
         'limits.maxSmartReviewDecks': 2,
         'limits.maxFolders': 10
       };
       
-      batch.update(userDoc.ref, updateData);
+      // ✅ REVERT PREMIUM AVATARS
+      if (isPremiumAvatar(userData.avatar)) {
+        updateData['avatar'] = DEFAULT_FREE_AVATAR;
+        console.log(`⬇️ Reverting premium avatar for ${userId}`);
+      }
+      
+      // Update user document
+      await db.collection('users').doc(userId).update(updateData);
+      
+      // ✅ UPDATE PARTY MEMBERSHIP
+      if (userData.currentPartyId) {
+        await updateUserInParties(userId, {
+          avatar: updateData['avatar'] || userData.avatar,
+          tier: 'free'
+        }, userData.currentPartyId);
+      }
+      
       processedUsers.push({
         userId,
         email: userData.email,
         previousTier: 'pro'
       });
-    });
-    
-    await batch.commit();
+    }
     
     console.log(`✅ MANUAL: Processed ${expiredQuery.size} expired subscriptions`);
     
@@ -1083,58 +1092,19 @@ exports.trackAiGeneration = onCall(async (request) => {
 // ======================
 
 exports.onUserCreate = onDocumentCreated('users/{userId}', async (event) => {
-  
   try {
     const userId = event.params.userId;
-    const snap = event.data;
-    const userData = snap.data();
+    const userData = event.data.data();
 
-    const isInProduction = process.env.ENVIRONMENT === "production" ? true : false;
+    const isInProduction = process.env.ENVIRONMENT === "production";
+    
     if (isInProduction && userData.email) {
       await addToMailerLite(userData.email, userData.displayName);
-    }
-    
-    // Initialize limits if they don't exist
-    if (!userData.limits) {
-      const now = new Date();
-      const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-      
-      await db.collection('users').doc(userId).update({
-        limits: {
-          // Free tier defaults - matching your schema
-          maxAiGenerations: 20,
-          maxCards: 100,
-          maxDecks: 5,
-          maxSmartReviewDecks: 2,
-          maxFolders: 10,
-          
-          // Current usage counters
-          aiGenerationsUsed: 0,
-          currentCards: 0,
-          currentDecks: 0,
-          smartReviewDecks: 0,
-          currentFolders: 0,
-          aiGenerationsResetAt: Timestamp.fromDate(nextMonthStart)
-        },
-        stats: {
-          totalReviews: 0,
-          weeklyReviews: 0,
-          currentStreak: 0,
-          longestStreak: 0
-        },
-        tutorials: {
-          "create-deck": { completed: false, step: 1 },
-          "smart-review": { completed: false, step: 1 },
-          "global-review": { completed: false, step: 1 },
-          "deck-sharing": { completed: false, step: 1 }
-        }
-      });
-      
-      console.log(`✨ Initialized user profile for ${userId}`);
+      console.log(`✅ Added user ${userId} to MailerLite`);
     }
     
   } catch (error) {
-    console.error('Error initializing user profile:', error);
+    console.error('Error in onUserCreate:', error);
   }
 });
 

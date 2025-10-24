@@ -4,7 +4,7 @@ import { ArrowLeft, Globe, RotateCcw } from 'lucide-react';
 import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
-import { useEffect, useState, useCallback } from "react"; 
+import { useEffect, useState, useCallback, useRef } from "react"; 
 import { useParams } from "react-router-dom";
 import { X } from 'lucide-react';
 
@@ -17,12 +17,13 @@ import { useDeckCache } from '../../contexts/DeckCacheContext';
 
 import Boss from '../HomePage/Boss/Boss.jsx';
 import { createPortal } from 'react-dom';
+import { useTutorials } from '../../contexts/TutorialContext.jsx';
 
 
-function FlashCardsPage() {
+function FlashCardsPage({onCreateWithAIModalClick}) {
     const [deaths, setDeaths] = useState(0);
 
-
+    const {advanceStep} = useTutorials();
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     const { user } = useAuthContext();
@@ -64,6 +65,25 @@ function FlashCardsPage() {
             setPercent(0);
         }
     }, [knowAnswer, dontKnowAnswer]);
+
+
+    // ==========================================
+    // SFX TOGGLE
+    // ==========================================
+    // Add mute state at parent level
+    const [isMuted, setIsMuted] = useState(() => {
+        return localStorage.getItem('soundMuted') === 'true';
+    });
+
+    // Handler to update mute state
+    const handleToggleMute = useCallback(() => {
+        setIsMuted(prev => {
+            const newMuted = !prev;
+            localStorage.setItem('soundMuted', newMuted.toString());
+            return newMuted;
+        });
+    }, []);
+
 
     // ==========================================
     // HELPER FUNCTION - Calculate Grade
@@ -171,6 +191,7 @@ function FlashCardsPage() {
                     console.log('Could not fetch owner info:', err);
                 }
             }
+            // advanceStep('create-deck')
 
             setLoading(false);
 
@@ -311,6 +332,9 @@ function FlashCardsPage() {
                         deckId={paramDeckId}
                         deckData={deckData}
                         flashCards={flashCards}
+                        user={user}
+                        isMuted={isMuted}
+                        onToggleMute={handleToggleMute}
                     />
                 </div>
 
@@ -363,6 +387,13 @@ function FlashCardsPage() {
                     result={calculateGrade(currentIndex, knowAnswer)}
 
                     deaths={deaths}
+
+                    onCreateWithAIModalClick={onCreateWithAIModalClick}
+
+                    knowAnswer={knowAnswer}
+                    dontKnowAnswer={dontKnowAnswer}
+
+                    isMuted={isMuted}
                 />
             </div>
             

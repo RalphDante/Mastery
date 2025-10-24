@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../api/firebase';
+import { useAuthContext } from '../../contexts/AuthContext';
 
-export function useTutorialState(authUser) {
+export function useTutorialState() {
   const [tutorials, setTutorials] = useState({});
   const [loading, setLoading] = useState(true);
+  const {user} = useAuthContext();
+  const authUser = user;
 
   // Fetch tutorial data on mount
   useEffect(() => {
@@ -34,11 +37,10 @@ export function useTutorialState(authUser) {
   const updateTutorial = async (tutorialName, updates) => {
     if (!authUser) return;
 
-    // Calculate the new state first
     let newTutorialState;
     setTutorials(prev => {
       newTutorialState = {
-        ...prev[tutorialName],
+        ...(prev[tutorialName] || {}), // ← This is crucial
         ...updates
       };
       return {
@@ -47,14 +49,12 @@ export function useTutorialState(authUser) {
       };
     });
 
-    // Update Firestore in background using the calculated new state
     try {
       await updateDoc(doc(db, "users", authUser.uid), {
         [`tutorials.${tutorialName}`]: newTutorialState
       });
     } catch (error) {
       console.error("Error updating tutorial:", error);
-      // Could revert local state here if needed
     }
   };
 
@@ -74,9 +74,19 @@ export function useTutorialState(authUser) {
     
     // FIXED: No more double updates or async in setState
     advanceStep: async (name) => {
-      if (!tutorials[name]) return;
-      const newStep = tutorials[name].step + 1;
-      await updateTutorial(name, { step: newStep });
+      if (!authUser) return;
+      
+      // Use functional update to get current state
+      let currentStep;
+      setTutorials(prev => {
+        if (!prev[name]) return prev;
+        currentStep = prev[name].step;
+        return prev;
+      });
+      
+      if (currentStep !== undefined) {
+        await updateTutorial(name, { step: currentStep + 1 });
+      }
     },
     
     goBackAStep: async (name) => {
@@ -92,7 +102,6 @@ export function useTutorialState(authUser) {
 function getDefaultTutorials() {
   return {
     "create-deck": { completed: false, step: 1 },
-    "smart-review": { completed: false, step: 1 },
     "global-review": { completed: false, step: 1 },
     "deck-sharing": { completed: false, step: 1 }
   };

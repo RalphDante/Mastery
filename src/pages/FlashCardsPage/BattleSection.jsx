@@ -12,7 +12,9 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
     const {partyMembers} = usePartyContext();
     const [showModal, setShowModal] = useState(false);
     const doubledCardCount = cardCount * (1 + deaths);
-    const playerHealth = Math.round((doubledCardCount - dontKnowAnswer) / cardCount * 100);
+    // Calculate how many wrong answers within current "life"
+    const wrongAnswersInCurrentLife = dontKnowAnswer % cardCount;
+    const playerHealth = Math.round((cardCount - wrongAnswersInCurrentLife) / cardCount * 100);
 
     const openModal = ()=>{
         setShowModal(true);
@@ -21,17 +23,16 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
     const closeModal = ()=>{
         setShowModal(false);
     }
-
-
     useEffect(() => {
-        if (dontKnowAnswer >= doubledCardCount) {
-            setDeaths(prev => prev + 1);
-            console.log("deaths: ", deaths + 1)
-        } 
-        if(dontKnowAnswer === 0){
-            setDeaths(0)
+        // When player reaches cardCount wrong answers, increment death counter
+        const expectedDeaths = Math.floor(dontKnowAnswer / cardCount);
+        if (expectedDeaths !== deaths) {
+            setDeaths(expectedDeaths);
+            console.log("deaths: ", expectedDeaths);
         }
-    }, [dontKnowAnswer]);
+    }, [dontKnowAnswer, cardCount]);
+
+    
     
 
 

@@ -14,6 +14,8 @@ import {
 
 import { useEffect, useState, useCallback } from "react";
 
+// sfx
+
 // Context
 import { useAuthContext } from '../../../contexts/AuthContext';
 
@@ -184,10 +186,6 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                         "create-deck": { 
                             completed: false, 
                             step: 1 
-                        },
-                        "smart-review": { 
-                            completed: false, 
-                            step: 1, 
                         },
                         "global-review": { 
                             completed: false, 

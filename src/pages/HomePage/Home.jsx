@@ -19,12 +19,16 @@ import Boss from './Boss/Boss.jsx';
 import Timer from './Timer/Timer.jsx';
 import ServerCostBanner from './ServerCostBanner.jsx';
 import Options from './Timer/Options.jsx';
+import { useAuthContext } from '../../contexts/AuthContext.jsx';
+import { useTutorials } from '../../contexts/TutorialContext.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const {isTutorialAtStep} = useTutorials();
 
-  const [authUser, setAuthUser] = useState(null);
+  const {user, userProfile} = useAuthContext();
+
 
   const navigate = useNavigate();
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
@@ -38,25 +42,19 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     }
   };
 
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setAuthUser(user);
-        // testExpiration()
-
-      } else {
-        setAuthUser(null);
-        // navigate('/try-now');
-      }
-    });
-
-    // Clean up the subscription on unmount
-    return () => unsubscribe();
+    const neverTriedFlashcardBattle = isTutorialAtStep("create-deck", 1);
     
-  }, []);
+    // If they haven't started OR haven't seen demo
+    if (neverTriedFlashcardBattle) {
+        navigate('/flashcards/DEMO_MATH_BOSS_001');
+    }
+}, [userProfile, navigate]);
 
-  if (!authUser) {
+
+  
+
+  if (!user) {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
@@ -68,7 +66,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
               <Options 
                 db = {db}
-                authUser = {authUser}
+                authUser = {user}
                 onCreateDeckClick={onCreateDeckClick}
                 onCreateWithAIModalClick={onCreateWithAIModalClick}
               />
