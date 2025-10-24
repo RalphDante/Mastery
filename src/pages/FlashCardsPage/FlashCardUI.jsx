@@ -295,7 +295,7 @@ function FlashCardUI({
 
     const handleShowAnswer = () => {
         setShowAnswer(!showAnswer)
-        playSoundEffect(flipCardSoundEffect)
+        // playSoundEffect(flipCardSoundEffect)
     };
 
     const handleGoBack = useCallback(() => {
