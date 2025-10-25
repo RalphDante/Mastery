@@ -168,111 +168,183 @@ const TryNowPage = () => {
 
 
         {/* Hero Section */}
-        <main className="relative z-10 max-w-7xl mx-auto px-6 pt-1 pb-10">
+        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-10">
           <div className="text-center">
-            {/* Hero Heading with SEO optimization */}
             <HeroSection
               setShowModal={setShowModal}
               signIn={signIn}
             />
-            
 
-            {/* Social Proof Section */}
-            {/* <TestimonialsCarousel /> */}
-
-            
-
-
-            {/* Benefits Section for SEO */}
-            <section className="mb-20" aria-labelledby="benefits">
-              <h2 id="benefits" className="text-3xl font-bold mb-8">Why Choose Mastery to study?</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 text-left">
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-violet-400 mb-3">Save Time</h3>
-                  <p className="text-gray-300">Create hundreds of flashcards in seconds instead of hours of manual work</p>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-purple-400 mb-3">Better Retention</h3>
-                  <p className="text-gray-300">AI-optimized flashcards use proven memory techniques for faster learning</p>
-                </div>
-                <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-                  <h3 className="text-xl font-semibold text-indigo-400 mb-3">Any Subject</h3>
-                  <p className="text-gray-300">Works with math, science, history, languages, and any study material</p>
-                </div>
+            {/* Problem/Agitate/Solve Section */}
+            <section className="mb-12 sm:mb-16 lg:mb-20 mx-auto px-4 sm:px-0">
+              {/* Problem Headline */}
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-center">
+                Here's The Problem <span className="text-violet-400">You're</span> Facing
+              </h2>
+              
+              {/* Agitation Box */}
+              <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-white/10 mb-6 sm:mb-8 max-w-4xl mx-auto">
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+                  Everyone says the same thing: <span className="text-red-400 font-semibold">"Just study harder. Put in the hours."</span>
+                </p>
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+                  So you do. You spend <span className="text-red-400 font-semibold">10 hours cramming</span>. 
+                  You miss the party. Skip the hangout. Say no to the beach trip. 
+                </p>
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+                  Your friends are out living their lives. Making memories. Having fun. 
+                  And you? <span className="text-red-400 font-semibold">You're stuck in your room studying</span>.
+                </p>
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-4 sm:mb-6">
+                  <span className="text-red-400 font-bold text-lg sm:text-xl lg:text-2xl">Which means you'll never get to enjoy your teenage years. </span> 
+                  The parties you missed? You can't get those back. The memories your friends made? You weren't there.
+                </p>
+                <p className="text-sm sm:text-base lg:text-lg text-violet-400 font-semibold italic border-l-4 border-violet-400 pl-3 sm:pl-4">
+                  And the worst part? It's not even your fault. Nobody taught you there was a better way.
+                </p>
               </div>
             </section>
 
-            {/* Featured Decks section */}
-            {/* <MostCopiesSection /> */}
+            {/* Benefits Section */}
+            <section className="mb-12 sm:mb-16 lg:mb-20 px-4 sm:px-0" aria-labelledby="benefits">
+              {/* Transition */}
+              <div className="text-center mb-6 sm:mb-8">
+                <p className="text-xl sm:text-2xl lg:text-3xl font-semibold px-4">
+                  What if you could Cut study time in Half AND make it actually fun?
+                </p>
+              </div>
 
-            {/* How It Works Section with Schema markup */}
-            {/* <section className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20" aria-labelledby="how-it-works">
-              <h2 id="how-it-works" className="sr-only">How AI Flashcard Generation Works</h2>
-              {steps.map((step, index) => {
-                const Icon = step.icon;
-                const isActive = currentStep === index;
-                return (
-                  <article
-                    key={index}
-                    className={`relative p-8 rounded-2xl border transition-all duration-500 ${
-                      isActive 
-                        ? 'border-violet-500/50 bg-gradient-to-br from-violet-500/10 to-purple-500/10 shadow-2xl shadow-violet-500/25 scale-105' 
-                        : 'border-white/10 bg-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className={`w-16 h-16 rounded-2xl bg-gradient-to-r ${step.color} flex items-center justify-center mx-auto mb-4 ${isActive ? 'animate-pulse' : ''}`}>
-                      <Icon />
+              {/* Solution */}
+              <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-slate-500/30 max-w-6xl mx-auto">
+                <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center px-4">
+                  Here's Where <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent ">
+              Mastery
+            </span> Changes Everything
+                </h3>
+                
+                {/* 3 COLUMNS - Stack on mobile, side-by-side on desktop */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                  
+                  {/* Column 1 */}
+                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-left text-base sm:text-lg font-semibold text-violet-400">
+                        Upload Notes → Get Flashcards in 30 Seconds
+                      </h4>
                     </div>
-                    <h3 className="text-xl font-bold mb-2">{step.text}</h3>
-                    <p className="text-sm text-gray-400 mb-2">{step.description}</p>
-                    <div className="text-sm text-gray-500">Step {index + 1}</div>
-                    {isActive && (
-                      <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-violet-500/20 to-purple-500/20 animate-pulse" aria-hidden="true"></div>
-                    )}
-                  </article>
-                );
-              })}
-            </section> */}
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                      <span className="font-semibold">Which means you get your weekends back.</span> No more Sunday nights making flashcards while your friends are out.
+                    </p>
+                  </div>
 
-            
-            
+                  {/* Column 2 */}
+                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                      </div>
+                      <h4 className="text-left text-base sm:text-lg font-semibold text-purple-400">
+                        Party Up With Friends and Fight Bosses
+                      </h4>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                      <span className="font-semibold">Which means you'll actually look forward to studying</span> instead of dreading it.
+                    </p>
+                  </div>
 
-            {/* FAQ Section for SEO */}
-            <section className="mb-20 text-left max-w-4xl mx-auto" aria-labelledby="faq">
-              <h2 id="faq" className="text-3xl font-bold mb-8 text-center">Frequently Asked Questions</h2>
-              <div className="space-y-4">
-                <details className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <summary className="font-semibold text-lg cursor-pointer text-violet-400 mb-2">
+                  {/* Column 3 */}
+                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
+                        <Brain className="w-5 h-5" />
+                      </div>
+                      <h4 className="text-left text-base sm:text-lg font-semibold text-indigo-400">
+                        Active recall built in. The same science med students use.
+                      </h4>
+                    </div>
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                      <span className="font-semibold">Which means you're getting better grades</span> while it feels like you're just gaming with friends.
+                    </p>
+                  </div>
+                </div>
+
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 sm:px-0">
+                  <button 
+                    className="group bg-gradient-to-r from-violet-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+                    onClick={() => signIn()}
+                  >
+                    <span>Start Free</span>
+                    <ArrowRight />
+                  </button>
+                  
+                  <button 
+                    className="group border-2 border-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    <span>See Pro Features</span>
+                  </button>
+                </div>
+
+                <p className="text-center text-xs sm:text-sm text-gray-400 mt-4 px-4">
+                  Start with 5 free AI generations. No credit card required.
+                </p>
+              </div>
+            </section>
+
+            {/* FAQ Section */}
+            <section className="mb-12 sm:mb-16 lg:mb-20 text-left max-w-4xl mx-auto px-4" aria-labelledby="faq">
+              <h2 id="faq" className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">
+                Frequently Asked Questions
+              </h2>
+              <div className="space-y-3 sm:space-y-4">
+                <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
+                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
                     How does the AI flashcard generator work?
                   </summary>
-                  <p className="text-gray-300">Simply take a photo of your notes, textbook, or any study material. Our AI analyzes the content, extracts key concepts, and automatically creates comprehensive flashcards with questions and answers.</p>
+                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                    Simply take a photo of your notes, textbook, or any study material. Our AI analyzes the content, extracts key concepts, and automatically creates comprehensive flashcards with questions and answers.
+                  </p>
                 </details>
-                <details className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <summary className="font-semibold text-lg cursor-pointer text-violet-400 mb-2">
+                <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
+                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
                     What types of study materials can I upload?
                   </summary>
-                  <p className="text-gray-300">You can upload photos of handwritten notes, textbook pages, lecture slides, worksheets, and any printed study materials. Our AI works with multiple languages and subjects.</p>
+                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                    You can upload photos of handwritten notes, textbook pages, lecture slides, worksheets, and any printed study materials. Our AI works with multiple languages and subjects.
+                  </p>
                 </details>
-                <details className="bg-white/5 rounded-lg p-4 border border-white/10">
-                  <summary className="font-semibold text-lg cursor-pointer text-violet-400 mb-2">
-                    How does the Smart Review study mode work?
+                {/* <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
+                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
+                    How does Active Recall study mode work?
                   </summary>
-                  <p className="text-gray-300">Smart Review uses spaced repetition to optimize your study sessions. After each flashcard, rate your performance as Again, Hard, Good, or Easy. Cards you find difficult appear more frequently, while easy cards show up less often, maximizing your learning efficiency.</p>
-                </details>
+                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                    Active Recall uses Science backed data to optimize your study sessions. After each flashcard, rate your performance as Again, Hard, Good, or Easy. Cards you find difficult appear more frequently, while easy cards show up less often, maximizing your learning efficiency.
+                  </p>
+                </details> */}
               </div>
             </section>
 
-            {/* Final CTA with better copy */}
-            <section className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 backdrop-blur-sm rounded-3xl p-8 border border-violet-500/30">
-              <h2 className="text-4xl font-bold mb-4">Ready to Transform Your Study Routine?</h2>
-              <p className="text-xl text-gray-300 mb-6">Join students who've improved their grades with AI-powered flashcard generation</p>
+            {/* Final CTA */}
+            <section className="bg-white/5  backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-violet-500/30 mx-4 sm:mx-0">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+                Ready to Transform Your Study Routine?
+              </h2>
+              <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-4 sm:mb-6">
+                Join students who've improved their grades with Mastery Study
+              </p>
               <button 
-                className="bg-gradient-to-r from-violet-500 to-purple-600 px-10 py-5 rounded-full text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center space-x-3 mx-auto"
+                className="bg-gradient-to-r from-violet-500 to-purple-600 w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 mx-auto"
                 onClick={() => signIn()}
                 aria-label="Start creating AI flashcards from your notes"
               >
                 <span>Start Now For Free</span>
-                <Zap />
+                <ArrowRight />
               </button>
             </section>
           </div>

@@ -164,13 +164,53 @@ function GoPremium() {
       </nav>
 
       <div className="max-w-4xl mx-auto px-6 py-0">
-        {/* Hero Section */}
-        <div className="text-center mb-8">
-          <h2 className="text-5xl md:text-6xl font-bold mb-4 pb-3 bg-gradient-to-r from-violet-400 to-white bg-clip-text text-transparent">
-            Start studying like a top 1 Dean's Lister
-          </h2>
         
+        {/* Compact Hero Section */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet-400 via-purple-400 to-white bg-clip-text text-transparent">
+            Study Smarter for Less Than a Coffee Per Week
+          </h1>
+          
+          {/* Compact "Which means" pills */}
+          <div className="flex flex-wrap justify-center gap-3 mt-6">
+            <span className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              ✓ No more wasted weekends
+            </span>
+            <span className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              ✓ No more all-nighters
+            </span>
+            <span className="bg-white/10 backdrop-blur-sm px-5 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              ✓ More time for life
+            </span>
+          </div>
         </div>
+        
+       
+
+        {/* Social Proof Card */}
+        <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-2xl p-6 mb-8 max-w-3xl mx-auto">
+          <div className="flex items-start space-x-4">
+            <div className="flex-shrink-0">
+              <div className="w-12 h-12 bg-violet-200 rounded-full flex items-center justify-center">
+                <span className="text-xl font-bold text-violet-700">CH</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-gray-800 italic mb-3">
+                "I have a lot of modules and I'm tired of spending too much time on 
+                <span className="font-semibold"> consumption without having enough for the digestion phase</span>. 
+                Mastery does a really good job of extracting the right information to test my active recall. 
+                <span className="font-semibold"> It's better than apps like Anki and NotebookLM.</span>"
+              </p>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm font-semibold text-violet-700">Cheng Han</span>
+                <span className="text-gray-400">•</span>
+                <span className="text-sm text-gray-600">Pro User</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
 
         {/* Pricing Cards - Quizlet Style */}
         <div className="grid md:grid-cols-2 gap-6 mb-12 max-w-3xl mx-auto">
@@ -194,7 +234,7 @@ function GoPremium() {
                 className="w-full py-4 px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
                 onClick={() => openCheckout(priceIds.proYearly, 'pro')}
               >
-                Start your free trial
+                Start My 7-Day Free Trial
               </button>
               <ul className="space-y-3 text-sm text-left">
   <li className="flex items-start">
