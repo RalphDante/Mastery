@@ -108,7 +108,9 @@ function GoPremium() {
       items: [{ quantity: 1, priceId }],
       customer: { email: authUser.email },
       customData: { plan: planName, userId: authUser.uid, userEmail: authUser.email },
-      successCallback: () => { window.location.href = "/premium-success"; },
+      successCallback: () => { 
+        window.location.href = "/";  
+      },
       closeCallback: () => console.log("Checkout closed"),
       errorCallback: (e) => console.error("Checkout error:", e),
     });
