@@ -119,40 +119,41 @@ function GoPremium() {
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Unlimited AI generations</div>
+          <div className="font-medium">Never Run Out When It Matters Most</div>
           <div className="text-gray-500 text-xs">
-            So you can turn any content into flashcards instantly, which means 
-            no more wasted weekends manually typing cards
+            Free users get 5 AI generations per month - that's maybe 2 lectures. Pro users turn every single class into flashcards instantly. 
+            No more choosing between Chemistry and Biology.
           </div>
         </div>
       </li>
+      
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Unlimited cards</div>
+          <div className="font-medium">Build Your Complete Study Empire</div>
           <div className="text-gray-500 text-xs">
-            So you can build complete study libraries for every subject, which means 
-            you'll never have to choose between classes or delete old decks
+            Free: 100 cards, 5 decks (you'll hit this in week 1)
+            Pro: Unlimited cards and decks - your entire degree in one place
           </div>
         </div>
       </li>
+      
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Unlimited decks</div>
+          <div className="font-medium">Show Everyone You're That Student</div>
           <div className="text-gray-500 text-xs">
-            So you can organize every class and topic perfectly, which means 
-            you'll actually know where everything is when exam season hits
+            Get the exclusive Pro badge, unlock animated avatars, and flex your progress publicly. Free users stay basic; Pro users look like champions.
           </div>
         </div>
       </li>
+      
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Unlimited folders</div>
+          <div className="font-medium">Track Your Dominance</div>
           <div className="text-gray-500 text-xs">
-            So you can keep everything organized from day one, which means 
-            your entire degree stays in one place from freshman year to graduation
+            See exactly how much you're crushing it with your 7-day progress dashboard. Watch your study streaks, boss defeats, and level gains.
           </div>
         </div>
       </li>
@@ -179,11 +180,27 @@ function GoPremium() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {/* Hero Section */}
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-violet-400 via-purple-400 to-white bg-clip-text text-transparent px-2">
-            Study Smarter for Less Than a Coffee Per Week
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 bg-gradient-to-r from-violet-400 via-purple-400 to-white bg-clip-text text-transparent px-2 leading-tight">
+            Make Studying SO FUN it feels weird to scroll instead
           </h1>
+          <p className="text-lg sm:text-xl text-violet-200 font-medium mt-4">
+            For less than a coffee per month
+          </p>
+          
+          {/* Quick feature pills */}
+          {/* <div className="flex flex-wrap gap-3 justify-center mt-6">
+            <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              🎮 RPG Mechanics
+            </span>
+            <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              ⚡ AI Flashcards
+            </span>
+            <span className="bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full text-sm text-violet-200 border border-violet-500/30">
+              👥 Party Mode
+            </span>
+          </div> */}
         </div>
-        
+                
         {/* Mobile Toggle - Only visible on mobile */}
         <div className="md:hidden flex justify-center mb-6">
           <div className="bg-white/10 backdrop-blur-sm p-1 rounded-full inline-flex">
@@ -307,61 +324,168 @@ function GoPremium() {
           </div>
         </div>
 
-        {/* Bridge Copy + Testimonial */}
-        <div className="max-w-3xl mx-auto mb-8 sm:mb-10">
-          <div className="text-center mb-4 sm:mb-6 px-2">
-            <p className="text-violet-200 text-base sm:text-lg leading-relaxed">
-              You may have noticed other study apps charge $6, $8, even $10 per month. 
-              I don't think that's right. Students are already broke enough.
-            </p>
-            <p className="text-violet-300 text-sm sm:text-base mt-3">
-              But don't just take my word for it. Here's what Cheng Han, a Pro user, had to say:
+        
+
+        <div className="w-full mx-auto mb-8 sm:mb-12">
+          <div className="text-center mb-6 px-2">
+            <p className="text-violet-200 text-lg sm:text-xl leading-relaxed font-medium">
+              Here's what Pro users are saying
             </p>
           </div>
 
-          <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-2xl p-4 sm:p-6">
-            <div className="flex items-start space-x-3 sm:space-x-4">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-violet-200 rounded-full flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-bold text-violet-700">CH</span>
-                </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-gray-800 italic mb-2 sm:mb-3 text-sm sm:text-base leading-relaxed">
-                  "I have a lot of modules and I'm tired of spending too much time on 
-                  <span className="font-semibold"> consumption without having enough for the digestion phase</span>. 
-                  Mastery does a really good job of extracting the right information to test my active recall. 
-                  <span className="font-semibold"> I finally found something that actually works for my learning style.</span>"
-                </p>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs sm:text-sm font-semibold text-violet-700">Cheng Han</span>
-                  <span className="text-gray-400">•</span>
-                  <span className="text-xs sm:text-sm text-gray-600">Pro User</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+          <div className="grid md:grid-cols-2 gap-6 mb-10 mx-auto">
 
-        {/* Guarantee */}
-        <div className="bg-white rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md max-w-3xl mx-auto">
-          <div className="flex items-start">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-              <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            {/* First Testimonial with Profile */}
+            <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-2xl p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Avatar Section */}
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 border-2 overflow-hidden bg-slate-700 border-purple-500/50">
+                      <div className="knight-idle" style={{ transform: 'scale(2.5)', imageRendering: 'pixelated' }}></div>
+                    </div>
+                    
+                    {/* Pro badge */}
+                    <img
+                      src="/images/icons/pro-badge.png"
+                      className="absolute top-0 right-0 w-7 h-7 object-cover"
+                      alt="Pro Badge"
+                    />
+                  </div>
+                  
+                  {/* Stats - Desktop */}
+                  <div className="hidden sm:flex flex-col gap-1.5 mt-3 w-28">
+                    <div className="text-xs font-semibold text-violet-700 mb-1">Lv.11</div>
+                    
+                    {/* HP Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-red-500" style={{ width: '89%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">89</span>
+                    </div>
+                    
+                    {/* EXP Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-yellow-500" style={{ width: '30%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">30</span>
+                    </div>
+                    
+                    {/* Mana Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-blue-500" style={{ width: '100%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">100</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Testimonial Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-violet-700">Cheng Han</span>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-xs text-gray-600">Pro User</span>
+                  </div>
+                  
+                  <p className="text-gray-800 italic text-sm leading-relaxed">
+                    "I have a lot of modules and I'm tired of spending too much time on 
+                    <span className="font-semibold"> consumption without having enough for the digestion phase</span>. 
+                    Mastery does a really good job of extracting the right information to test my active recall. 
+                    <span className="font-semibold"> I finally found something that actually works for my learning style.</span>"
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="text-gray-800 flex-1 min-w-0">
-              <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30-Day Money-Back Guarantee</h3>
-              <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-                If Mastery doesn't help you study faster, remember more, and actually enjoy learning in the next 30 days, 
-                I'll refund every penny. No questions asked. No hard feelings.
-              </p>
+
+            {/* Second Testimonial with Profile */}
+            <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-2xl p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row gap-4">
+                {/* Avatar Section */}
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 border-2 overflow-hidden bg-slate-700 border-purple-500/50">
+                      <div className="knight-idle" style={{ transform: 'scale(2.5)', imageRendering: 'pixelated' }}></div>
+                    </div>
+                    
+                    {/* Pro badge */}
+                    <img
+                      src="/images/icons/pro-badge.png"
+                      className="absolute top-0 right-0 w-7 h-7 object-cover"
+                      alt="Pro Badge"
+                    />
+                  </div>
+                  
+                  {/* Stats - Desktop */}
+                  <div className="hidden sm:flex flex-col gap-1.5 mt-3 w-28">
+                    <div className="text-xs font-semibold text-violet-700 mb-1">Lv.20</div>
+                    
+                    {/* HP Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-red-500" style={{ width: '92%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">92</span>
+                    </div>
+                    
+                    {/* EXP Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-yellow-500" style={{ width: '40%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">42</span>
+                    </div>
+                    
+                    {/* Mana Bar */}
+                    <div className="flex items-center gap-1">
+                      <div className="flex-1 bg-slate-700 h-2.5 relative overflow-hidden">
+                        <div className="h-full bg-blue-500" style={{ width: '80%' }}></div>
+                      </div>
+                      <span className="text-[10px] text-slate-600">80</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Testimonial Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-violet-700">Kaia</span>
+                    <span className="text-gray-400">•</span>
+                    <span className="text-xs text-gray-600">Early Pro User</span>
+                  </div>
+                  
+                  <p className="text-gray-800 italic text-sm leading-relaxed">
+                    "I upgraded because I figured if I support it now, it'll get super good way faster. 
+                    <span className="font-semibold"> Best investment I've made for my studies.</span>"
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+      </div>
+
+{/* Guarantee */}
+<div className="bg-white rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md max-w-3xl mx-auto">
+  <div className="flex items-start">
+    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+      <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+    </div>
+    <div className="text-gray-800 flex-1 min-w-0">
+      <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30-Day Money-Back Guarantee</h3>
+      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+        If Mastery doesn't help you study faster, remember more, and actually enjoy learning in the next 30 days, 
+        I'll refund every penny. No questions asked. No hard feelings.
+      </p>
+    </div>
+  </div>
+</div>
 
         {/* P.S. Section */}
-        <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
-          <div className="bg-gradient-to-r from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl p-4 sm:p-6">
+        <div className="text-center w-full mx-auto mb-6 sm:mb-8">
+          <div className="bg-gradient-to-r from-violet-200 to-purple-300 border-2 border-violet-200 rounded-xl p-4 sm:p-6">
             <p className="text-gray-800 font-bold text-sm sm:text-base mb-2">
               P.S. The annual plan saves you $20/year — that's 4 bubble teas or 2 movie tickets you get to keep.
             </p>
