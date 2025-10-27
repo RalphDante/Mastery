@@ -23,7 +23,9 @@ import { useTutorials } from '../../contexts/TutorialContext.jsx';
 function FlashCardsPage({onCreateWithAIModalClick}) {
     const [deaths, setDeaths] = useState(0);
 
-    const {advanceStep} = useTutorials();
+    const {isInTutorial} = useTutorials();
+    const hasNotCreatedADeck = isInTutorial('create-deck')
+
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     const { user } = useAuthContext();
@@ -51,7 +53,16 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    const [showBossTip, setShowBossTip] = useState(false);
+    const bossTipSoundRef = useRef();
 
+    // ==========================================
+    // SFX TOGGLE
+    // ==========================================
+    // Add mute state at parent level
+    const [isMuted, setIsMuted] = useState(() => {
+        return localStorage.getItem('soundMuted') === 'true';
+    });
     
 
     // ==========================================
@@ -66,14 +77,59 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         }
     }, [knowAnswer, dontKnowAnswer]);
 
+    // ==========================================
+    // EFFECT - Show boss tip for new users
+    // ==========================================
+    useEffect(() => {
+        if (hasNotCreatedADeck && !loading && deckData) {
+            // Show tip after a brief delay so user can see the deck first
+            const showTimer = setTimeout(() => {
+                setShowBossTip(true);
+            }, 1000);
 
-    // ==========================================
-    // SFX TOGGLE
-    // ==========================================
-    // Add mute state at parent level
-    const [isMuted, setIsMuted] = useState(() => {
-        return localStorage.getItem('soundMuted') === 'true';
-    });
+            // Auto-hide after 5 seconds
+            const hideTimer = setTimeout(() => {
+                setShowBossTip(false);
+            }, 6000);
+
+            return () => {
+                clearTimeout(showTimer);
+                clearTimeout(hideTimer);
+            };
+        }
+    }, [hasNotCreatedADeck, loading, deckData]);
+
+    // Initialize the sound in a useEffect (add this with your other sound effects)
+    useEffect(() => {
+        bossTipSoundRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
+        bossTipSoundRef.current.volume = 0.3;
+    }, []);
+
+    // Update the show boss tip effect to play sound
+    useEffect(() => {
+        if (hasNotCreatedADeck && !loading && deckData) {
+            // Show tip after a brief delay so user can see the deck first
+            const showTimer = setTimeout(() => {
+                setShowBossTip(true);
+                // Play sound when showing
+                if (!isMuted && bossTipSoundRef.current) {
+                    bossTipSoundRef.current.play().catch(() => {});
+                }
+            }, 1000);
+
+            // Auto-hide after 5 seconds
+            const hideTimer = setTimeout(() => {
+                setShowBossTip(false);
+            }, 6000);
+
+            return () => {
+                clearTimeout(showTimer);
+                clearTimeout(hideTimer);
+            };
+        }
+    }, [hasNotCreatedADeck, loading, deckData, isMuted]);
+
+    
 
     // Handler to update mute state
     const handleToggleMute = useCallback(() => {
@@ -334,7 +390,22 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // MAIN RENDER
     // ==========================================
     return (
+        <>
+        {showBossTip && hasNotCreatedADeck && (
+            <div className="fixed top-4 sm:top-10 left-0 right-0 px-4 flex justify-center z-50 pointer-events-none">
+                <div className="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-2xl border-2 border-purple-400/50 w-full sm:max-w-sm text-center">
+                    <div className="flex items-center justify-center gap-2">
+                        <span className="text-xl sm:text-2xl">⚔️</span>
+                        <span className="font-semibold text-xs sm:text-sm md:text-base leading-tight">
+                            Boss Spawned! Answer correctly to deal damage
+                        </span>
+                    </div>
+                </div>
+            </div>
+        )}
         <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
+            
+
             <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                 {/* HEADER */}
                 <div className="flex justify-between mb-1">
@@ -499,6 +570,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                     
             </div>
         </div>
+        </>
+
     );
 }
 
