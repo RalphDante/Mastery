@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = ({setShowModal, signIn}) => {
   const [isVisible, setIsVisible] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setIsVisible(true);
@@ -48,7 +51,7 @@ const HeroSection = ({setShowModal, signIn}) => {
           </p>
 
           {/* CTA Button */}
-          <div className={`flex justify-center lg:justify-start transition-all duration-1000 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          {/* <div className={`flex justify-center lg:justify-start transition-all duration-1000 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <button 
               className="w-full sm:w-auto group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105"
               onClick={() => signIn()}
@@ -56,7 +59,29 @@ const HeroSection = ({setShowModal, signIn}) => {
             >
               <span>Start Adventure</span>
             </button>
+          </div> */}
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start items-stretch sm:items-center px-4 sm:px-0">
+            <button 
+              className="group bg-gradient-to-r from-violet-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+              onClick={() => signIn()}
+            >
+              <span>Start Free</span>
+              <ArrowRight />
+            </button>
+            
+            <button 
+              className="group border-2 border-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+              onClick={() => navigate('/pricing')}
+            >
+              <span>See Pro Features</span>
+            </button>
+
+            
           </div>
+
+          
         </div>
 
         {/* Image - Shows on mobile below text, on desktop to the right */}
