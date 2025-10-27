@@ -1,5 +1,5 @@
 // contexts/AuthContext.js - CORE AUTH ONLY
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { 
     onAuthStateChanged, 
     signInWithEmailAndPassword, 
@@ -243,11 +243,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const refreshUserProfile = async () => {
+    const refreshUserProfile = useCallback(async () => {
         if (user?.uid) {
             await fetchUserProfile(user.uid);
         }
-    };
+    }, []);
 
     const isPremium = () => {
         return userProfile?.subscription?.tier === 'premium' || 
@@ -303,7 +303,7 @@ export const AuthProvider = ({ children }) => {
         };
     };
 
-    const updateUserProfile = (updates) => {
+    const updateUserProfile = useCallback((updates) => {
         setUserProfile(prev => {
             if (!prev) return prev;
             return {
@@ -311,9 +311,9 @@ export const AuthProvider = ({ children }) => {
                 ...updates
             };
         });
-    };
+    }, []);
 
-    const value = {
+     const value = useMemo(() => ({
         // Auth state
         user,
         userProfile,
@@ -336,7 +336,23 @@ export const AuthProvider = ({ children }) => {
 
         // Setters
         updateUserProfile
-    };
+    }), [
+        user,
+        userProfile,
+        loading,
+        authLoading,
+        signIn,
+        signUp,
+        logOut,
+        resetPassword,
+        refreshUserProfile,
+        isPremium,
+        getAILimits,
+        getFolderLimits,
+        getDeckLimits,
+        getCardLimits,
+        updateUserProfile
+    ]);
 
     return (
         <AuthContext.Provider value={value}>

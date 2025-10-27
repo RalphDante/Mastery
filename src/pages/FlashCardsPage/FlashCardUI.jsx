@@ -11,6 +11,7 @@ import BattleResult from "./BattleResult";
 import { RotateCcw } from "lucide-react";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useTutorialState } from "../../utils/tutorials/hooks";
+import FeedbackPopup from "./FeedbackPopup";
 
 function FlashCardUI({
     // Data from parent
@@ -50,6 +51,9 @@ function FlashCardUI({
     const { user } = useAuthContext();
 
     const {advanceStep, updateTutorial, isTutorialAtStep} = useTutorials();
+
+    const [showFeedback, setShowFeedback] = useState(null); // 'correct' | 'incorrect' | null
+    
 
     const isFirstTime = isTutorialAtStep('create-deck', 1)
     const goingThrougCards = isTutorialAtStep('create-deck', 2)
@@ -226,6 +230,9 @@ function FlashCardUI({
         if (processingRef.current || 
             processingIndexRef.current === currentIndex || 
             currentIndex >= flashCards.length) return;
+        
+
+        setShowFeedback(isCorrect ? 'correct' : 'incorrect');
 
         processingRef.current = true;
         processingIndexRef.current = currentIndex;
@@ -344,47 +351,60 @@ function FlashCardUI({
         const isDisabled = processing || flashCards.length === 0 || currentIndex >= flashCards.length || !showAnswer;
         if(!isComplete){
             return (
-                <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
-                    <button 
-                        className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
-                        disabled={isInReviewPhase || isDisabled || currentIndex === 0} 
-                        onClick={handleGoBack}
-                    >
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Previous Card  
+                <>
+                    <div style={{ position: 'relative' }}>
+                        {showFeedback && (
+                            <FeedbackPopup 
+                                isCorrect={showFeedback === 'correct'}
+                                onComplete={() => setShowFeedback(null)}
+                            />
+                        )}
+
+                        <div className={`${styles.buttonsContainer} flex items-center justify-between gap-4`}>
+                            <button 
+                                className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                                disabled={isInReviewPhase || isDisabled || currentIndex === 0} 
+                                onClick={handleGoBack}
+                            >
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    Previous Card  
+                                </div>
+                                ←
+                            </button>
+
+                            <div className="flex gap-2">
+                                <button 
+                                    className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isDisabled}
+                                    onClick={() => handleCrammingResponse(false)}
+                                >
+                                    ✕ <span className="hidden sm:block">Incorrect</span>
+                                </button>
+
+                                <button 
+                                    className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isDisabled}
+                                    onClick={() => handleCrammingResponse(true)}
+                                >
+                                    ✓ <span className="hidden sm:block">Correct</span>
+                                </button>
+                            </div>
+                            
+                            <button 
+                                className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
+                                disabled={isDisabled} 
+                                onClick={handleShuffle}
+                            >
+                                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                    Shuffle Deck
+                                </div>
+                                <i className="fas fa-shuffle"></i>
+                            </button>
                         </div>
-                        ←
-                    </button>
-
-                    <div className="flex gap-2">
-                        <button 
-                            className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={isDisabled}
-                            onClick={() => handleCrammingResponse(false)}
-                        >
-                            ✕ <span className="hidden sm:block">Incorrect</span>
-                        </button>
-
-                        <button 
-                            className={`group justify-center min-w-24 relative px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl font-medium transition-all hover:-translate-y-1 hover:shadow-lg flex items-center gap-2 ${!showAnswer ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={isDisabled}
-                            onClick={() => handleCrammingResponse(true)}
-                        >
-                            ✓ <span className="hidden sm:block">Correct</span>
-                        </button>
                     </div>
-                    
-                    <button 
-                        className="group relative min-w-12 min-h-12 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl transition-all hover:-translate-y-1 flex items-center justify-center text-white/80 hover:text-white"
-                        disabled={isDisabled} 
-                        onClick={handleShuffle}
-                    >
-                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-black/90 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                            Shuffle Deck
-                        </div>
-                        <i className="fas fa-shuffle"></i>
-                    </button>
-                </div>
+
+                </>
+                
             );
         } else {
             // advanceStep('create-deck')

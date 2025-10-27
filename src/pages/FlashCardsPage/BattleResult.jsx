@@ -67,7 +67,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                 <div className="text-center space-y-2">
                     <div className="space-y-1">
                         <p className="text-white font-bold text-base md:text-lg">
-                            Ready to battle <span className='text-green-400'>YOUR</span> study notes?
+                            Design <span className='text-green-400'>YOUR</span> Boss in 30 seconds
                         </p>
                     </div>
                 </div>
@@ -131,14 +131,20 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                     </div>
 
                     {/* Boss Damage */}
-                    <div className="block text-center bg-slate-600/20 border-2 border-purple-500/30 rounded-lg p-3 md:p-4 items-center justify-center hover:border-purple-500/50 transition-colors">
+                    <div className="flex flex-col text-center bg-slate-600/20 border-2 border-purple-500/30 rounded-lg p-2 md:p-3 items-center justify-center hover:border-purple-500/50 transition-colors">
                         {partyProfile?.currentBoss?.isAlive ?
-                        (
-                            <>
-                                <div className="text-purple-400 font-bold text-xl md:text-2xl font-mono">{rewards.bossDamage}</div>
-                                <div className="text-white/60 text-xs md:text-sm font-mono">DMG</div>
-                            </>
-                        ) : <span className='text-[10px] text-center text-purple-400 font-bold sm:text-xl md:text-2xl font-mono'>Party Boss Defeated</span>}
+                            (
+                                <>
+                                    <div className="text-purple-400 font-bold text-xl md:text-2xl font-mono">{rewards.bossDamage}</div>
+                                    <div className="text-white/60 text-xs md:text-sm font-mono">DMG</div>
+                                </>
+                            ) : (
+                                <div className="text-center">
+                                    <div className="text-purple-400 font-bold text-[10px] md:text-xs font-mono leading-tight">Party Boss</div>
+                                    <div className="text-purple-400/60 font-bold text-[9px] md:text-xs font-mono leading-tight">Defeated</div>
+                                </div>
+                            )
+                        }
                     </div>
                 </div>
 
@@ -192,6 +198,8 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                     </div>
                 )}
 
+                {hasNotCreatedADeck ? createBossWithAi() : ""}
+
                 {/* Grade + Stats Container - Same layout for all screens */}
                 <div className="flex  flex-row  bg-slate-600/20 border-2 border-slate-500/20 rounded-lg p-4 gap-3 md:gap-4">
                     {/* Grade Display */}
@@ -231,7 +239,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                 </div>
 
                 {/* CTA Section - Same for all screens */}
-                {hasNotCreatedADeck ? createBossWithAi() : rewardsSection()}
+                {rewardsSection()}
 
 
             </div>

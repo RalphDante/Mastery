@@ -11,7 +11,6 @@ import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
 import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
 
-
 function PartySection() {
   const {user, refreshUserProfile} = useAuthContext();
   const {partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
@@ -21,6 +20,8 @@ function PartySection() {
   const {userProfile} = useAuthContext();
 
   const navigate = useNavigate();
+
+  
 
   // Handler for toggling privacy
   const handleTogglePrivacy = async () => {

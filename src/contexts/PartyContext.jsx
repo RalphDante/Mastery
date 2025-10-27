@@ -5,6 +5,7 @@ import { db } from '../api/firebase';
 import { useAuthContext } from './AuthContext';
 import { assignUserToParty } from '../utils/partyUtils';
 import { checkAndApplyBossAttack, checkAndSpawnNextBoss } from '../utils/bossUtils';
+import { useMemo } from 'react';
 
 
 const PartyContext = createContext();
@@ -98,13 +99,22 @@ export const PartyProvider = ({ children }) => {
                     mana: userProfile.mana,
                     avatar: userProfile.avatar
                 };
+
+                const assignmentResult = await assignUserToParty(user.uid, displayName, userData);
                 
-                await assignUserToParty(user.uid, displayName, userData);
+                // await assignUserToParty(user.uid, displayName, userData);
                 
                 // ✅ Refresh user profile to get the updated currentPartyId
                 await refreshUserProfile();
                 console.log('🔄 User profile refreshed, party assignment complete');
-                
+
+                // ✅ Directly fetch the party using the partyId from assignment
+                if (assignmentResult) {
+                    await fetchPartyProfile(assignmentResult);
+                    console.log('🎉 Party data loaded after assignment');
+                    setIsInitialized(true);
+                }
+                            
                 // 🔓 Reset the ref so the effect can run again with the updated userProfile
                 initializingRef.current = false;
                 return;
@@ -174,11 +184,11 @@ export const PartyProvider = ({ children }) => {
         checkBossSystemOnLogin();
     }, [isInitialized]); // Only run when party is initialized
 
-    const refreshPartyProfile = async () => {
+    const refreshPartyProfile = useCallback(async () => {
         if (userProfile?.currentPartyId) {
             await fetchPartyProfile(userProfile.currentPartyId);
         }
-    };
+    },[]);
 
     // Boss system setters
     const updateBossHealth = useCallback((newHealth) => {
@@ -255,16 +265,25 @@ export const PartyProvider = ({ children }) => {
         }
     }, [user?.uid, partyMembers]);
 
-    const value = {
-        partyProfile,
-        partyMembers,
-        refreshPartyProfile,
-        updateBossHealth,
-        updateMemberDamage,
-        updateLastBossResults,
-        resetAllMembersBossDamage,
-        updateUserProfile,
-    };
+    const value = useMemo(() => ({
+    partyProfile,
+    partyMembers,
+    refreshPartyProfile,
+    updateBossHealth,
+    updateMemberDamage,
+    updateLastBossResults,
+    resetAllMembersBossDamage,
+    updateUserProfile,
+}), [
+    partyProfile, 
+    partyMembers, 
+    refreshPartyProfile,
+    updateBossHealth,
+    updateMemberDamage,
+    updateLastBossResults,
+    resetAllMembersBossDamage,
+    updateUserProfile
+]);
 
     return (
         <PartyContext.Provider value={value}>

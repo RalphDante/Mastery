@@ -145,10 +145,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // MAIN FETCH FUNCTION (Parent-controlled)
     // ==========================================
     const loadDeckData = useCallback(async () => {
-        if (user === undefined) {
-            console.log('Auth state still loading...');
-            return;
-        }
+      
 
         if (!paramDeckId) {
             setLoading(false);
@@ -206,8 +203,14 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // EFFECT - Initial load
     // ==========================================
     useEffect(() => {
+    // Don't attempt to load until we know auth state
+        if (user === undefined) {
+            console.log('Auth state still loading...');
+            return;
+        }
+        
         loadDeckData();
-    }, [loadDeckData]);
+    }, [user, paramDeckId, fetchDeckAndCards]);
 
     // ==========================================
     // EFFECT - Handle redo deck
@@ -222,6 +225,20 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
             setCurrentIndex(0);
         }
     }, [redoDeck, loadDeckData]);
+
+    // ==========================================
+    // EFFECT - Reset progress when deck changes
+    // ==========================================
+    useEffect(() => {
+        // Reset all progress when switching decks
+        setKnowAnswer(0);
+        setDontKnowAnswer(0);
+        setCurrentIndex(0);
+        setPercent(0);
+        setDeaths(0);
+        setPhaseOneComplete(false);
+        setOriginalDeckSize(0);
+    }, [paramDeckId]); // Trigger whenever the deck ID changes
 
     // ==========================================
     // HANDLERS - Public/Private toggle

@@ -21,15 +21,16 @@ import ServerCostBanner from './ServerCostBanner.jsx';
 import Options from './Timer/Options.jsx';
 import { useAuthContext } from '../../contexts/AuthContext.jsx';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
+import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const {isTutorialAtStep} = useTutorials();
-
+  const {refreshPartyProfile} = usePartyContext();
   const {user, userProfile} = useAuthContext();
 
-
+  
   const navigate = useNavigate();
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
 
