@@ -2,9 +2,7 @@ import { useState, useEffect } from "react";
 import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { app, auth } from "../../api/firebase"
 import FileUpload from "../AutoFlashCards/FileUpload";
-import { onAuthStateChanged } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import CreateWithAIDemoModal from "../../pages/TryNowPage/LandingPage/CreateWithAIDemoModal";
 
 import { useAuthContext } from "../../contexts/AuthContext";
 
@@ -20,7 +18,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
   const {folders} = useDeckCache();
   const userIsPremium = isPremium();
   // Tutorials
-  const {goBackAStep, completeTutorial} = useTutorials();
+  const {advanceStep, completeTutorial, isTutorialAtStep, tutorials } = useTutorials();
   const [tutorialCancelled, setTutorialCancelled] = useState(false);
   
   const navigate = useNavigate();
@@ -72,6 +70,10 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         setFlashcards([]);
         setDeckName('');
         setLoading(false);
+        if(isTutorialAtStep('create-ai', 1) || !tutorials['create-ai']){
+          console.log("ran")
+          advanceStep('create-ai');
+        }
       } else {
         // Normal opening - start at step 1
         setNewFolderName('');
@@ -180,6 +182,10 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
           }
       }
       return;
+    }
+
+    if(isTutorialAtStep('create-ai', 3)){
+      advanceStep('create-ai')
     }
 
   
@@ -371,6 +377,9 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
               onSuccess={(generatedFlashcards) => {
                 setFlashcards(generatedFlashcards);
                 setStep(4);
+                if(isTutorialAtStep('create-ai', 2)){
+                  advanceStep('create-ai')
+                }
               }}
             />
 

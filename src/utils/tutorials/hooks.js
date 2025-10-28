@@ -72,30 +72,77 @@ export function useTutorialState() {
     
     updateTutorial,
     
-    // FIXED: No more double updates or async in setState
     advanceStep: async (name) => {
       if (!authUser) return;
       
-      // Use functional update to get current state
-      let currentStep;
-      setTutorials(prev => {
-        if (!prev[name]) return prev;
-        currentStep = prev[name].step;
-        return prev;
-      });
+      // Calculate the new state BEFORE setState
+      const currentTutorial = tutorials[name];
+      const newTutorialState = currentTutorial 
+        ? { ...currentTutorial, step: currentTutorial.step + 1 }
+        : { completed: false, step: 2 }; // If missing, start at step 2
       
-      if (currentStep !== undefined) {
-        await updateTutorial(name, { step: currentStep + 1 });
+      // Update local state
+      setTutorials(prev => ({
+        ...prev,
+        [name]: newTutorialState
+      }));
+      
+      // Update Firestore
+      try {
+        await updateDoc(doc(db, "users", authUser.uid), {
+          [`tutorials.${name}`]: newTutorialState
+        });
+      } catch (error) {
+        console.error("Error updating tutorial:", error);
       }
     },
-    
+
     goBackAStep: async (name) => {
-      if (!tutorials[name]) return;
-      const newStep = tutorials[name].step - 1;
-      await updateTutorial(name, { step: newStep });
+      if (!authUser) return;
+      const currentTutorial = tutorials[name];
+      if (!currentTutorial) return;
+      
+      const newTutorialState = {
+        ...currentTutorial,
+        step: currentTutorial.step - 1
+      };
+      
+      setTutorials(prev => ({
+        ...prev,
+        [name]: newTutorialState
+      }));
+      
+      try {
+        await updateDoc(doc(db, "users", authUser.uid), {
+          [`tutorials.${name}`]: newTutorialState
+        });
+      } catch (error) {
+        console.error("Error updating tutorial:", error);
+      }
     },
-    
-    completeTutorial: (name) => updateTutorial(name, { completed: true })
+
+    completeTutorial: async (name) => {
+      if (!authUser) return;
+      
+      const newTutorialState = {
+        ...(tutorials[name] || {}),
+        completed: true
+      };
+      
+      setTutorials(prev => ({
+        ...prev,
+        [name]: newTutorialState
+      }));
+      
+      try {
+        await updateDoc(doc(db, "users", authUser.uid), {
+          [`tutorials.${name}`]: newTutorialState
+        });
+      } catch (error) {
+        console.error("Error updating tutorial:", error);
+      }
+    }
+
   };
 }
 
@@ -103,6 +150,7 @@ function getDefaultTutorials() {
   return {
     "create-deck": { completed: false, step: 1 },
     "global-review": { completed: false, step: 1 },
-    "deck-sharing": { completed: false, step: 1 }
+    "deck-sharing": { completed: false, step: 1 },
+    "create-ai": { completed: false, step: 1 }
   };
 }

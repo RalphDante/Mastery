@@ -61,7 +61,6 @@ import CreateWithAIModal from './components/Modals/CreateWithAIModal.jsx';
 import NewHomePage from './pages/HomePage/NewHomePage.jsx';
 
 import GoPremium from './pages/GoPremium/GoPremium.jsx';
-import NewFlashCardUI from './pages/FlashCardsPage/NewFlashCardUI.jsx';
 
 
 // Blog Page
@@ -255,7 +254,6 @@ function AppContent(){
 
                   
                   <Route path='/pricing' element={<GoPremium />} />
-                  {/* <Route path='/newflashcardui' element={<NewFlashCardUI />} /> */}
 
                   {/* Profile dropdown options */}
                   <Route path='/settings' element={<Settings />} />

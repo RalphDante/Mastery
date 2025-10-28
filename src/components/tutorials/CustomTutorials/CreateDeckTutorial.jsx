@@ -26,7 +26,6 @@ function CreateDeckTutorial({isFolderModalOpen, isDeckModalOpen, isCreateWithAIM
             location.pathname === '/try-now' || 
             location.pathname === '/pricing' || 
             location.pathname === '/newhome' || 
-            location.pathname === '/newflashcardui' || 
             location.pathname === '/flashcards-demo' || 
             location.pathname === '/browse-decks' || 
             location.pathname.startsWith('/flashcards') ||

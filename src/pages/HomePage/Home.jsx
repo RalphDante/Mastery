@@ -26,7 +26,7 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const {isTutorialAtStep} = useTutorials();
+  const {isTutorialAtStep, completeTutorial} = useTutorials();
   const {refreshPartyProfile} = usePartyContext();
   const {user, userProfile} = useAuthContext();
 
@@ -50,6 +50,9 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     if (neverTriedFlashcardBattle) {
         navigate('/flashcards/DEMO_MATH_BOSS_001');
     }
+    if (!isTutorialAtStep("create-deck", 1)){
+      completeTutorial('global-review')
+    }
 }, [userProfile, navigate]);
 
 
@@ -65,14 +68,20 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
             <PartySection />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
-              <Options 
-                db = {db}
-                authUser = {user}
-                onCreateDeckClick={onCreateDeckClick}
-                onCreateWithAIModalClick={onCreateWithAIModalClick}
-              />
+              <div className="order-2 lg:order-1">
+                <Options 
+                  db = {db}
+                  authUser = {user}
+                  onCreateDeckClick={onCreateDeckClick}
+                  onCreateWithAIModalClick={onCreateWithAIModalClick}
+                />
+              </div>
+              <div className='order-1 lg:order-2'>
+                <Boss />
+                
+              </div>
+
               
-              <Boss />
             </div>
 
             {/* <OverallMasteryV2 /> */}

@@ -164,7 +164,8 @@ export const AuthProvider = ({ children }) => {
             tutorials: {
                 "create-deck": { completed: false, step: 1 },
                 "global-review": { completed: false, step: 1 },
-                "deck-sharing": { completed: false, step: 1 }
+                "deck-sharing": { completed: false, step: 1 },
+                "create-ai": { completed: false, step: 1 }
             }
         };
 

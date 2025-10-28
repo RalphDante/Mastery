@@ -56,7 +56,7 @@ function FlashCardUI({
     
 
     const isFirstTime = isTutorialAtStep('create-deck', 1)
-    const goingThrougCards = isTutorialAtStep('create-deck', 2)
+    const goingThroughCards = isTutorialAtStep('create-deck', 2)
     
     // ==========================================
     // STATE - UI & Study Logic (NO flashCards state!)
@@ -136,7 +136,7 @@ function FlashCardUI({
 
     useEffect(() => {
 
-        if (isComplete && goingThrougCards) {
+        if (isComplete && goingThroughCards) {
             advanceStep('create-deck');
         }
         if (isComplete){
@@ -415,7 +415,7 @@ function FlashCardUI({
                     className="min-w-80 bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
                     >
                         <RotateCcw className="w-5 h-5 mr-2" />
-                        <span>Rematch</span>
+                        <span>Rematch and Improve Grade</span>
                     </button>
                 </div>
                

@@ -232,7 +232,7 @@ const TryNowPage = () => {
                         <Zap className="w-5 h-5" />
                       </div>
                       <h4 className="text-left text-base sm:text-lg font-semibold text-violet-400">
-                        Upload Notes → Get Flashcards in 30 Seconds
+                        Upload Notes → Get Flashcards in 15 Seconds
                       </h4>
                     </div>
                     <p className="text-gray-300 text-sm leading-relaxed">
