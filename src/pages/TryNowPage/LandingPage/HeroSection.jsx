@@ -67,16 +67,10 @@ const HeroSection = ({setShowModal, signIn}) => {
               className="group bg-gradient-to-r from-violet-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
               onClick={() => signIn()}
             >
-              <span>Start Free</span>
+              <span>Start Adventure</span>
               <ArrowRight />
             </button>
-            
-            <button 
-              className="group border-2 border-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
-              onClick={() => navigate('/pricing')}
-            >
-              <span>See Pro Features</span>
-            </button>
+           
 
             
           </div>
