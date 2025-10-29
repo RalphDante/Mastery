@@ -144,31 +144,37 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                 {/* Rewards Grid */}
                 <div className="grid grid-cols-4 gap-3 md:gap-4">
                     {/* HP Reward */}
-                    <div className="bg-slate-600/20 border-2 border-red-500/30 rounded-lg p-3 md:p-4 text-center hover:border-red-500/50 transition-colors">
-                        <div className="text-red-400 font-bold text-xl md:text-2xl font-mono">+{rewards.hp}</div>
-                        <div className="text-white/60 text-xs md:text-sm font-mono">HP</div>
+                    <div className="bg-slate-600/20 border-2 border-red-500/30 rounded-lg p-2 md:p-3 flex flex-col items-center justify-center hover:border-red-500/50 transition-colors overflow-hidden">
+                        <div className={`text-red-400 font-bold font-mono break-all text-center leading-tight ${rewards.hp >= 100 ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>
+                            +{rewards.hp}
+                        </div>
+                        <div className="text-white/60 text-xs md:text-sm font-mono mt-1">HP</div>
                     </div>
 
                     {/* EXP Reward */}
-                    <div className="bg-slate-600/20 border-2 border-yellow-500/30 rounded-lg p-3 md:p-4 text-center hover:border-yellow-500/50 transition-colors">
-                        <div className="text-yellow-400 font-bold text-xl md:text-2xl font-mono">+{rewards.exp}</div>
-                        <div className="text-white/60 text-xs md:text-sm font-mono">EXP</div>
+                    <div className="bg-slate-600/20 border-2 border-yellow-500/30 rounded-lg p-2 md:p-3 flex flex-col items-center justify-center hover:border-yellow-500/50 transition-colors overflow-hidden">
+                        <div className={`text-yellow-400 font-bold font-mono break-all text-center leading-tight ${rewards.exp >= 100 ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>
+                            +{rewards.exp}
+                        </div>
+                        <div className="text-white/60 text-xs md:text-sm font-mono mt-1">EXP</div>
                     </div>
 
                     {/* Mana Reward */}
-                    <div className="bg-slate-600/20 border-2 border-blue-500/30 rounded-lg p-3 md:p-4 text-center hover:border-blue-500/50 transition-colors">
-                        <div className="text-blue-400 font-bold text-xl md:text-2xl font-mono">+{rewards.mana}</div>
-                        <div className="text-white/60 text-xs md:text-sm font-mono">MANA</div>
+                    <div className="bg-slate-600/20 border-2 border-blue-500/30 rounded-lg p-2 md:p-3 flex flex-col items-center justify-center hover:border-blue-500/50 transition-colors overflow-hidden">
+                        <div className={`text-blue-400 font-bold font-mono break-all text-center leading-tight ${rewards.mana >= 100 ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>
+                            +{rewards.mana}
+                        </div>
+                        <div className="text-white/60 text-xs md:text-sm font-mono mt-1">MANA</div>
                     </div>
 
                     {/* Boss Damage - Enhanced for first-time users */}
                     <div className="relative group flex flex-col text-center bg-slate-600/20 border-2 border-purple-500/30 rounded-lg p-2 md:p-3 items-center justify-center hover:border-purple-500/50 transition-colors cursor-help">
                         {partyProfile?.currentBoss?.isAlive ? (
                             <>
-                                <div className="text-purple-400 font-bold text-xl md:text-2xl font-mono">
+                                <div className={`text-purple-400 font-bold font-mono break-all text-center leading-tight ${parseInt(rewards.bossDamage.replace('+', '')) >= 100 ? 'text-base md:text-lg' : 'text-xl md:text-2xl'}`}>
                                     {rewards.bossDamage}
                                 </div>
-                                <div className="text-white/60 text-xs md:text-sm font-mono">DMG</div>
+                                <div className="text-white/60 text-xs md:text-sm font-mono mt-1">DMG</div>
                             </>
                         ) : (
                             <div className="text-center">
@@ -220,6 +226,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
             </div>
         )
     }
+
 
     // Animate stats appearance
     useEffect(() => {

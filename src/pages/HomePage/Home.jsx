@@ -23,13 +23,18 @@ import { useAuthContext } from '../../contexts/AuthContext.jsx';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
+import { Users, HandHeart } from "lucide-react";
+
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showBoss, setShowBoss] = useState(false); 
   const {isTutorialAtStep, completeTutorial} = useTutorials();
   const {refreshPartyProfile} = usePartyContext();
   const {user, userProfile} = useAuthContext();
-
+  const [hasSeenParty, setHasSeenParty] = useState(() => {
+    return sessionStorage.getItem('partyClicked') === 'true';
+  });
   
   const navigate = useNavigate();
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
@@ -64,10 +69,69 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   return(
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-8">
+        <div className="space-y-4">
 
             <PartySection />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 items-start">
+
+            {/* MOBILE VIEW */}
+            <div className="lg:hidden">
+
+            {/* Toggle Button */}
+            <div className="flex justify-center mb-2">
+              <div className="inline-flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700 relative text-sm">
+                <button
+                  onClick={() => setShowBoss(false)}
+                  className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                    !showBoss 
+                      ? 'bg-purple-600 text-white shadow-lg' 
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Contribute
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => {
+                      setShowBoss(true);
+                      sessionStorage.setItem('partyClicked', 'true');
+                      setHasSeenParty(true);
+                    }}
+                    className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                      showBoss 
+                        ? 'bg-purple-600 text-white shadow-lg' 
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Party
+                  </button>
+
+                  {!hasSeenParty && (
+                    <span className="absolute top-0.5 right-1.5 block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+
+            {/* Content Area For Mobile Devices */}
+            <div className="grid grid-cols-1 gap-6 mb-6">
+              {showBoss ? (
+                <Boss />
+              ) : (
+                <Options 
+                  db={db}
+                  authUser={user}
+                  onCreateDeckClick={onCreateDeckClick}
+                  onCreateWithAIModalClick={onCreateWithAIModalClick}
+                />
+              )}
+            </div>
+            </div>
+
+            {/* DESKTOP */}
+            <div className="hidden lg:grid lg:grid-cols-2 gap-6 mb-6 items-start">
+              
               <div className="order-2 lg:order-1">
                 <Options 
                   db = {db}
@@ -83,7 +147,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
               
             </div>
-
             {/* <OverallMasteryV2 /> */}
             {/* <WelcomeSection /> */}
             {/* <LearningHubSection 
