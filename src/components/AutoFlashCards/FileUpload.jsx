@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext'; // Add this import
 import { generateAIContent } from '../../utils/subscriptionLimits/aiLimitsHelper'; // Add this import
+import LimitReachedModal from '../Modals/LimitReachedModal';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -19,6 +20,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     
     // Add auth context
     const { user } = useAuthContext();
+
+    const [showLimitModal, setShowLimitModal] = useState(false);
 
     const loadTesseract = () => {
         return new Promise((resolve, reject) => {
@@ -330,18 +333,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
-                    const details = error.details;
-                    const message = `You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
-                    details.tier === 'free' 
-                        ? 'Upgrade to Pro for unlimited generations!' 
-                        : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
-                    }`;
-
-                    if (confirm(`${message}\n\nPress OK to upgrade, or Cancel to stay here.`)) {
-                        window.location.href = "/pricing";
-                    } 
-                } else {
-                    alert(`Error processing files: ${error.message}`);
+                    setShowLimitModal(true);
+                    return;
                 }
             } finally {
                 setLoading(false);
@@ -815,14 +808,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
-                    const details = error.details;
-                    alert(`You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
-                        details.tier === 'free' 
-                            ? 'Upgrade to Pro for unlimited generations!' 
-                            : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
-                    }`);
-                } else {
-                    alert(`Error processing photo: ${error.message}`);
+                    setShowLimitModal(true);
+                    return;
                 }
             } finally {
                 setLoading(false);
@@ -1033,18 +1020,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             
             // Handle limit reached error specifically
             if (error.code === 'LIMIT_REACHED') {
-                const details = error.details;
-                const message = `You've reached your monthly limit of ${details.maxGenerations} AI generations. ${
-                details.tier === 'free' 
-                    ? 'Upgrade to Pro for unlimited generations!' 
-                    : `Your limit resets on ${details.resetDate?.toLocaleDateString()}.`
-                }`;
-
-                if (confirm(`${message}\n\nPress OK to upgrade, or Cancel to stay here.`)) {
-                    window.location.href = "/pricing";
-                }       
-            } else {
-                alert(`Error generating flashcards for topic "${topic}": ${error.message}`);
+                setShowLimitModal(true);
+                return;
             }
         } finally {
             setLoading(false);
@@ -1283,8 +1260,17 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     };
 
     return (
-        <div className="w-full">
-            {!showCamera ? (
+        <>
+        
+            {showLimitModal && (
+                <LimitReachedModal 
+                    limitType="ai"
+                    onClose={() => setShowLimitModal(false)}
+                />
+            )}
+
+            <div className="w-full">
+                {!showCamera ? (
                 <div className="space-y-8">
                     {/* PRIMARY: Textbook scanning options - Make these prominent */}
                     <div>
@@ -1304,7 +1290,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                                 </svg>
                                 Scan Pages
                             </button>
-    
+
                             <button 
                                 {...getRootProps()} 
                                 className={`${
@@ -1318,7 +1304,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                                 {loading ? 'Processing...' : 'Upload Files'}
                             </button>
                         </div>
-    
+
                         <input {...getInputProps()} />
                         
                         {/* Textbook-specific guidance */}
@@ -1334,7 +1320,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             </div>
                         </div> */}
                     </div>
-    
+
                     {/* SECONDARY: Topic generation - Smaller, less prominent */}
                     <div className="pt-4 border-t border-gray-600">
                         <div className="text-center mb-3">
@@ -1380,7 +1366,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         </div>
                     )}
                     
-                     {/* Technical specs - Condensed */}
+                        {/* Technical specs - Condensed */}
                     <div className="bg-gray-800 bg-opacity-30 rounded-lg p-3">
                         <div className="text-xs text-gray-400 text-center">
                             <div className="mb-1">PDF, DOCX, PPTX, Images • Max 8MB • Auto OCR</div>
@@ -1434,6 +1420,9 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 </div>
             )}
         </div>
+            
+        </>
+        
     );
 }
 

@@ -14,11 +14,14 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 import { ArrowLeft } from 'lucide-react';
+import LimitReachedModal from '../../components/Modals/LimitReachedModal';
 
 function CreateDeck() {
     const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
     const { getCardLimits, isPremium, user } = useAuthContext();
     const { completeTutorial } = useTutorials();
+
+    const [showLimit, setShowLimit] = useState()
 
     const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
     const [fileName, setFileName] = useState("");
@@ -86,6 +89,16 @@ function CreateDeck() {
             }
         }
     }, [isEditMode, deckId, user, fromCache]);
+
+
+    // Limit Section
+    const handleLimitClose = () => {
+        setShowLimit(false);
+    }
+
+    const handleUpgrade = () => {
+        console.log("Opening Checkout")
+    }
 
     // NEW: Load from cached data passed via navigation
     const loadFromCachedData = (deckData, cards) => {
@@ -390,12 +403,16 @@ function CreateDeck() {
         const cardLimits = getCardLimits();
 
         if (cardLimits.maxCards !== -1) {
+            setShowLimit(true)
             const currentCardCount = cardLimits.currentUsage || 0;
             const newTotalCards = isEditMode
                 ? currentCardCount - originalFlashCardsRef.current.length + flashCards.length
                 : currentCardCount + flashCards.length;
 
             if (newTotalCards > cardLimits.maxCards) {
+
+                setShowLimit(true);
+                return;
                 const cardsOverLimit = newTotalCards - cardLimits.maxCards;
 
                 const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
@@ -406,15 +423,17 @@ Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
 Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
 or Cancel to go back and remove ${cardsOverLimit} cards.`;
 
-                if (window.confirm(confirmMessage)) {
-                    if (isPremium()) {
-                        window.location.href = "/contact-me";
-                    } else {
-                        window.location.href = "/pricing";
-                    }
-                } else {
-                    return;
-                }
+               
+
+                // if (window.confirm(confirmMessage)) {
+                //     if (isPremium()) {
+                //         window.location.href = "/contact-me";
+                //     } else {
+                //         window.location.href = "/pricing";
+                //     }
+                // } else {
+                //     return;
+                // }
             }
         }
 
@@ -440,6 +459,13 @@ or Cancel to go back and remove ${cardsOverLimit} cards.`;
     }
 
     return (
+        <>
+        {showLimit && 
+            <LimitReachedModal 
+                limitType={"cards"}
+                onClose={setShowLimit}
+            />        
+        }
         <div className={styles.createFilePage}>
             {/* HEADER */}
             <div className="flex justify-end mb-1">
@@ -495,6 +521,7 @@ or Cancel to go back and remove ${cardsOverLimit} cards.`;
                 </button>
             </div>
         </div>
+        </>
     )
 };
 

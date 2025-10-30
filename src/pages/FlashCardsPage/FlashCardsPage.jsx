@@ -353,10 +353,101 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     if (loading) {
         return (
-            <div className={`${styles.flashCardsPageContainer}`}>
-                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                    <h1 className="text-3xl font-bold text-white mb-2">Loading...</h1>
+            <div className="min-h-screen flex items-center justify-center p-4">
+            <div className="text-center">
+                {/* Pixel-style animated sword/weapon */}
+                <div className="mb-8 flex justify-center">
+                <div className="relative">
+                    {/* Spinning pixelated sword */}
+                    <div className="w-24 h-24 relative animate-spin" style={{ animationDuration: '2s' }}>
+                    <div className="absolute inset-0">
+                        <svg viewBox="0 0 100 100" className="w-full h-full">
+                        {/* Sword blade */}
+                        <rect x="46" y="10" width="8" height="50" fill="#94a3b8" />
+                        <rect x="42" y="10" width="4" height="4" fill="#cbd5e1" />
+                        <rect x="54" y="10" width="4" height="4" fill="#64748b" />
+                        
+                        {/* Sword guard */}
+                        <rect x="38" y="58" width="24" height="6" fill="#fbbf24" />
+                        <rect x="38" y="58" width="24" height="2" fill="#fde047" />
+                        
+                        {/* Sword handle */}
+                        <rect x="44" y="64" width="12" height="20" fill="#7c3aed" />
+                        <rect x="44" y="64" width="6" height="20" fill="#8b5cf6" />
+                        
+                        {/* Pommel */}
+                        <rect x="42" y="84" width="16" height="8" fill="#fbbf24" />
+                        <rect x="42" y="84" width="8" height="4" fill="#fde047" />
+                        </svg>
+                    </div>
+                    </div>
+                    
+                    {/* Glowing effect */}
+                    <div className="absolute inset-0 blur-xl opacity-50 bg-purple-500 animate-pulse" />
                 </div>
+                </div>
+
+                {/* Loading text with retro pixel font style */}
+                <div className="space-y-4">
+                <h1 className="text-5xl font-bold text-white mb-2 tracking-wider" 
+                    style={{ 
+                        fontFamily: 'monospace',
+                        textShadow: '4px 4px 0px #7c3aed, 8px 8px 0px rgba(124, 58, 237, 0.3)'
+                    }}>
+                    LOADING
+                    <span className="inline-block animate-pulse">...</span>
+                </h1>
+                
+                {/* Pixelated subtitle */}
+                <p className="text-xl text-purple-300 font-mono tracking-widest animate-pulse"
+                    style={{
+                    textShadow: '2px 2px 0px rgba(124, 58, 237, 0.5)'
+                    }}>
+                    Preparing your Flashcards
+                </p>
+                </div>
+
+                {/* Retro loading bar */}
+                <div className="mt-8 w-64 mx-auto">
+                <div className="h-6 bg-gray-800 border-4 border-purple-500 relative overflow-hidden"
+                    style={{ imageRendering: 'pixelated' }}>
+                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 animate-loading-bar" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-full h-full grid grid-cols-8 gap-1 p-1">
+                        {[...Array(8)].map((_, i) => (
+                        <div 
+                            key={i}
+                            className="bg-purple-400 opacity-30 animate-pulse"
+                            style={{ animationDelay: `${i * 0.1}s` }}
+                        />
+                        ))}
+                    </div>
+                    </div>
+                </div>
+                </div>
+
+                
+            </div>
+
+            <style jsx>{`
+                @keyframes loading-bar {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(100%); }
+                }
+                
+                @keyframes scan {
+                0% { transform: translateY(-100%); }
+                100% { transform: translateY(100%); }
+                }
+                
+                .animate-loading-bar {
+                animation: loading-bar 1.5s linear infinite;
+                }
+                
+                .animate-scan {
+                animation: scan 8s linear infinite;
+                }
+            `}</style>
             </div>
         );
     }

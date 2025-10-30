@@ -17,9 +17,10 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../../api/firebase';
 import { useNavigate } from "react-router-dom";
+import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 
 function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
-    const { user, loading, getFolderLimits } = useAuthContext();
+    const { user, loading, getFolderLimits, getDeckLimits } = useAuthContext();
     const { getDecksByFolder, invalidateFolderDecks, invalidateDeckMetadata } = useDeckCache();
     const folders = useFolders() || [];
     const navigate = useNavigate();
@@ -31,6 +32,11 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const [currentFolder, setCurrentFolder] = useState(null);
     const [folderDecks, setFolderDecks] = useState([]);
     const [isDecksLoading, setIsDecksLoading] = useState(false);
+
+    // Limits
+    const [showLimitModal, setShowLimitModal] = useState(false);
+    const [limitType, setLimitType] = useState('folders');
+    
 
     // Fetch decks using context
     const handleFolderClick = async (folder) => {
@@ -49,13 +55,8 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
 
         const {canGenerate, maxFolders} = getFolderLimits()
         if(!canGenerate){
-            const upgrade = window.confirm(
-                `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
-                `Press OK to view upgrade options or Cancel to manage/delete folders.`
-            )
-            if(upgrade){
-                navigate('/pricing')
-            }
+            setLimitType('folders');
+            setShowLimitModal(true);
             return;
         }
 
@@ -228,6 +229,26 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
         }
     };
 
+    const handleCreateDeckClick = () => {
+        const {canGenerate, maxDecks} = getDeckLimits();
+        
+        if (!canGenerate) {
+            setLimitType('decks');
+            setShowLimitModal(true);
+            return;
+        }
+        
+        // If under limit, proceed to deck creation
+        navigate(`/create-deck`, {
+            state: {
+                folderName: currentFolder.name, 
+                folderId: currentFolder.id,
+                isNewFolder: false,
+            }
+        });
+    };
+
+
     const handleQuickActionsClick = (callback, e) => {
         e.preventDefault()
         callback(e);
@@ -269,6 +290,13 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
     const showScrollbar = folders && folders.length > 9;
 
     return (
+        <>
+        {showLimitModal && (
+            <LimitReachedModal 
+                limitType={limitType}
+                onClose={() => setShowLimitModal(false)}
+            />
+        )}
         <section id="learning-hub-section">
             {/* <div className="mb-8">
                 <h2 className="text-2xl font-bold text-slate-100">Your Learning Hub</h2>
@@ -415,11 +443,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                                     )}
                                 </div>
                                 <button
-                                    onClick={() => {navigate(`/create-deck`, {state: {
-                                        folderName: currentFolder.name, 
-                                        folderId: currentFolder.id,
-                                        isNewFolder: false,
-                                    }})}}
+                                    onClick={handleCreateDeckClick}
                                     className="text-sm font-medium text-violet-400 hover:text-violet-300 bg-violet-400/10 px-3 py-1 rounded-lg hover:bg-violet-400/20 transition-colors"
                                 >
                                     + New Deck
@@ -559,6 +583,7 @@ function LearningHubSection({onCreateDeckClick, onCreateWithAIModalClick}) {
                 </div> */}
             </div>
         </section>
+        </>
     );
 }
 

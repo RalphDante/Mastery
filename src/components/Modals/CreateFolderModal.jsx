@@ -3,6 +3,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { auth, db } from '../../api/firebase';
 import { useAuth } from '../../hooks/useAuth';
+import LimitReachedModal from './LimitReachedModal';
 
 // Context
 import { useAuthContext } from '../../contexts/AuthContext';
@@ -38,6 +39,7 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [messageType, setMessageType] = useState('info');
+    const [showLimitModal, setShowLimitModal] = useState(false);
 
     const navigate = useNavigate()
     
@@ -73,15 +75,8 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
 
         const {canGenerate, maxFolders} = getFolderLimits()
         if(!canGenerate){
-            const upgrade = window.confirm(
-                `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
-                `Press OK to view upgrade options or Cancel to manage/delete folders.`
-            )
-            if(upgrade){
-                navigate('/pricing')
-            }
+            setShowLimitModal(true)
             setLoading(false);
-            onClose()
             return;
         }
 
@@ -143,6 +138,13 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
     if (!isOpen) return null;
 
     return (
+        <>
+        {showLimitModal && (
+              <LimitReachedModal 
+                limitType={'folders'}
+                onClose={() => setShowLimitModal(false)}
+              />
+            )}
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
             <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
                 <button 
@@ -212,6 +214,9 @@ function CreateFolderModal({ isOpen, onClose, onFolderCreated }) {
                 )}
             </div>
         </div>
+
+        </>
+        
     );
 }
 

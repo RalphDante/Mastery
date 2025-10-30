@@ -10,6 +10,9 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 
+// Limit
+import LimitReachedModal from "./LimitReachedModal";
+
 function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
 
   // Context
@@ -34,6 +37,10 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
   const [isSaving, setIsSaving] = useState(false);
 
   const [cameraIsOpen, setCameraIsOpen] = useState(false);
+
+  // Limits Modal
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitType, setLimitType] = useState('cards');
 
 
   // Firestore instance
@@ -116,30 +123,18 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
     if(isCreatingNewFolder){
       const {canGenerate, maxFolders} = getFolderLimits()
       if(!canGenerate){
-          const upgrade = window.confirm(
-              `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete folders.`
-          )
-          if(upgrade){
-              navigate('/pricing')
-          }
+          setLimitType('folders'); // You'll need to add this to your messages
+          setShowLimitModal(true);
           setLoading(false);
-          onClose()
           return;
       }
     }
 
     const {canGenerate, maxDecks} = getDeckLimits()
       if(!canGenerate){
-          const upgrade = window.confirm(
-              `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete decks.`
-          )
-          if(upgrade){
-              navigate('/pricing')
-          }
+          setLimitType('decks');
+          setShowLimitModal(true);
           setLoading(false);
-          onClose()
           return;
       }
 
@@ -170,17 +165,8 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
 
     if (cardLimits.maxCards !== -1 && currentCards + cardsToAdd > cardLimits.maxCards) {
-      const confirmMessage = userIsPremium
-          ? `Saving this deck would exceed your card limit.\n\nYou currently have space for ${cardLimits.maxCards - currentCards} more cards, but this deck contains ${cardsToAdd}.\n\nPress OK to contact support for higher limits, or Cancel to delete some cards first.`
-          : `Saving this deck would exceed your card limit (${cardLimits.maxCards} cards).\n\nThis deck contains ${cardsToAdd} cards.\n\nPress OK to upgrade to Premium for unlimited cards, or Cancel to delete some cards first.`;
-
-      if (window.confirm(confirmMessage)) {
-          if (userIsPremium) {
-          window.location.href = "/contactme";
-          } else {
-          window.location.href = "/pricing";
-          }
-      }
+      setLimitType('cards');
+      setShowLimitModal(true);
       return;
     }
 
@@ -265,6 +251,12 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
 
   return (
     <>
+      {showLimitModal && (
+          <LimitReachedModal 
+            limitType={limitType}
+            onClose={() => setShowLimitModal(false)}
+          />
+      )}
       <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 

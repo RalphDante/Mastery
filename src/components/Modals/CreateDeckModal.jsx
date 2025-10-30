@@ -6,12 +6,16 @@ import { useAuth } from "../../hooks/useAuth";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
+import LimitReachedModal from "./LimitReachedModal";
 
 function CreateDeckModal({ uid, onClose, isOpen, isAutoAssignedFolder }) {
 
   //Context
   const { getFolderLimits, getDeckLimits, user } = useAuthContext();
   const {folders} = useDeckCache();
+
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [limitType, setLimitType] = useState('folders');
 
 
   const [didCompleteStep, setDidCompleteStep] = useState(false);
@@ -143,30 +147,18 @@ function CreateDeckModal({ uid, onClose, isOpen, isAutoAssignedFolder }) {
     if(isCreatingNewFolder){
       const {canGenerate, maxFolders} = getFolderLimits()
       if(!canGenerate){
-          const upgrade = window.confirm(
-              `You've reached your max folder limit of ${maxFolders} folders.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete folders.`
-          )
-          if(upgrade){
-              navigate('/pricing')
-          }
-          setLoading(false);
-          onClose()
+          setLimitType('folders')
+          setShowLimitModal(true)
+          setLoading(false)
           return;
       }
     }
 
     const {canGenerate, maxDecks} = getDeckLimits()
       if(!canGenerate){
-          const upgrade = window.confirm(
-              `You've reached your max deck limit of ${maxDecks} decks.\n\n` +
-              `Press OK to view upgrade options or Cancel to manage/delete decks.`
-          )
-          if(upgrade){
-              navigate('/pricing')
-          }
-          setLoading(false);
-          onClose()
+          setLimitType('decks')
+          setShowLimitModal(true)
+          setLoading(false)
           return;
       }
 
@@ -206,7 +198,13 @@ function CreateDeckModal({ uid, onClose, isOpen, isAutoAssignedFolder }) {
   }
 
   return (
-    
+    <>
+    {showLimitModal && (
+      <LimitReachedModal 
+        limitType={limitType}
+        onClose={() => setShowLimitModal(false)}
+      />
+    )}
     <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
         <button 
@@ -314,6 +312,7 @@ function CreateDeckModal({ uid, onClose, isOpen, isAutoAssignedFolder }) {
         </div>
       </div>
     </div>
+    </>
     
   );
 }
