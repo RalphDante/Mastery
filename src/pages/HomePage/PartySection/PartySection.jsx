@@ -119,7 +119,7 @@ function PartySection() {
         
 
 
-         {/* User Profile */}
+        {/* User Profile */}
         <div className="flex flex-row w-full md:w-96 md:mr-8 items-center">
           {/* Avatar */}
 

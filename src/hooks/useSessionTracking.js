@@ -7,20 +7,7 @@ import { handleBossDefeat } from "../utils/bossUtils";
 import { usePartyContext } from "../contexts/PartyContext";
 
 // Reward configuration for flashcard reviews
-const CARD_REWARDS = {
-    CORRECT: {
-        exp: 15,
-        damage: 15,
-        health: 2,
-        mana: 5
-    },
-    INCORRECT: {
-        exp: 5,
-        damage: 5,
-        health: 0,
-        mana: 2
-    }
-};
+const CARD_REWARDS = PLAYER_CONFIG.FLASHCARD_REWARDS;
 
 /**
  * Custom hook for batched session tracking to optimize Firestore writes

@@ -11,6 +11,22 @@ export const PLAYER_CONFIG = {
   // Mana
   BASE_MANA: 100,
   MANA_PER_MINUTE: 3,
+
+  // Flashcard Rewards ⚡
+  FLASHCARD_REWARDS: {
+    CORRECT: {
+      exp: 15,
+      damage: 15,
+      health: 2,
+      mana: 5
+    },
+    INCORRECT: {
+      exp: 5,
+      damage: 5,
+      health: 0,
+      mana: 2
+    }
+  }
 };
 
 

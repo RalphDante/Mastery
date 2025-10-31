@@ -18,6 +18,7 @@ import { useDeckCache } from '../../contexts/DeckCacheContext';
 import Boss from '../HomePage/Boss/Boss.jsx';
 import { createPortal } from 'react-dom';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
+import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
@@ -29,11 +30,15 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     const { user } = useAuthContext();
+    const {partyMembers} = usePartyContext();
     const { fetchDeckAndCards } = useDeckCache();
     const navigate = useNavigate();
     const location = useLocation();
     const { deckId: paramDeckId } = useParams(); 
     const db = getFirestore(app); 
+
+    const currentUser = user?.uid ? partyMembers[user.uid] : null;
+
 
     // ==========================================
     // STATE - Progress Tracking
@@ -488,7 +493,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                     <div className="flex items-center justify-center gap-2">
                         <span className="text-xl sm:text-2xl">⚔️</span>
                         <span className="font-semibold text-xs sm:text-sm md:text-base leading-tight">
-                            Boss Spawned! Answer correctly to deal damage
+                            New Quest: My First Study Session
                         </span>
                     </div>
                 </div>
@@ -527,6 +532,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                         deaths={deaths}
                         setDeaths={setDeaths}
                         cardCount={originalDeckSize}
+                        deckId={paramDeckId}
+                        currentUser={currentUser}
                     />
                 </div>
 
@@ -585,14 +592,11 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                         deaths={deaths}
                         setDeaths={setDeaths}
                         cardCount={originalDeckSize} 
+                        deckId={paramDeckId}
+                        currentUser={currentUser}
                     >
-                        <div className="space-y-4">
-                            {/* {deckData?.cardCount && (
-                                <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                    <span className="text-gray-400">Total Cards:</span>
-                                    <span className="font-bold text-lg text-blue-400">{deckData.cardCount}</span>
-                                </div>
-                            )} */}
+                        {/* <div className="space-y-4">
+                         
 
                             <div className="flex justify-between items-center py-3 border-b border-gray-700">
                                 <span className="text-gray-400">Correct:</span>
@@ -602,11 +606,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                                 <span className="text-gray-400">Wrong:</span>
                                 <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
                             </div>
-                            {/* <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Accuracy:</span>
-                                <span className="font-bold text-lg text-violet-400">{percent}%</span>
-                            </div> */}
-                        </div>
+                       
+                        </div> */}
                         {/* Quick Actions */}
                         <div className="mt-6">
                             <h4 className="text-gray-300 mb-4 font-medium">Quick Actions</h4>

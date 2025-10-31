@@ -159,10 +159,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
     // Check card limits
     const cardLimits = getCardLimits();
     const cardsToAdd = flashcards.length;
-    const currentCards =
-    cardLimits.maxCards === -1
-        ? 0
-        : (cardLimits.maxCards - (cardLimits.canGenerate ? cardLimits.maxCards : 0));
+    const currentCards = cardLimits.currentUsage || 0;
 
     if (cardLimits.maxCards !== -1 && currentCards + cardsToAdd > cardLimits.maxCards) {
       setLimitType('cards');

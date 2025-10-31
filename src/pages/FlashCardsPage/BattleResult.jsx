@@ -356,7 +356,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                                         border-2 border-purple-400/30"
                         >
                             <div className="text-base flex md:text-lg">
-                            Continue Adventure <ArrowRight />
+                            More Cards <ArrowRight />
                             </div>
                         </button>
                         {createBossWithAi()}

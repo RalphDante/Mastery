@@ -91,14 +91,14 @@ function CreateActionsDropdown({ onCreateFolderClick, onCreateDeckClick, onCreat
                     onClick={(e) => handleItemClick(onCreateDeckClick, e)} 
                     className="block px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create Boss Manually
+                    Create Cards Manually
                 </a>
                 <a 
                     href="#" 
                     onClick={(e) => handleItemClick(onCreateWithAIModalClick, e)} 
                     className="flex px-4 py-2 text-sm text-slate-200 hover:bg-gray-700 transition-colors"
                 >
-                    Create Boss with AI
+                    Create Cards with AI
                 </a>
             </div>
         </div>
