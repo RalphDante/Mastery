@@ -6,6 +6,13 @@ import { useAuthContext } from './AuthContext';
 
 const UserDataContext = createContext();
 
+const getLocalDateString = (date = new Date()) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export const useUserDataContext = () => {
     const context = useContext(UserDataContext);
     if (!context) {
@@ -19,12 +26,58 @@ export const UserDataProvider = ({ children }) => {
     const [dailySessions, setDailySessions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    const getLocalDateString = (date = new Date()) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    };
+    const [todaySession, setTodaySession] = useState({ 
+        minutesStudied: 0, 
+        cardsReviewed: 0,
+        date: getLocalDateString()
+    });
+
+    const fetchTodaySession = useCallback(async (userId) => {
+        if (!userId) return;
+
+        try {
+            const todayStr = getLocalDateString();
+            const sessionDocRef = doc(db, 'users', userId, 'dailySessions', todayStr);
+            const sessionDoc = await getDoc(sessionDocRef);
+            
+            let sessionData = { minutesStudied: 0, cardsReviewed: 0 };
+            if (sessionDoc.exists()) {
+                const data = sessionDoc.data();
+                sessionData = {
+                    minutesStudied: data.minutesStudied || 0,
+                    cardsReviewed: data.spacedSessions || 0,
+                };
+            }
+            
+            setTodaySession({
+                ...sessionData,
+                date: todayStr
+            });
+        } catch (error) {
+            console.error('Error fetching today session:', error);
+        }
+    }, []);
+
+    // Functions to increment UI values (optimistic updates)
+    const incrementMinutes = useCallback((amount) => {
+        setTodaySession(prev => ({
+            ...prev,
+            minutesStudied: prev.minutesStudied + amount
+        }));
+    }, []);
+
+    const incrementReviewedCards = useCallback(() => {
+        setTodaySession(prev => ({
+            ...prev,
+            cardsReviewed: prev.cardsReviewed + 1
+        }));
+    }, []);
+
+
+
+    
+
+  
 
     // Fetch daily sessions
     const fetchDailySessions = useCallback(async (userId) => {
@@ -72,20 +125,33 @@ export const UserDataProvider = ({ children }) => {
         }
     }, []);
 
-    // Fetch daily sessions when user changes
+    // Fetch today's session on mount
     useEffect(() => {
         if (user?.uid) {
-            fetchDailySessions(user.uid);
+            fetchTodaySession(user.uid);
         } else {
-            setDailySessions([]);
+            setTodaySession({ 
+                minutesStudied: 0,  
+                cardsReviewed: 0,  
+                date: getLocalDateString() });
         }
-    }, [user?.uid, fetchDailySessions]);
+    }, [user?.uid, fetchTodaySession]);
 
-    const todaySession = dailySessions.find(session => session.isToday) || 
-        { minutes: 0, spacedRep: 0, cramming: 0 };
+    // Fetch daily sessions when user changes
+    // useEffect(() => {
+    //     if (user?.uid) {
+    //         fetchDailySessions(user.uid);
+    //     } else {
+    //         setDailySessions([]);
+    //     }
+    // }, [user?.uid, fetchDailySessions]);
+
+   
 
     const value = {
         dailySessions,
+        incrementMinutes,
+        incrementReviewedCards,
         todaySession,
         isLoading,
         refreshDailySessions: () => fetchDailySessions(user?.uid),

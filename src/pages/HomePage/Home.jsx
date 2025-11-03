@@ -1,29 +1,20 @@
-import Footer from '../../Footer.jsx'
-import CreateBtn from '../../components/CreateQuizlet/QuizletBtn/QuizletBtn.jsx'
-import { onAuthStateChanged } from 'firebase/auth';
 import {auth, functions} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
-import UserName from '../../components/auth/UserName.jsx';
-import styles from './navbar.module.css';
 import { useNavigate } from 'react-router-dom';
-import CreateWithAIModal from '../../components/Modals/CreateWithAIModal.jsx';
+
 
 import { db } from '../../api/firebase.js';
 
 
-import LearningHubSection from './LearningHubSection/LearningHubSection.jsx';
-import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import { httpsCallable } from 'firebase/functions';
 import PartySection from './PartySection/PartySection.jsx';
 import Boss from './Boss/Boss.jsx';
-import Timer from './Timer/Timer.jsx';
-import ServerCostBanner from './ServerCostBanner.jsx';
 import Options from './Timer/Options.jsx';
 import { useAuthContext } from '../../contexts/AuthContext.jsx';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
-import { Users, HandHeart } from "lucide-react";
+import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -76,57 +67,59 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
             {/* MOBILE VIEW */}
             <div className="lg:hidden">
 
-            {/* Toggle Button */}
-            <div className="flex justify-center mb-2">
-              <div className="inline-flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700 relative text-sm">
-                <button
-                  onClick={() => setShowBoss(false)}
-                  className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                    !showBoss 
-                      ? 'bg-purple-600 text-white shadow-lg' 
-                      : 'text-slate-400 hover:text-slate-200'
-                  }`}
-                >
-                  Contribute
-                </button>
-
-                <div className="relative">
+              {/* Toggle Button */}
+              <div className="flex justify-center mb-2">
+                <div className="inline-flex rounded-lg bg-slate-800/50 p-0.5 border border-slate-700 relative text-sm">
                   <button
-                    onClick={() => {
-                      setShowBoss(true);
-                      sessionStorage.setItem('partyClicked', 'true');
-                      setHasSeenParty(true);
-                    }}
+                    onClick={() => setShowBoss(false)}
                     className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-                      showBoss 
+                      !showBoss 
                         ? 'bg-purple-600 text-white shadow-lg' 
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
-                    Party
+                    Contribute
                   </button>
 
-                  {!hasSeenParty && (
-                    <span className="absolute top-0.5 right-1.5 block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-                  )}
+                  <div className="relative">
+                    <button
+                      onClick={() => {
+                        setShowBoss(true);
+                        sessionStorage.setItem('partyClicked', 'true');
+                        setHasSeenParty(true);
+                      }}
+                      className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+                        showBoss 
+                          ? 'bg-purple-600 text-white shadow-lg' 
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      Party
+                    </button>
+
+                    {!hasSeenParty && (
+                      <span className="absolute top-0.5 right-1.5 block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
 
-
-            {/* Content Area For Mobile Devices */}
-            <div className="grid grid-cols-1 gap-6 mb-6">
-              {showBoss ? (
-                <Boss />
-              ) : (
-                <Options 
-                  db={db}
-                  authUser={user}
-                  onCreateDeckClick={onCreateDeckClick}
-                  onCreateWithAIModalClick={onCreateWithAIModalClick}
-                />
-              )}
-            </div>
+              {/* Content Area For Mobile Devices */}
+              <div className="grid grid-cols-1 gap-6 mb-6">
+                {showBoss ? (
+                  <Boss />
+                ) : (
+                  <div className="space-y-6">
+                    <Options 
+                      db={db}
+                      authUser={user}
+                      onCreateDeckClick={onCreateDeckClick}
+                      onCreateWithAIModalClick={onCreateWithAIModalClick}
+                    />
+                    <MiniLeaderboard />  {/* ← Moved here, always visible */}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* DESKTOP */}
@@ -139,6 +132,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                   onCreateDeckClick={onCreateDeckClick}
                   onCreateWithAIModalClick={onCreateWithAIModalClick}
                 />
+                <MiniLeaderboard />
+
               </div>
               <div className='order-1 lg:order-2'>
                 <Boss />

@@ -21,7 +21,7 @@ function CreateDeck() {
     const { getCardLimits, isPremium, user } = useAuthContext();
     const { completeTutorial } = useTutorials();
 
-    const [showLimit, setShowLimit] = useState()
+    const [showLimit, setShowLimit] = useState(false)
 
     const [showFlashCardAmount, setShowFlashCardAmount] = useState(true);
     const [fileName, setFileName] = useState("");
@@ -403,7 +403,6 @@ function CreateDeck() {
         const cardLimits = getCardLimits();
 
         if (cardLimits.maxCards !== -1) {
-            setShowLimit(true)
             const currentCardCount = cardLimits.currentUsage || 0;
             const newTotalCards = isEditMode
                 ? currentCardCount - originalFlashCardsRef.current.length + flashCards.length
@@ -413,15 +412,15 @@ function CreateDeck() {
 
                 setShowLimit(true);
                 return;
-                const cardsOverLimit = newTotalCards - cardLimits.maxCards;
+//                 const cardsOverLimit = newTotalCards - cardLimits.maxCards;
 
-                const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
-but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
+//                 const confirmMessage = `You're trying to create a deck with ${flashCards.length} cards, 
+// but you can only add ${cardLimits.maxCards - currentCardCount} more cards on your ${isPremium() ? 'current' : 'free'} plan.
 
-Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
+// Current usage: ${currentCardCount}/${cardLimits.maxCards} cards
 
-Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
-or Cancel to go back and remove ${cardsOverLimit} cards.`;
+// Press OK to ${isPremium() ? 'contact support for higher limits' : 'upgrade to Pro'}, 
+// or Cancel to go back and remove ${cardsOverLimit} cards.`;
 
                
 

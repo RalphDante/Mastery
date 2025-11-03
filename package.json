@@ -7,7 +7,15 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "leaderboard:update": "node firebase-admin-scripts/updateLeaderboards.cjs",
+    "leaderboard:week": "node firebase-admin-scripts/updateLeaderboards.cjs --week",
+    "leaderboard:month": "node firebase-admin-scripts/updateLeaderboards.cjs --month",
+    "leaderboard:backfill": "node firebase-admin-scripts/updateLeaderboards.cjs --backfill --weeks=4",
+    
+    "leaderboard:sandbox": "USE_EMULATOR=true node firebase-admin-scripts/updateLeaderboards.cjs",
+    "leaderboard:prod": "node firebase-admin-scripts/updateLeaderboards.cjs",
+    "demoDeck:sandbox": "USE_EMULATOR=true node firebase-admin-scripts/demoDeck.cjs"
   },
   "dependencies": {
     "@cloudinary/react": "^1.14.3",

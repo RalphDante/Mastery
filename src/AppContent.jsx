@@ -78,6 +78,7 @@ import Settings from './components/NavBar/ProfileQuickActionsDropDown/Settings.j
 import ProBanner from './pages/HomePage/WelcomeAndQuickStats/ProBanner.jsx';
 import KofiWidget from './components/KofiWidget.jsx';
 import JoinPage from './pages/JoinPage/JoinPage.jsx';
+import LeaderboardPage from './pages/Leaderboard/LeaderboardPage.jsx';
 
 
 
@@ -257,6 +258,8 @@ function AppContent(){
 
                   {/* Profile dropdown options */}
                   <Route path='/settings' element={<Settings />} />
+
+                  <Route path='leaderboard' element={<LeaderboardPage />} />
                   
                   {/* Test Phases */}
 

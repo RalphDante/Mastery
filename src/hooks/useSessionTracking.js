@@ -5,6 +5,7 @@ import { useAuthContext } from "../contexts/AuthContext";
 import { calculateLevelUp, PLAYER_CONFIG } from "../utils/playerStatsUtils";
 import { handleBossDefeat } from "../utils/bossUtils";
 import { usePartyContext } from "../contexts/PartyContext";
+import { useUserDataContext } from "../contexts/UserDataContext";
 
 // Reward configuration for flashcard reviews
 const CARD_REWARDS = PLAYER_CONFIG.FLASHCARD_REWARDS;
@@ -26,6 +27,8 @@ export const useSessionTracking = (user, db, isFinished) => {
         resetAllMembersBossDamage, 
         updateUserProfile
     } = usePartyContext();
+
+    const { incrementMinutes } = useUserDataContext();
 
     // Refs for counters to avoid async state issues
     const pendingCorrectRef = useRef(0);
@@ -324,6 +327,9 @@ export const useSessionTracking = (user, db, isFinished) => {
                 lastStudyDate: now,
                 lastActiveAt: now
             });
+
+            const estimatedMinutes = Math.ceil(totalCards * 0.5);
+            incrementMinutes(estimatedMinutes);
             
             // console.log(`✅ Session write: ${totalCards} cards (${correctCount} correct, ${incorrectCount} incorrect)`);
             // console.log(`   Base Rewards: +${totalExpGained} XP, +${baseDamage} base DMG`);

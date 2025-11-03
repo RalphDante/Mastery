@@ -7,6 +7,7 @@ import { handleBossDefeat } from '../../../utils/bossUtils';
 
 import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
+import { useUserDataContext } from '../../../contexts/UserDataContext';
 
 function Timer({
   authUser,
@@ -15,6 +16,7 @@ function Timer({
   onTimeUpdate = null,
 }) {
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = usePartyContext();
+  const {incrementMinutes} = useUserDataContext();
   
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
@@ -274,6 +276,7 @@ function Timer({
         lastActiveAt: now
       });
 
+      incrementMinutes(fullMinutes);
       
       if (onTimeUpdate) onTimeUpdate(fullMinutes);
     } catch (err) {
@@ -281,7 +284,7 @@ function Timer({
     } finally {
       isSavingRef.current = false;
     }
-  }, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage]);
+  }, [authUser, db, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage, incrementMinutes]);
 
   const handleCompletion = useCallback(async () => {
     console.log('Timer completed!');

@@ -5,7 +5,8 @@ const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { initializeApp } = require('firebase-admin/app');
 const { getFirestore, FieldValue, Timestamp, FieldPath } = require('firebase-admin/firestore');
 const crypto = require('crypto');
-const functions = require('firebase-functions');
+
+const admin = require('firebase-admin');
 
 const axios = require('axios');
 
@@ -1216,8 +1217,331 @@ exports.syncUserCounts = onCall(async (request) => {
 });
 
 // ======================
-// LEADERBOARD FUNCTIONS (aligned with your schema)
+// LEADERBOARD FUNCTIONS 
 // ======================
+
+// Helper functions
+function getWeekId(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
+}
+
+function getMonthId(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = (d.getMonth() + 1).toString().padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function getYesterdayDate(date) {
+  const d = new Date(date);
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0]; // YYYY-MM-DD
+}
+
+// ======================
+// MIDNIGHT UPDATE: Process yesterday's sessions
+// ======================
+
+exports.dailyLeaderboardUpdate = onSchedule(
+  {
+    schedule: "0 0 * * *", // Midnight UTC
+    timeZone: "UTC",
+    region: "us-central1",
+  },
+  async (event) => {
+    const now = new Date();
+    const yesterday = getYesterdayDate(now);
+    const yesterdayDate = new Date(yesterday);
+    const weekId = getWeekId(yesterdayDate);
+    const monthId = getMonthId(yesterdayDate);
+    
+    console.log('🕐 Midnight leaderboard update started');
+    console.log(`   Processing sessions from: ${yesterday}`);
+    console.log(`   Week: ${weekId}, Month: ${monthId}`);
+    
+    try {
+      // ========================================
+      // STEP 1: Find all users who studied YESTERDAY
+      // ========================================
+      const yesterdayStart = new Date(yesterday);
+      yesterdayStart.setHours(0, 0, 0, 0);
+
+      const yesterdayEnd = new Date(yesterday);
+      yesterdayEnd.setHours(23, 59, 59, 999);
+
+      const yesterdaySessionsSnapshot = await db.collectionGroup('dailySessions')
+        .where('date', '>=', Timestamp.fromDate(yesterdayStart))
+        .where('date', '<=', Timestamp.fromDate(yesterdayEnd))
+        .get();
+      
+      console.log(`   Found ${yesterdaySessionsSnapshot.size} sessions from yesterday`);
+      
+      if (yesterdaySessionsSnapshot.empty) {
+        console.log('   No sessions to process');
+        return null;
+      }
+      
+      // ========================================
+      // STEP 2: Increment leaderboard entries
+      // ========================================
+      let batch = db.batch();
+      let batchCount = 0;
+      let updateCount = 0;
+      const MAX_BATCH_SIZE = 400; // Leave room for 2 writes per user
+      
+      for (const sessionDoc of yesterdaySessionsSnapshot.docs) {
+        // Extract userId from path: users/{userId}/dailySessions/{date}
+        const userId = sessionDoc.ref.parent.parent.id;
+        const sessionData = sessionDoc.data();
+        const minutesStudied = sessionData.minutesStudied || 0;
+        
+        if (minutesStudied === 0) continue;
+        
+        console.log(`   Processing user ${userId}: ${minutesStudied} minutes`);
+        
+        // Get user's display data (for first-time leaderboard entry)
+        const userDoc = await db.collection('users').doc(userId).get();
+        
+        if (!userDoc.exists) {
+          console.log(`   ⚠️ User ${userId} not found, skipping`);
+          continue;
+        }
+        
+        const userData = userDoc.data();
+        
+        // ========================================
+        // A. UPDATE WEEKLY LEADERBOARD
+        // ========================================
+        const weeklyLeaderboardRef = db.collection('leaderboards')
+          .doc('weekly')
+          .collection(weekId)
+          .doc(userId);
+        
+        batch.set(weeklyLeaderboardRef, {
+          displayName: userData.displayName || 'Anonymous',
+          minutes: FieldValue.increment(minutesStudied),
+          avatar: userData.avatar || 'warrior_01',
+          level: userData.level || 1,
+          isPro: userData.subscription?.tier === 'pro' || false,
+          updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        batchCount++;
+        
+        // ========================================
+        // B. UPDATE MONTHLY LEADERBOARD
+        // ========================================
+        const monthlyLeaderboardRef = db.collection('leaderboards')
+          .doc('monthly')
+          .collection(monthId)
+          .doc(userId);
+        
+        batch.set(monthlyLeaderboardRef, {
+          displayName: userData.displayName || 'Anonymous',
+          minutes: FieldValue.increment(minutesStudied),
+          avatar: userData.avatar || 'warrior_01',
+          level: userData.level || 1,
+          isPro: userData.subscription?.tier === 'pro' || false,
+          updatedAt: FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        batchCount++;
+        updateCount++;
+        
+        // Commit batch if full
+        if (batchCount >= MAX_BATCH_SIZE) {
+          console.log(`   💾 Committing batch (${batchCount} writes)...`);
+          await batch.commit();
+          batch = db.batch();
+          batchCount = 0;
+        }
+      }
+      
+      // Commit remaining writes
+      if (batchCount > 0) {
+        console.log(`   💾 Committing final batch (${batchCount} writes)...`);
+        await batch.commit();
+      }
+      
+      console.log(`✅ Midnight update complete: ${updateCount} users updated`);
+      return null;
+      
+    } catch (error) {
+      console.error('❌ Midnight update failed:', error);
+      throw error;
+    }
+  }
+);
+
+// ======================
+// GET WEEKLY LEADERBOARD
+// ======================
+
+exports.getWeeklyLeaderboard = onCall(async (request) => {
+  try {
+    const { weekId, limit = 100 } = request.data || {};
+    const now = new Date();
+    const currentWeekId = getWeekId(now);
+    const targetWeekId = weekId || currentWeekId;
+    
+    console.log(`📊 Fetching weekly leaderboard for ${targetWeekId}`);
+    
+    // Query leaderboard collection
+    const snapshot = await db.collection('leaderboards')
+      .doc('weekly')
+      .collection(targetWeekId)
+      .orderBy('minutes', 'desc')
+      .limit(limit)
+      .get();
+    
+    const leaderboard = snapshot.docs.map((doc, index) => {
+      const data = doc.data();
+      return {
+        rank: index + 1,
+        userId: doc.id,
+        displayName: data.displayName || 'Anonymous',
+        minutes: data.minutes || 0,
+        avatar: data.avatar || 'warrior_01',
+        level: data.level || 1,
+        isPro: data.isPro || false
+      };
+    });
+    
+    // Find authenticated user's rank
+    let userRank = null;
+    let userMinutes = 0;
+    
+    if (request.auth) {
+      // Check if user is in top 100
+      const userEntry = leaderboard.find(entry => entry.userId === request.auth.uid);
+      
+      if (userEntry) {
+        userRank = userEntry.rank;
+        userMinutes = userEntry.minutes;
+      } else {
+        // Not in top 100, calculate actual rank
+        const userDoc = await db.collection('leaderboards')
+          .doc('weekly')
+          .collection(targetWeekId)
+          .doc(request.auth.uid)
+          .get();
+        
+        if (userDoc.exists) {
+          userMinutes = userDoc.data().minutes || 0;
+          
+          // Count how many users have more minutes
+          const aboveCount = await db.collection('leaderboards')
+            .doc('weekly')
+            .collection(targetWeekId)
+            .where('minutes', '>', userMinutes)
+            .count()
+            .get();
+          
+          userRank = aboveCount.data().count + 1;
+        }
+      }
+    }
+    
+    return {
+      weekId: targetWeekId,
+      isCurrent: targetWeekId === currentWeekId,
+      leaderboard,
+      userRank,
+      userMinutes,
+      totalPlayers: snapshot.size
+    };
+    
+  } catch (error) {
+    console.error('Error fetching weekly leaderboard:', error);
+    throw new HttpsError('internal', 'Failed to fetch leaderboard');
+  }
+});
+
+// ======================
+// GET MONTHLY LEADERBOARD
+// ======================
+
+exports.getMonthlyLeaderboard = onCall(async (request) => {
+  try {
+    const { monthId, limit = 100 } = request.data || {};
+    const now = new Date();
+    const currentMonthId = getMonthId(now);
+    const targetMonthId = monthId || currentMonthId;
+    
+    console.log(`📊 Fetching monthly leaderboard for ${targetMonthId}`);
+    
+    // Query leaderboard collection
+    const snapshot = await db.collection('leaderboards')
+      .doc('monthly')
+      .collection(targetMonthId)
+      .orderBy('minutes', 'desc')
+      .limit(limit)
+      .get();
+    
+    const leaderboard = snapshot.docs.map((doc, index) => {
+      const data = doc.data();
+      return {
+        rank: index + 1,
+        userId: doc.id,
+        displayName: data.displayName || 'Anonymous',
+        minutes: data.minutes || 0,
+        avatar: data.avatar || 'warrior_01',
+        level: data.level || 1,
+        isPro: data.isPro || false
+      };
+    });
+    
+    // Find authenticated user's rank
+    let userRank = null;
+    let userMinutes = 0;
+    
+    if (request.auth) {
+      const userEntry = leaderboard.find(entry => entry.userId === request.auth.uid);
+      
+      if (userEntry) {
+        userRank = userEntry.rank;
+        userMinutes = userEntry.minutes;
+      } else {
+        const userDoc = await db.collection('leaderboards')
+          .doc('monthly')
+          .collection(targetMonthId)
+          .doc(request.auth.uid)
+          .get();
+        
+        if (userDoc.exists) {
+          userMinutes = userDoc.data().minutes || 0;
+          
+          const aboveCount = await db.collection('leaderboards')
+            .doc('monthly')
+            .collection(targetMonthId)
+            .where('minutes', '>', userMinutes)
+            .count()
+            .get();
+          
+          userRank = aboveCount.data().count + 1;
+        }
+      }
+    }
+    
+    return {
+      monthId: targetMonthId,
+      isCurrent: targetMonthId === currentMonthId,
+      leaderboard,
+      userRank,
+      userMinutes,
+      totalPlayers: snapshot.size
+    };
+    
+  } catch (error) {
+    console.error('Error fetching monthly leaderboard:', error);
+    throw new HttpsError('internal', 'Failed to fetch leaderboard');
+  }
+});
 
 // Uncomment and modify if you want scheduled functions
 // exports.updateWeeklyLeaderboard = onSchedule('0 0 * * 1', async (event) => {

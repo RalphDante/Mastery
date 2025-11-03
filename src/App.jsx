@@ -2,6 +2,7 @@
 import AppContent from "./AppContent";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DeckCacheProvider } from "./contexts/DeckCacheContext";
+import { LeaderboardProvider } from "./contexts/LeaderboardContext.jsx";
 import { PartyProvider } from "./contexts/PartyContext";
 import { UserDataProvider } from "./contexts/UserDataContext";
 
@@ -11,7 +12,9 @@ function App() {
       <PartyProvider>
         <UserDataProvider>
           <DeckCacheProvider>
-            <AppContent />
+            <LeaderboardProvider>
+              <AppContent />
+            </LeaderboardProvider>
           </DeckCacheProvider>
         </UserDataProvider>
       </PartyProvider>
