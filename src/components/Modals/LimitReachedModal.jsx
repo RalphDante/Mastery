@@ -10,27 +10,32 @@ function LimitReachedModal({ limitType, onClose }) {
   const { authUser, signIn } = useAuth();
 
   const messages = {
-    cards: {
-        title: "You Hit 100 Cards!",
-        emoji: "💯",
-        subtitle: "You're on fire with studying"
-    },
-    decks: {
-        title: "You Hit 5 Decks!",
-        emoji: "🎯",
-        subtitle: "You're building something great"
-    },
-    folders: {
-        title: "You Hit Your Folder Limit!",
-        emoji: "📁",
-        subtitle: "Time to level up your organization"
-    },
-    ai: {
-        title: "You Hit Your AI Limit!",
-        emoji: "🤖",
-        subtitle: "You've been crushing it with AI generations"
-    }
-    };
+      cards: {
+          title: "You Hit 100 Cards!",
+          emoji: "💯",
+          subtitle: "You're on fire with studying"
+      },
+      decks: {
+          title: "You Hit 5 Decks!",
+          emoji: "🎯",
+          subtitle: "You're building something great"
+      },
+      folders: {
+          title: "You Hit Your Folder Limit!",
+          emoji: "📁",
+          subtitle: "Time to level up your organization"
+      },
+      ai: {
+          title: "You Hit Your AI Limit!",
+          emoji: "🤖",
+          subtitle: "You've been crushing it with AI generations"
+      },
+      regenerate: {  // NEW
+          title: "Unlock Unlimited Regenerations!",
+          emoji: "🔄",
+          subtitle: "Get perfect flashcards every time"
+      }
+  };
 
   const msg = messages[limitType] || messages.cards;
 

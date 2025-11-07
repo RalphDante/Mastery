@@ -110,8 +110,8 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
             <div className="flex flex-row lg:flex-col gap-2">
 
                 {/* Boss */}
-                <div className="hidden sm:flex flex-row flex-1 items-center min-w-0"> {/* ← Added flex-1 and min-w-0 */}
-                    {/* Avatar */}
+                <div className="flex flex-row flex-1 items-center min-w-0"> {/* ← Added flex-1 and min-w-0 */}
+                    {/* Avatar hidden sm: */}
                     <div 
                         className="relative cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
                     >
@@ -175,7 +175,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                 </div>
 
                 {/* Mobile view - NEW: Show only player stats */}
-                <div className="sm:flex flex-col flex-1 rounded-2xl h-fit" onClick={openModal}>
+                <div className="hidden sm:flex flex-col flex-1 rounded-2xl h-fit" onClick={openModal}>
                     <div className="flex flex-row items-center gap-3">
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
@@ -265,7 +265,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                     </div>
                     
                     {/* Quick stats */}
-                    <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-around text-center">
+                    {/* <div className="mt-3 pt-3 border-t border-slate-700/50 flex justify-around text-center">
                     <div>
                         <p className="text-[10px] text-slate-400">Correct</p>
                         <p className="text-sm font-bold text-emerald-400">{knowAnswer}</p>
@@ -278,7 +278,7 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                         <p className="text-[10px] text-slate-400">Deaths</p>
                         <p className="text-sm font-bold text-purple-400">{deaths}</p>
                     </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 

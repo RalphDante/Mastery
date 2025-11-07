@@ -45,7 +45,9 @@ function FlashCardUI({
 
     knowAnswer,
     dontKnowAnswer,
-    isMuted
+    isMuted,
+
+    hasNotCreatedADeck
     
 }) {
     const { user } = useAuthContext();
@@ -408,6 +410,9 @@ function FlashCardUI({
             );
         } else {
             // advanceStep('create-deck')
+            if(hasNotCreatedADeck){
+                return;
+            }
             return(
                 <div className="flex justify-center items-center lg:hidden">
                     <button 

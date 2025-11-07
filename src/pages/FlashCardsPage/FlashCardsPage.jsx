@@ -20,8 +20,11 @@ import { createPortal } from 'react-dom';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
+import { Confetti, FirstDeckCelebration } from '../../components/ConfettiAndToasts.jsx';
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
+
+    const [showFirstDeckCelebration, setShowFirstDeckCelebration] = useState(false);
     const [deaths, setDeaths] = useState(0);
 
     const {isInTutorial} = useTutorials();
@@ -69,6 +72,14 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         return localStorage.getItem('soundMuted') === 'true';
     });
     
+    useEffect(() => {
+        if (location.state?.showFirstDeckCelebration) {
+            setShowFirstDeckCelebration(true);
+            
+            // Clear the state so it doesn't show again on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
 
     // ==========================================
     // EFFECT - Calculate percentage
@@ -487,6 +498,14 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     return (
         <>
+        {showFirstDeckCelebration && (
+            <>
+                <Confetti />
+                <FirstDeckCelebration 
+                    onComplete={() => setShowFirstDeckCelebration(false)}
+                />
+            </>
+        )}
         {showBossTip && hasNotCreatedADeck && (
             <div className="fixed top-4 sm:top-10 left-0 right-0 px-4 flex justify-center z-50 pointer-events-none">
                 <div className="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-2xl border-2 border-purple-400/50 w-full sm:max-w-sm text-center">
@@ -504,23 +523,28 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
 
             <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                 {/* HEADER */}
-                <div className="flex justify-between mb-1">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                    </button>
-                    
-                    <DeckActionsDropdown 
-                        deckId={paramDeckId}
-                        deckData={deckData}
-                        flashCards={flashCards}
-                        user={user}
-                        isMuted={isMuted}
-                        onToggleMute={handleToggleMute}
-                    />
-                </div>
+
+                {!hasNotCreatedADeck && (
+                    <div className="flex justify-between mb-1">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                        </button>
+                        
+                        <DeckActionsDropdown 
+                            deckId={paramDeckId}
+                            deckData={deckData}
+                            flashCards={flashCards}
+                            user={user}
+                            isMuted={isMuted}
+                            onToggleMute={handleToggleMute}
+                        />
+                    </div>
+                    )
+                }
+                
 
                 {renderScoreContainer()}
 
@@ -580,6 +604,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                     dontKnowAnswer={dontKnowAnswer}
 
                     isMuted={isMuted}
+
+                    hasNotCreatedADeck={hasNotCreatedADeck}
                 />
             </div>
             

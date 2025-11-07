@@ -162,44 +162,24 @@ export default function MiniLeaderboard() {
           View All
         </button>
       </div>
-
-      {/* ────── Compact Update Bar (same as full page) ────── */}
-      <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700 mb-3">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span>Last updated: <strong>{getLastUpdated()}</strong></span>
-            <span className="hidden sm:inline">•</span>
-            <span className="text-purple-400">
-              Next update in <strong>{timeLeft}</strong>
-            </span>
+      {/* ────── Today's Progress Card ────── */}
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-3 mb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-slate-400" />
+            <span className="text-slate-400 text-sm">Today's Progress</span>
           </div>
-
-          <div className="flex items-center gap-3 text-right">
-            {minsToday === 0 && !hasRank && (
-              <span className="text-purple-300 italic">Study to rank up!</span>
-            )}
-            {minsToday > 0 && !hasRank && (
-              <span className="text-emerald-400 italic">
-                {minsToday} min today — check tomorrow!
-              </span>
-            )}
-            {isPro && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white">
-                <Crown className="w-3 h-3" />
-                PRO
-              </span>
-            )}
-            {!isPro && hasRank && (
-              <button
-                onClick={() => navigate("/pricing")}
-                className="text-indigo-400 hover:text-indigo-300 text-xs underline"
-              >
-                Pro: badge + more
-              </button>
-            )}
+          <div className="text-right">
+            <div className="text-lg font-bold text-emerald-400">
+              {minsToday}m
+            </div>
+            <div className="text-xs text-slate-500">
+              {minsToday === 0 ? "Start studying!" : "Counts tomorrow"}
+            </div>
           </div>
         </div>
       </div>
+      
 
       {/* ────── Top 3 ────── */}
       <div className="space-y-2">
@@ -301,6 +281,40 @@ export default function MiniLeaderboard() {
           </div>
         </>
       )}
+
+      {/* ────── Compact Update Bar (same as full page) ────── */}
+      <div className="bg-slate-800/70 rounded-xl p-3 mt-3 border border-slate-700 mb-3">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>Last updated: <strong>{getLastUpdated()}</strong></span>
+            <span className="hidden sm:inline">•</span>
+            <span className="text-purple-400">
+              Next update in <strong>{timeLeft}</strong>
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 text-right">
+            {minsToday === 0 && !hasRank && (
+              <span className="text-purple-300 italic">Study to rank up!</span>
+            )}
+            
+            {isPro && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                <Crown className="w-3 h-3" />
+                PRO
+              </span>
+            )}
+            {!isPro && hasRank && (
+              <button
+                onClick={() => navigate("/pricing")}
+                className="text-indigo-400 hover:text-indigo-300 text-xs underline"
+              >
+                Pro: badge + more
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -346,7 +346,7 @@ export const useSessionTracking = (user, db, isFinished) => {
             console.error('❌ Error writing session data:', error);
             // Keep pending counts if write failed - will retry on next batch
         }
-    }, [user, db, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage]);
+    }, [user, db, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage, incrementMinutes]);
 
     // Main tracking function - call this when a card is reviewed
     const trackCardReview = useCallback((isCorrect) => {

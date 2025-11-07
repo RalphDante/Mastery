@@ -24,6 +24,18 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
     // Check if this is their first or second deck
     const shouldShowPartyIntro = isInTutorial('create-deck');
 
+    const [timer, setTimer] = useState(60);
+    const [bonusXP, setBonusXP] = useState(0);
+
+    useEffect(() => {
+        if (timer > 0) {
+        const t = setTimeout(() => setTimer(timer - 1), 1000);
+        return () => clearTimeout(t);
+        } else if (timer === 0) {
+        setBonusXP(100);
+        }
+    }, [timer]);
+
 
 
     const calculateRewards = () => {
@@ -85,56 +97,126 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
         setShowDemoDecks(true);
     }
 
-    const createBossWithAi = ()=>{
-        return(
-            <div className={`space-y-4 transform transition-all duration-500 delay-400 ${showStats ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                {/* Celebration Header */}
-                {/* <div className="text-center space-y-2">
-                    <div className="space-y-1">
-                        <p className="text-white font-bold text-base md:text-lg">
-                            Design <span className='text-green-400'>YOUR</span> Boss in 15 seconds
-                        </p>
-                    </div>
-                </div> */}
+    const createBossWithAi = () => {
+        const isUrgent = timer <= 10;
+        
+        return (
+            <div className="space-y-4 text-center">
+                {/* URGENCY BANNER */}
+                <div>
 
-                {/* Secondary CTA - Upload Notes */}
-                <button
-                    onClick={() => {
-                        onCreateWithAIModalClick("First Folder")
-                        if(isTutorialAtStep('create-deck', 3)){
-                            advanceStep('create-deck')
-                        }
-                    }}
-                    className="w-full bg-white/10 
-                                hover:bg-white/20
-                                text-white font-semibold py-2.5 px-3.5 md:px-5 rounded-xl
-                                transition-all hover:scale-105 flex items-center justify-center gap-2 md:gap-2.5
-                                border-2 border-white/20"
-                >
-                    <span className="text-lg md:text-xl">
-                        <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-7 h-7 md:w-8 md:h-8 text-yellow-400"
-                        viewBox="0 0 24 24"
-                        >
-                        <path
-                            fill="currentColor"
-                            d="M5 10H4V8h1V7h1V6h1V5h1V4h1V3h1V2h1V1h2v1h1v1h1v1h1v1h1v1h1v1h1v1h1v2h-1v1h-2v-1h-1V9h-1V8h-1v9h-4V8H9v1H8v1H7v1H5zM2 20h20v3H2z"
-                        />
-                        </svg>
-                    </span>
-                    <div className="text-left">
-                        <div className="text-sm md:text-base">Create My Own Deck</div>
-                        <div className="text-[11px] text-white/70 font-normal">
-                            AI creates flashcards in 15 seconds
-                        </div>
+           
+
+                    {/* NOW the urgency makes sense */}
+                    <div className={`relative mx-6 rounded-t-xl p-4 shadow-lg transition-all ${
+                        isUrgent 
+                            ? 'bg-gradient-to-r from-red-600 to-red-700 border-red-400 animate-pulse' 
+                            : ''
+                    }`}>
+                        {/* <p className="text-white font-black text-xl md:text-2xl tracking-tight">
+                            {isUrgent ? '🚨 HURRY!' : '⏱️'} {timer}s LEFT
+                        </p> */}
+                        {/* Heading - More Direct */}
+                        <h2 className="text-2xl md:text-3xl font-black text-white px-4">
+                            Upload Notes & Get <span className="text-yellow-400">+100 XP!</span>
+                        </h2>
+                    
+                        {/* <div className="absolute -top-3 -right-2 bg-yellow-400 text-black 
+                                        text-xs font-bold px-3 py-1 rounded-full shadow-lg ">
+                            LIMITED TIME
+                        </div> */}
                     </div>
-                </button>
+
+                    
+                </div>
+
 
                
+
+                {/* WARNING TEXT - NEW! */}
+                {isUrgent && (
+                    <p className="text-red-400 font-bold text-sm animate-pulse mx-8">
+                        ⚠️ Upload now or lose your +100 XP bonus!
+                    </p>
+                )}
+
+               
+                <div className="relative w-full max-w-md mx-auto">
+                    {/* BIG CTA - Enhanced */}
+                    <button
+                        onClick={() => {
+                        onCreateWithAIModalClick("First Folder");
+                        if (isTutorialAtStep('create-deck', 3)) advanceStep('create-deck');
+                        }}
+                        className={`group w-full font-bold py-5 md:py-6 rounded-t-2xl rounded-b-none
+                            text-lg md:text-xl flex items-center justify-center gap-3 
+                            transition-all duration-300 hover:scale-105 active:scale-95 
+                            shadow-2xl relative overflow-hidden ${
+                            isUrgent 
+                                ? 'bg-gradient-to-r from-red-600 to-red-700 shadow-red-500/50 animate-pulse' 
+                                : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 border border-2 border-yellow-400'
+                            } text-white`}
+                    >   
+                        {/* Pulse overlay when urgent */}
+                        {isUrgent && (
+                        <div className="absolute inset-0 bg-white/10 animate-pulse" />
+                        )}
+                        
+                        <svg 
+                        className="w-10 h-10 md:w-12 md:h-12 text-yellow-400 group-hover:scale-110 transition relative z-10" 
+                        viewBox="0 0 24 24"
+                        >
+                        <path 
+                            fill="currentColor" 
+                            d="M5 10H4V8h1V7h1V6h1V5h1V4h1V3h1V2h1V1h2v1h1v1h1v1h1v1h1v1h1v1h1v1h1v2h-1v1h-2v-1h-1V9h-1V8h-1v9h-4V8H9v1H8v1H7v1H5zM2 20h20v3H2z" 
+                        />
+                        </svg>
+                        <span className="leading-tight relative z-10">
+                        UPLOAD NOTES &<br />FIGHT REAL BOSSES
+                        </span>
+                    </button>
+
+                    {/* Timer Bar - Now full width, attached to button */}
+                    <div className={`relative h-5 bg-slate-800 overflow-hidden border-2 border-t-0 rounded-b-2xl
+                        ${isUrgent ? 'border-red-400' : 'border-yellow-400'}`}
+                    >
+                        <div
+                        className={`h-full transition-all duration-300 shadow-inner ${
+                            isUrgent 
+                            ? 'bg-gradient-to-r from-red-600 to-red-500 animate-pulse' 
+                            : 'bg-gradient-to-r from-red-600 via-orange-500 to-green-500'
+                        }`}
+                        style={{ width: `${(timer / 60) * 100}%` }}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">
+                        {isUrgent ? 'HURRY!' : ''} {timer}s
+                        </div>
+                    </div>
+
+                    {/* LIMITED TIME Badge - Positioned outside */}
+                    <div className="absolute -top-3 -right-0 bg-yellow-400 text-black 
+                        text-xs font-bold px-3 py-1 rounded-full shadow-lg z-20">
+                        LIMITED TIME
+                    </div>
+                    </div>
+
+                
+                
+
+                {/* Helper text - Made more prominent */}
+                <p className="text-white/90 text-sm font-semibold">
+                    Takes only <span className="text-purple-400">15 seconds</span>
+                </p>
+
+                {/* Extra motivation text */}
+                {/* {timer > 10 && (
+                    <p className="text-white/60 text-xs px-8">
+                        Act fast to secure your bonus XP reward!
+                    </p>
+                )} */}
             </div>
-        )
-    }
+        );
+    };
 
     const rewardsSection = ()=>{
         return(
@@ -251,92 +333,88 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
             (
             <>
                 {/* Title - Same for all screens */}
-                <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
-                    DECK CONQUERED
-                </h3>
+                {!hasNotCreatedADeck ? (
+                    <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
+                        DECK CONQUERED
+                    </h3>
+                ):(
+                    <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
+                        TUTORIAL BOSS DEFEATED
+                    </h3>
+                )
+                }
+               
 
                 {/* Unified Layout - Same structure for mobile and desktop */}
                 <div className="space-y-4 max-w-[500px] ml-auto mr-auto">
                     {/* Boss Info - All screens (optional, only if deckData exists) */}
-                    {deckData && (
-                        <div className={`lg:hidden flex items-center gap-3 p-3 bg-slate-800/40 rounded-lg transform transition-all duration-500 ${showStats ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                            <div className="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center relative">
-                                <span className="text-3xl">👾</span>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-red-500 text-4xl font-bold">✕</span>
-                                </div>
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <h3 className="text-white font-bold truncate text-sm">
-                                    {deckData.title || "Math Boss - Tutorial"}
-                                </h3>
-                                <p className="text-white/60 text-xs">
-                                    {deckData.description || "Your first boss battle!"}
-                                </p>
-                            </div>
-                        </div>
-                    )}
+                    
 
 
                     {/* Grade + Stats Container - Same layout for all screens */}
-                    <div className="flex  flex-col  bg-slate-600/20 border-2 border-slate-500/20 rounded-lg p-4 gap-3">
-                        {/* Grade Display */}
-                        <div className='flex flex-row gap-3 md:gap-4'>
-                            <div className={`flex items-center justify-center text-center transform transition-all duration-500 ${showStats ? 'scale-100' : 'scale-0'}`}>
-                                <div className="inline-block rounded-2xl">
-                                    <div className="text-xs md:text-sm text-gray-300 font-mono mb-1 md:mb-2">GRADE</div>
-                                    <div className={`text-7xl md:text-9xl font-black ${currentGrade.color} font-mono tracking-tighter leading-none`}>
-                                        {result.grade}
+                    {!hasNotCreatedADeck && (
+                        <div className="flex  flex-col  bg-slate-600/20 border-2 border-slate-500/20 rounded-lg p-4 gap-3">
+                            {/* Grade Display */}
+                            <div className='flex flex-row gap-3 md:gap-4'>
+                                <div className={`flex items-center justify-center text-center transform transition-all duration-500 ${showStats ? 'scale-100' : 'scale-0'}`}>
+                                    <div className="inline-block rounded-2xl">
+                                        <div className="text-xs md:text-sm text-gray-300 font-mono mb-1 md:mb-2">GRADE</div>
+                                        <div className={`text-7xl md:text-9xl font-black ${currentGrade.color} font-mono tracking-tighter leading-none`}>
+                                            {result.grade}
+                                        </div>
+                                        {result.grade === 'S' && (
+                                            <div className="text-xs text-cyan-300 font-mono mt-2 animate-pulse">
+                                                The Honored One
+                                            </div>      
+                                        )}
                                     </div>
-                                    {result.grade === 'S' && (
-                                        <div className="text-xs text-cyan-300 font-mono mt-2 animate-pulse">
-                                            The Honored One
-                                        </div>      
-                                    )}
                                 </div>
-                            </div>
 
-                            {/* Stats Box */}
-                            <div className={`w-full md:p-6 space-y-3 md:space-y-4 transform transition-all duration-500 delay-200 ${showStats ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-                                <div className="flex items-center justify-between font-mono">
-                                    <span className="text-white/80 text-xs md:text-sm">ACCURACY</span>
-                                    <span className={`text-2xl md:text-3xl font-bold ${currentGrade.color}`}>
-                                        {counter}%
-                                    </span>
-                                </div>
-                                <div className="border-t-2 border-dashed border-slate-500/30"></div>
-                                <div className="flex items-center justify-between font-mono text-xs md:text-sm">
-                                    <span className="text-white/80">DEATHS</span>
-                                    <span className="text-red-400 font-bold text-lg md:text-xl">{deaths}</span>
-                                </div>
-                                <div className="border-t-2 border-dashed border-slate-500/30"></div>
-                                <div className="flex items-center justify-between font-mono text-xs md:text-sm">
-                                    <span className="text-white/80">TOTAL ATTEMPTS</span>
-                                    <span className="text-green-400 font-bold text-lg md:text-xl">{currentIndex}</span>
+                                {/* Stats Box */}
+                                <div className={`w-full md:p-6 space-y-3 md:space-y-4 transform transition-all duration-500 delay-200 ${showStats ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                                    <div className="flex items-center justify-between font-mono">
+                                        <span className="text-white/80 text-xs md:text-sm">ACCURACY</span>
+                                        <span className={`text-2xl md:text-3xl font-bold ${currentGrade.color}`}>
+                                            {counter}%
+                                        </span>
+                                    </div>
+                                    <div className="border-t-2 border-dashed border-slate-500/30"></div>
+                                    <div className="flex items-center justify-between font-mono text-xs md:text-sm">
+                                        <span className="text-white/80">DEATHS</span>
+                                        <span className="text-red-400 font-bold text-lg md:text-xl">{deaths}</span>
+                                    </div>
+                                    <div className="border-t-2 border-dashed border-slate-500/30"></div>
+                                    <div className="flex items-center justify-between font-mono text-xs md:text-sm">
+                                        <span className="text-white/80">TOTAL ATTEMPTS</span>
+                                        <span className="text-green-400 font-bold text-lg md:text-xl">{currentIndex}</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                            
-                        {/* CTA Section - Same for all screens */}
-                        {rewardsSection()}
-
-                        {shouldShowPartyIntro && partyProfile?.currentBoss?.isAlive && (
-                        <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3 text-sm">
-                            <div className="flex items-center gap-2 text-purple-300">
-                            <span>
-                                <span className="text-purple-400 font-bold">💡 {rewards.bossDamage} DMG </span> 
-                                to party boss  
-                                <button 
-                                onClick={() => navigate('/')}
-                                className="text-purple-400 hover:text-purple-300 underline ml-1"
-                                >
-                                [View →]
-                                </button>
-                            </span>
+                                
+                            {/* CTA Section - Same for all screens */}
+                            {rewardsSection()}
+                        
+                            {/* Link to Party Boss */}
+                            {/* {shouldShowPartyIntro && partyProfile?.currentBoss?.isAlive && (
+                            <div className="bg-purple-900/20 border border-purple-500/30 rounded-lg p-3 text-sm">
+                                <div className="flex items-center gap-2 text-purple-300">
+                                <span>
+                                    <span className="text-purple-400 font-bold">💡 {rewards.bossDamage} DMG </span> 
+                                    to party boss  
+                                    <button 
+                                    onClick={() => navigate('/')}
+                                    className="text-purple-400 hover:text-purple-300 underline ml-1"
+                                    >
+                                    [View →]
+                                    </button>
+                                </span>
+                                </div>
                             </div>
-                        </div>
-                        )}
-                    </div>
+                            )} */}
+                        </div>)
+                     
+                    }
+                    
 
                     {/* Primary CTA - Upload Notes */}
 
@@ -346,7 +424,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                     {hasNotCreatedADeck ? (
                         <>
                         {/* Primary CTA - Continue Adventure */}
-                        <button
+                        {/* <button
                             onClick={handleContinueAdventureClick}
                             className="w-full bg-purple-600
                                         hover:bg-purple-700
@@ -358,7 +436,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                             <div className="text-base flex md:text-lg">
                             More Cards <ArrowRight />
                             </div>
-                        </button>
+                        </button> */}
                         {createBossWithAi()}
                         </>
                         

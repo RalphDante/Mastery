@@ -9,6 +9,7 @@ import ProBanner from '../../HomePage/WelcomeAndQuickStats/ProBanner';
 import { useAuth } from '../../../hooks/useAuth';
 import TestimonialsCarousel from './TestimonialCarousel';
 import HeroSection from './HeroSection';
+import Testimonials from '../../../components/Testimonials';
 
 const TryNowPage = () => {
   const [showModal, setShowModal] = useState(false);
@@ -175,6 +176,9 @@ const TryNowPage = () => {
               signIn={signIn}
             />
 
+            {/* <TestimonialsCarousel /> */}
+            
+
             {/* Problem/Agitate/Solve Section */}
             <section className="mb-12 sm:mb-16 lg:mb-20 mx-auto px-4 sm:px-0">
               {/* Problem Headline */}
@@ -296,6 +300,8 @@ const TryNowPage = () => {
                 </p>
               </div>
             </section>
+
+            <Testimonials />
 
             {/* FAQ Section */}
             <section className="mb-12 sm:mb-16 lg:mb-20 text-left max-w-4xl mx-auto px-4" aria-labelledby="faq">

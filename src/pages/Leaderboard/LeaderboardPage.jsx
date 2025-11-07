@@ -212,10 +212,27 @@ export default function LeaderboardPage() {
             </button>
           ))}
         </div>
+        
+        {/* Combined Progress & Update Info */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+          {/* Today's Progress Row */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-slate-400" />
+              <span className="text-slate-300 font-medium">Today's Progress</span>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-emerald-400">
+                {minutesToday}m
+              </div>
+              <div className="text-xs text-slate-500">
+                {minutesToday === 0 ? "Start studying!" : "Counts tomorrow"}
+              </div>
+            </div>
+          </div>
 
-        {/* Compact Update Bar */}
-        <div className="bg-slate-800/70 rounded-xl p-3 border border-slate-700">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400">
+          {/* Update Info Row */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400 pt-3">
             <div className="flex items-center gap-2 flex-wrap">
               <span>Last updated: <strong>{getLastUpdated()}</strong></span>
               <span className="hidden sm:inline">•</span>
@@ -224,17 +241,7 @@ export default function LeaderboardPage() {
               </span>
             </div>
 
-            <div className="flex items-center gap-3 text-right">
-              {minutesToday > 0 && !hasRank && (
-                <span className="text-emerald-400 italic">
-                  {minutesToday} min today — check tomorrow!
-                </span>
-              )}
-              {minutesToday === 0 && !hasRank && (
-                <span className="text-purple-300 italic">
-                  Study to rank up!
-                </span>
-              )}
+            <div className="flex items-center gap-3">
               {!isPro && hasRank && (
                 <button
                   onClick={() => navigate("/pricing")}
@@ -242,6 +249,12 @@ export default function LeaderboardPage() {
                 >
                   Pro: badge + more
                 </button>
+              )}
+              {isPro && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                  <Crown className="w-3 h-3" />
+                  PRO
+                </span>
               )}
             </div>
           </div>

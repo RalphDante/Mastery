@@ -9,6 +9,241 @@ import LimitReachedModal from '../Modals/LimitReachedModal';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
+const parseAndValidateAIResponse = (aiResponse) => {
+    const extractAndCleanJSON = (text) => {
+        let jsonText = text;
+        
+        // Remove markdown code blocks
+        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (jsonMatch) {
+            jsonText = jsonMatch[1].trim();
+        }
+        
+        // Find JSON object bounds
+        const startIndex = jsonText.indexOf('{');
+        const lastIndex = jsonText.lastIndexOf('}');
+        
+        if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
+            jsonText = jsonText.substring(startIndex, lastIndex + 1);
+        }
+        
+        // Clean up common issues
+        jsonText = jsonText
+            .replace(/\\(?!["\\/bfnrt])/g, '\\\\')
+            .replace(/\\\\_/g, '_')
+            .replace(/\\'/g, "'")
+            .replace(/\n/g, ' ')
+            .replace(/\r/g, ' ')
+            .replace(/\t/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        return jsonText;
+    };
+
+    const cleanJSON = extractAndCleanJSON(aiResponse);
+    
+    // Parse the response
+    let parsedResponse;
+    try {
+        parsedResponse = JSON.parse(cleanJSON);
+    } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        
+        // Try to fix common JSON issues
+        let fixedJSON = cleanJSON;
+        fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
+        fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
+        fixedJSON = fixedJSON.replace(/,,+/g, ',');
+        
+        try {
+            parsedResponse = JSON.parse(fixedJSON);
+        } catch (secondParseError) {
+            // Fallback: extract flashcards manually
+            const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
+            if (flashcardMatches && flashcardMatches.length > 0) {
+                parsedResponse = {
+                    deckName: `Flashcard Deck ${new Date().toLocaleDateString()}`,
+                    flashcards: flashcardMatches.map(match => {
+                        try {
+                            return JSON.parse(match);
+                        } catch (e) {
+                            return null;
+                        }
+                    }).filter(card => card !== null)
+                };
+            } else {
+                throw new Error('Could not extract flashcards from response');
+            }
+        }
+    }
+
+    // Validate the response structure
+    if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
+        throw new Error('AI response missing flashcards array');
+    }
+
+    // Validate individual flashcards
+    const validateFlashcard = (card) => {
+        return card && 
+            typeof card === 'object' && 
+            card.question && 
+            card.answer &&
+            typeof card.question === 'string' &&
+            typeof card.answer === 'string' &&
+            card.question.trim().length > 0 &&
+            card.answer.trim().length > 0;
+    };
+
+    const validFlashCards = parsedResponse.flashcards.filter(validateFlashcard);
+
+    if (validFlashCards.length === 0) {
+        throw new Error('No valid flashcards were generated');
+    }
+
+    // Get deck name or use fallback
+    let deckName = parsedResponse.deckName || `Flashcard Deck ${new Date().toLocaleDateString()}`;
+    
+    // Clean up deck name
+    deckName = deckName
+        .replace(/^["']|["']$/g, '')
+        .replace(/\n/g, ' ')
+        .substring(0, 50)
+        .trim();
+
+    return {
+        flashcards: validFlashCards,
+        deckName: deckName
+    };
+};
+
+export const generateFlashcardsFromText = async (text, user, isTopicGeneration = false) => {
+    if (!user?.uid) {
+        throw new Error('User not authenticated');
+    }
+
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error('API key not configured');
+    }
+
+    // Determine flashcard count and prompt based on type
+    let flashcardCount;
+    let promptText;
+
+    if (isTopicGeneration) {
+        flashcardCount = 25;
+        promptText = `Create ${flashcardCount} educational flashcards about "${text}" AND a descriptive deck name.
+
+            CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+            {
+            "deckName": "Short descriptive name (max 50 chars)",
+            "flashcards": [
+                {"question": "Your question here", "answer": "Your answer here"}
+            ]
+            }
+
+            REQUIREMENTS:
+            - deckName should be descriptive (e.g., "World War II: Key Events")
+            - Exactly ${flashcardCount} flashcards
+            - Questions should be clear, specific, and educational
+            - Answers should be concise but complete
+            - Use proper JSON escaping
+            - No line breaks within strings
+            - Double quotes only
+
+            Topic: ${text}`;
+    } else {
+        // File/image upload generation
+        const estimateFlashcardCount = (textLength) => {
+            if (textLength < 500) return 15;
+            if (textLength < 1500) return 30;
+            if (textLength < 3000) return 50;
+            if (textLength < 5000) return 75;
+            return 100;
+        };
+        
+        flashcardCount = estimateFlashcardCount(text.length);
+        
+        promptText = `You are an expert educational content creator. Create ${flashcardCount} high-quality flashcards AND a deck name from the provided text.
+
+            CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+            {
+            "deckName": "Short descriptive name (max 50 chars)",
+            "flashcards": [
+                {"question": "Your question here", "answer": "Your answer here"}
+            ]
+            }
+
+            FLASHCARD QUALITY GUIDELINES:
+            - Questions should test understanding, not just memorization
+            - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
+            - Questions should be specific and unambiguous
+            - Answers should be concise but complete (1-3 sentences typically)
+            - Include both factual recall AND conceptual understanding questions
+            - For complex topics, break them into smaller, focused questions
+            - Use clear, direct language
+            - Avoid overly obvious or trivial questions
+
+            DECK NAME GUIDELINES:
+            - Should summarize the main topic/subject
+            - Max 50 characters
+            - No quotes or special formatting
+            - Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
+
+            FORMATTING REQUIREMENTS:
+            - Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
+            - Use proper JSON escaping for quotes
+            - No line breaks within strings
+            - Exactly ${flashcardCount} flashcards
+            - Double quotes only
+
+            Text to process: ${text}`;
+    }
+
+    // Create AI function for generateAIContent helper
+    const aiFunction = async () => {
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: promptText }]
+                    }]
+                })
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+            throw new Error('Invalid response from AI service');
+        }
+        
+        return data.candidates[0].content.parts[0].text;
+    };
+
+    // Use the AI limits helper
+    const result = await generateAIContent(text, user.uid, aiFunction);
+    
+    // Parse and validate the response
+    const parsedData = parseAndValidateAIResponse(result.data);
+    
+    console.log(`Generated ${parsedData.flashcards.length} flashcards with deck name: "${parsedData.deckName}"`);
+    
+    if (result.usage.remaining !== 'unlimited') {
+        console.log(`AI generations remaining: ${result.usage.remaining}`);
+    }
+    
+    return parsedData;
+};
+
 function FileUpload({ cameraIsOpen, onSuccess }) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('');
@@ -17,6 +252,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     const videoRef = useRef(null);
     const navigate = useNavigate();
     const [topic, setTopic] = useState("");
+
+    const [originalUploadedText, setOriginalUploadedText] = useState(null);
     
     // Add auth context
     const { user } = useAuthContext();
@@ -834,11 +1071,9 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         };
     }, [stream]);
 
-    // Remove the old retryWithBackoff function as it's now handled in generateAIContent
     
     // Updated handleGenerateOnTopic function with AI limits
     const handleGenerateOnTopic = async () => {
-        // Validate that a topic has been entered
         if (!topic.trim()) {
             alert('Please enter a topic first');
             return;
@@ -848,180 +1083,26 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             alert('Please log in to generate flashcards');
             return;
         }
-    
+
         setLoading(true);
         setStatus('Generating flashcards for topic...');
-    
-        // Define the AI generation function
-        const topicAIFunction = async (prompt) => {
-            console.log('Generating flashcards for topic:', topic);
-            
-            // Check if API key is available
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!apiKey) {
-                throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
-            }
-    
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `You are a flashcard generator. Create exactly 25 educational flashcards about "${topic}".
-    
-                            CRITICAL: Return ONLY a valid JSON array. No explanations, no markdown, no code blocks.
-                            
-                            Format: [{"question":"Your question here","answer":"Your answer here"}]
-                            
-                            Requirements:
-                            - Questions should be clear, specific, and educational
-                            - Answers should be concise but complete and accurate
-                            - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
-                            - No line breaks within strings
-                            - Exactly 25 flashcards
-                            - Double quotes only, no single quotes
-                            - Cover different aspects and difficulty levels of the topic
-                            - Include definitions, examples, processes, and key concepts
-                            - Make questions that would help someone learn about "${topic}"
-                            
-                            Topic: ${topic}`
-                        }]
-                    }]
-                })
-            });
-    
-            if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-            }
-    
-            const data = await response.json();
-            
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Invalid response from AI service');
-            }
-            
-            return data.candidates[0].content.parts[0].text;
-        };
-    
+
         try {
-            // Use the helper function to handle limits and generation
-            const result = await generateAIContent(topic, user.uid, topicAIFunction);
-            const flashCardsText = result.data;
+            const result = await generateFlashcardsFromText(topic, user, true);
             
-            console.log('Raw AI response for topic:', flashCardsText);
+            // Call onSuccess with the results
+            onSuccess({
+                flashcards: result.flashcards,
+                originalText: topic,
+                deckName: result.deckName,
+                generationType: 'topic' // NEW: add this
+            });
             
-            // Use the existing JSON extraction and cleaning logic
-            const extractAndCleanJSON = (text) => {
-                let jsonText = text;
-                
-                // Remove markdown code blocks
-                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-                if (jsonMatch) {
-                    jsonText = jsonMatch[1].trim();
-                }
-                
-                // Find JSON array bounds
-                const startIndex = jsonText.indexOf('[');
-                const lastIndex = jsonText.lastIndexOf(']');
-                
-                if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
-                    jsonText = jsonText.substring(startIndex, lastIndex + 1);
-                }
-                
-                // Clean up common issues
-                jsonText = jsonText
-                    .replace(/\\(?!["\\/bfnrt])/g, '\\\\')
-                    .replace(/\\\\_/g, '_')
-                    .replace(/\\'/g, "'")
-                    .replace(/\n/g, ' ')
-                    .replace(/\r/g, ' ')
-                    .replace(/\t/g, ' ')
-                    .replace(/\s+/g, ' ')
-                    .trim();
-                
-                return jsonText;
-            };
-    
-            const cleanJSON = extractAndCleanJSON(flashCardsText);
-            console.log('Cleaned JSON for topic:', cleanJSON);
-            
-            // Try parsing with error handling
-            let parsedFlashCards;
-            try {
-                parsedFlashCards = JSON.parse(cleanJSON);
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                
-                // Try to fix common JSON issues
-                let fixedJSON = cleanJSON;
-                fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
-                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
-                fixedJSON = fixedJSON.replace(/,,+/g, ',');
-                
-                try {
-                    parsedFlashCards = JSON.parse(fixedJSON);
-                } catch (secondParseError) {
-                    // Manual extraction as fallback
-                    const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
-                    if (flashcardMatches && flashcardMatches.length > 0) {
-                        parsedFlashCards = flashcardMatches.map(match => {
-                            try {
-                                return JSON.parse(match);
-                            } catch (e) {
-                                return null;
-                            }
-                        }).filter(card => card !== null);
-                    } else {
-                        throw new Error('Could not extract flashcards from response');
-                    }
-                }
-            }
-    
-            // Validate the result
-            if (!Array.isArray(parsedFlashCards)) {
-                throw new Error('AI response is not an array of flashcards');
-            }
-    
-            const validateFlashcard = (card) => {
-                return card && 
-                       typeof card === 'object' && 
-                       card.question && 
-                       card.answer &&
-                       typeof card.question === 'string' &&
-                       typeof card.answer === 'string' &&
-                       card.question.trim().length > 0 &&
-                       card.answer.trim().length > 0;
-            };
-    
-            const validFlashCards = parsedFlashCards.filter(validateFlashcard);
-    
-            if (validFlashCards.length === 0) {
-                throw new Error('No valid flashcards were generated');
-            }
-    
-            console.log(`Generated ${validFlashCards.length} valid flashcards for topic: ${topic}`);
-            
-            // Show usage info
-            if (result.usage.remaining !== 'unlimited') {
-                console.log(`AI generations remaining: ${result.usage.remaining}`);
-            }
-            
-            // Clear the topic input after successful generation
-            setTopic('');
-            
-            // Call the success callback with the generated flashcards
-            onSuccess(validFlashCards);
-    
         } catch (error) {
             console.error("Error generating flashcards for topic:", error);
             
-            // Handle limit reached error specifically
             if (error.code === 'LIMIT_REACHED') {
                 setShowLimitModal(true);
-                return;
             }
         } finally {
             setLoading(false);
@@ -1031,231 +1112,27 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
     // Updated sendToAI function with AI limits
     const sendToAI = async (text) => {
-        if (!user?.uid) {
-            alert('Please log in to generate flashcards');
-            return;
-        }
-
-        // Define the AI generation function
-        const fileAIFunction = async (prompt) => {
-            console.log('Text being sent to AI:', text.substring(0, 500) + '...');
-            
-            // Check if API key is available
-            const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-            if (!apiKey) {
-                throw new Error('VITE_GEMINI_API_KEY environment variable is not set');
-            }
-            
-            const estimateFlashcardCount = (textLength) => {
-                if (textLength < 500) return 15;
-                if (textLength < 1500) return 30;
-                if (textLength < 3000) return 50;
-                if (textLength < 5000) return 75;
-                return 100; // For very long texts
-            };
-            
-            const flashcardCount = estimateFlashcardCount(text.length);
-
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    contents: [{
-                        parts: [{
-                            text: `You are an expert educational content creator specializing in effective flashcard design. Create exactly ${flashcardCount} high-quality flashcards from the provided text that follow proven learning principles.
-
-                            FLASHCARD QUALITY GUIDELINES:
-                            - Questions should test understanding, not just memorization
-                            - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
-                            - Questions should be specific and unambiguous
-                            - Answers should be concise but complete (1-3 sentences typically)
-                            - Include both factual recall AND conceptual understanding questions
-                            - For complex topics, break them into smaller, focused questions
-                            - Use clear, direct language
-                            - Avoid overly obvious or trivial questions
-
-                            QUESTION TYPES TO INCLUDE:
-                            - "What is..." (definitions)
-                            - "How does..." (processes/mechanisms)  
-                            - "Why does..." (reasoning/causation)
-                            - "What are the key differences between..." (comparisons)
-                            - "Give an example of..." (application)
-                            - "What would happen if..." (hypothetical scenarios)
-
-                            FORMATTING REQUIREMENTS:
-                            - Return ONLY a valid JSON array
-                            - No explanations, markdown, or code blocks
-                            - Format: [{"question":"Your question here","answer":"Your answer here"}]
-                            - Use proper JSON escaping for quotes (use \\" for quotes inside strings)
-                            - No line breaks within strings
-                            - Exactly ${flashcardCount} flashcards
-                            - Double quotes only
-
-                            CONTENT FOCUS:
-                            - Prioritize the most important concepts and facts
-                            - Ensure questions build knowledge progressively
-                            - Include context in answers when needed for clarity
-                            - Make sure each flashcard is self-contained and understandable
-
-                            Text to process: ${text}`
-                        }]
-                    }]
-                })
-            });
-    
-            if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-            }
-    
-            const data = await response.json();
-            
-            if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-                throw new Error('Invalid response from AI service');
-            }
-            
-            return data.candidates[0].content.parts[0].text;
-        };
-    
+        setOriginalUploadedText(text);
+        
         try {
-            // Use the helper function to handle limits and generation
-            const result = await generateAIContent(text, user.uid, fileAIFunction);
-            const flashCardsText = result.data;
+            const result = await generateFlashcardsFromText(text, user, false);
             
-            console.log('Raw AI response:', flashCardsText);
+            // Call onSuccess with the results
+             onSuccess({
+                flashcards: result.flashcards,
+                originalText: text,
+                deckName: result.deckName,
+                generationType: 'file' // NEW: add this
+            });
             
-            // Improved JSON extraction and cleaning
-            const extractAndCleanJSON = (text) => {
-                let jsonText = text;
-                
-                // Remove markdown code blocks
-                const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-                if (jsonMatch) {
-                    jsonText = jsonMatch[1].trim();
-                }
-                
-                // Find JSON array bounds
-                const startIndex = jsonText.indexOf('[');
-                const lastIndex = jsonText.lastIndexOf(']');
-                
-                if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
-                    jsonText = jsonText.substring(startIndex, lastIndex + 1);
-                }
-                
-                // Clean up common issues
-                jsonText = jsonText
-                    // Fix common escape sequence issues
-                    .replace(/\\(?!["\\/bfnrt])/g, '\\\\') // Escape lone backslashes
-                    .replace(/\\\\_/g, '_') // Fix underscore escapes
-                    .replace(/\\'/g, "'") // Fix single quote escapes
-                    .replace(/\n/g, ' ') // Replace newlines with spaces
-                    .replace(/\r/g, ' ') // Replace carriage returns
-                    .replace(/\t/g, ' ') // Replace tabs
-                    .replace(/\s+/g, ' ') // Normalize whitespace
-                    .trim();
-                
-                return jsonText;
-            };
-    
-            const cleanJSON = extractAndCleanJSON(flashCardsText);
-            console.log('Cleaned JSON:', cleanJSON);
-            
-            // Try parsing with better error handling
-            let parsedFlashCards;
-            try {
-                parsedFlashCards = JSON.parse(cleanJSON);
-            } catch (parseError) {
-                console.error('JSON parse error:', parseError);
-                console.error('Problematic JSON:', cleanJSON);
-                
-                // Try to fix common JSON issues and parse again
-                let fixedJSON = cleanJSON;
-                
-                // Fix trailing commas
-                fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
-                
-                // Fix missing commas between objects - CORRECTED REGEX
-                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
-                
-                // Fix missing commas between array elements
-                fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
-                
-                // Remove any double commas
-                fixedJSON = fixedJSON.replace(/,,+/g, ',');
-                
-                try {
-                    parsedFlashCards = JSON.parse(fixedJSON);
-                    console.log('Successfully parsed after fixes');
-                } catch (secondParseError) {
-                    console.error('Second parse attempt failed:', secondParseError);
-                    
-                    // Last resort: try to extract individual flashcards manually
-                    try {
-                        const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
-                        if (flashcardMatches && flashcardMatches.length > 0) {
-                            parsedFlashCards = flashcardMatches.map(match => {
-                                try {
-                                    return JSON.parse(match);
-                                } catch (e) {
-                                    return null;
-                                }
-                            }).filter(card => card !== null);
-                            console.log('Successfully extracted flashcards manually');
-                        } else {
-                            throw new Error('Could not extract flashcards from response');
-                        }
-                    } catch (manualParseError) {
-                        // Create a fallback response
-                        parsedFlashCards = [
-                            {
-                                question: "Please try again",
-                                answer: "The AI response couldn't be parsed. Please upload your file again for better results."
-                            }
-                        ];
-                        
-                        console.error('Unable to parse AI response. Raw response:', flashCardsText);
-                        alert(`JSON parsing failed. Raw response: ${flashCardsText.substring(0, 200)}...`);
-                    }
-                }
-            }
-    
-            // Validate the result
-            if (!Array.isArray(parsedFlashCards)) {
-                throw new Error('AI response is not an array of flashcards');
-            }
-    
-            // Enhanced validation function
-            const validateFlashcard = (card) => {
-                return card && 
-                       typeof card === 'object' && 
-                       card.question && 
-                       card.answer &&
-                       typeof card.question === 'string' &&
-                       typeof card.answer === 'string' &&
-                       card.question.trim().length > 0 &&
-                       card.answer.trim().length > 0;
-            };
-    
-            // Filter out invalid flashcards
-            const validFlashCards = parsedFlashCards.filter(validateFlashcard);
-    
-            if (validFlashCards.length === 0) {
-                throw new Error('No valid flashcards were generated');
-            }
-    
-            console.log(`Generated ${validFlashCards.length} valid flashcards`);
-            
-            // Show usage info
-            if (result.usage.remaining !== 'unlimited') {
-                console.log(`AI generations remaining: ${result.usage.remaining}`);
-            }
-            
-            onSuccess(validFlashCards);
-    
         } catch (error) {
-            console.error("There was an error:", error);
-            throw error; // Re-throw to be handled by the calling function
+            console.error("Error in sendToAI:", error);
+            
+            if (error.code === 'LIMIT_REACHED') {
+                setShowLimitModal(true);
+            } else {
+                throw error;
+            }
         }
     };
 
@@ -1271,39 +1148,107 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
             <div className="w-full">
                 {!showCamera ? (
-                <div className="space-y-8">
+                <div className="space-y-4">
+
+                    {/* <p className="text-white font-black text-center text-lg">
+                    AI creates flashcards in <span className="text-yellow-300">15 seconds</span>
+                    </p> */}
+
+                  
+                    <p className="text-purple-200 font-medium text-center text-sm">
+                        <span className="text-yellow-300">Takes only 15 seconds</span>
+                    </p>
                     {/* PRIMARY: Textbook scanning options - Make these prominent */}
                     <div>
-                        
-                        
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                            <button 
-                                onClick={startCamera}
-                                className={`${
-                                    loading ? 'btn-disabled cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 hover:scale-105'
-                                } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
-                                disabled={loading}
-                            >
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Scan Pages
-                            </button>
+                        {/* URGENCY */}
 
+                        <div className="relative">
+                            <div {...getRootProps()} className="dropzone-active">
+                                <input {...getInputProps()} />
+                                <div className="border-4 border-dashed border-purple-500 rounded-2xl p-10 
+                                                bg-gradient-to-br from-purple-900/20 to-blue-900/20 
+                                                hover:border-purple-400 transition-all cursor-pointer group">
+                                <div className="text-center space-y-4">
+                                    <div className="w-20 h-20 mx-auto bg-purple-600 rounded-full flex items-center justify-center 
+                                                    group-hover:scale-110 transition">
+                                    <svg className="w-12 h-12 text-white" viewBox="0 0 24 24">
+                                        <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                                    </svg>
+                                    </div>
+                                    <p className="text-white font-black text-xl">DROP PDF OR DOCX HERE</p>
+                                    <p className="text-purple-300 text-sm">or click to browse • Max 8MB</p>
+                                </div>
+                            </div>
+                        </div>
+                        {/* 2. SCAN PAGES — SUBTLE */}
+                        <div className="text-center">
                             <button 
-                                {...getRootProps()} 
-                                className={`${
-                                    loading ? 'btn-disabled cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
-                                } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
-                                disabled={loading}
+                            onClick={startCamera}
+                            className="text-purple-400 hover:text-purple-300 text-sm font-medium 
+                                        underline underline-offset-4 transition-colors"
                             >
-                                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                </svg>
-                                {loading ? 'Processing...' : 'Upload Files'}
+                            Or take a photo of your notes
                             </button>
                         </div>
+                        {/* 3. TOPIC — TINY */}
+                        <div className="flex flex-col my-2 text-center">
+                            <span className="text-gray-500 text-xs">OR</span>
+                            <div className="relative mt-2 w-full max-w-xs mx-auto">
+                               <input 
+                                    placeholder="Type a topic..." 
+                                    className="w-full bg-slate-700 text-white px-3 py-2 pr-10 rounded-lg text-sm"
+                                    value={topic}
+                                    onChange={e => setTopic(e.target.value)}
+                                    onKeyDown={e => {
+                                        if (e.key === 'Enter' && topic.trim()) {
+                                        handleGenerateOnTopic();
+                                        }
+                                    }}
+                                />
+                                <button
+                                    onClick={handleGenerateOnTopic}
+                                    disabled={!topic.trim() || loading}
+                                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded transition-all ${
+                                        !topic.trim() || loading
+                                            ? 'opacity-30 cursor-not-allowed'
+                                            : 'bg-purple-600 hover:bg-purple-700 hover:scale-110'
+                                    }`}
+                                >
+                                    <ArrowRight className="w-4 h-4 text-white" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                        
+                        
+                    {/* <div className="grid grid-cols-2 gap-4 mb-4">
+                        <button 
+                            onClick={startCamera}
+                            className={`${
+                                loading ? 'btn-disabled cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 hover:scale-105'
+                            } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                            disabled={loading}
+                        >
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            Scan Pages
+                        </button>
+
+                        <button 
+                            {...getRootProps()} 
+                            className={`${
+                                loading ? 'btn-disabled cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'
+                            } h-16 px-6 py-4 rounded-xl flex items-center justify-center gap-3 text-lg font-semibold text-white transition-all duration-200 shadow-lg`}
+                            disabled={loading}
+                        >
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            {loading ? 'Processing...' : 'Upload Files'}
+                        </button>
+                    </div> */}
 
                         <input {...getInputProps()} />
                         
@@ -1322,7 +1267,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     </div>
 
                     {/* SECONDARY: Topic generation - Smaller, less prominent */}
-                    <div className="pt-4 border-t border-gray-600">
+                    {/* <div className="pt-4 border-t border-gray-600">
                         <div className="text-center mb-3">
                             <span className="text-gray-400 text-sm font-medium">OR CREATE FROM ANY TOPIC</span>
                         </div>
@@ -1346,15 +1291,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             </button>
                         </div>
                         
-                        {/* <div className="text-center mt-2">
-                            <button 
-                                onClick={() => navigate('/browse-decks')}
-                                className="text-purple-400 hover:text-purple-300 text-xs font-medium inline-flex items-center gap-1 transition-colors duration-200"
-                            >
-                                💡 Need inspiration?
-                            </button>
-                        </div> */}
-                    </div>
+                       
+                    </div> */}
                     
                     {/* Status indicator */}
                     {status && (
@@ -1366,15 +1304,15 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                         </div>
                     )}
                     
-                        {/* Technical specs - Condensed */}
-                    <div className="bg-gray-800 bg-opacity-30 rounded-lg p-3">
+                    {/* Technical specs - Condensed */}
+                    {/* <div className="bg-gray-800 bg-opacity-30 rounded-lg p-3">
                         <div className="text-xs text-gray-400 text-center">
                             <div className="mb-1">PDF, DOCX, PPTX, Images • Max 8MB • Auto OCR</div>
                             <div className="text-xs text-gray-500">
                                 PDF OCR processes up to 10 pages for optimal speed
                             </div>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             ) : (
                 /* Camera UI - Keep this mostly the same but with slight improvements */
