@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext'; // Add this import
 import { generateAIContent } from '../../utils/subscriptionLimits/aiLimitsHelper'; // Add this import
 import LimitReachedModal from '../Modals/LimitReachedModal';
+import { logFileUploadEvent, logError } from '../../utils/analytics';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -260,6 +261,14 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
 
     const [showLimitModal, setShowLimitModal] = useState(false);
 
+
+    // Track when component mounts (modal opened)
+    useEffect(() => {
+        if (user?.uid) {
+            logFileUploadEvent.modalOpened(user.uid);
+        }
+    }, [user]);
+
     const loadTesseract = () => {
         return new Promise((resolve, reject) => {
             if (typeof window.Tesseract !== 'undefined') {
@@ -414,6 +423,14 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             const qualityCheck = validateOCRQuality(text, confidence);
             
             if (!qualityCheck.isValid) {
+
+                // Log OCR quality issue
+                logFileUploadEvent.ocrQualityIssue(
+                    user?.uid,
+                    qualityCheck.reason,
+                    confidence
+                );
+
                 // Show helpful alert for poor OCR quality
                 const retryMessage = `📷 Photo Quality Issue\n\n` +
                     `${qualityCheck.message}\n\n` +
@@ -447,7 +464,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             
         } catch (error) {
             console.error('Tesseract OCR error:', error);
-            
+            logError('ocr_error', error, user?.uid);
             // Don't show alert for retry requests (user already saw the quality alert)
             if (error.message === 'OCR_RETRY_REQUESTED') {
                 throw error;
@@ -471,6 +488,16 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             // Handle rejected files - show info for each rejected file
             rejectedFiles.forEach(rejectedFile => {
                 const file = rejectedFile.file;
+                const error = rejectedFile.errors[0];
+                
+                // Log rejection
+                logFileUploadEvent.fileRejected(
+                    user?.uid,
+                    file,
+                    error.code,
+                    error.message
+                );
+
                 if (rejectedFile.errors.find(e => e.code === 'file-too-large')) {
                     const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
                     alert(`File "${file.name}" is too large (${sizeMB}MB). Please use files under 8MB.`);
@@ -483,7 +510,15 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         },
         onDrop: async (acceptedFiles) => {
             if (acceptedFiles.length === 0) return;
+
+            // Log file drop
+            if (acceptedFiles.length === 1) {
+                logFileUploadEvent.fileDropped(user?.uid, acceptedFiles[0]);
+            } else {
+                logFileUploadEvent.multipleFilesDropped(user?.uid, acceptedFiles);
+            }
             
+            const startTime = Date.now();
             setLoading(true);
             setStatus('Processing files...');
             
@@ -511,21 +546,46 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     const file = documentFiles[0];
                     const fileType = file.type;
                     
+                    logFileUploadEvent.processingStarted(user?.uid, fileType)
                     setStatus(`Processing ${file.name}...`);
                     
-                    if (fileType === 'application/pdf') {
-                        allExtractedText = await readPDF(file);
-                    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                        allExtractedText = await readDOCX(file);
-                    } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-                        allExtractedText = await readPPTX(file);
-                    } else if (fileType === 'text/plain') {
-                        allExtractedText = await readTextFile(file);
+                    try{
+                        if (fileType === 'application/pdf') {
+                            allExtractedText = await readPDF(file);
+                        } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+                            allExtractedText = await readDOCX(file);
+                        } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+                            allExtractedText = await readPPTX(file);
+                        } else if (fileType === 'text/plain') {
+                            allExtractedText = await readTextFile(file);
+                        }
+
+                        // Log processing completion
+                        const processingTime = Date.now() - startTime;
+                        logFileUploadEvent.processingCompleted(
+                            user?.uid,
+                            fileType,
+                            processingTime,
+                            allExtractedText.length
+                        );
+                    } catch (processingError){
+                        logFileUploadEvent.uploadFailed(
+                            user?.uid,
+                            'PROCESSING_ERROR',
+                            processingError.message,
+                            fileType
+                        );
+                        throw processingError;
                     }
+                   
+
+                    
                 }
                 
                 // Process multiple images with OCR
                 if (imageFiles.length > 0) {
+                    logFileUploadEvent.processingStarted(user?.uid, 'image/ocr');
+
                     // Limit the number of images to prevent overwhelming processing
                     const maxImages = 10;
                     if (imageFiles.length > maxImages) {
@@ -549,6 +609,12 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                             }
                         } catch (ocrError) {
                             console.error(`OCR failed for ${imageFile.name}:`, ocrError);
+                            logFileUploadEvent.uploadFailed(
+                                user?.uid,
+                                'OCR_ERROR',
+                                ocrError.message,
+                                'image/ocr'
+                            );
                             allExtractedText += `\n\n--- Image ${i + 1} (${imageFile.name}) ---\nOCR processing failed for this image.`;
                         }
                     }
@@ -993,6 +1059,7 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             setStatus('');
         } catch (error) {
             console.error('Error accessing camera:', error);
+            logError('camera_start_error', error, user?.uid);
             alert('Could not access camera. Please check permissions.');
             setStatus('');
         }
@@ -1011,6 +1078,8 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     const capturePhoto = () => {
         if (!videoRef.current) return;
         
+        logFileUploadEvent.photoCaptured(user?.uid);
+
         const video = videoRef.current;
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -1048,6 +1117,9 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     setShowLimitModal(true);
                     return;
                 }
+
+                logError('photo_capture_error', error, user?.uid);
+
             } finally {
                 setLoading(false);
                 setStatus('');
@@ -1084,12 +1156,22 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             return;
         }
 
+        logFileUploadEvent.topicGeneration(user?.uid, topic);
+        const startTime = Date.now();
+
         setLoading(true);
         setStatus('Generating flashcards for topic...');
 
         try {
             const result = await generateFlashcardsFromText(topic, user, true);
             
+            const generationTime = Date.now() - startTime;
+            logFileUploadEvent.aiGenerationCompleted(
+                user?.uid,
+                'topic',
+                result.flashcards.length,
+                generationTime
+            );
             // Call onSuccess with the results
             onSuccess({
                 flashcards: result.flashcards,
@@ -1100,7 +1182,12 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             
         } catch (error) {
             console.error("Error generating flashcards for topic:", error);
-            
+            logFileUploadEvent.aiGenerationFailed(
+                user?.uid,
+                'topic',
+                error.code || 'UNKNOWN',
+                error.message
+            );
             if (error.code === 'LIMIT_REACHED') {
                 setShowLimitModal(true);
             }
@@ -1113,10 +1200,20 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
     // Updated sendToAI function with AI limits
     const sendToAI = async (text) => {
         setOriginalUploadedText(text);
+        const startTime = Date.now();
         
         try {
+            logFileUploadEvent.aiGenerationStarted(user?.uid, 'file', text.length);
             const result = await generateFlashcardsFromText(text, user, false);
             
+            const generationTime = Date.now() - startTime;
+            logFileUploadEvent.aiGenerationCompleted(
+                user?.uid,
+                'file',
+                result.flashcards.length,
+                generationTime
+            );
+
             // Call onSuccess with the results
              onSuccess({
                 flashcards: result.flashcards,
@@ -1128,6 +1225,14 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
         } catch (error) {
             console.error("Error in sendToAI:", error);
             
+            logFileUploadEvent.aiGenerationFailed(
+                user?.uid,
+                'file',
+                error.code || 'UNKNOWN',
+                error.message
+            );
+
+
             if (error.code === 'LIMIT_REACHED') {
                 setShowLimitModal(true);
             } else {

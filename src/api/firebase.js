@@ -46,4 +46,4 @@ if (isLocalhost) {
   console.log('🌐 Using production Firebase');
 }
 
-export { db, auth, app, functions };
+export { db, auth, app, functions, analytics };
