@@ -71,22 +71,22 @@ function FirstDeckCelebration() {
 
   return createPortal(
     <div 
-      className={`fixed top-8 left-1/2 -translate-x-1/2 z-[9999] transition-all duration-500 ${
+      className={`fixed top-4 left-4 right-4 sm:top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[9999] transition-all duration-500 ${
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-8 py-4 rounded-2xl shadow-2xl border-2 border-purple-400">
-        <div className="flex items-center gap-4">
-          {/* <div className="flex items-center justify-center w-12 h-12 bg-yellow-400 rounded-full animate-bounce">
-            <span className="text-2xl">🎉</span>
+      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-purple-400">
+        <div className="flex items-center gap-3 sm:gap-4">
+          {/* <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 rounded-full animate-bounce">
+            <span className="text-xl sm:text-2xl">🎉</span>
           </div> */}
           
           <div className="text-white">
-            <div className="font-bold text-lg flex items-center gap-2">
+            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
               <span>First Deck Created!</span>
-              <Sparkles className="w-5 h-5 text-yellow-300" />
+              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
             </div>
-            <div className="text-purple-100 text-sm flex items-center gap-2">
+            <div className="text-purple-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
               <span className="font-semibold text-yellow-300">+100 XP</span>
               <span>•</span>
               <span>You're on your way to mastery!</span>

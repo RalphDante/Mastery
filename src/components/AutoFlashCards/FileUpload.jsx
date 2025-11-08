@@ -245,7 +245,7 @@ export const generateFlashcardsFromText = async (text, user, isTopicGeneration =
     return parsedData;
 };
 
-function FileUpload({ cameraIsOpen, onSuccess }) {
+function FileUpload({ cameraIsOpen, onSuccess, onError }) {
     const [loading, setLoading] = useState(false);
     const [status, setStatus] = useState('');
     const [showCamera, setShowCamera] = useState(false);
@@ -638,6 +638,13 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                 if (error.code === 'LIMIT_REACHED') {
                     setShowLimitModal(true);
                     return;
+                }
+
+                if (onError) {
+                    onError(error);
+                    } else {
+                    // Fallback if onError not provided
+                    alert(error.message || 'Failed to process file. Please try again.');
                 }
             } finally {
                 setLoading(false);
@@ -1112,13 +1119,13 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
                     return;
                 }
                 
-                // Handle limit reached error specifically
-                if (error.code === 'LIMIT_REACHED') {
-                    setShowLimitModal(true);
-                    return;
-                }
-
+                // NEW: Propagate error to parent
+                if (onError) {
+                    onError(error);
+                } else {
                 logError('photo_capture_error', error, user?.uid);
+                alert(error.message || 'Failed to process photo. Please try again.');
+                }
 
             } finally {
                 setLoading(false);
@@ -1190,6 +1197,11 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             );
             if (error.code === 'LIMIT_REACHED') {
                 setShowLimitModal(true);
+            } else if (onError) {
+                // NEW: Propagate error to parent
+                onError(error);
+            } else {
+                alert(error.message || 'Failed to generate flashcards. Please try again.');
             }
         } finally {
             setLoading(false);
@@ -1236,7 +1248,12 @@ function FileUpload({ cameraIsOpen, onSuccess }) {
             if (error.code === 'LIMIT_REACHED') {
                 setShowLimitModal(true);
             } else {
+                // NEW: Propagate error instead of just throwing
+                if (onError) {
+                onError(error);
+                } else {
                 throw error;
+                }
             }
         }
     };

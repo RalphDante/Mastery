@@ -3,7 +3,7 @@ import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch, increment
 import { app } from "../../api/firebase"
 import FileUpload, { generateFlashcardsFromText } from "../AutoFlashCards/FileUpload";
 import { useNavigate } from "react-router-dom";
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { RefreshCw, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 import { usePartyContext } from "../../contexts/PartyContext";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
@@ -43,6 +43,11 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [limitType, setLimitType] = useState('cards');
 
+  // NEW: Error handling state
+  const [uploadError, setUploadError] = useState(null);
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [showSkipOption, setShowSkipOption] = useState(false);
+
   const db = getFirestore(app);
 
   useEffect(() => {
@@ -54,9 +59,12 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         setSelectedFolder('');
         setFlashcards([]);
         setDeckName('');
-        setOriginalText(null); // Reset original text
-        setRegenerateCount(0); // Reset regenerate count
+        setOriginalText(null);
+        setRegenerateCount(0);
         setLoading(false);
+        setUploadError(null);
+        setAttemptCount(0);
+        setShowSkipOption(false);
         if(isTutorialAtStep('create-ai', 1) || !tutorials['create-ai']){
           advanceStep('create-ai');
         }
@@ -70,6 +78,9 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         setOriginalText(null);
         setRegenerateCount(0);
         setLoading(false);
+        setUploadError(null);
+        setAttemptCount(0);
+        setShowSkipOption(false);
       }
     } else {
       setNewFolderName('');
@@ -81,17 +92,109 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
       setOriginalText(null);
       setRegenerateCount(0);
       setLoading(false);
+      setUploadError(null);
+      setAttemptCount(0);
+      setShowSkipOption(false);
     }
   }, [isOpen, isAutoAssignedFolder]);
 
   if (!isOpen) return null;
+
+  // NEW: Helper to get user-friendly error messages
+  const getErrorGuidance = (error) => {
+    const errorCode = error?.code || '';
+    const errorMessage = error?.message || '';
+
+    // File processing errors
+    if (errorMessage.includes('File too large') || errorMessage.includes('8MB')) {
+      return {
+        title: 'File Too Large',
+        message: 'Your file is over 8MB. Try splitting it into smaller parts or using images of individual pages instead.',
+        icon: '📄',
+        canRetry: true
+      };
+    }
+
+    if (errorMessage.includes('OCR') || errorMessage.includes('image quality')) {
+      return {
+        title: 'Image Quality Issue',
+        message: 'We couldn\'t read the text clearly. Try taking a photo with better lighting and make sure the text is in focus.',
+        icon: '📷',
+        canRetry: true
+      };
+    }
+
+    if (errorMessage.includes('No text') || errorMessage.includes('No readable text')) {
+      return {
+        title: 'No Text Found',
+        message: 'We couldn\'t find any text to process. Make sure your file contains readable text.',
+        icon: '📝',
+        canRetry: true
+      };
+    }
+
+    // AI generation errors
+    if (errorCode === 'LIMIT_REACHED') {
+      return {
+        title: 'Generation Limit Reached',
+        message: 'You\'ve used all your AI generations for today. Upgrade to premium for unlimited generations!',
+        icon: '⚡',
+        canRetry: false
+      };
+    }
+
+    if (errorMessage.includes('API') || errorMessage.includes('network')) {
+      return {
+        title: 'Connection Issue',
+        message: 'We\'re having trouble connecting to our servers. Check your internet and try again.',
+        icon: '🌐',
+        canRetry: true
+      };
+    }
+
+    // Generic fallback
+    return {
+      title: 'Something Went Wrong',
+      message: 'We encountered an unexpected error. Please try again or try a different file.',
+      icon: '⚠️',
+      canRetry: true
+    };
+  };
+
+  // NEW: Handle upload errors with tracking
+  const handleUploadError = (error) => {
+    const newAttemptCount = attemptCount + 1;
+    setAttemptCount(newAttemptCount);
+    setUploadError(error);
+    setLoading(false);
+
+    // Show skip option after 2 failed attempts
+    if (newAttemptCount >= 2 && hasNotCreatedADeck) {
+      setShowSkipOption(true);
+    }
+  };
+
+  // NEW: Skip to dashboard (for tutorial users)
+  const handleSkipTutorial = () => {
+    
+    // Mark tutorial as partially completed so they don't see it again
+    completeTutorial('create-ai');
+    navigate('/');
+    onClose();
+  };
+
+  // NEW: Clear error and retry
+  const handleRetry = () => {
+    setUploadError(null);
+    setLoading(false);
+    // Stay on step 2 to allow retry
+  };
 
   const awardFirstDeckXP = async () => {
     try {
       const xpGain = 100;
       
       await runTransaction(db, async (transaction) => {
-        // 1. Read user document
         const userDocRef = doc(db, 'users', user.uid);
         const userDoc = await transaction.get(userDocRef);
 
@@ -100,8 +203,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         }
 
         const userData = userDoc.data();
-
-        // 2. Read party member document if user is in a party
         let partyMemberRef = null;
         let memberDoc = null;
 
@@ -110,14 +211,10 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
           memberDoc = await transaction.get(partyMemberRef);
         }
 
-        // NOW PERFORM ALL WRITES (no more reads after this!)
-
-        // Update user exp
         transaction.update(userDocRef, {
           exp: increment(xpGain)
         });
 
-        // Update party member exp if exists
         if (memberDoc && memberDoc.exists()) {
           transaction.update(partyMemberRef, {
             exp: increment(xpGain)
@@ -169,18 +266,16 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
     setLoading(false);
   };
 
-  // NEW: Handle regeneration
   const handleRegenerate = async () => {
       if (!originalText) {
           alert('No original content to regenerate from');
           return;
       }
 
-      // Check limit and show modal instead of alert
       if (!userIsPremium && regenerateCount >= 3) {
           setLimitType('regenerate');
           setShowLimitModal(true);
-          return;  // ✅ Just return - no need to do anything else
+          return;
       }
 
       setIsRegenerating(true);
@@ -296,7 +391,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
       completeTutorial('create-deck');
       const isFirstDeck = hasNotCreatedADeck;
       if (hasNotCreatedADeck) {
-        // Award XP and show celebration
         await awardFirstDeckXP();
       }
   
@@ -424,7 +518,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
             </>
           )}
 
-          {/* Step 2: Upload File */}
+          {/* Step 2: Upload File with Error Handling */}
           {step === 2 && (
             <>
               <p className="text-slate-300 mb-6 text-center">
@@ -433,20 +527,78 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                 </span>
               </p>
 
+              {/* NEW: Error Display */}
+              {uploadError && (
+                <div className="mb-6 bg-red-900 bg-opacity-30 border border-red-500 rounded-lg p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <h4 className="text-red-300 font-semibold mb-1">
+                        {getErrorGuidance(uploadError).icon} {getErrorGuidance(uploadError).title}
+                      </h4>
+                      <p className="text-red-200 text-sm mb-3">
+                        {getErrorGuidance(uploadError).message}
+                      </p>
+                      
+                      {getErrorGuidance(uploadError).canRetry && (
+                        <>
+                          {showSkipOption && hasNotCreatedADeck ? (
+                            <button
+                              onClick={handleSkipTutorial}
+                              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors inline-flex items-center gap-2"
+                            >
+                              Skip to Dashboard
+                              <ArrowRight className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleRetry}
+                              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition-colors"
+                            >
+                              Try Again
+                            </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* File Upload Component */}
               <FileUpload
                 cameraIsOpen={setCameraIsOpen}
                 onSuccess={(data) => {
-                  // NEW: Handle the new data structure from FileUpload
                   setFlashcards(data.flashcards);
-                  setDeckName(data.deckName); // Auto-set the deck name
-                  setOriginalText(data.originalText); // Store for regeneration
+                  setDeckName(data.deckName);
+                  setOriginalText(data.originalText);
                   setGenerationType(data.generationType);
+                  setUploadError(null); // Clear any previous errors
                   setStep(4);
                   if(isTutorialAtStep('create-ai', 2)){
                     advanceStep('create-ai')
                   }
                 }}
+                onError={handleUploadError} // NEW: Pass error handler
               />
+
+              {/* NEW: Show skip option after 2 failed attempts during tutorial */}
+              {/* {showSkipOption && hasNotCreatedADeck && (
+                <div className="mt-6 bg-blue-900 bg-opacity-30 border border-blue-500 rounded-lg p-4">
+                  <div className="text-center">
+                    <p className="text-blue-200 text-sm mb-3">
+                      Having trouble? You can skip this step and explore the dashboard first.
+                    </p>
+                    <button
+                      onClick={handleSkipTutorial}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold transition-colors inline-flex items-center gap-2"
+                    >
+                      Skip to Dashboard
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )} */}
 
               {!hasNotCreatedADeck && (
                 <div className="flex justify-between mt-8">
@@ -473,7 +625,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
           {/* Step 4: Preview with Regenerate */}
           {step === 4 && (
             <>
-              {/* Success Header */}
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-100 mb-2">
                   {flashcards.length} Cards Generated!
@@ -481,19 +632,17 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                 <p className="text-slate-400 text-sm">Review your deck below</p>
               </div>
 
-              {/* Auto-generated deck name - editable */}
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm text-gray-400">Deck Title:</span>
-                </div>
-                <input
-                  type="text"
-                  value={deckName}
-                  onChange={(e) => setDeckName(e.target.value)}
-                  className="w-full mb-2 bg-gray-600 text-white text-lg font-semibold px-3 py-2 rounded-lg border border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  placeholder="Enter deck name..."
-                />
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-sm text-gray-400">Deck Title:</span>
+              </div>
+              <input
+                type="text"
+                value={deckName}
+                onChange={(e) => setDeckName(e.target.value)}
+                className="w-full mb-2 bg-gray-600 text-white text-lg font-semibold px-3 py-2 rounded-lg border border-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Enter deck name..."
+              />
 
-              {/* Preview Cards */}
               <div className="mb-6 bg-gray-900 rounded-lg p-4 max-h-60 overflow-y-auto border border-gray-700">
                 <h4 className="text-gray-300 font-semibold mb-3 flex items-center gap-2">
                   <span className="text-purple-400">Preview</span>
@@ -529,9 +678,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="flex gap-3">
-                  {/* Regenerate Button - Changes appearance at limit */}
                   <button
                       onClick={handleRegenerate}
                       disabled={isRegenerating || isSaving}
@@ -544,13 +691,11 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                                   }`}
                   >
                       {!userIsPremium && regenerateCount >= 3 ? (
-                          // ✅ At limit: Shows upgrade prompt but still clickable
                           <>
                               <span>🔒</span>
                               <span className="text-white">Try Free for 7 Days</span>
                           </>
                       ) : (
-                          // ✅ Normal state: Shows regenerate
                           <>
                               <RefreshCw className={`w-5 h-5 ${isRegenerating ? 'animate-spin' : ''}`} />
                               {isRegenerating ? 'Regenerating...' : 'Regenerate'}
@@ -558,7 +703,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                       )}
                   </button>
 
-                  {/* Save Button */}
                   <button
                       onClick={handleSaveDeck}
                       disabled={isRegenerating || isSaving}
@@ -575,7 +719,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                   </button>
               </div>
 
-              {/* Regenerate counter with visual progress */}
               {!isRegenerating && (
                   <div className="mt-3 text-center">
                       {regenerateCount === 0 ? (
@@ -590,7 +733,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                                       {!userIsPremium && ` of 3`}
                                   </p>
                                   
-                                  {/* Visual dots for free users */}
                                   {!userIsPremium && (
                                       <div className="flex gap-1">
                                           {[1, 2, 3].map((dot) => (
@@ -607,7 +749,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                                   )}
                               </div>
                               
-                              {/* Warning at 2/3 */}
                               {!userIsPremium && regenerateCount === 2 && (
                                   <p className="text-xs text-yellow-400">
                                       ⚠️ Last free regeneration!
@@ -617,8 +758,6 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
                       )}
                   </div>
               )}
-
-
             </>
           )}
         </div>

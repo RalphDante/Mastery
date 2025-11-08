@@ -1,6 +1,6 @@
 // FlashCardsPage.jsx - Parent handles ALL data fetching
 
-import { ArrowLeft, Globe, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Globe, RotateCcw, Sparkles } from 'lucide-react';
 import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
@@ -507,15 +507,29 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
             </>
         )}
         {showBossTip && hasNotCreatedADeck && (
-            <div className="fixed top-4 sm:top-10 left-0 right-0 px-4 flex justify-center z-50 pointer-events-none">
-                <div className="bg-gradient-to-r from-purple-600 to-violet-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl shadow-2xl border-2 border-purple-400/50 w-full sm:max-w-sm text-center">
-                    <div className="flex items-center justify-center gap-2">
-                        <span className="text-xl sm:text-2xl">⚔️</span>
-                        <span className="font-semibold text-xs sm:text-sm md:text-base leading-tight">
-                            New Quest: My First Study Session
-                        </span>
+            <div 
+            className={`fixed top-4 left-4 right-4 sm:top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[9999] transition-all duration-500 ${
+                showBossTip ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+            }`}
+            >
+            <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-purple-400">
+                <div className="flex items-center gap-3 sm:gap-4">
+                {/* Optional icon - uncomment if desired */}
+                {/* <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 rounded-full animate-bounce">
+                    <span className="text-xl sm:text-2xl">✨</span>
+                </div> */}
+
+                <div className="text-white">
+                    <div className="font-bold text-base sm:text-lg flex items-center gap-2">
+                    <span>Your Party Is Waiting!</span>
+                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+                    </div>
+                    <div className="text-purple-100 text-xs sm:text-sm">
+                    <span>Complete this tutorial to meet them</span>
                     </div>
                 </div>
+                </div>
+            </div>
             </div>
         )}
         <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
