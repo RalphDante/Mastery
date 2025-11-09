@@ -149,8 +149,7 @@ function FlashCardUI({knowAnswer, dontKnowAnswer, percent, redoDeck, setRedoDeck
                     
                     // Keep existing stats (but remove totalCards since we're using limits.currentCards now)
                     stats: {
-                        totalReviews: 0,
-                        weeklyReviews: 0,
+                     
                         currentStreak: 0,
                         longestStreak: 0
                     },

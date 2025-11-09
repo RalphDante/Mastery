@@ -1,5 +1,5 @@
 // utils/streakUtils.js
-import { doc, getDoc, setDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 
 /**
  * Calculates streak information based on last study date
@@ -95,8 +95,8 @@ export const updateUserStreak = async (db, userId) => {
         ...currentStats,
         currentStreak: streakUpdate.currentStreak,
         longestStreak: streakUpdate.longestStreak,
-        totalReviews: (currentStats.totalReviews || 0) + 1,
-        weeklyReviews: (currentStats.weeklyReviews || 0) + 1, // You might want to calculate this properly
+        // totalReviews: (currentStats.totalReviews || 0) + 1,
+        // weeklyReviews: (currentStats.weeklyReviews || 0) + 1, // You might want to calculate this properly
       };
       
       await setDoc(userDocRef, {
@@ -116,13 +116,35 @@ export const updateUserStreak = async (db, userId) => {
     return {
       currentStreak: streakUpdate.currentStreak,
       longestStreak: streakUpdate.longestStreak,
-      isNewStreak: false
+      isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0)
     };
     
   } catch (error) {
     console.error('Error updating user streak:', error);
     throw error;
   }
+};
+
+/**
+ * Updates streak in both user profile AND party member (if in a party)
+ */
+export const updateUserAndPartyStreak = async (db, userId, currentPartyId = null) => {
+  const streakResult = await updateUserStreak(db, userId);
+  
+  // If user is in a party, update their member document too
+  if (currentPartyId && streakResult.isNewStreak) {
+    try {
+      const memberRef = doc(db, 'parties', currentPartyId, 'members', userId);
+      await updateDoc(memberRef, {
+        streak: streakResult.currentStreak
+      });
+    } catch (error) {
+      console.error('Error updating party member streak:', error);
+      // Don't throw - party update failure shouldn't break streak update
+    }
+  }
+  
+  return streakResult;
 };
 
 /**

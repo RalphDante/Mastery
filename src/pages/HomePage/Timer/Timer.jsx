@@ -8,6 +8,7 @@ import { handleBossDefeat } from '../../../utils/bossUtils';
 import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
+import { updateUserAndPartyStreak } from '../../../utils/streakUtils';
 
 function Timer({
   authUser,
@@ -15,7 +16,7 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
-  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile} = usePartyContext();
+  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile} = usePartyContext();
   const {incrementMinutes} = useUserDataContext();
   
   const startTimeRef = useRef(null);           // NEW: When timer actually started
@@ -336,6 +337,28 @@ function Timer({
       startTimeRef.current = now;
       pausedTimeRef.current = 0;
       
+      try {
+        console.log(partyProfile?.id)
+        const streakResult = await updateUserAndPartyStreak(
+          db, 
+          authUser.uid, 
+          partyProfile?.id
+        );
+
+        updateUserProfile({
+          streak: streakResult.currentStreak || 1
+          
+        });
+        
+        if (streakResult.isNewStreak) {
+          console.log(`🔥 Streak maintained! ${streakResult.currentStreak} days`);
+        }
+
+      } catch (streakError) {
+        console.error('Error updating streak:', streakError);
+        // Don't block timer start if streak update fails
+      }
+
       // Save to database that timer started
       try {
         const userRef = doc(db, 'users', authUser.uid);

@@ -12,6 +12,8 @@ import { RotateCcw } from "lucide-react";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useTutorialState } from "../../utils/tutorials/hooks";
 import FeedbackPopup from "./FeedbackPopup";
+import { updateUserAndPartyStreak } from "../../utils/streakUtils";
+import { usePartyContext } from "../../contexts/PartyContext";
 
 function FlashCardUI({
     // Data from parent
@@ -51,6 +53,7 @@ function FlashCardUI({
     
 }) {
     const { user } = useAuthContext();
+    const {updateUserProfile, partyProfile} = usePartyContext();
 
     const {advanceStep, updateTutorial, isTutorialAtStep} = useTutorials();
 
@@ -241,6 +244,28 @@ function FlashCardUI({
         setProcessing(true);
         
         const currentCard = flashCards[currentIndex];
+
+        try {
+            console.log(partyProfile?.id)
+            const streakResult = await updateUserAndPartyStreak(
+            db, 
+            user.uid, 
+            partyProfile?.id
+        );
+
+            updateUserProfile({
+            streak: streakResult.currentStreak || 1
+            
+        });
+        
+        if (streakResult.isNewStreak) {
+            console.log(`🔥 Streak maintained! ${streakResult.currentStreak} days`);
+        }
+
+        } catch (streakError) {
+        console.error('Error updating streak:', streakError);
+        // Don't block timer start if streak update fails
+        }
 
         try {
             const newUniqueAttempted = new Set([...uniqueCardsAttempted, currentCard.id]);

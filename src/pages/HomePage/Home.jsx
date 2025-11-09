@@ -39,17 +39,17 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     }
   };
 
-  useEffect(() => {
-    const neverTriedFlashcardBattle = isTutorialAtStep("create-deck", 1);
+//   useEffect(() => {
+//     const neverTriedFlashcardBattle = isTutorialAtStep("create-deck", 1);
     
-    // If they haven't started OR haven't seen demo
-    if (neverTriedFlashcardBattle) {
-        navigate('/flashcards/DEMO_MATH_BOSS_001');
-    }
-    if (!isTutorialAtStep("create-deck", 1)){
-      completeTutorial('global-review')
-    }
-}, [userProfile, navigate]);
+//     // If they haven't started OR haven't seen demo
+//     if (neverTriedFlashcardBattle) {
+//         navigate('/flashcards/DEMO_MATH_BOSS_001');
+//     }
+//     if (!isTutorialAtStep("create-deck", 1)){
+//       completeTutorial('global-review')
+//     }
+// }, [userProfile, navigate]);
 
 
   
