@@ -15,11 +15,16 @@ import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 import { ArrowLeft } from 'lucide-react';
 import LimitReachedModal from '../../components/Modals/LimitReachedModal';
+import { awardWithXP } from '../../utils/giveAwardUtils';
+import { usePartyContext } from '../../contexts/PartyContext';
 
 function CreateDeck() {
     const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
-    const { getCardLimits, isPremium, user } = useAuthContext();
-    const { completeTutorial } = useTutorials();
+    const { getCardLimits, isPremium, user, userProfile } = useAuthContext();
+    const { advanceStep, isTutorialAtStep } = useTutorials();
+    const isFirstTime = isTutorialAtStep('create-deck', 1)
+
+    const {updateUserProfile} = usePartyContext();
 
     const [showLimit, setShowLimit] = useState(false)
 
@@ -360,18 +365,30 @@ function CreateDeck() {
             });
 
             await batch.commit();
-
-            completeTutorial('create-deck');
             invalidateFolderDecks(folderId);
+
+            const isUserFirstDeck = isFirstTime;
+
+            if(isUserFirstDeck){
+                await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
+            }
 
             navigate(`/flashcards/${deckRef.id}`, {
                 state: {
                     deckId: deckRef.id,
                     folderId: actualFolderId,
                     folderName: folderName,
-                    deckTitle: fileName
+                    deckTitle: fileName,
+                    showFirstDeckCelebration: isUserFirstDeck,
+
                 }
             });
+
+
+            if(isUserFirstDeck){
+                advanceStep('create-deck')
+            }
+
 
         } catch (error) {
             console.error("Error creating deck:", error);

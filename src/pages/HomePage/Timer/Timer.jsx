@@ -9,10 +9,13 @@ import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
 import { updateUserAndPartyStreak } from '../../../utils/streakUtils';
+import { useTutorials } from '../../../contexts/TutorialContext';
 
 function Timer({
   authUser,
   db,
+  handleTimerStart,
+  handleTimerComplete,
   deckId = null,
   onTimeUpdate = null,
 }) {
@@ -43,6 +46,8 @@ function Timer({
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
+
+  const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
 
 
 
@@ -322,13 +327,18 @@ function Timer({
         console.error('Error clearing timer:', err);
       }
     }
-    
     setShowCompletion(true);
-}, [saveStudyTime, authUser, db]);
+
+    handleTimerComplete?.();
+    
+}, [saveStudyTime, authUser, db, handleTimerComplete]);
 
   const startTimer = async () => {
     if (!authUser) return;
     
+   
+
+
     const now = Date.now();
     
     // Initialize or resume timer
@@ -382,6 +392,9 @@ function Timer({
     setIsRunning(true);
     setIsSessionActive(true);
     setShowCompletion(false);
+
+    handleTimerStart?.();
+
 
     // Start the interval
     if (!sessionTimerRef.current) {

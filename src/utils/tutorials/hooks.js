@@ -124,19 +124,19 @@ export function useTutorialState() {
     completeTutorial: async (name) => {
       if (!authUser) return;
       
-      const newTutorialState = {
-        ...(tutorials[name] || {}),
-        completed: true
-      };
-      
+      // Update local state - preserve current step, just mark as completed
       setTutorials(prev => ({
         ...prev,
-        [name]: newTutorialState
+        [name]: {
+          ...(prev[name] || {}),  // Keep everything (including current step)
+          completed: true         // Just mark as completed
+        }
       }));
       
+      // Update Firestore - only update the completed field
       try {
         await updateDoc(doc(db, "users", authUser.uid), {
-          [`tutorials.${name}`]: newTutorialState
+          [`tutorials.${name}.completed`]: true  // ← Only update this field!
         });
       } catch (error) {
         console.error("Error updating tutorial:", error);
@@ -149,6 +149,7 @@ export function useTutorialState() {
 function getDefaultTutorials() {
   return {
     "create-deck": { completed: false, step: 1 },
+    "start-timer": { completed: false, step: 1 },
     "global-review": { completed: false, step: 1 },
     "deck-sharing": { completed: false, step: 1 },
     "create-ai": { completed: false, step: 1 }

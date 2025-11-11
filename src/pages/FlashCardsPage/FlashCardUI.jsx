@@ -49,18 +49,20 @@ function FlashCardUI({
     dontKnowAnswer,
     isMuted,
 
-    hasNotCreatedADeck
+    hasNotCreatedADeck,
+
+    onSessionComplete
     
 }) {
     const { user } = useAuthContext();
     const {updateUserProfile, partyProfile} = usePartyContext();
 
-    const {advanceStep, updateTutorial, isTutorialAtStep} = useTutorials();
+    const {advanceStep, updateTutorial, isTutorialAtStep, completeTutorial} = useTutorials();
 
     const [showFeedback, setShowFeedback] = useState(null); // 'correct' | 'incorrect' | null
     
 
-    const isFirstTime = isTutorialAtStep('create-deck', 1)
+    // const isFirstTime = isTutorialAtStep('create-deck', 1)
     const goingThroughCards = isTutorialAtStep('create-deck', 2)
     
     // ==========================================
@@ -133,9 +135,9 @@ function FlashCardUI({
             setUniqueCardsAttempted(new Set());
             setPhaseOneComplete(false);
             setIsFinished(false);
-            if(isFirstTime){
-                advanceStep('create-deck')
-            }
+            // if(isFirstTime){
+            //     advanceStep('create-deck')
+            // }
         }
     }, [flashCards.length]); // Watch for length changes
 
@@ -143,6 +145,8 @@ function FlashCardUI({
 
         if (isComplete && goingThroughCards) {
             advanceStep('create-deck');
+            completeTutorial('create-deck')
+            onSessionComplete?.();
         }
         if (isComplete){
             playSoundEffect(victorySoundEffect)

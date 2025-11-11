@@ -269,10 +269,10 @@ async function handleSubscriptionUpdate(data, environment) {
 
     // Get the correct price IDs based on environment
     const proMonthlyId = environment === 'production' 
-      ? process.env.PRICE_PRO_MONTHLY 
+      ? process.env.PADDLE_PRICE_PRO_MONTHLY 
       : process.env.SANDBOX_PADDLE_PRICE_PRO_MONTHLY;
     const proYearlyId = environment === 'production'
-      ? process.env.PRICE_PRO_YEARLY
+      ? process.env.PADDLE_PRICE_PRO_YEARLY
       : process.env.SANDBOX_PADDLE_PRICE_PRO_YEARLY;
 
     let tier = 'free';

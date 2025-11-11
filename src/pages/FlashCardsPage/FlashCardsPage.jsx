@@ -1,7 +1,7 @@
 // FlashCardsPage.jsx - Parent handles ALL data fetching
 
 import { ArrowLeft, Globe, RotateCcw, Sparkles } from 'lucide-react';
-import { getFirestore, doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore"; 
+import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, runTransaction, increment } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
 import { useEffect, useState, useCallback, useRef } from "react"; 
@@ -20,7 +20,8 @@ import { createPortal } from 'react-dom';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
-import { Confetti, FirstDeckCelebration } from '../../components/ConfettiAndToasts.jsx';
+import { Confetti, FirstDeckCelebration, SessionCompleteToast, DeckIncentiveToast } from '../../components/ConfettiAndToasts.jsx';
+import { awardWithXP } from '../../utils/giveAwardUtils.js';
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
 
@@ -32,8 +33,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
 
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
     const [phaseOneComplete, setPhaseOneComplete] = useState(false);
-    const { user } = useAuthContext();
-    const {partyMembers} = usePartyContext();
+    const { user, userProfile } = useAuthContext();
+    const {partyMembers, updateUserProfile} = usePartyContext();
     const { fetchDeckAndCards } = useDeckCache();
     const navigate = useNavigate();
     const location = useLocation();
@@ -65,6 +66,12 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     const bossTipSoundRef = useRef();
 
     // ==========================================
+    // TOASTS
+    // ==========================================
+    const [showDeckIncentive, setShowDeckIncentive] = useState(false);
+    const [showSessionComplete, setShowSessionComplete] = useState(false);
+
+    // ==========================================
     // SFX TOGGLE
     // ==========================================
     // Add mute state at parent level
@@ -76,7 +83,14 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         if (location.state?.showFirstDeckCelebration) {
             setShowFirstDeckCelebration(true);
             
-            // Clear the state so it doesn't show again on refresh
+            // After FirstDeckCelebration (4 seconds), show incentive toast
+            setTimeout(() => {
+                setShowFirstDeckCelebration(false);
+                setTimeout(() => {
+                    setShowDeckIncentive(true); // Show "Get +200 XP if you finish!"
+                }, 500);
+            }, 4000);
+            
             window.history.replaceState({}, document.title);
         }
     }, [location.state]);
@@ -145,7 +159,10 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         }
     }, [hasNotCreatedADeck, loading, deckData, isMuted]);
 
-    
+    const handleSessionComplete = async () => {
+        setShowSessionComplete(true);
+        await awardWithXP(user.uid, 200, updateUserProfile, userProfile);
+    };
 
     // Handler to update mute state
     const handleToggleMute = useCallback(() => {
@@ -498,6 +515,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     return (
         <>
+        {/* 1. First Deck Created Celebration */}
         {showFirstDeckCelebration && (
             <>
                 <Confetti />
@@ -506,59 +524,51 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                 />
             </>
         )}
-        {showBossTip && hasNotCreatedADeck && (
-            <div 
-            className={`fixed top-4 left-4 right-4 sm:top-8 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-[9999] transition-all duration-500 ${
-                showBossTip ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-            }`}
-            >
-            <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-purple-400">
-                <div className="flex items-center gap-3 sm:gap-4">
-                {/* Optional icon - uncomment if desired */}
-                {/* <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 rounded-full animate-bounce">
-                    <span className="text-xl sm:text-2xl">✨</span>
-                </div> */}
 
-                <div className="text-white">
-                    <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-                    <span>Your Party Is Waiting!</span>
-                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
-                    </div>
-                    <div className="text-purple-100 text-xs sm:text-sm">
-                    <span>Complete this tutorial to meet them</span>
-                    </div>
-                </div>
-                </div>
-            </div>
-            </div>
+        {/* 2. Incentive Toast (before studying) */}
+        {showDeckIncentive && (
+            <DeckIncentiveToast 
+                xpAmount={200}
+                onComplete={() => setShowDeckIncentive(false)}
+            />
         )}
+
+        {/* 3. Completion Toast (after finishing deck) */}
+        {showSessionComplete && (
+            <>
+                <Confetti/>
+                <SessionCompleteToast 
+                    xpAmount={200}
+                    onComplete={() => setShowSessionComplete(false)}
+                />
+            </>
+          
+        )}
+       
         <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
             
 
             <div className={`${styles.leftSideFlashCardsPageContainer}`}>
                 {/* HEADER */}
 
-                {!hasNotCreatedADeck && (
-                    <div className="flex justify-between mb-1">
-                        <button
-                            onClick={() => navigate('/')}
-                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
-                        >
-                            <ArrowLeft className="w-4 h-4" />
-                        </button>
-                        
-                        <DeckActionsDropdown 
-                            deckId={paramDeckId}
-                            deckData={deckData}
-                            flashCards={flashCards}
-                            user={user}
-                            isMuted={isMuted}
-                            onToggleMute={handleToggleMute}
-                        />
-                    </div>
-                    )
-                }
-                
+                <div className="flex justify-between mb-1">
+                    <button
+                        onClick={() => navigate('/')}
+                        className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                    </button>
+                    
+                    <DeckActionsDropdown 
+                        deckId={paramDeckId}
+                        deckData={deckData}
+                        flashCards={flashCards}
+                        user={user}
+                        isMuted={isMuted}
+                        onToggleMute={handleToggleMute}
+                    />
+                </div>
+            
 
                 {renderScoreContainer()}
 
@@ -620,6 +630,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                     isMuted={isMuted}
 
                     hasNotCreatedADeck={hasNotCreatedADeck}
+
+                    onSessionComplete={handleSessionComplete}
                 />
             </div>
             

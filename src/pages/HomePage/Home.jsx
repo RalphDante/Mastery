@@ -1,7 +1,7 @@
 import {auth, functions} from '../../api/firebase.js'
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { Confetti, TimerStartedToast, WelcomeStudyToast, TimerIncentiveToast, TimerCompleteToast } from '../../components/ConfettiAndToasts.jsx';
 
 import { db } from '../../api/firebase.js';
 
@@ -16,16 +16,28 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
 import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
 
+import { awardWithXP } from '../../utils/giveAwardUtils.js';
+
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showBoss, setShowBoss] = useState(false); 
-  const {isTutorialAtStep, completeTutorial} = useTutorials();
-  const {refreshPartyProfile} = usePartyContext();
+  const {isTutorialAtStep, completeTutorial, advanceStep, tutorials, loading} = useTutorials();
+  const {updateUserProfile} = usePartyContext();
   const {user, userProfile} = useAuthContext();
   const [hasSeenParty, setHasSeenParty] = useState(() => {
     return sessionStorage.getItem('partyClicked') === 'true';
   });
+
+  const [showWelcomeToast, setShowWelcomeToast] = useState(false);
+  const [showTimerIncentive, setShowTimerIncentive] = useState(false);
+  const [showTimerComplete, setShowTimerComplete] = useState(false);
+  const [showTimerStart, setShowTimerStart] = useState(false);
+
+  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
+  const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
+  
+
   
   const navigate = useNavigate();
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
@@ -39,6 +51,33 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     }
   };
 
+  const handleTimerStart = async () => {
+
+
+    if(isTutorialAtStep('start-timer', 1)){
+
+      setShowTimerStart(true);
+      await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
+      advanceStep('start-timer')
+      
+      setTimeout(() => {
+        setShowTimerIncentive(true);
+      }, 3000);
+    }
+  };
+
+  const handleTimerComplete = async () => {
+   
+    
+    // If tutorial exists and is not completed, complete it
+    if (tutorials['start-timer'] && !tutorials['start-timer'].completed) {
+      setShowTimerComplete(true);
+      await awardWithXP(user.uid, 200, updateUserProfile, userProfile);
+
+      completeTutorial('start-timer');
+    }
+};
+
 //   useEffect(() => {
 //     const neverTriedFlashcardBattle = isTutorialAtStep("create-deck", 1);
     
@@ -51,6 +90,25 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 //     }
 // }, [userProfile, navigate]);
 
+  useEffect(() => {
+    // Wait for tutorials to load
+    if (loading) return;
+    
+    // Check if both tutorials are at step 1 (brand new user)
+    const isBrandNewUser = 
+      isTutorialAtStep('create-deck', 1) && 
+      isTutorialAtStep('start-timer', 1);
+    
+    if (isBrandNewUser) {
+      // Optional: Add a small delay so it doesn't feel jarring
+      const timer = setTimeout(() => {
+        setShowWelcomeToast(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, tutorials]);
+
 
   
 
@@ -58,6 +116,44 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     return null; // Optionally, you can render a loading spinner or message here
   }
   return(
+    <>
+     {showWelcomeToast && (
+        <WelcomeStudyToast 
+          xpAmount={300}
+          onComplete={() => setShowWelcomeToast(false)}
+        />
+      )}
+      {showTimerStart && (
+        <>
+          <Confetti />
+          <TimerStartedToast 
+            xpAmount={100}
+            onComplete={() => setShowTimerStart(false)}
+          />
+        </>
+      )}
+
+      {/* Show timer incentive when starting */}
+      {showTimerIncentive && (
+        <>
+          <TimerIncentiveToast 
+            xpAmount={200}
+            onComplete={() => setShowTimerIncentive(false)}
+          />
+        </>
+      )}
+
+       {/* Show completion after timer ends */}
+      {showTimerComplete && (
+        <>
+          <Confetti />
+          <TimerCompleteToast 
+            xpAmount={200}
+            onComplete={() => setShowTimerComplete(false)}
+          />
+        </>
+      )}
+
     <div className={`min-h-screen flex flex-col bg-slate-900 text-slate-100`}>
       <main className="flex-grow container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-4">
@@ -115,6 +211,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                       authUser={user}
                       onCreateDeckClick={onCreateDeckClick}
                       onCreateWithAIModalClick={onCreateWithAIModalClick}
+                      handleTimerStart={handleTimerStart}
+                      handleTimerComplete={handleTimerComplete}
                     />
                     <MiniLeaderboard />  {/* ← Moved here, always visible */}
                   </div>
@@ -131,6 +229,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                   authUser = {user}
                   onCreateDeckClick={onCreateDeckClick}
                   onCreateWithAIModalClick={onCreateWithAIModalClick}
+                  handleTimerStart={handleTimerStart}
+                  handleTimerComplete={handleTimerComplete}
                 />
                 <MiniLeaderboard />
 
@@ -193,6 +293,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     {/* <Footer></Footer> */}
 
     </div>
+    </>
+
   )
 
 }

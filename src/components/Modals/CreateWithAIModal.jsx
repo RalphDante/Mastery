@@ -9,6 +9,7 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 import LimitReachedModal from "./LimitReachedModal";
+import { awardWithXP } from "../../utils/giveAwardUtils";
 
 function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
 
@@ -19,7 +20,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
   const {folders} = useDeckCache();
   const userIsPremium = isPremium();
   const {advanceStep, completeTutorial, isTutorialAtStep, tutorials, isInTutorial } = useTutorials();
-  const hasNotCreatedADeck = isInTutorial('create-deck')
+  const hasNotCreatedADeck = isTutorialAtStep('create-deck', 1)
   const [tutorialCancelled, setTutorialCancelled] = useState(false);
   
   const navigate = useNavigate();
@@ -176,9 +177,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
 
   // NEW: Skip to dashboard (for tutorial users)
   const handleSkipTutorial = () => {
-    
-    // Mark tutorial as partially completed so they don't see it again
-    completeTutorial('create-ai');
+   
     navigate('/');
     onClose();
   };
@@ -190,45 +189,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
     // Stay on step 2 to allow retry
   };
 
-  const awardFirstDeckXP = async () => {
-    try {
-      const xpGain = 100;
-      
-      await runTransaction(db, async (transaction) => {
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await transaction.get(userDocRef);
-
-        if (!userDoc.exists()) {
-          throw new Error("User does not exist.");
-        }
-
-        const userData = userDoc.data();
-        let partyMemberRef = null;
-        let memberDoc = null;
-
-        if (userData.currentPartyId) {
-          partyMemberRef = doc(db, 'parties', userData.currentPartyId, 'members', user.uid);
-          memberDoc = await transaction.get(partyMemberRef);
-        }
-
-        transaction.update(userDocRef, {
-          exp: increment(xpGain)
-        });
-
-        if (memberDoc && memberDoc.exists()) {
-          transaction.update(partyMemberRef, {
-            exp: increment(xpGain)
-          });
-        }
-      });
-
-      if (updateUserProfile) updateUserProfile({ exp: (userProfile?.exp || 0) + xpGain });
-      
-      console.log(`✅ First deck XP awarded: +${xpGain} XP (user + party member)`);
-    } catch (error) {
-      console.error('❌ Error awarding first deck XP:', error);
-    }
-  };
+  
 
   const handleFolderSelection = () => {
     setLoading(true);
@@ -335,6 +296,8 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
     if(isTutorialAtStep('create-ai', 3)){
       advanceStep('create-ai')
     }
+
+    const isFirstDeck = hasNotCreatedADeck;
   
     setIsSaving(true);
   
@@ -388,10 +351,9 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
         });
       }
 
-      completeTutorial('create-deck');
-      const isFirstDeck = hasNotCreatedADeck;
-      if (hasNotCreatedADeck) {
-        await awardFirstDeckXP();
+      
+      if (isFirstDeck) {
+        await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
       }
   
       navigate(`/flashcards/${newDeckRef.id}`, {
@@ -402,6 +364,10 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
           showFirstDeckCelebration: isFirstDeck,
         }
       });
+
+      if(isFirstDeck){
+        advanceStep('create-deck')
+      }
   
       onClose();
     } catch (error) {

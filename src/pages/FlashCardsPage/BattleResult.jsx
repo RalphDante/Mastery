@@ -421,26 +421,7 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
 
                    
 
-                    {hasNotCreatedADeck ? (
-                        <>
-                        {/* Primary CTA - Continue Adventure */}
-                        {/* <button
-                            onClick={handleContinueAdventureClick}
-                            className="w-full bg-purple-600
-                                        hover:bg-purple-700
-                                        text-white font-bold py-3 md:py-4 px-4 md:px-6 rounded-xl 
-                                        transition-all hover:scale-105 hover:shadow-lg hover:shadow-purple-500/50
-                                        flex items-center justify-center gap-2 md:gap-3
-                                        border-2 border-purple-400/30"
-                        >
-                            <div className="text-base flex md:text-lg">
-                            More Cards <ArrowRight />
-                            </div>
-                        </button> */}
-                        {createBossWithAi()}
-                        </>
-                        
-                        ) : ""}
+                   
 
                 </div>
             </>
