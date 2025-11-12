@@ -35,9 +35,11 @@ const functions = getFunctions(app);
 
 
 // ✅ Connect to emulators ONLY when on localhost
-const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+// const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
-if (isLocalhost) {
+const useEmulators = import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox';
+
+if (useEmulators) {
   connectFirestoreEmulator(db, '127.0.0.1', 8080);
   connectAuthEmulator(auth, 'http://127.0.0.1:9099');
   connectFunctionsEmulator(functions, '127.0.0.1', 5001);

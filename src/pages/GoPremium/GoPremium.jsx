@@ -104,15 +104,15 @@ function GoPremium() {
       await signIn();
       return;
     }
+    
     window.Paddle.Checkout.open({
       items: [{ quantity: 1, priceId }],
       customer: { email: authUser.email },
       customData: { plan: planName, userId: authUser.uid, userEmail: authUser.email },
-      successCallback: () => { 
-        window.location.href = "/";  
+      settings: {
+        successUrl: `${window.location.origin}/welcome-pro`,
       },
       closeCallback: () => console.log("Checkout closed"),
-      errorCallback: (e) => console.error("Checkout error:", e),
     });
   }, [authUser, paddleLoaded, signIn]);
 

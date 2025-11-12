@@ -91,8 +91,8 @@ export const openCheckout = async (priceId, planName, authUser, signIn) => {
         userId: authUser.uid, 
         userEmail: authUser.email 
       },
-      successCallback: () => { 
-        window.location.href = "/";  
+      settings: {
+        successUrl: `${window.location.origin}/welcome-pro`,
       },
       closeCallback: () => {
         console.log("Checkout closed");

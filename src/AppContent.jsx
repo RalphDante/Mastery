@@ -79,6 +79,7 @@ import ProBanner from './pages/HomePage/WelcomeAndQuickStats/ProBanner.jsx';
 import KofiWidget from './components/KofiWidget.jsx';
 import JoinPage from './pages/JoinPage/JoinPage.jsx';
 import LeaderboardPage from './pages/Leaderboard/LeaderboardPage.jsx';
+import WelcomeProPage from './pages/GoPremium/WelcomeProPage.jsx';
 
 
 
@@ -260,6 +261,10 @@ function AppContent(){
                   <Route path='/settings' element={<Settings />} />
 
                   <Route path='leaderboard' element={<LeaderboardPage />} />
+
+                  <Route path='/welcome-pro' element={<WelcomeProPage />} />
+
+
                   
                   {/* Test Phases */}
 
