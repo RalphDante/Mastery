@@ -19,8 +19,8 @@ export const PARTY_CONFIG = {
   MAX_MEMBERS: 6,
   DEFAULT_BOSS: {
     name: "Study Slime",
-    maxHealth: 500,
-    currentHealth: 500,
+    maxHealth: 3000,
+    currentHealth: 3000,
     isAlive: true,
     bossNumber: 1,
     lastDamageAt: null
