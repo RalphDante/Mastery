@@ -159,6 +159,10 @@ function Timer({
 
           transaction.update(userRef, updateData);
 
+          transaction.update(userRef, {
+            'activeTimer.lastSavedAt': serverTimestamp()   // ← ADD THIS
+          });
+
           if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
             const partyData = partyDoc.data();
             const currentBoss = partyData.currentBoss;
@@ -345,7 +349,8 @@ function Timer({
       try {
         const userRef = doc(db, 'users', authUser.uid);
         await updateDoc(userRef, {
-          'activeTimer.isActive': false
+          'activeTimer.isActive': false,
+          'activeTimer.lastSavedAt': null
         });
       } catch (err) {
         console.error('Error clearing timer:', err);
@@ -399,6 +404,7 @@ function Timer({
         await updateDoc(userRef, {
           activeTimer: {
             startedAt: serverTimestamp(),
+            lastSavedAt: serverTimestamp(),
             duration: selectedDuration * 60,
             isActive: true
           }
@@ -507,7 +513,8 @@ function Timer({
       try {
         const userRef = doc(db, 'users', authUser.uid);
         await updateDoc(userRef, {
-          'activeTimer.isActive': false
+          'activeTimer.isActive': false,
+          'activeTimer.lastSavedAt': null
         });
       } catch (err) {
         console.error('Error clearing timer:', err);
@@ -604,7 +611,23 @@ function Timer({
 
             startTimeRef.current = startedAt.getTime();
             pausedTimeRef.current = 0;
-            lastSaveRef.current = Math.floor(elapsedSeconds / 60) * 60; // Set last save to nearest minute
+            // ──────────────────────────────────────────────────────────────
+            // CORRECT WAY: Calculate saved time from lastSavedAt (server time!)
+            // ──────────────────────────────────────────────────────────────
+            let secondsAlreadySaved = 0;
+
+            if (activeTimer.lastSavedAt) {
+              const lastSavedAtDate = activeTimer.lastSavedAt.toDate();
+              const startedAtDate = activeTimer.startedAt.toDate();
+
+              const elapsedAtLastSave = Math.floor((lastSavedAtDate.getTime() - startedAtDate.getTime()) / 1000);
+              secondsAlreadySaved = Math.floor(elapsedAtLastSave / 60) * 60; // round down to completed minutes
+            } else {
+              // No saves yet — be conservative
+              secondsAlreadySaved = 0;
+            }
+
+            lastSaveRef.current = secondsAlreadySaved;
             setSelectedDuration(Math.ceil(durationSeconds / 60));
             setTimeElapsed(elapsedSeconds);
             setIsSessionActive(true);
@@ -647,15 +670,37 @@ function Timer({
               }, 1000);
             }
           } else {
-            // Timer finished recently (within the buffer)
+            // Timer completed while app was closed
             console.log('Timer completed while app was closed');
             hasResumedRef.current = true;
-            const minutes = Math.floor(durationSeconds / 60);
-            await saveStudyTime(durationSeconds);
-            await updateDoc(userRef, { 'activeTimer.isActive': false });
+
+            // Calculate how much time is UNSAVED
+            let secondsAlreadySaved = 0;
+            if (activeTimer.lastSavedAt) {
+              const lastSavedAtDate = activeTimer.lastSavedAt.toDate();
+              const startedAtDate = activeTimer.startedAt.toDate();
+              const elapsedAtSave = Math.floor((lastSavedAtDate.getTime() - startedAtDate.getTime()) / 1000);
+              secondsAlreadySaved = Math.floor(elapsedAtSave / 60) * 60;
+            }
+
+            const unsavedSeconds = durationSeconds - secondsAlreadySaved;
+
+            if (unsavedSeconds > 0 && unsavedSeconds <= 300) { // max 5 min final save
+              console.log(`Awarding final ${Math.floor(unsavedSeconds / 60)} minutes`);
+              await saveStudyTime(unsavedSeconds);
+            } else if (unsavedSeconds > 300) {
+              console.warn('Final save blocked: too many unsaved seconds', unsavedSeconds);
+            }
+
+            await updateDoc(userRef, {
+              'activeTimer.isActive': false,
+              'activeTimer.lastSavedAt': null
+            });
+
             setShowCompletion(true);
-            setSelectedDuration(minutes);
-            setIsSessionActive(true); // 🔥 Show completion screen
+            setSelectedDuration(Math.ceil(durationSeconds / 60));
+            setIsSessionActive(true);
+            handleTimerComplete?.()
           }
         }
       } catch (error) {
