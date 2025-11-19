@@ -432,38 +432,44 @@ function Timer({
         const currentTime = Date.now();
         const totalElapsed = currentTime - startTimeRef.current - pausedTimeRef.current;
         const totalSeconds = Math.floor(totalElapsed / 1000);
-        
-        // 🔥 CRITICAL: Detect time anomalies
-        const MAX_EXPECTED_ELAPSED = (selectedDuration * 60) + 60; // duration + 1 min buffer
+
+        // Prevent insane time jumps (clock changed, dev tools, etc.)
+        const MAX_EXPECTED_ELAPSED = (selectedDuration * 60) + 120; // +2 min buffer
         if (totalSeconds > MAX_EXPECTED_ELAPSED) {
-          console.error('⚠️ Time anomaly detected:', totalSeconds, 'seconds');
-          console.error('Expected max:', MAX_EXPECTED_ELAPSED);
-          console.error('Resetting timer to prevent corruption');
-          
-          // Force complete the timer with only the expected duration
+          console.warn('Time anomaly detected — forcing completion');
           handleCompletion();
           return;
         }
-        
+
         setTimeElapsed(totalSeconds);
-        
+
+        // Timer finished
         if (totalSeconds >= selectedDuration * 60) {
           handleCompletion();
           return;
         }
 
-        // 🔥 CRITICAL: Only save if not already saving
+        // SAVE LOGIC — fire-and-forget (no await in setInterval)
         if (!isSavingRef.current) {
           const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
-          
-          // 🔥 CRITICAL: Validate seconds are reasonable
-          if (secondsSinceLastSave >= 60 && secondsSinceLastSave < 300) { // Between 1-5 min
-            const fullMinutes = Math.floor(secondsSinceLastSave / 60);
-            saveStudyTime(fullMinutes * 60);
-            lastSaveRef.current += fullMinutes * 60;
-          } else if (secondsSinceLastSave >= 300) {
-            console.error('⚠️ Suspicious save interval:', secondsSinceLastSave, 'seconds');
-            // Don't save if the interval is impossibly large
+
+          if (secondsSinceLastSave >= 60) {
+            const minutesToSave = Math.min(Math.floor(secondsSinceLastSave / 60), 60);
+            if (minutesToSave > 0) {
+              const secondsToSave = minutesToSave * 60;
+
+              saveStudyTime(secondsToSave)
+                .then(() => {
+                  lastSaveRef.current += secondsToSave;
+
+                  if (minutesToSave > 10) {
+                    console.log(`Caught up — saved ${minutesToSave} minutes`);
+                  }
+                })
+                .catch(err => {
+                  console.error('Background save failed:', err);
+                });
+            }
           }
         }
       }, 1000);
@@ -657,14 +663,21 @@ function Timer({
                 }
 
                 if (!isSavingRef.current) {
-                  const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
-                  
-                  if (secondsSinceLastSave >= 60 && secondsSinceLastSave < 300) {
-                    const fullMinutes = Math.floor(secondsSinceLastSave / 60);
-                    saveStudyTime(fullMinutes * 60);
-                    lastSaveRef.current += fullMinutes * 60;
-                  } else if (secondsSinceLastSave >= 300) {
-                    console.error('⚠️ Suspicious save interval:', secondsSinceLastSave, 'seconds');
+                  const secondsSinceLastSave = totalSeconds - lastSave.current;
+
+                  if (secondsSinceLastSave >= 60) {
+                    const minutesToSave = Math.min(Math.floor(secondsSinceLastSave / 60), 60);
+                    if (minutesToSave > 0) {
+                      const secondsToSave = minutesToSave * 60;
+
+                      saveStudyTime(secondsToSave)
+                        .then(() => {
+                          lastSaveRef.current += secondsToSave;
+                        })
+                        .catch(err => {
+                          console.error('Resume save failed:', err);
+                        });
+                    }
                   }
                 }
               }, 1000);
@@ -683,13 +696,14 @@ function Timer({
               secondsAlreadySaved = Math.floor(elapsedAtSave / 60) * 60;
             }
 
-            const unsavedSeconds = durationSeconds - secondsAlreadySaved;
+            const totalElapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+            const cappedSeconds = Math.min(totalElapsedSeconds, durationSeconds);
+            const remaining = cappedSeconds - lastSaveRef.current;
+            const finalMinutesToSave = Math.min(Math.floor(remaining / 60), 60);
 
-            if (unsavedSeconds > 0 && unsavedSeconds <= 300) { // max 5 min final save
-              console.log(`Awarding final ${Math.floor(unsavedSeconds / 60)} minutes`);
-              await saveStudyTime(unsavedSeconds);
-            } else if (unsavedSeconds > 300) {
-              console.warn('Final save blocked: too many unsaved seconds', unsavedSeconds);
+            if (finalMinutesToSave > 0) {
+              await saveStudyTime(finalMinutesToSave * 60);
+              console.log(`Final save: awarded ${finalMinutesToSave} minutes of study time`);
             }
 
             await updateDoc(userRef, {
