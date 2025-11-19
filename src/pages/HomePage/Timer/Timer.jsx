@@ -36,7 +36,7 @@ function Timer({
 
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -560,20 +560,22 @@ function Timer({
     const checkForActiveTimer = async () => {
       if (!authUser || hasResumedRef.current) return;
 
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       try {
         const userRef = doc(db, 'users', authUser.uid);
         const userDoc = await getDoc(userRef);
         const activeTimer = userDoc.data()?.activeTimer;
 
-        if (activeTimer?.isActive) {
+        if (activeTimer?.isActive && activeTimer.startedAt) {
+          // ✅ Check if we already resumed (Options just switched us here)
+          if (hasResumedRef.current) return;
 
-          if (!activeTimer.startedAt) {
-          console.log('Timer active but startedAt is null (serverTimestamp pending)');
-          return; // Wait for next mount/refresh
-        }
+         
           const startedAt = activeTimer.startedAt.toDate();
           const durationSeconds = activeTimer.duration;
-          const elapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
 
           // 🔥 Check if started time is in the future (clock skew)
           if (elapsedSeconds < 0) {
@@ -602,9 +604,48 @@ function Timer({
 
             startTimeRef.current = startedAt.getTime();
             pausedTimeRef.current = 0;
+            lastSaveRef.current = Math.floor(elapsedSeconds / 60) * 60; // Set last save to nearest minute
             setSelectedDuration(Math.ceil(durationSeconds / 60));
             setTimeElapsed(elapsedSeconds);
             setIsSessionActive(true);
+            
+            // 🔥 AUTO-RESUME: Start the timer immediately
+            setIsRunning(true);
+            
+            // Start the interval
+            if (!sessionTimerRef.current) {
+              sessionTimerRef.current = setInterval(() => {
+                const currentTime = Date.now();
+                const totalElapsed = currentTime - startTimeRef.current - pausedTimeRef.current;
+                const totalSeconds = Math.floor(totalElapsed / 1000);
+                
+                const MAX_EXPECTED_ELAPSED = (Math.ceil(durationSeconds / 60) * 60) + 60;
+                if (totalSeconds > MAX_EXPECTED_ELAPSED) {
+                  console.error('⚠️ Time anomaly detected:', totalSeconds, 'seconds');
+                  handleCompletion();
+                  return;
+                }
+                
+                setTimeElapsed(totalSeconds);
+                
+                if (totalSeconds >= Math.ceil(durationSeconds / 60) * 60) {
+                  handleCompletion();
+                  return;
+                }
+
+                if (!isSavingRef.current) {
+                  const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
+                  
+                  if (secondsSinceLastSave >= 60 && secondsSinceLastSave < 300) {
+                    const fullMinutes = Math.floor(secondsSinceLastSave / 60);
+                    saveStudyTime(fullMinutes * 60);
+                    lastSaveRef.current += fullMinutes * 60;
+                  } else if (secondsSinceLastSave >= 300) {
+                    console.error('⚠️ Suspicious save interval:', secondsSinceLastSave, 'seconds');
+                  }
+                }
+              }, 1000);
+            }
           } else {
             // Timer finished recently (within the buffer)
             console.log('Timer completed while app was closed');
@@ -614,6 +655,7 @@ function Timer({
             await updateDoc(userRef, { 'activeTimer.isActive': false });
             setShowCompletion(true);
             setSelectedDuration(minutes);
+            setIsSessionActive(true); // 🔥 Show completion screen
           }
         }
       } catch (error) {
@@ -622,10 +664,10 @@ function Timer({
     };
 
     checkForActiveTimer();
-  }, [authUser, db, saveStudyTime]);
+  }, [authUser, db, saveStudyTime, handleCompletion]);
 
   // Cleanup on unmount
-  useEffect(() => () => resetTimer(), []);
+  // useEffect(() => () => resetTimer(), []);
 
   // Render
   return (

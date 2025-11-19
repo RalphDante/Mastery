@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Timer from "./Timer";
 import { ArrowLeft } from "lucide-react";
 import LearningHubSection from "../LearningHubSection/LearningHubSection";
 import { useAuthContext } from "../../../contexts/AuthContext";
 import { useFolders } from "../../../contexts/DeckCacheContext";
 import { useTutorials } from "../../../contexts/TutorialContext";
+import { doc, getDoc } from 'firebase/firestore';
 
 
 function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, handleTimerStart, handleTimerComplete}){
@@ -12,10 +13,45 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const folders = useFolders();
     const [studyMode, setStudyMode] = useState('options');
     const [showAIOption, setShowAIOption] = useState(false);
+    const [isCheckingTimer, setIsCheckingTimer] = useState(true);
     const {isTutorialAtStep} = useTutorials();
 
     const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
     const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
+
+    useEffect(() => {
+        const checkForActiveTimer = async () => {
+            if (!authUser) {
+                setIsCheckingTimer(false);
+                return;
+            }
+
+            try {
+                const userRef = doc(db, 'users', authUser.uid);
+                const userDoc = await getDoc(userRef);
+                const activeTimer = userDoc.data()?.activeTimer;
+
+                if (activeTimer?.isActive && activeTimer.startedAt) {
+                    console.log('Active timer detected, switching to timer view');
+                    setStudyMode('timer');
+                }
+            } catch (error) {
+                console.error('Error checking for active timer:', error);
+            } finally {
+                setIsCheckingTimer(false); // ✅ Done checking
+            }
+        };
+
+        checkForActiveTimer();
+    }, [authUser, db]); // ✅ Only run once on mount
+
+    if (isCheckingTimer) {
+        return (
+            <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex items-center justify-center">
+                <div className="text-slate-400">Checking for active session...</div>
+            </div>
+        );
+    }
 
     const openTimer = ()=>{
         setStudyMode("timer");
@@ -33,6 +69,8 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const openAIOption = ()=>{
         setShowAIOption(true);
     }
+
+    
 
     // Render based on studyMode
     const renderContent = () => {
