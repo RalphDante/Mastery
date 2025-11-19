@@ -663,7 +663,7 @@ function Timer({
                 }
 
                 if (!isSavingRef.current) {
-                  const secondsSinceLastSave = totalSeconds - lastSave.current;
+                  const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
 
                   if (secondsSinceLastSave >= 60) {
                     const minutesToSave = Math.min(Math.floor(secondsSinceLastSave / 60), 60);
