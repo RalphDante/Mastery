@@ -329,19 +329,16 @@ function Timer({
       audioRef.current.play().catch(err => console.log('Audio play failed:', err));
     }
     
-    // 🔥 CRITICAL: Cap the remaining time to session duration
     const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
     const totalSeconds = Math.floor(totalElapsed / 1000);
-    const expectedMax = selectedDuration * 60;
-    
-    // Use the smaller of: actual elapsed or expected duration
-    const cappedSeconds = Math.min(totalSeconds, expectedMax);
-    const remaining = cappedSeconds - lastSaveRef.current;
-    
-    if (remaining > 0 && remaining <= 300) { // Max 5 min final save
-      await saveStudyTime(remaining);
-    } else if (remaining > 300) {
-      console.error('⚠️ Suspicious final save blocked:', remaining, 'seconds');
+    const cappedSeconds = Math.min(totalSeconds, selectedDuration * 60);
+    const remainingSeconds = cappedSeconds - lastSaveRef.current;
+
+    const finalMinutes = Math.min(Math.floor(remainingSeconds / 60), 60);
+
+    if (finalMinutes > 0) {
+      await saveStudyTime(finalMinutes * 60);
+      console.log(`Final save: +${finalMinutes} minute(s)`);
     }
     
     // Clear timer from database
@@ -591,10 +588,15 @@ function Timer({
           const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
 
           // 🔥 Check if started time is in the future (clock skew)
-          if (elapsedSeconds < 0) {
-            console.error('⚠️ Timer started in the future! Clock skew detected.');
+          if (elapsedSeconds < -300) { // more than 5 min behind
+            console.warn('Extreme clock skew detected, clearing timer');
             await updateDoc(userRef, { 'activeTimer.isActive': false });
             return;
+          }
+
+          if (elapsedSeconds < 0) {
+            console.log('Minor clock skew, syncing start time forward by', -elapsedSeconds, 's');
+            startTimeRef.current = Date.now();
           }
 
           // 🔥 KEY FIX: Validate elapsed time is reasonable
