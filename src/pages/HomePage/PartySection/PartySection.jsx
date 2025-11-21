@@ -10,14 +10,21 @@ import { usePartyContext } from '../../../contexts/PartyContext';
 import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
 import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
+import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 
 function PartySection() {
-  const {user, refreshUserProfile} = useAuthContext();
+
+  const {user, refreshUserProfile, userProfile} = useAuthContext();
+
+  // Profile in firestore
+  const currentUserPersonalProfile = userProfile;
+  const currentUserIsPro = currentUserPersonalProfile?.subscription?.tier === "pro";
+
+  const [showLimitModal, setShowLimitModal] = useState(false);
   const {partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
   const [showModal, setShowModal] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const {userProfile} = useAuthContext();
 
   const navigate = useNavigate();
 
@@ -27,6 +34,13 @@ function PartySection() {
   const handleTogglePrivacy = async () => {
     if (!partyProfile?.id || !user?.uid) return;
     
+
+    // Make it so that the LimitModal is at the front
+    if(!currentUserIsPro){
+      setShowLimitModal(true);
+      setShowModal(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const result = await togglePartyPrivacy(partyProfile.id, user.uid);
@@ -86,6 +100,7 @@ function PartySection() {
     ...data
   }));
 
+  // Party Profile
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
 
   // Calculate EXP progress for current level
@@ -114,6 +129,13 @@ function PartySection() {
 
   return (
     <>
+    {showLimitModal && (
+      <LimitReachedModal 
+        limitType='party'
+        onClose={setShowLimitModal}
+      />
+
+    )}
     <div>
       <div className="w-full h-30 flex bg-slate-800 rounded-t-lg md:rounded-lg p-4 flex items-center justify-between text-slate-100 relative">
         

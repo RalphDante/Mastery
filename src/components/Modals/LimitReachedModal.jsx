@@ -34,6 +34,11 @@ function LimitReachedModal({ limitType, onClose }) {
           title: "Unlock Unlimited Regenerations!",
           emoji: "🔄",
           subtitle: "Get perfect flashcards every time"
+      },
+      party: {  // NEW
+          title: "Unlock Private Parties!",
+          emoji: "👥",
+          subtitle: "Decide who deserves to join your party"
       }
   };
 
