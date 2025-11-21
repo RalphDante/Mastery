@@ -8,7 +8,7 @@ const PartyInfoSection = ({ partyProfile, user, onInvite, onLeave, onTogglePriva
   const isPublic = partyProfile?.isPublic !== false; // Default to public for legacy parties
 
   return (
-    <div className="bg-slate-900 rounded-lg overflow-hidden">
+    <div className="bg-slate-900 rounded-lg overflow-hidden z-[40]">
       {/* Header */}
       <div className="sticky top-0 bg-slate-800 border-b border-slate-700 p-4 z-10 flex items-center justify-between">
         <h2 className="text-xl font-bold text-purple-400">Party Info</h2>

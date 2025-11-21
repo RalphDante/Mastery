@@ -38,7 +38,7 @@ function PartySection() {
     // Make it so that the LimitModal is at the front
     if(!currentUserIsPro){
       setShowLimitModal(true);
-      setShowModal(false);
+      // setShowModal(false);
       return;
     }
     setIsLoading(true);
