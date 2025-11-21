@@ -29,11 +29,15 @@ export const PARTY_CONFIG = {
 
 export const findAvailableParty = async () => {
   try {
+
     const partiesRef = collection(db, 'parties');
+    // 1 day bossDamage counts as an active party
+    const cutoff = new Date(Date.now() -24*60*60*1000);
     const q = query(
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
+      where('currentBoss.lastDamageAt', '>=', cutoff),
       limit(10) // Get more results to filter in-memory
     );
     
