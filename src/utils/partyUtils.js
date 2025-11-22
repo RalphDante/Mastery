@@ -31,30 +31,35 @@ export const findAvailableParty = async () => {
   try {
 
     const partiesRef = collection(db, 'parties');
-    // 1 day bossDamage counts as an active party
+    // Damage to a boss within a day bossDamage counts as an active party
     const cutoff = new Date(Date.now() -24*60*60*1000);
     const q = query(
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
       where('currentBoss.lastDamageAt', '>=', cutoff),
+      where('currentBoss.isAlive', '==', true),
       limit(10) // Get more results to filter in-memory
     );
     
     const querySnapshot = await getDocs(q);
     
-    // Filter in-memory for isPublic (handles null/undefined legacy parties)
-    const availableParty = querySnapshot.docs.find(doc => {
-      const data = doc.data();
-      // Treat null/undefined as true (legacy parties were effectively public)
-      return data.isPublic !== false;
-    });
+    const publicParties = querySnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(party => party.isPublic !== false)
+      .sort((a, b) => {
+        // First priority: fewer members (don't join nearly-full parties)
+        if (a.memberCount !== b.memberCount) {
+          return a.memberCount - b.memberCount;
+        }
+        // Second priority: most recent activity
+        const timeA = a.currentBoss.lastDamageAt?.toMillis() || 0;
+        const timeB = b.currentBoss.lastDamageAt?.toMillis() || 0;
+        return timeB - timeA;
+      });
+
+    return publicParties.length > 0 ? publicParties[0] : null;
     
-    if (availableParty) {
-      return { id: availableParty.id, ...availableParty.data() };
-    }
-    
-    return null;
   } catch (error) {
     console.error('Error finding available party:', error);
     return null;
