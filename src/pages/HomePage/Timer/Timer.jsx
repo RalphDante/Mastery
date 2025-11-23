@@ -736,9 +736,7 @@ function Timer({
       {!isSessionActive ? (
         <>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
-            <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Install the site by adding it to your homescreen
-            </p>
+            
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
                 <button key={d.value} onClick={() => selectDuration(d.value)}
@@ -747,8 +745,9 @@ function Timer({
                 </button>
               ))}
             </div>
-
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
+            <button onClick={startTimer} className="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-lg">Start Session</button>
+           
+               <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
               <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
               <div className="flex justify-between space-x-2 items-center">
                 <div className="flex items-center space-x-1">
@@ -769,9 +768,12 @@ function Timer({
                 </div>
               </div>
             </div>
+             <p className="text-slate-400 text-sm text-center max-w-md">
+              <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+            </p>
+            
           </div>
-
-          <button onClick={startTimer} className="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-lg">Start Session</button>
+         
         </>
       ) : showCompletion ? (
         <>
