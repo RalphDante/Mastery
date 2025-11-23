@@ -36,7 +36,7 @@ function Timer({
 
 
   const durations = [
-    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -737,7 +737,7 @@ function Timer({
         <>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
             <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Bookmark screen for instant battles - quick access = more XP!
+              <span className='text-yellow-400'>Pro tip:</span> Install the site by adding it to your homescreen
             </p>
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
