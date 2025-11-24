@@ -52,15 +52,13 @@ function Confetti() {
   );
 }
 
-// Floating Celebration Toast
+// First Deck Celebration Toast
 function FirstDeckCelebration() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    // Slide in after a tiny delay
     setTimeout(() => setIsVisible(true), 100);
     
-    // Auto-hide after 4 seconds
     const timer = setTimeout(() => {
       setIsVisible(false);
     }, 4000);
@@ -74,17 +72,15 @@ function FirstDeckCelebration() {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-purple-400">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-purple-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-purple-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>First Deck Created!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+            <div className="font-semibold text-sm">
+              First Deck Created!
             </div>
-            <div className="text-purple-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span className="font-semibold text-yellow-300">+100 XP</span>
-              <span>•</span>
-              <span>You're on your way to mastery!</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              <span className="text-purple-400 font-medium">+100 XP</span> • You're on your way to mastery!
             </div>
           </div>
         </div>
@@ -94,7 +90,7 @@ function FirstDeckCelebration() {
   );
 }
 
-// Incentive Toast - Shows BEFORE studying to motivate completion
+// Deck Incentive Toast - Shows BEFORE studying
 function DeckIncentiveToast({ xpAmount = 200, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -117,17 +113,15 @@ function DeckIncentiveToast({ xpAmount = 200, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-amber-300">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-amber-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-amber-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>Complete This Deck!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+            <div className="font-semibold text-sm">
+              Complete This Deck!
             </div>
-            <div className="text-purple-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span>Earn</span>
-              <span className="font-semibold text-yellow-300">+{xpAmount} XP</span>
-              <span>when you finish!</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              Earn <span className="text-amber-400 font-medium">+{xpAmount} XP</span> when you finish!
             </div>
           </div>
         </div>
@@ -137,7 +131,7 @@ function DeckIncentiveToast({ xpAmount = 200, onComplete }) {
   );
 }
 
-// Completion Toast - Shows AFTER finishing the deck
+// Session Complete Toast - Shows AFTER finishing deck
 function SessionCompleteToast({ xpAmount = 200, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -160,17 +154,15 @@ function SessionCompleteToast({ xpAmount = 200, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-emerald-400">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-emerald-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>First Deck Complete!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+            <div className="font-semibold text-sm">
+              First Deck Complete!
             </div>
-            <div className="text-emerald-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span className="font-semibold text-yellow-300">+{xpAmount} XP Earned</span>
-              <span>•</span>
-              <span>Amazing work! 🎉</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              <span className="text-emerald-400 font-medium">+{xpAmount} XP Earned</span> • Amazing work! 🎉
             </div>
           </div>
         </div>
@@ -180,7 +172,7 @@ function SessionCompleteToast({ xpAmount = 200, onComplete }) {
   );
 }
 
-// Timer Started Celebration - Shows RIGHT after starting (+100 XP earned)
+// Timer Started Toast
 function TimerStartedToast({ xpAmount = 100, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -192,7 +184,7 @@ function TimerStartedToast({ xpAmount = 100, onComplete }) {
       setTimeout(() => {
         onComplete?.();
       }, 500);
-    }, 4000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -203,17 +195,15 @@ function TimerStartedToast({ xpAmount = 100, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-purple-600 to-blue-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-purple-400">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-blue-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-blue-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>Session Started!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+            <div className="font-semibold text-sm">
+              Session Started
             </div>
-            <div className="text-purple-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span className="font-semibold text-yellow-300">+{xpAmount} XP</span>
-              <span>•</span>
-              <span>Great start! Keep going! 🚀</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              <span className="text-blue-400 font-medium">+{xpAmount} XP</span> earned
             </div>
           </div>
         </div>
@@ -223,7 +213,7 @@ function TimerStartedToast({ xpAmount = 100, onComplete }) {
   );
 }
 
-// Timer Incentive Toast - Shows AFTER started toast (motivates completion)
+// Timer Incentive Toast
 function TimerIncentiveToast({ xpAmount = 300, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -235,7 +225,7 @@ function TimerIncentiveToast({ xpAmount = 300, onComplete }) {
       setTimeout(() => {
         onComplete?.();
       }, 500);
-    }, 4000);
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -246,17 +236,15 @@ function TimerIncentiveToast({ xpAmount = 300, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-amber-300">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-amber-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-amber-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>Complete Your Study Session!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-200" />
+            <div className="font-semibold text-sm">
+              Complete Your Session
             </div>
-            <div className="text-amber-50 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span>Earn</span>
-              <span className="font-semibold text-yellow-200">+{xpAmount} XP</span>
-              <span>when you finish! ⏱️</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              Earn <span className="text-amber-400 font-medium">+{xpAmount} XP</span> when you finish
             </div>
           </div>
         </div>
@@ -266,7 +254,7 @@ function TimerIncentiveToast({ xpAmount = 300, onComplete }) {
   );
 }
 
-// Timer Complete Toast - Shows AFTER finishing timer
+// Timer Complete Toast
 function TimerCompleteToast({ xpAmount = 300, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -289,17 +277,15 @@ function TimerCompleteToast({ xpAmount = 300, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-emerald-400">
-        <div className="flex items-center gap-3 sm:gap-4">
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-emerald-500/20">
+        <div className="flex items-center gap-3">
+          <Sparkles className="w-5 h-5 text-emerald-400 flex-shrink-0" />
           <div className="text-white">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>First Session Complete!</span>
-              <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-300" />
+            <div className="font-semibold text-sm">
+              First Session Complete!
             </div>
-            <div className="text-emerald-100 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
-              <span className="font-semibold text-yellow-300">+{xpAmount} XP Earned</span>
-              <span>•</span>
-              <span>Keep the momentum going! 🔥</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              <span className="text-emerald-400 font-medium">+{xpAmount} XP Earned</span> <br></br>• Keep the momentum going! 🔥
             </div>
           </div>
         </div>
@@ -309,7 +295,7 @@ function TimerCompleteToast({ xpAmount = 300, onComplete }) {
   );
 }
 
-// Welcome Toast - Encourages user to start studying
+// Welcome Toast
 function WelcomeStudyToast({ xpAmount = 300, onComplete }) {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -321,7 +307,7 @@ function WelcomeStudyToast({ xpAmount = 300, onComplete }) {
       setTimeout(() => {
         onComplete?.();
       }, 500);
-    }, 5000); // Show a bit longer for first-time message
+    }, 5000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -332,35 +318,18 @@ function WelcomeStudyToast({ xpAmount = 300, onComplete }) {
         isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
       }`}
     >
-      <div className="bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600 px-4 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl border-2 border-violet-400 relative overflow-hidden">
-        {/* Animated shimmer effect */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-shimmer" 
-             style={{ animation: 'shimmer 3s infinite' }} />
-        
-        <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-          {/* <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 bg-yellow-400 rounded-full animate-bounce">
-            <span className="text-xl sm:text-2xl">⚡</span>
-          </div> */}
-          
-          <div className="text-white flex-1">
-            <div className="font-bold text-base sm:text-lg flex items-center gap-2">
-              <span>Your Party Needs You!</span>
-              <Users className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+      <div className="bg-slate-800 px-6 py-3 rounded-lg border border-slate-700 shadow-lg shadow-purple-500/20">
+        <div className="flex items-center gap-3">
+          <Users className="w-5 h-5 text-purple-400 flex-shrink-0" />
+          <div className="text-white">
+            <div className="font-semibold text-sm">
+              Your Party Needs You!
             </div>
-           <div className="text-purple-100 text-xs sm:text-sm text-center px-2 leading-relaxed">
-              Start a study session and earn up to{' '}
-              <span className="font-bold text-yellow-300 text-sm sm:text-base whitespace-nowrap">+{xpAmount} XP</span>
-              {' '}<span className="font-semibold">for FREE!</span>
+            <div className="text-slate-300 text-xs mt-0.5">
+              Start a study session and earn <span className="text-purple-400 font-medium">+{xpAmount} XP</span> for FREE!
             </div>
           </div>
         </div>
-
-        <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-          }
-        `}</style>
       </div>
     </div>,
     document.body

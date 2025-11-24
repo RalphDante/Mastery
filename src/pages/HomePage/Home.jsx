@@ -126,12 +126,12 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
-     {showWelcomeToast && (
+     {/* {showWelcomeToast && (
         <WelcomeStudyToast 
           xpAmount={300}
           onComplete={() => setShowWelcomeToast(false)}
         />
-      )}
+      )} */}
       {showTimerStart && (
         <>
           <Confetti />

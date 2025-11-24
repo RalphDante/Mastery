@@ -102,6 +102,7 @@ function PartySection() {
 
   // Party Profile
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
+  const currentUserStreak = currentUser?.streak || 0;
 
   // Calculate EXP progress for current level
   const expProgress = currentUser 
@@ -170,11 +171,16 @@ function PartySection() {
               />
               : ""
             }
-
-            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-orange-500 px-2 py-0.5 rounded-full border-2 border-slate-900 flex items-center gap-1">
-              <span className="text-xs">🔥</span>
-              <span className="text-xs font-bold text-white">{currentUser?.streak || 0}</span>
-            </div>
+            
+            {currentUserStreak !== 0 ? 
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-orange-500 px-2 py-0.5 rounded-full border-2 border-slate-900 flex items-center gap-1">
+                <span className="text-xs">🔥</span>
+                <span className="text-xs font-bold text-white">{currentUserStreak}</span>
+              </div>
+            :
+              ''
+            }
+            
             
           </div>
           

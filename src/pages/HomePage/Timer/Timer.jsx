@@ -32,11 +32,13 @@ function Timer({
   const audioRef = useRef(null);
 
   const hasResumedRef = useRef(false);
+  const correctSoundEffect = useRef(null);
+  const daggerWooshSFX = useRef(null);
 
 
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -53,15 +55,24 @@ function Timer({
 
   const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
 
+  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
+
 
 
 
   // Initialize alarm sound
-  useEffect(() => {
-    // Using a free alarm sound from freesound.org via CDN
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-    audioRef.current.volume = 0.5;
-  }, []);
+  useEffect(()=>{
+      correctSoundEffect.current = new Audio("https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3");
+      correctSoundEffect.current.volume = 0.4;
+
+      daggerWooshSFX.current = new Audio('/sfx/mixkit-dagger-woosh-1487.wav'); // your file path or CDN URL
+      daggerWooshSFX.current.volume = 0.3;
+
+      audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audioRef.current.volume = 0.5;
+
+  },[])
+
 
   // Save logic (unchanged)
   const saveStudyTime = useCallback(async (secondsToSave) => {
@@ -362,9 +373,9 @@ function Timer({
   const startTimer = async () => {
     if (!authUser) return;
     
+    correctSoundEffect.current.play().catch(err=>console.log(err));
+    daggerWooshSFX.current.play().catch(err=>console.log(err));
    
-
-
     const now = Date.now();
     
     // Initialize or resume timer
@@ -732,11 +743,13 @@ function Timer({
 
   // Render
   return (
-    <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+    <div className="w-full h-full bg-slate-800 rounded-lg p-3 flex flex-col justify-between text-slate-100 relative">
       {!isSessionActive ? (
         <>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
-            
+            {/* <p className="text-slate-400 text-sm text-center max-w-md">
+              <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+            </p> */}
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
                 <button key={d.value} onClick={() => selectDuration(d.value)}
@@ -745,9 +758,29 @@ function Timer({
                 </button>
               ))}
             </div>
-            <button onClick={startTimer} className="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-lg">Start Session</button>
+
+            <button 
+              onClick={startTimer} 
+              className={`${hasNotStartedATimerSession ? 'animate-pulse' : ''} w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
+            >
+              Start {selectedDuration} Min Session
+            </button>
+             
+           <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
+              <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
+                <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
+                <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
+                <span className="text-blue-400 font-semibold whitespace-nowrap">+{getCurrentRewards().mana} MP</span>
+                <span className="text-orange-400 font-semibold whitespace-nowrap ">
+                  {getCurrentRewards().damage} DMG
+                </span>
+              </div>
+              <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
+                Return when timer ends to claim rewards
+              </p>
+            </div>
            
-               <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
+            {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
               <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
               <div className="flex justify-between space-x-2 items-center">
                 <div className="flex items-center space-x-1">
@@ -767,12 +800,13 @@ function Timer({
                   <span className="text-slate-400 text-xs">DMG</span>
                 </div>
               </div>
-            </div>
-             <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
-            </p>
+            </div> */}
+            
+           
             
           </div>
+
+          
          
         </>
       ) : showCompletion ? (
@@ -822,7 +856,9 @@ function Timer({
         <>
           <div className="text-left">
             <h2 className="text-lg font-semibold mb-1">Session Active</h2>
-            <p className="text-slate-400 text-sm">Stay focused to maximize rewards</p>
+            <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
+            <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+            </p>
           </div>
 
           <div className="flex-1 flex flex-col justify-center items-center">

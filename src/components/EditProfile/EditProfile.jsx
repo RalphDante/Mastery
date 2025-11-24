@@ -6,16 +6,21 @@ import AvatarSelection from "./AvatarSection";
 import { db } from "../../api/firebase";
 import { setDoc, doc } from "firebase/firestore";
 import { usePartyContext } from "../../contexts/PartyContext";
+import { useEffect } from "react";
+import { useTutorials } from "../../contexts/TutorialContext";
+import { X } from "lucide-react";
 
 function EditProfile() {
     const {user, userProfile, updateUserProfile} = useAuthContext();
     const { updateUserProfile: updatePartyProfile } = usePartyContext();
-
+    const {isTutorialAtStep} = useTutorials();
     const [selectedAvatar, setSelectedAvatar] = useState(userProfile?.avatar || "");
     const [displayName, setDisplayName] = useState(userProfile?.displayName || "");
     const [showModal, setShowModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [saveError, setSaveError] = useState(null);
+    const [showCustomizeTip, setShowCustomizeTip] = useState(null)
+    const tooltipPopupSFX = useRef(null);
 
     const currentUser = userProfile;
 
@@ -25,6 +30,37 @@ function EditProfile() {
 
     const closeModal = () => setShowModal(false);
     const openModal = () => {setShowModal(true); setDisplayName(userProfile?.displayName)};
+
+    const shouldShowTip = isTutorialAtStep('start-timer', 2);
+
+    useEffect(() => {
+      tooltipPopupSFX.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3");
+      tooltipPopupSFX.current.volume = 1.0; // Keep it subtle, like your dagger woosh
+
+    }, []);
+
+    useEffect(() => {
+        if (shouldShowTip) {
+            // Wait 3 seconds before showing the tip
+            const showTimer = setTimeout(() => {
+              tooltipPopupSFX.current?.play().catch(console.error); // Play on show
+              setShowCustomizeTip(true);
+            }, 10000);
+
+            // Auto-hide after 3s + 15s = 18s total
+            const hideTimer = setTimeout(() => {
+                setShowCustomizeTip(false);
+            }, 18000);
+
+            return () => {
+                clearTimeout(showTimer);
+                clearTimeout(hideTimer);
+            };
+        } else {
+            // Hide immediately if condition becomes false
+            setShowCustomizeTip(false);
+        }
+    }, [shouldShowTip]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -113,15 +149,34 @@ function EditProfile() {
 
     return (
     <>  
-      <button
-        onClick={openModal}
-        className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
-        aria-label="Edit Profile"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-auto" viewBox="0 0 256 256">
-          <path fill="currentColor" d="m230.14 70.54l-44.68-44.69a20 20 0 0 0-28.29 0L33.86 149.17A19.85 19.85 0 0 0 28 163.31V208a20 20 0 0 0 20 20h44.69a19.86 19.86 0 0 0 14.14-5.86L230.14 98.82a20 20 0 0 0 0-28.28M93 180l71-71l11 11l-71 71Zm-17-17l-11-11l71-71l11 11Zm-24 10l15.51 15.51L83 204H52Zm140-70l-39-39l18.34-18.34l39 39Z"/>
-        </svg>
-      </button>
+      <div className="relative">
+        <button
+          onClick={openModal}
+          className={`p-2 hover:bg-slate-700 rounded-lg transition-colors`}
+          aria-label="Edit Profile"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-auto" viewBox="0 0 256 256">
+            <path fill="currentColor" d="m230.14 70.54l-44.68-44.69a20 20 0 0 0-28.29 0L33.86 149.17A19.85 19.85 0 0 0 28 163.31V208a20 20 0 0 0 20 20h44.69a19.86 19.86 0 0 0 14.14-5.86L230.14 98.82a20 20 0 0 0 0-28.28M93 180l71-71l11 11l-71 71Zm-17-17l-11-11l71-71l11 11Zm-24 10l15.51 15.51L83 204H52Zm140-70l-39-39l18.34-18.34l39 39Z"/>
+          </svg>
+        </button>
+
+        {/* Chat bubble tooltip */}
+        {showCustomizeTip && (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 z-30 animate-in fade-in slide-in-from-top-2 duration-300">
+            <div className="relative bg-slate-900 text-white rounded-xl p-2 shadow-lg shadow-purple-500/20 border border-slate-700 min-w-[160px]">
+              
+              {/* Better spaced text */}
+              <p className="text-slate-200 text-sm text-center leading-normal">
+                <span className="block font-medium">Let's customize</span>
+                <span className="block text-slate-300">your character!</span>
+              </p>
+
+              {/* Speech bubble tail */}
+              <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-slate-900 border-l border-t border-slate-700 transform rotate-45"></div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {showModal && createPortal(
         <div 
@@ -263,7 +318,7 @@ function EditProfile() {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-medium text-slate-300">
-                      Display Name
+                      What should we call you?
                     </label>
                     {userProfile?.lastNameChangeAt && (() => {
                       const lastChangeDate = userProfile.lastNameChangeAt.toDate 

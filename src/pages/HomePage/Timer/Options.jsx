@@ -20,6 +20,12 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
 
     useEffect(() => {
+        if (hasNotStartedATimerSession) {
+            setStudyMode("timer");
+        }
+    }, [hasNotStartedATimerSession]);
+
+    useEffect(() => {
         const checkForActiveTimer = async () => {
             if (!authUser) {
                 setIsCheckingTimer(false);
@@ -29,21 +35,29 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
             try {
                 const userRef = doc(db, 'users', authUser.uid);
                 const userDoc = await getDoc(userRef);
-                const activeTimer = userDoc.data()?.activeTimer;
+                const userData = userDoc.data();
+                const activeTimer = userData?.activeTimer;
 
-                if (activeTimer?.isActive && activeTimer.startedAt) {
+                // Check if user has never studied before
+                const hasNeverStudied = !userData?.lastStudyDate;
+
+                // Switch to timer if: active timer OR never studied before
+                if (hasNeverStudied) {
+                    console.log('First-time user detected, showing timer view');
+                    setStudyMode('timer');
+                } else if (activeTimer?.isActive && activeTimer.startedAt) {
                     console.log('Active timer detected, switching to timer view');
                     setStudyMode('timer');
                 }
             } catch (error) {
                 console.error('Error checking for active timer:', error);
             } finally {
-                setIsCheckingTimer(false); // ✅ Done checking
+                setIsCheckingTimer(false);
             }
         };
 
         checkForActiveTimer();
-    }, [authUser, db]); // ✅ Only run once on mount
+    }, [authUser, db]);
 
     if (isCheckingTimer) {
         return (
@@ -270,7 +284,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                     {!(studyMode === 'options') || showAIOption ? 
                         <button
                             onClick={openOptions}
-                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-all duration-200 shadow-md text-sm sm:text-base"
+                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-700/20 text-white hover:bg-gray-600 transition-all duration-200 shadow-md text-sm sm:text-base"
                         >
                             <ArrowLeft className="w-4 h-4" />
                         </button> : 
