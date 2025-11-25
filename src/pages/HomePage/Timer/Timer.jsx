@@ -484,7 +484,7 @@ function Timer({
           }
         }
       }, 1000);
-    }
+    } 
   };
 
   const pauseTimer = () => {
@@ -742,7 +742,24 @@ function Timer({
   }, [authUser, db, saveStudyTime, handleCompletion]);
 
   // Cleanup on unmount
-  // useEffect(() => () => resetTimer(), []);
+  useEffect(() => {
+    // Cleanup function that runs when component unmounts
+    return () => {
+      console.log('🧹 Timer unmounting - cleaning up');
+      
+      // Clear interval
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+      
+      // Stop audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []); 
 
   // Render
   return (
