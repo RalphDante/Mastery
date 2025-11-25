@@ -75,7 +75,7 @@ function Timer({
 
 
   // Save logic (unchanged)
-  const saveStudyTime = useCallback(async (secondsToSave) => {
+  const saveStudyTime = useCallback(async (secondsToSave, overrideDuration = null) => {
     if (!authUser || secondsToSave < 60 || isSavingRef.current) return;
 
     const MAX_MINUTES_PER_SAVE = 180; // 3 hours max
@@ -86,11 +86,14 @@ function Timer({
       console.error('Invalid minutes to save:', fullMinutes, 'from seconds:', secondsToSave);
       return;
     }
+    
+    // 🔥 CRITICAL: Use overrideDuration if provided (for resume), otherwise use selectedDuration
+    const durationToCheck = overrideDuration !== null ? overrideDuration : selectedDuration;
 
     // 🔥 CRITICAL: Additional sanity check
-    if (fullMinutes > selectedDuration + 5) {
+    if (fullMinutes > durationToCheck + 5) {
       console.error('⚠️ Attempted to save more minutes than timer duration!');
-      console.error('Minutes:', fullMinutes, 'Duration:', selectedDuration);
+      console.error('Minutes:', fullMinutes, 'Duration:', durationToCheck);
       return;
     }
 
@@ -683,7 +686,7 @@ function Timer({
                     if (minutesToSave > 0) {
                       const secondsToSave = minutesToSave * 60;
 
-                      saveStudyTime(secondsToSave)
+                      saveStudyTime(secondsToSave, Math.ceil(durationSeconds / 60))
                         .then(() => {
                           lastSaveRef.current += secondsToSave;
                         })
@@ -711,11 +714,11 @@ function Timer({
 
             const totalElapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
             const cappedSeconds = Math.min(totalElapsedSeconds, durationSeconds);
-            const remaining = cappedSeconds - lastSaveRef.current;
+            const remaining = cappedSeconds - secondsAlreadySaved;
             const finalMinutesToSave = Math.min(Math.floor(remaining / 60), 60);
 
             if (finalMinutesToSave > 0) {
-              await saveStudyTime(finalMinutesToSave * 60);
+              await saveStudyTime(finalMinutesToSave * 60, Math.ceil(durationSeconds / 60));
               console.log(`Final save: awarded ${finalMinutesToSave} minutes of study time`);
             }
 
