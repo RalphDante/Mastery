@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Timer from "./Timer";
 import { ArrowLeft } from "lucide-react";
 import LearningHubSection from "../LearningHubSection/LearningHubSection";
 import { useAuthContext } from "../../../contexts/AuthContext";
 import { useFolders } from "../../../contexts/DeckCacheContext";
 import { useTutorials } from "../../../contexts/TutorialContext";
+import { doc, getDoc } from 'firebase/firestore';
 
 
 function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, handleTimerStart, handleTimerComplete}){
@@ -12,10 +13,59 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const folders = useFolders();
     const [studyMode, setStudyMode] = useState('options');
     const [showAIOption, setShowAIOption] = useState(false);
+    const [isCheckingTimer, setIsCheckingTimer] = useState(true);
     const {isTutorialAtStep} = useTutorials();
 
     const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
     const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
+
+    useEffect(() => {
+        if (hasNotStartedATimerSession) {
+            setStudyMode("timer");
+        }
+    }, [hasNotStartedATimerSession]);
+
+    useEffect(() => {
+        const checkForActiveTimer = async () => {
+            if (!authUser) {
+                setIsCheckingTimer(false);
+                return;
+            }
+
+            try {
+                const userRef = doc(db, 'users', authUser.uid);
+                const userDoc = await getDoc(userRef);
+                const userData = userDoc.data();
+                const activeTimer = userData?.activeTimer;
+
+                // Check if user has never studied before
+                const hasNeverStudied = !userData?.lastStudyDate;
+
+                // Switch to timer if: active timer OR never studied before
+                if (hasNeverStudied) {
+                    console.log('First-time user detected, showing timer view');
+                    setStudyMode('timer');
+                } else if (activeTimer?.isActive && activeTimer.startedAt) {
+                    console.log('Active timer detected, switching to timer view');
+                    setStudyMode('timer');
+                }
+            } catch (error) {
+                console.error('Error checking for active timer:', error);
+            } finally {
+                setIsCheckingTimer(false);
+            }
+        };
+
+        checkForActiveTimer();
+    }, [authUser, db]);
+
+    if (isCheckingTimer) {
+        return (
+            <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex items-center justify-center">
+                <div className="text-slate-400">Checking for active session...</div>
+            </div>
+        );
+    }
 
     const openTimer = ()=>{
         setStudyMode("timer");
@@ -33,6 +83,8 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const openAIOption = ()=>{
         setShowAIOption(true);
     }
+
+    
 
     // Render based on studyMode
     const renderContent = () => {
@@ -232,7 +284,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                     {!(studyMode === 'options') || showAIOption ? 
                         <button
                             onClick={openOptions}
-                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition-all duration-200 shadow-md text-sm sm:text-base"
+                            className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-700/20 text-white hover:bg-gray-600 transition-all duration-200 shadow-md text-sm sm:text-base"
                         >
                             <ArrowLeft className="w-4 h-4" />
                         </button> : 

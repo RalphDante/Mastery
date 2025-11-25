@@ -34,6 +34,11 @@ function LimitReachedModal({ limitType, onClose }) {
           title: "Unlock Unlimited Regenerations!",
           emoji: "🔄",
           subtitle: "Get perfect flashcards every time"
+      },
+      party: {  // NEW
+          title: "Unlock Private Parties!",
+          emoji: "👥",
+          subtitle: "Decide who deserves to join your party"
       }
   };
 
@@ -48,7 +53,7 @@ function LimitReachedModal({ limitType, onClose }) {
     <>
     {showModal ? 
 
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-0 relative shadow-2xl animate-scale-in overflow-hidden">
         {/* Close button */}
         <button 

@@ -33,6 +33,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const [showTimerIncentive, setShowTimerIncentive] = useState(false);
   const [showTimerComplete, setShowTimerComplete] = useState(false);
   const [showTimerStart, setShowTimerStart] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
+
 
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
   const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
@@ -90,6 +92,13 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 //     }
 // }, [userProfile, navigate]);
 
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     // Wait for tutorials to load
     if (loading) return;
@@ -117,12 +126,12 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
-     {showWelcomeToast && (
+     {/* {showWelcomeToast && (
         <WelcomeStudyToast 
           xpAmount={300}
           onComplete={() => setShowWelcomeToast(false)}
         />
-      )}
+      )} */}
       {showTimerStart && (
         <>
           <Confetti />
@@ -160,7 +169,31 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
             <PartySection />
 
-            {/* MOBILE VIEW */}
+
+            {isDesktop ? 
+              <div className="hidden lg:grid lg:grid-cols-2 gap-6 mb-6 items-start">
+              
+                <div className="order-2 lg:order-1">
+                  <Options 
+                    db = {db}
+                    authUser = {user}
+                    onCreateDeckClick={onCreateDeckClick}
+                    onCreateWithAIModalClick={onCreateWithAIModalClick}
+                    handleTimerStart={handleTimerStart}
+                    handleTimerComplete={handleTimerComplete}
+                  />
+                  <MiniLeaderboard />
+
+                </div>
+                <div className='order-1 lg:order-2'>
+                  <Boss />
+                  
+                </div>
+
+              
+              </div>
+            
+            : 
             <div className="lg:hidden">
 
               {/* Toggle Button */}
@@ -219,29 +252,9 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                 )}
               </div>
             </div>
-
-            {/* DESKTOP */}
-            <div className="hidden lg:grid lg:grid-cols-2 gap-6 mb-6 items-start">
-              
-              <div className="order-2 lg:order-1">
-                <Options 
-                  db = {db}
-                  authUser = {user}
-                  onCreateDeckClick={onCreateDeckClick}
-                  onCreateWithAIModalClick={onCreateWithAIModalClick}
-                  handleTimerStart={handleTimerStart}
-                  handleTimerComplete={handleTimerComplete}
-                />
-                <MiniLeaderboard />
-
-              </div>
-              <div className='order-1 lg:order-2'>
-                <Boss />
-                
-              </div>
-
-              
-            </div>
+            }
+            
+            
             {/* <OverallMasteryV2 /> */}
             {/* <WelcomeSection /> */}
             {/* <LearningHubSection 

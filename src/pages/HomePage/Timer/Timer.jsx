@@ -32,6 +32,8 @@ function Timer({
   const audioRef = useRef(null);
 
   const hasResumedRef = useRef(false);
+  const correctSoundEffect = useRef(null);
+  const daggerWooshSFX = useRef(null);
 
 
 
@@ -53,18 +55,27 @@ function Timer({
 
   const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
 
+  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
+
 
 
 
   // Initialize alarm sound
-  useEffect(() => {
-    // Using a free alarm sound from freesound.org via CDN
-    audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-    audioRef.current.volume = 0.5;
-  }, []);
+  useEffect(()=>{
+      correctSoundEffect.current = new Audio("https://cdn.freesound.org/previews/270/270304_5123851-lq.mp3");
+      correctSoundEffect.current.volume = 0.4;
+
+      daggerWooshSFX.current = new Audio('/sfx/mixkit-dagger-woosh-1487.wav'); // your file path or CDN URL
+      daggerWooshSFX.current.volume = 0.3;
+
+      audioRef.current = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audioRef.current.volume = 0.5;
+
+  },[])
+
 
   // Save logic (unchanged)
-  const saveStudyTime = useCallback(async (secondsToSave) => {
+  const saveStudyTime = useCallback(async (secondsToSave, overrideDuration = null) => {
     if (!authUser || secondsToSave < 60 || isSavingRef.current) return;
 
     const MAX_MINUTES_PER_SAVE = 180; // 3 hours max
@@ -75,11 +86,14 @@ function Timer({
       console.error('Invalid minutes to save:', fullMinutes, 'from seconds:', secondsToSave);
       return;
     }
+    
+    // 🔥 CRITICAL: Use overrideDuration if provided (for resume), otherwise use selectedDuration
+    const durationToCheck = overrideDuration !== null ? overrideDuration : selectedDuration;
 
     // 🔥 CRITICAL: Additional sanity check
-    if (fullMinutes > selectedDuration + 5) {
+    if (fullMinutes > durationToCheck + 5) {
       console.error('⚠️ Attempted to save more minutes than timer duration!');
-      console.error('Minutes:', fullMinutes, 'Duration:', selectedDuration);
+      console.error('Minutes:', fullMinutes, 'Duration:', durationToCheck);
       return;
     }
 
@@ -158,6 +172,10 @@ function Timer({
           }
 
           transaction.update(userRef, updateData);
+
+          transaction.update(userRef, {
+            'activeTimer.lastSavedAt': serverTimestamp()   // ← ADD THIS
+          });
 
           if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
             const partyData = partyDoc.data();
@@ -325,19 +343,16 @@ function Timer({
       audioRef.current.play().catch(err => console.log('Audio play failed:', err));
     }
     
-    // 🔥 CRITICAL: Cap the remaining time to session duration
     const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
     const totalSeconds = Math.floor(totalElapsed / 1000);
-    const expectedMax = selectedDuration * 60;
-    
-    // Use the smaller of: actual elapsed or expected duration
-    const cappedSeconds = Math.min(totalSeconds, expectedMax);
-    const remaining = cappedSeconds - lastSaveRef.current;
-    
-    if (remaining > 0 && remaining <= 300) { // Max 5 min final save
-      await saveStudyTime(remaining);
-    } else if (remaining > 300) {
-      console.error('⚠️ Suspicious final save blocked:', remaining, 'seconds');
+    const cappedSeconds = Math.min(totalSeconds, selectedDuration * 60);
+    const remainingSeconds = cappedSeconds - lastSaveRef.current;
+
+    const finalMinutes = Math.min(Math.floor(remainingSeconds / 60), 60);
+
+    if (finalMinutes > 0) {
+      await saveStudyTime(finalMinutes * 60);
+      console.log(`Final save: +${finalMinutes} minute(s)`);
     }
     
     // Clear timer from database
@@ -345,7 +360,8 @@ function Timer({
       try {
         const userRef = doc(db, 'users', authUser.uid);
         await updateDoc(userRef, {
-          'activeTimer.isActive': false
+          'activeTimer.isActive': false,
+          'activeTimer.lastSavedAt': null
         });
       } catch (err) {
         console.error('Error clearing timer:', err);
@@ -360,9 +376,9 @@ function Timer({
   const startTimer = async () => {
     if (!authUser) return;
     
+    correctSoundEffect.current.play().catch(err=>console.log(err));
+    daggerWooshSFX.current.play().catch(err=>console.log(err));
    
-
-
     const now = Date.now();
     
     // Initialize or resume timer
@@ -399,6 +415,7 @@ function Timer({
         await updateDoc(userRef, {
           activeTimer: {
             startedAt: serverTimestamp(),
+            lastSavedAt: serverTimestamp(),
             duration: selectedDuration * 60,
             isActive: true
           }
@@ -426,42 +443,48 @@ function Timer({
         const currentTime = Date.now();
         const totalElapsed = currentTime - startTimeRef.current - pausedTimeRef.current;
         const totalSeconds = Math.floor(totalElapsed / 1000);
-        
-        // 🔥 CRITICAL: Detect time anomalies
-        const MAX_EXPECTED_ELAPSED = (selectedDuration * 60) + 60; // duration + 1 min buffer
+
+        // Prevent insane time jumps (clock changed, dev tools, etc.)
+        const MAX_EXPECTED_ELAPSED = (selectedDuration * 60) + 120; // +2 min buffer
         if (totalSeconds > MAX_EXPECTED_ELAPSED) {
-          console.error('⚠️ Time anomaly detected:', totalSeconds, 'seconds');
-          console.error('Expected max:', MAX_EXPECTED_ELAPSED);
-          console.error('Resetting timer to prevent corruption');
-          
-          // Force complete the timer with only the expected duration
+          console.warn('Time anomaly detected — forcing completion');
           handleCompletion();
           return;
         }
-        
+
         setTimeElapsed(totalSeconds);
-        
+
+        // Timer finished
         if (totalSeconds >= selectedDuration * 60) {
           handleCompletion();
           return;
         }
 
-        // 🔥 CRITICAL: Only save if not already saving
+        // SAVE LOGIC — fire-and-forget (no await in setInterval)
         if (!isSavingRef.current) {
           const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
-          
-          // 🔥 CRITICAL: Validate seconds are reasonable
-          if (secondsSinceLastSave >= 60 && secondsSinceLastSave < 300) { // Between 1-5 min
-            const fullMinutes = Math.floor(secondsSinceLastSave / 60);
-            saveStudyTime(fullMinutes * 60);
-            lastSaveRef.current += fullMinutes * 60;
-          } else if (secondsSinceLastSave >= 300) {
-            console.error('⚠️ Suspicious save interval:', secondsSinceLastSave, 'seconds');
-            // Don't save if the interval is impossibly large
+
+          if (secondsSinceLastSave >= 60) {
+            const minutesToSave = Math.min(Math.floor(secondsSinceLastSave / 60), 60);
+            if (minutesToSave > 0) {
+              const secondsToSave = minutesToSave * 60;
+
+              saveStudyTime(secondsToSave)
+                .then(() => {
+                  lastSaveRef.current += secondsToSave;
+
+                  if (minutesToSave > 10) {
+                    console.log(`Caught up — saved ${minutesToSave} minutes`);
+                  }
+                })
+                .catch(err => {
+                  console.error('Background save failed:', err);
+                });
+            }
           }
         }
       }, 1000);
-    }
+    } 
   };
 
   const pauseTimer = () => {
@@ -507,7 +530,8 @@ function Timer({
       try {
         const userRef = doc(db, 'users', authUser.uid);
         await updateDoc(userRef, {
-          'activeTimer.isActive': false
+          'activeTimer.isActive': false,
+          'activeTimer.lastSavedAt': null
         });
       } catch (err) {
         console.error('Error clearing timer:', err);
@@ -560,26 +584,33 @@ function Timer({
     const checkForActiveTimer = async () => {
       if (!authUser || hasResumedRef.current) return;
 
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       try {
         const userRef = doc(db, 'users', authUser.uid);
         const userDoc = await getDoc(userRef);
         const activeTimer = userDoc.data()?.activeTimer;
 
-        if (activeTimer?.isActive) {
+        if (activeTimer?.isActive && activeTimer.startedAt) {
+          // ✅ Check if we already resumed (Options just switched us here)
+          if (hasResumedRef.current) return;
 
-          if (!activeTimer.startedAt) {
-          console.log('Timer active but startedAt is null (serverTimestamp pending)');
-          return; // Wait for next mount/refresh
-        }
+         
           const startedAt = activeTimer.startedAt.toDate();
           const durationSeconds = activeTimer.duration;
-          const elapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+          const now = Date.now();
+          const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
 
           // 🔥 Check if started time is in the future (clock skew)
-          if (elapsedSeconds < 0) {
-            console.error('⚠️ Timer started in the future! Clock skew detected.');
+          if (elapsedSeconds < -300) { // more than 5 min behind
+            console.warn('Extreme clock skew detected, clearing timer');
             await updateDoc(userRef, { 'activeTimer.isActive': false });
             return;
+          }
+
+          if (elapsedSeconds < 0) {
+            console.log('Minor clock skew, syncing start time forward by', -elapsedSeconds, 's');
+            startTimeRef.current = Date.now();
           }
 
           // 🔥 KEY FIX: Validate elapsed time is reasonable
@@ -602,18 +633,104 @@ function Timer({
 
             startTimeRef.current = startedAt.getTime();
             pausedTimeRef.current = 0;
+            // ──────────────────────────────────────────────────────────────
+            // CORRECT WAY: Calculate saved time from lastSavedAt (server time!)
+            // ──────────────────────────────────────────────────────────────
+            let secondsAlreadySaved = 0;
+
+            if (activeTimer.lastSavedAt) {
+              const lastSavedAtDate = activeTimer.lastSavedAt.toDate();
+              const startedAtDate = activeTimer.startedAt.toDate();
+
+              const elapsedAtLastSave = Math.floor((lastSavedAtDate.getTime() - startedAtDate.getTime()) / 1000);
+              secondsAlreadySaved = Math.floor(elapsedAtLastSave / 60) * 60; // round down to completed minutes
+            } else {
+              // No saves yet — be conservative
+              secondsAlreadySaved = 0;
+            }
+
+            lastSaveRef.current = secondsAlreadySaved;
             setSelectedDuration(Math.ceil(durationSeconds / 60));
             setTimeElapsed(elapsedSeconds);
             setIsSessionActive(true);
+            
+            // 🔥 AUTO-RESUME: Start the timer immediately
+            setIsRunning(true);
+            
+            // Start the interval
+            if (!sessionTimerRef.current) {
+              sessionTimerRef.current = setInterval(() => {
+                const currentTime = Date.now();
+                const totalElapsed = currentTime - startTimeRef.current - pausedTimeRef.current;
+                const totalSeconds = Math.floor(totalElapsed / 1000);
+                
+                const MAX_EXPECTED_ELAPSED = (Math.ceil(durationSeconds / 60) * 60) + 60;
+                if (totalSeconds > MAX_EXPECTED_ELAPSED) {
+                  console.error('⚠️ Time anomaly detected:', totalSeconds, 'seconds');
+                  handleCompletion();
+                  return;
+                }
+                
+                setTimeElapsed(totalSeconds);
+                
+                if (totalSeconds >= Math.ceil(durationSeconds / 60) * 60) {
+                  handleCompletion();
+                  return;
+                }
+
+                if (!isSavingRef.current) {
+                  const secondsSinceLastSave = totalSeconds - lastSaveRef.current;
+
+                  if (secondsSinceLastSave >= 60) {
+                    const minutesToSave = Math.min(Math.floor(secondsSinceLastSave / 60), 60);
+                    if (minutesToSave > 0) {
+                      const secondsToSave = minutesToSave * 60;
+
+                      saveStudyTime(secondsToSave, Math.ceil(durationSeconds / 60))
+                        .then(() => {
+                          lastSaveRef.current += secondsToSave;
+                        })
+                        .catch(err => {
+                          console.error('Resume save failed:', err);
+                        });
+                    }
+                  }
+                }
+              }, 1000);
+            }
           } else {
-            // Timer finished recently (within the buffer)
+            // Timer completed while app was closed
             console.log('Timer completed while app was closed');
             hasResumedRef.current = true;
-            const minutes = Math.floor(durationSeconds / 60);
-            await saveStudyTime(durationSeconds);
-            await updateDoc(userRef, { 'activeTimer.isActive': false });
+
+            // Calculate how much time is UNSAVED
+            let secondsAlreadySaved = 0;
+            if (activeTimer.lastSavedAt) {
+              const lastSavedAtDate = activeTimer.lastSavedAt.toDate();
+              const startedAtDate = activeTimer.startedAt.toDate();
+              const elapsedAtSave = Math.floor((lastSavedAtDate.getTime() - startedAtDate.getTime()) / 1000);
+              secondsAlreadySaved = Math.floor(elapsedAtSave / 60) * 60;
+            }
+
+            const totalElapsedSeconds = Math.floor((Date.now() - startedAt.getTime()) / 1000);
+            const cappedSeconds = Math.min(totalElapsedSeconds, durationSeconds);
+            const remaining = cappedSeconds - secondsAlreadySaved;
+            const finalMinutesToSave = Math.min(Math.floor(remaining / 60), 60);
+
+            if (finalMinutesToSave > 0) {
+              await saveStudyTime(finalMinutesToSave * 60, Math.ceil(durationSeconds / 60));
+              console.log(`Final save: awarded ${finalMinutesToSave} minutes of study time`);
+            }
+
+            await updateDoc(userRef, {
+              'activeTimer.isActive': false,
+              'activeTimer.lastSavedAt': null
+            });
+
             setShowCompletion(true);
-            setSelectedDuration(minutes);
+            setSelectedDuration(Math.ceil(durationSeconds / 60));
+            setIsSessionActive(true);
+            handleTimerComplete?.()
           }
         }
       } catch (error) {
@@ -622,20 +739,37 @@ function Timer({
     };
 
     checkForActiveTimer();
-  }, [authUser, db, saveStudyTime]);
+  }, [authUser, db, saveStudyTime, handleCompletion]);
 
   // Cleanup on unmount
-  useEffect(() => () => resetTimer(), []);
+  useEffect(() => {
+    // Cleanup function that runs when component unmounts
+    return () => {
+      console.log('🧹 Timer unmounting - cleaning up');
+      
+      // Clear interval
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+        sessionTimerRef.current = null;
+      }
+      
+      // Stop audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, []); 
 
   // Render
   return (
-    <div className="w-full h-full min-h-[450px] bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+    <div className="w-full h-full bg-slate-800 rounded-lg p-3 flex flex-col justify-between text-slate-100 relative">
       {!isSessionActive ? (
         <>
           <div className="flex-1 flex flex-col justify-center items-center space-y-4">
-            <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Bookmark screen for instant battles - quick access = more XP!
-            </p>
+            {/* <p className="text-slate-400 text-sm text-center max-w-md">
+              <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+            </p> */}
             <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
               {durations.map(d => (
                 <button key={d.value} onClick={() => selectDuration(d.value)}
@@ -645,7 +779,28 @@ function Timer({
               ))}
             </div>
 
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
+            <button 
+              onClick={startTimer} 
+              className={`${hasNotStartedATimerSession ? 'animate-pulse' : ''} w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
+            >
+              Start {selectedDuration} Min Session
+            </button>
+             
+           <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
+              <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
+                <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
+                <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
+                <span className="text-blue-400 font-semibold whitespace-nowrap">+{getCurrentRewards().mana} MP</span>
+                <span className="text-orange-400 font-semibold whitespace-nowrap ">
+                  {getCurrentRewards().damage} DMG
+                </span>
+              </div>
+              <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
+                Return when timer ends to claim rewards
+              </p>
+            </div>
+           
+            {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
               <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
               <div className="flex justify-between space-x-2 items-center">
                 <div className="flex items-center space-x-1">
@@ -665,10 +820,14 @@ function Timer({
                   <span className="text-slate-400 text-xs">DMG</span>
                 </div>
               </div>
-            </div>
+            </div> */}
+            
+           
+            
           </div>
 
-          <button onClick={startTimer} className="w-full bg-red-600 hover:bg-red-500 text-white font-medium py-3 rounded-lg">Start Session</button>
+          
+         
         </>
       ) : showCompletion ? (
         <>
@@ -717,7 +876,9 @@ function Timer({
         <>
           <div className="text-left">
             <h2 className="text-lg font-semibold mb-1">Session Active</h2>
-            <p className="text-slate-400 text-sm">Stay focused to maximize rewards</p>
+            <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
+            <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+            </p>
           </div>
 
           <div className="flex-1 flex flex-col justify-center items-center">

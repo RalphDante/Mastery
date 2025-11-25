@@ -152,10 +152,10 @@ function CurrentBossFight() {
                   <div className="w-full bg-slate-800 rounded h-7 overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-300 ${
-                        index === 0 ? 'bg-yellow-500/30' :
-                        index === 1 ? 'bg-slate-400/30' :
-                        index === 2 ? 'bg-amber-600/30' :
-                        'bg-slate-600/20'
+                        index === 0 ? 'bg-yellow-500/40' :
+                        index === 1 ? 'bg-slate-400/40' :
+                        index === 2 ? 'bg-amber-600/40' :
+                        'bg-slate-600/40'
                       }`}
                       style={{ width: `${percentage}%` }}
                     ></div>
