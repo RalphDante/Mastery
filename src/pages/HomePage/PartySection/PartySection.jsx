@@ -11,6 +11,8 @@ import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
 import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
+import { AVATAR_FORMATS } from '../../../configs/avatarConfig';
+import AvatarWithPlatform from '../../../components/AvatarWithPlatform';
 
 function PartySection() {
 
@@ -146,43 +148,14 @@ function PartySection() {
         <div className="flex flex-row w-full md:w-96 md:mr-8 items-center">
           {/* Avatar */}
 
-          <div 
-            className="relative cursor-pointer hover:opacity-80 transition-opacity"
+          <AvatarWithPlatform
+            avatar={currentUser?.avatar}
+            displayName={currentUser?.displayName}
+            tier={currentUser?.tier}
+            streak={currentUserStreak}
+            size="large"
             onClick={openModal}
-          >
-            <div className={`w-28 h-28 border-2 overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
-              {
-                currentUser?.avatar ? currentUser.avatar === "knight-idle" ?
-                  (<div className="knight-idle" style={{ transform: 'scale(2.5)', imageRendering: 'pixelated' }}></div>)
-                  : <img 
-                  src={`/images/avatars/${currentUser.avatar}.png`}
-                  alt={currentUser?.displayName}
-                  className="w-full h-full p-2 object-cover"
-                  /> :
-                  ""
-              }
-            </div>
-            
-            {/* Pro badge on top right */}
-            {currentUser?.tier === "pro" ? 
-              <img
-                src="/images/icons/pro-badge.png"
-                className="absolute top-0 right-2 w-8 h-8 object-cover"
-              />
-              : ""
-            }
-            
-            {currentUserStreak !== 0 ? 
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-orange-500 px-2 py-0.5 rounded-full border-2 border-slate-900 flex items-center gap-1">
-                <span className="text-xs">🔥</span>
-                <span className="text-xs font-bold text-white">{currentUserStreak}</span>
-              </div>
-            :
-              ''
-            }
-            
-            
-          </div>
+          />
           
           <div className='flex flex-col w-full'>
             {/* User Info */}
@@ -252,38 +225,15 @@ function PartySection() {
                 onClick={openModal}
               >
                 {/* Avatar */}
-                <div className="relative">
-                  <div className={`w-28 h-28 border-2 overflow-hidden mr-2 bg-slate-700 border-slate-600`}>
-                    {
-                      member?.avatar ? member.avatar === "knight-idle" ?
-                        (<div className="knight-idle" style={{ transform: 'scale(2.5)', imageRendering: 'pixelated' }}></div>)
-                        : <img 
-                        src={`/images/avatars/${member.avatar}.png`}
-                        alt={member?.displayName}
-                        className="w-full h-full p-2 object-cover"
-                        /> :
-                        ""
-                        
-                    }
-
-                    <div 
-                      className={`w-full h-full rounded-full flex items-center justify-center text-white font-bold text-sm bg-slate-600`}
-                      style={{ display: 'none' }}
-                    >
-                      {member.displayName.charAt(0)}
-                    </div>
-                  </div>
-
-                  {/* Pro badge on top right */}
-                  {member?.tier === "pro" ? 
-                    <img
-                      src="/images/icons/pro-badge.png"
-                      className="absolute top-0 right-2 w-8 h-8 object-cover"
-                      onClick={()=>navigate("/pricing")}
-                    />
-                    : ""
-                  }
-                </div>
+                <AvatarWithPlatform
+                  key={userId}
+                  avatar={member?.avatar}
+                  displayName={member?.displayName}
+                  tier={member?.tier}
+                  streak={member?.streak || 0}
+                  size="large"
+                  onClick={openModal}
+                />
               </div>
             ))
           }
