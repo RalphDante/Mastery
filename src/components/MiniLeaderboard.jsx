@@ -1,9 +1,10 @@
 // components/MiniLeaderboard.jsx
 import { useLeaderboard } from "../contexts/LeaderboardContext";
-import { useUserDataContext } from "../contexts/UserDataContext"; // Add this import
+import { useUserDataContext } from "../contexts/UserDataContext";
 import { useNavigate } from "react-router-dom";
 import { Users, Crown, Clock } from "lucide-react";
 import { useEffect, useState } from "react";
+import { getAvatarPath } from "../configs/avatarConfig";
 
 const MONTHS = [
   "Jan","Feb","Mar","Apr","May","Jun",
@@ -12,7 +13,7 @@ const MONTHS = [
 
 export default function MiniLeaderboard() {
   const { weeklyData, loading } = useLeaderboard();
-  const { todaySession } = useUserDataContext(); // Add this
+  const { todaySession } = useUserDataContext();
   const navigate = useNavigate();
 
   // ────── Countdown (same as full page) ──────
@@ -43,7 +44,7 @@ export default function MiniLeaderboard() {
 
   // ────── User state ──────
   const isPro      = weeklyData?.currentUser?.isPro ?? false;
-  const minsToday  = todaySession?.minutesStudied ?? 0; // Use todaySession instead
+  const minsToday  = todaySession?.minutesStudied ?? 0;
   const hasRank    = !!weeklyData?.currentUserRank;
 
   if (loading) {
@@ -186,6 +187,7 @@ export default function MiniLeaderboard() {
         {top3.map((u, i) => {
           const rankColors = ["text-yellow-400", "text-gray-300", "text-orange-400"];
           const bg = i === 0 ? "bg-slate-900/50" : "bg-slate-900/30";
+          const avatarPath = getAvatarPath(u.avatar) || getAvatarPath("warrior_01");
 
           return (
             <div
@@ -199,11 +201,7 @@ export default function MiniLeaderboard() {
                 {u.isPro ? (
                   <div className="relative">
                     <img
-                      src={
-                        u.avatar === 'knight-idle'
-                          ? `images/premium-avatars/${u.avatar}.gif`
-                          : `images/avatars/${u.avatar ?? "warrior_01"}.png`
-                      }
+                      src={avatarPath}
                       alt={u.displayName}
                       className="w-6 h-6 rounded object-cover"
                     />
@@ -211,11 +209,7 @@ export default function MiniLeaderboard() {
                   </div>
                 ) : (
                   <img
-                    src={
-                      u.avatar === 'knight-idle'
-                        ? `images/premium-avatars/${u.avatar}.gif`
-                        : `images/avatars/${u.avatar ?? "warrior_01"}.png`
-                    }
+                    src={avatarPath}
                     alt={u.displayName}
                     className="w-6 h-6 rounded object-cover"
                   />
@@ -244,30 +238,26 @@ export default function MiniLeaderboard() {
               <span className="font-bold text-purple-300">#{weeklyData.currentUserRank}</span>
 
               {/* Pro crown on your avatar */}
-              {isPro ? (
-                <div className="relative">
+              {(() => {
+                const userAvatarPath = getAvatarPath(weeklyData.currentUserData?.avatar) || getAvatarPath("warrior_01");
+                
+                return isPro ? (
+                  <div className="relative">
+                    <img
+                      src={userAvatarPath}
+                      alt="You"
+                      className="w-6 h-6 rounded object-cover"
+                    />
+                    <Crown className="absolute -top-1 -right-1 w-3 h-3 text-yellow-400 drop-shadow" />
+                  </div>
+                ) : (
                   <img
-                    src={
-                      weeklyData.currentUserData?.avatar === 'knight-idle'
-                        ? `images/premium-avatars/${weeklyData.currentUserData.avatar}.gif`
-                        : `images/avatars/${weeklyData.currentUserData?.avatar ?? "warrior_01"}.png`
-                    }
+                    src={userAvatarPath}
                     alt="You"
                     className="w-6 h-6 rounded object-cover"
                   />
-                  <Crown className="absolute -top-1 -right-1 w-3 h-3 text-yellow-400 drop-shadow" />
-                </div>
-              ) : (
-                <img
-                  src={
-                    weeklyData.currentUserData?.avatar === 'knight-idle'
-                      ? `images/premium-avatars/${weeklyData.currentUserData.avatar}.gif`
-                      : `images/avatars/${weeklyData.currentUserData?.avatar ?? "warrior_01"}.png`
-                  }
-                  alt="You"
-                  className="w-6 h-6 rounded object-cover"
-                />
-              )}
+                );
+              })()}
 
               <span className="font-semibold text-slate-200 truncate max-w-[100px]">
                 You
