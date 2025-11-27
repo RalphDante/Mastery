@@ -32,7 +32,7 @@ function AvatarWithPlatform({
       className="relative cursor-pointer hover:opacity-80 transition-opacity"
       onClick={onClick}
     >
-      <div className={`${sizeClasses[size]} relative border-2 bg-gradient-to-b from-sky-400 to-sky-300 mr-2 border-purple-500/50`}>
+      <div className={`${sizeClasses[size]} relative border-2 bg-blue-200 mr-2 border-purple-500/50`}>
         {avatar && (
           <img 
             src={`/images/avatars/${avatar}.${AVATAR_FORMATS[avatar]}`}

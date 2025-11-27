@@ -9,6 +9,7 @@ import { usePartyContext } from "../../contexts/PartyContext";
 import { useEffect } from "react";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { X } from "lucide-react";
+import { getAvatarPath } from "../../configs/avatarConfig";
 
 function EditProfile() {
     const {user, userProfile, updateUserProfile} = useAuthContext();
@@ -210,25 +211,12 @@ function EditProfile() {
                   <div className="flex flex-col items-center gap-2 sm:gap-3">
                     <div className="relative group">
                       <div className="w-24 h-24 sm:w-32 sm:h-32 border-2 border-purple-500/50 rounded-lg overflow-hidden bg-slate-700 flex items-center justify-center hover:border-purple-400 transition-colors">
-                        {selectedAvatar === "knight-idle" ? (
-                          <div 
-                            className="knight-idle" 
-                            style={{ 
-                              transform: window.innerWidth < 640 ? 'scale(2)' : 'scale(3.5)', 
-                              imageRendering: 'pixelated',
-                              position: 'relative',
-                              top: '0px',
-                              left: '-13px'
-                            }}
-                          />
-                        ) : selectedAvatar ? (
+                        {selectedAvatar && (
                           <img 
-                            src={`/images/avatars/${selectedAvatar}.png`}
+                            src={getAvatarPath(selectedAvatar)}
                             alt={currentUser?.displayName}
                             className="w-full h-full p-2 object-cover"
                           />
-                        ) : (
-                          <div className="text-slate-500 text-4xl">?</div>
                         )}
                       </div>
                       

@@ -11,7 +11,7 @@ import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
 import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
-import { AVATAR_FORMATS } from '../../../configs/avatarConfig';
+import { getAvatarPath } from '../../../configs/avatarConfig';
 import AvatarWithPlatform from '../../../components/AvatarWithPlatform';
 
 function PartySection() {
@@ -305,31 +305,13 @@ function PartySection() {
                   >
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
-                      <div className="w-20 h-20 border-2 overflow-hidden bg-slate-700 border-slate-600">
-                         {
-                            member?.avatar ? member.avatar === "knight-idle" ?
-                              (<div className="knight-idle" 
-                                style={{ 
-                                  transform: 'scale(2.0)', 
-                                  imageRendering: 'pixelated',
-                                  position: 'relative',
-                                  top: '0px',      // Move down
-                                  left: '-13px' }}
-                                >
-                              </div>) : <img 
-                              src={`/images/avatars/${member.avatar}.png`}
-                              alt={currentUser?.displayName}
-                              className="w-full h-full p-2 object-cover"
-                              /> :
-                              ""
-                          }
-                        <div 
-                          className="w-full h-full flex items-center justify-center text-white font-bold text-lg bg-slate-600"
-                          style={{ display: member.avatar ? 'none' : 'flex' }}
-                        >
-                          {member.displayName.charAt(0)}
-                        </div>
-                      </div>
+                      <AvatarWithPlatform
+                        avatar={member?.avatar}
+                        displayName={member?.displayName}
+                        tier={member?.tier}
+                        streak={member?.streak || 0}
+                        size="large"
+                      />
                     </div>
 
                     {/* Stats */}

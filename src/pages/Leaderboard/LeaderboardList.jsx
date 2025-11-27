@@ -2,6 +2,7 @@
 import { Trophy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { getAvatarPath } from '../../configs/avatarConfig';
 
 function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false }) {
   const navigate = useNavigate();
@@ -42,6 +43,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
           const rank = i + 1;
           const isPro = player.isPro;
           const isTopPro = isPro && isTop3;
+          const avatarPath = getAvatarPath(player.avatar);
 
           return (
             <div
@@ -73,18 +75,14 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
               {/* Avatar + Name + Pro Badge */}
               <div className="flex items-center gap-3 w-full md:w-auto">
                 <div className="relative flex-shrink-0">
-                  {player.avatar === 'knight-idle' ? (
+                  {avatarPath ? (
                     <img
-                      src={`/images/premium-avatars/knight-idle.gif`}
+                      src={avatarPath}
                       alt={player?.displayName}
                       className="w-14 h-14 md:w-12 md:h-12 object-cover rounded-full border-2 border-slate-600"
                     />
                   ) : (
-                    <img
-                      src={`/images/avatars/${player.avatar}.png`}
-                      alt={player?.displayName}
-                      className="w-14 h-14 md:w-12 md:h-12 object-cover rounded-full border-2 border-slate-600"
-                    />
+                    <div className="w-14 h-14 md:w-12 md:h-12 bg-slate-700 rounded-full border-2 border-slate-600" />
                   )}
 
                   {/* Pro Badge */}
@@ -138,7 +136,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
       {/* Your Rank Footer */}
       {currentUserRank && (
         <div className="px-4 py-3 bg-slate-900/50 border-t border-slate-700 text-sm text-slate-400 text-center">
-          You’re ranked{' '}
+          You're ranked{' '}
           <span className="text-purple-400 font-bold">#{currentUserRank}</span>{' '}
           this {periodId?.includes('W') ? 'week' : 'month'}. Keep climbing!
         </div>
