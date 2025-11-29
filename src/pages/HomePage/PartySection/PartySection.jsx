@@ -38,7 +38,7 @@ function PartySection() {
     
 
     // Make it so that the LimitModal is at the front
-    if(!currentUserIsPro){
+    if(!currentUserIsPro && partyProfile?.isPublic){
       setShowLimitModal(true);
       // setShowModal(false);
       return;
