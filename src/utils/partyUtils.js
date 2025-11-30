@@ -32,13 +32,12 @@ export const findAvailableParty = async () => {
 
     const partiesRef = collection(db, 'parties');
     // Damage to a boss within a day bossDamage counts as an active party
-    const cutoff = new Date(Date.now() -24*60*60*1000);
+    const cutoff = new Date(Date.now() - 7*24*60*60*1000);
     const q = query(
       partiesRef, 
       where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
       where('currentBoss.lastDamageAt', '>=', cutoff),
-      where('currentBoss.isAlive', '==', true),
       limit(10) // Get more results to filter in-memory
     );
     
