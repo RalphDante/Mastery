@@ -109,14 +109,16 @@ export const updateUserStreak = async (db, userId) => {
       return {
         currentStreak: streakUpdate.currentStreak,
         longestStreak: streakUpdate.longestStreak,
-        isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0)
+        isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0),
+        streakChanged: streakUpdate.currentStreak !== (currentStats.currentStreak || 0)
       };
     }
     
     return {
       currentStreak: streakUpdate.currentStreak,
       longestStreak: streakUpdate.longestStreak,
-      isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0)
+      isNewStreak: streakUpdate.currentStreak > (currentStats.currentStreak || 0),
+      streakChanged: false
     };
     
   } catch (error) {
@@ -131,8 +133,8 @@ export const updateUserStreak = async (db, userId) => {
 export const updateUserAndPartyStreak = async (db, userId, currentPartyId = null) => {
   const streakResult = await updateUserStreak(db, userId);
   
-  // If user is in a party, update their member document too
-  if (currentPartyId && streakResult.isNewStreak) {
+  // If user is in a party and streak changed (increased OR reset), update their member document
+  if (currentPartyId && streakResult.streakChanged) {
     try {
       const memberRef = doc(db, 'parties', currentPartyId, 'members', userId);
       await updateDoc(memberRef, {
