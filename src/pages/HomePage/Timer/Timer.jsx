@@ -9,8 +9,9 @@ import { handleBossDefeat } from '../../../utils/bossUtils';
 import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
-import { updateUserAndPartyStreak } from '../../../utils/streakUtils';
+import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
 import { useTutorials } from '../../../contexts/TutorialContext';
+import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 
 function Timer({
   authUser,
@@ -22,7 +23,8 @@ function Timer({
 }) {
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile} = usePartyContext();
   const {incrementMinutes} = useUserDataContext();
-  
+  const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
+  const [streakAtRisk, setStreakAtRisk] = useState(false);
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
@@ -373,7 +375,7 @@ function Timer({
     
 }, [saveStudyTime, authUser, db, handleTimerComplete, selectedDuration]);
 
-  const startTimer = async () => {
+  const startTimer = async (skipStreakCheck = false) => {
     if (!authUser) return;
     
     correctSoundEffect.current.play().catch(err=>console.log(err));
@@ -389,6 +391,26 @@ function Timer({
       
       try {
         console.log(partyProfile?.id)
+        if (!skipStreakCheck) {
+          const userRef = doc(db, 'users', authUser.uid);
+          const userDoc = await getDoc(userRef);
+          const userData = userDoc.data();
+          const lastStudyDate = userData?.lastStudyDate?.toDate() || null;
+          
+          if (isStreakAtRisk(lastStudyDate)) {
+            const hasFreeze = (userData?.stats?.freezesAvailable || 0) > 0;
+            
+            if (!hasFreeze) {
+              setStreakAtRisk(true);
+              setShowStreakFreezePrompt(true);
+              startTimeRef.current = null;
+              pausedTimeRef.current = 0;
+              return;
+            }
+          }
+        }
+
+
         const streakResult = await updateUserAndPartyStreak(
           db, 
           authUser.uid, 
@@ -763,173 +785,185 @@ function Timer({
 
   // Render
   return (
-    <div className="w-full h-full bg-slate-800 rounded-lg p-3 flex flex-col justify-between text-slate-100 relative">
-      {!isSessionActive ? (
-        <>
-          <div className="flex-1 flex flex-col justify-center items-center space-y-4">
-            {/* <p className="text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
-            </p> */}
-            <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
-              {durations.map(d => (
-                <button key={d.value} onClick={() => selectDuration(d.value)}
-                  className={`p-3 rounded-lg font-medium ${selectedDuration===d.value?'bg-slate-600 text-slate-100 border border-2 border-slate-900/20':'bg-slate-900 text-slate-300 hover:bg-slate-700'}`}>
-                  {d.label}
-                </button>
-              ))}
+    <>
+      {showStreakFreezePrompt && (
+        <LimitReachedModal 
+          limitType="streak"
+          onClose={() => {
+            setShowStreakFreezePrompt(false);
+            startTimer(true);
+          }}
+        />
+      )}
+
+      <div className="w-full h-full bg-slate-800 rounded-lg p-3 flex flex-col justify-between text-slate-100 relative">
+        {!isSessionActive ? (
+          <>
+            <div className="flex-1 flex flex-col justify-center items-center space-y-4">
+              {/* <p className="text-slate-400 text-sm text-center max-w-md">
+                <span className='text-yellow-400'>Pro tip:</span> Come back after the timer ends to collect your rewards!
+              </p> */}
+              <div className="grid grid-cols-2 gap-3 w-full max-w-xs">
+                {durations.map(d => (
+                  <button key={d.value} onClick={() => selectDuration(d.value)}
+                    className={`p-3 rounded-lg font-medium ${selectedDuration===d.value?'bg-slate-600 text-slate-100 border border-2 border-slate-900/20':'bg-slate-900 text-slate-300 hover:bg-slate-700'}`}>
+                    {d.label}
+                  </button>
+                ))}
+              </div>
+
+              <button 
+                onClick={()=>startTimer()} 
+                className={`${hasNotStartedATimerSession ? 'animate-pulse' : ''} w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
+              >
+                Start {selectedDuration} Min Session
+              </button>
+              
+            <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
+                <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
+                  <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
+                  <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
+                  <span className="text-blue-400 font-semibold whitespace-nowrap">+{getCurrentRewards().mana} MP</span>
+                  <span className="text-orange-400 font-semibold whitespace-nowrap ">
+                    {getCurrentRewards().damage} DMG
+                  </span>
+                </div>
+                <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
+                  Return when timer ends to claim rewards
+                </p>
+              </div>
+            
+              {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
+                <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
+                <div className="flex justify-between space-x-2 items-center">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-yellow-400 font-medium">+{getCurrentRewards().xp}</span>
+                    <span className="text-slate-400 text-xs">XP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-red-500 font-medium">+{getCurrentRewards().health}</span>
+                    <span className="text-slate-400 text-xs">HP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-blue-500 font-medium">+{getCurrentRewards().mana}</span>
+                    <span className="text-slate-400 text-xs">MANA</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-red-400 font-medium">{getCurrentRewards().damage}</span>
+                    <span className="text-slate-400 text-xs">DMG</span>
+                  </div>
+                </div>
+              </div> */}
+              
+            
+              
             </div>
 
-            <button 
-              onClick={startTimer} 
-              className={`${hasNotStartedATimerSession ? 'animate-pulse' : ''} w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
-            >
-              Start {selectedDuration} Min Session
-            </button>
-             
-           <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
-              <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
-                <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
-                <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
-                <span className="text-blue-400 font-semibold whitespace-nowrap">+{getCurrentRewards().mana} MP</span>
-                <span className="text-orange-400 font-semibold whitespace-nowrap ">
-                  {getCurrentRewards().damage} DMG
-                </span>
+            
+          
+          </>
+        ) : showCompletion ? (
+          <>
+            <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">
+              <div>
+                  <img 
+                    src="/images/sword-x.png"
+                    alt="sword-x image"
+                    className="w-24 h-24 object-contain"
+                  />
+
               </div>
-              <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
-                Return when timer ends to claim rewards
+              <h2 className="text-2xl font-bold text-green-400">Session Complete!</h2>
+              <p className="text-slate-300">Great work on your {selectedDuration} minute session</p>
+              
+              <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg w-full max-w-xs">
+                <p className="text-sm text-slate-400 mb-3">Rewards Earned:</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-300">Experience</span>
+                    <span className="text-yellow-500 font-bold">+{getCurrentRewards().xp} XP</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-300">Health</span>
+                    <span className="text-red-500 font-bold">+{getCurrentRewards().health} HP</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-300">Mana</span>
+                    <span className="text-blue-500 font-bold">+{getCurrentRewards().mana} MANA</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-300">Boss Damage</span>
+                    <span className="text-red-400 font-bold">{getCurrentRewards().damage} DMG</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* <ServerCostBanner /> */}
+
+            <button onClick={resetTimer} className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg">
+              Start New Session
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="text-left">
+              <h2 className="text-lg font-semibold mb-1">Session Active</h2>
+              <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
+              <span className='text-yellow-400'>Pro tip:</span> Set an alarm on your phone to remind you when to return!
               </p>
             </div>
-           
-            {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
-              <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
-              <div className="flex justify-between space-x-2 items-center">
-                <div className="flex items-center space-x-1">
-                  <span className="text-yellow-400 font-medium">+{getCurrentRewards().xp}</span>
-                  <span className="text-slate-400 text-xs">XP</span>
+
+            <div className="flex-1 flex flex-col justify-center items-center">
+              <div className="relative mb-6">
+                <div className="w-48 h-48 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="text-5xl font-bold">{formatTime(timeLeft)}</div>
+                    <div className="text-slate-400 text-sm mt-2">{Math.round(progress)}%</div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-red-500 font-medium">+{getCurrentRewards().health}</span>
-                  <span className="text-slate-400 text-xs">HP</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-blue-500 font-medium">+{getCurrentRewards().mana}</span>
-                  <span className="text-slate-400 text-xs">MANA</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-red-400 font-medium">{getCurrentRewards().damage}</span>
-                  <span className="text-slate-400 text-xs">DMG</span>
-                </div>
+                <svg className="absolute inset-0 w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="46" stroke="transparent" strokeWidth="4" fill="none"/>
+                  <circle cx="50" cy="50" r="46" stroke="#ef4444" strokeWidth="4" fill="none" strokeLinecap="round"
+                    strokeDasharray={`${2*Math.PI*46}`} strokeDashoffset={`${2*Math.PI*46*(1-progress/100)}`}
+                    className="transition-all duration-1000 ease-out"/>
+                </svg>
               </div>
-            </div> */}
-            
-           
-            
-          </div>
 
-          
-         
-        </>
-      ) : showCompletion ? (
-        <>
-          <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">
-            <div>
-                <img 
-                  src="/images/sword-x.png"
-                  alt="sword-x image"
-                  className="w-24 h-24 object-contain"
-                />
-
-            </div>
-            <h2 className="text-2xl font-bold text-green-400">Session Complete!</h2>
-            <p className="text-slate-300">Great work on your {selectedDuration} minute session</p>
-            
-            <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg w-full max-w-xs">
-              <p className="text-sm text-slate-400 mb-3">Rewards Earned:</p>
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Experience</span>
-                  <span className="text-yellow-500 font-bold">+{getCurrentRewards().xp} XP</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Health</span>
-                  <span className="text-red-500 font-bold">+{getCurrentRewards().health} HP</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Mana</span>
-                  <span className="text-blue-500 font-bold">+{getCurrentRewards().mana} MANA</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-300">Boss Damage</span>
-                  <span className="text-red-400 font-bold">{getCurrentRewards().damage} DMG</span>
+              <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full max-w-xs">
+                <p className="text-sm text-slate-400 mb-2 text-center">Earning per minute:</p>
+                <div className="flex justify-between items-center text-sm">
+                  <div className="flex items-center space-x-1">
+                    <span className="text-yellow-500 font-medium">{Math.round(getCurrentRewards().xp/selectedDuration)}</span>
+                    <span className="text-slate-400">XP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-blue-500 font-medium">{Math.round(getCurrentRewards().mana/selectedDuration)}</span>
+                    <span className="text-slate-400">MANA</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-green-400 font-medium">{Math.round(getCurrentRewards().health/selectedDuration)}</span>
+                    <span className="text-slate-400">HP</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <span className="text-red-400 font-medium">{Math.round(getCurrentRewards().damage/selectedDuration)}</span>
+                    <span className="text-slate-400">DMG</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* <ServerCostBanner /> */}
-
-          <button onClick={resetTimer} className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg">
-            Start New Session
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="text-left">
-            <h2 className="text-lg font-semibold mb-1">Session Active</h2>
-            <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
-            <span className='text-yellow-400'>Pro tip:</span> Set an alarm on your phone to remind you when to return!
-            </p>
-          </div>
-
-          <div className="flex-1 flex flex-col justify-center items-center">
-            <div className="relative mb-6">
-              <div className="w-48 h-48 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-5xl font-bold">{formatTime(timeLeft)}</div>
-                  <div className="text-slate-400 text-sm mt-2">{Math.round(progress)}%</div>
-                </div>
-              </div>
-              <svg className="absolute inset-0 w-48 h-48 transform -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="46" stroke="transparent" strokeWidth="4" fill="none"/>
-                <circle cx="50" cy="50" r="46" stroke="#ef4444" strokeWidth="4" fill="none" strokeLinecap="round"
-                  strokeDasharray={`${2*Math.PI*46}`} strokeDashoffset={`${2*Math.PI*46*(1-progress/100)}`}
-                  className="transition-all duration-1000 ease-out"/>
-              </svg>
+            <div className="flex space-x-3">
+              <button onClick={isRunning ? pauseTimer : startTimer}
+                className={`flex-1 font-medium py-3 rounded-lg ${isRunning?'bg-slate-700 text-slate-200':'bg-green-600 text-white hover:bg-green-500'}`}>
+                {isRunning?'Pause':'Resume'}
+              </button>
+              <button onClick={resetTimer} className="flex-1 bg-slate-700 text-slate-200 hover:bg-slate-600 py-3 rounded-lg">Reset</button>
             </div>
-
-            <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full max-w-xs">
-              <p className="text-sm text-slate-400 mb-2 text-center">Earning per minute:</p>
-              <div className="flex justify-between items-center text-sm">
-                <div className="flex items-center space-x-1">
-                  <span className="text-yellow-500 font-medium">{Math.round(getCurrentRewards().xp/selectedDuration)}</span>
-                  <span className="text-slate-400">XP</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-blue-500 font-medium">{Math.round(getCurrentRewards().mana/selectedDuration)}</span>
-                  <span className="text-slate-400">MANA</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-green-400 font-medium">{Math.round(getCurrentRewards().health/selectedDuration)}</span>
-                  <span className="text-slate-400">HP</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <span className="text-red-400 font-medium">{Math.round(getCurrentRewards().damage/selectedDuration)}</span>
-                  <span className="text-slate-400">DMG</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex space-x-3">
-            <button onClick={isRunning ? pauseTimer : startTimer}
-              className={`flex-1 font-medium py-3 rounded-lg ${isRunning?'bg-slate-700 text-slate-200':'bg-green-600 text-white hover:bg-green-500'}`}>
-              {isRunning?'Pause':'Resume'}
-            </button>
-            <button onClick={resetTimer} className="flex-1 bg-slate-700 text-slate-200 hover:bg-slate-600 py-3 rounded-lg">Reset</button>
-          </div>
-        </>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </>
   );
 }
 

@@ -222,8 +222,8 @@ const TryNowPage = () => {
               <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-slate-500/30 max-w-6xl mx-auto">
                 <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center px-4">
                   Here's Where <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent ">
-              Mastery
-            </span> Changes Everything
+                  Mastery
+                  </span> Changes Everything
                 </h3>
                 
                 {/* 3 COLUMNS - Stack on mobile, side-by-side on desktop */}

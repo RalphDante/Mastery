@@ -14,6 +14,14 @@ initializeApp();
 const db = getFirestore();
 
 
+function getWeekKey(date) {
+  const year = date.getFullYear();
+  const startOfYear = new Date(year, 0, 1);
+  const days = Math.floor((date - startOfYear) / (24 * 60 * 60 * 1000));
+  const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+  return `${year}-W${String(weekNumber).padStart(2, '0')}`;
+}
+
 // ======================
 // MAILER LITE HELPER FUNCTION
 // ======================
@@ -342,6 +350,13 @@ async function handleSubscriptionUpdate(data, environment) {
       updateData['limits.maxDecks'] = -1;
       updateData['limits.maxSmartReviewDecks'] = -1;
       updateData['limits.maxFolders'] = -1;
+
+      const currentWeek = getWeekKey(new Date());
+      updateData['stats.freezesAvailable'] = 1;
+      updateData['stats.lastFreezeWeek'] = currentWeek;
+      console.log(`🧊 Initialized streak freeze for new pro user ${userId}`);
+
+  
 
       // Update avatar to knight when upgrading to pro
       updateData['avatar'] = 'knight-idle';

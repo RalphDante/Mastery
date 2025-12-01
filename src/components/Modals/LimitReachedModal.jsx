@@ -39,6 +39,11 @@ function LimitReachedModal({ limitType, onClose }) {
           title: "Unlock Private Parties!",
           emoji: "👥",
           subtitle: "Decide who deserves to join your party"
+      },
+      streak: {  // ✅ ADD THIS
+          title: "Your Streak is at Risk!",
+          emoji: "⚠️",
+          subtitle: "Protect your progress with Pro"
       }
   };
 
