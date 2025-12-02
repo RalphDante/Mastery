@@ -29,29 +29,29 @@ export const PARTY_CONFIG = {
 
 export const findAvailableParty = async () => {
   try {
-
     const partiesRef = collection(db, 'parties');
-    // Damage to a boss within a day bossDamage counts as an active party
     const cutoff = new Date(Date.now() - 7*24*60*60*1000);
+    
+    // Query with only ONE range filter
     const q = query(
       partiesRef, 
-      where('memberCount', '<', PARTY_CONFIG.MAX_MEMBERS),
       where('isActive', '==', true),
-      where('currentBoss.lastDamageAt', '>=', cutoff),
-      limit(10) // Get more results to filter in-memory
+      where('currentBoss.lastDamageAt', '>=', cutoff),  // Keep this range filter
+      limit(20) // Get more results to filter client-side
     );
     
     const querySnapshot = await getDocs(q);
     
     const publicParties = querySnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(party => party.isPublic !== false)
+      .filter(party => 
+        party.isPublic !== false && 
+        party.memberCount < PARTY_CONFIG.MAX_MEMBERS  // ← Filter memberCount HERE
+      )
       .sort((a, b) => {
-        // First priority: fewer members (don't join nearly-full parties)
         if (a.memberCount !== b.memberCount) {
           return a.memberCount - b.memberCount;
         }
-        // Second priority: most recent activity
         const timeA = a.currentBoss.lastDamageAt?.toMillis() || 0;
         const timeB = b.currentBoss.lastDamageAt?.toMillis() || 0;
         return timeB - timeA;
