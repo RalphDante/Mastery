@@ -48,7 +48,7 @@ function Boss() {
           </div>
         </div>
       ) : (
-         <div className="w-full h-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+         <div className="w-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
       
           {bossStatus ? 
             <CurrentBossFight /> : 

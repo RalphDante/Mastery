@@ -252,16 +252,17 @@ function FlashCardUI({
         try {
             console.log(partyProfile?.id)
             const streakResult = await updateUserAndPartyStreak(
-            db, 
-            user.uid, 
-            partyProfile?.id
-        );
+                db, 
+                user.uid, 
+                partyProfile?.id
+            );
 
             updateUserProfile({
-            streak: streakResult.currentStreak || 1
+                streak: streakResult.currentStreak || 1,
+                longestStreak: streakResult.longestStreak || 1
+                
+            });
             
-        });
-        
         if (streakResult.isNewStreak) {
             console.log(`🔥 Streak maintained! ${streakResult.currentStreak} days`);
         }

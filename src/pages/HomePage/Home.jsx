@@ -17,6 +17,8 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
 
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
+import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
+import SingularMastery from './Overall Mastery/SingularMastery.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -173,7 +175,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
             {isDesktop ? 
               <div className="hidden lg:grid lg:grid-cols-2 gap-6 mb-6 items-start">
               
-                <div className="order-2 lg:order-1">
+                <div className="order-2 space-y-6 lg:order-1">
+
                   <Options 
                     db = {db}
                     authUser = {user}
@@ -182,11 +185,13 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                     handleTimerStart={handleTimerStart}
                     handleTimerComplete={handleTimerComplete}
                   />
-                  <MiniLeaderboard />
+                  <SingularMastery />
+
 
                 </div>
                 <div className='order-1 lg:order-2'>
                   <Boss />
+                  <MiniLeaderboard />
                   
                 </div>
 
@@ -236,7 +241,12 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
               {/* Content Area For Mobile Devices */}
               <div className="grid grid-cols-1 gap-6 mb-6">
                 {showBoss ? (
-                  <Boss />
+                  <div className="space-y-6">
+
+                    <Boss />
+                    <MiniLeaderboard />  
+                  </div>
+                  
                 ) : (
                   <div className="space-y-6">
                     <Options 
@@ -247,7 +257,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                       handleTimerStart={handleTimerStart}
                       handleTimerComplete={handleTimerComplete}
                     />
-                    <MiniLeaderboard />  {/* ← Moved here, always visible */}
+
+                    <SingularMastery />
                   </div>
                 )}
               </div>
@@ -263,6 +274,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
             /> */}
 
         </div>
+    
 
 
       </main>

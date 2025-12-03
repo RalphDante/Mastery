@@ -101,18 +101,16 @@ export const UserDataProvider = ({ children }) => {
                 if (sessionDoc.exists()) {
                     const data = sessionDoc.data();
                     sessionData = {
-                        minutes: data.minutesStudied || 0,
-                        spacedRep: data.spacedSessions || 0,
-                        cramming: data.crammingSessions || 0
+                        minutesStudied: data.minutesStudied || 0,
+                        cardsReviewed: data.cardsReviewed || 0
                     };
                 }
                 
                 last7Days.push({
                     day: dayName,
                     date: dateStr,
-                    minutes: Math.round(sessionData.minutes),
-                    spacedRep: sessionData.spacedRep,
-                    cramming: sessionData.cramming,
+                    minutesStudied: Math.round(sessionData.minutesStudied),
+                    cardsReviewed: sessionData.cardsReviewed,
                     isToday: i === 0
                 });
             }
@@ -138,15 +136,30 @@ export const UserDataProvider = ({ children }) => {
     }, [user?.uid, fetchTodaySession]);
 
     // Fetch daily sessions when user changes
-    // useEffect(() => {
-    //     if (user?.uid) {
-    //         fetchDailySessions(user.uid);
-    //     } else {
-    //         setDailySessions([]);
-    //     }
-    // }, [user?.uid, fetchDailySessions]);
+    useEffect(() => {
+        if (user?.uid) {
+            fetchDailySessions(user.uid);
+        } else {
+            setDailySessions([]);
+        }
+    }, [user?.uid, fetchDailySessions]);
 
-   
+   // Sync todaySession changes into dailySessions array
+    useEffect(() => {
+        if (todaySession.date && dailySessions.length > 0) {
+            setDailySessions(prev => 
+                prev.map(day => 
+                    day.isToday 
+                        ? { 
+                            ...day, 
+                            minutesStudied: Math.round(todaySession.minutesStudied),
+                            cardsReviewed: todaySession.cardsReviewed 
+                          }
+                        : day
+                )
+            );
+        }
+    }, [todaySession.minutesStudied, todaySession.cardsReviewed]);
 
     const value = {
         dailySessions,

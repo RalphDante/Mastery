@@ -30,6 +30,7 @@ function Timer({
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
   const sessionTimerRef = useRef(null);
   const lastSaveRef = useRef(0);               // Track last save in SECONDS not ref ticks
+
   const isSavingRef = useRef(false);
   const audioRef = useRef(null);
 
@@ -418,8 +419,8 @@ function Timer({
         );
 
         updateUserProfile({
-          streak: streakResult.currentStreak || 1
-          
+          streak: streakResult.currentStreak || 1,
+          longestStreak: streakResult.longestStreak || 1
         });
         
         if (streakResult.isNewStreak) {

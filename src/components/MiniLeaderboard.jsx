@@ -121,14 +121,14 @@ export default function MiniLeaderboard() {
 
           {/* ────── CTA ────── */}
           <div className="pt-2">
-            <button
-              onClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
-            >
-              Start Studying Now
-            </button>
+          <button
+            onClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="w-full border-2 border-purple-500/30 hover:border-purple-500/50 text-purple-300 hover:text-purple-200 font-medium py-2 px-4 rounded-xl transition-all duration-200 hover:bg-purple-500/10"
+          >
+            Start Studying Now
+          </button>
           </div>
         </div>
 

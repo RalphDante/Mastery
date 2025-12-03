@@ -2,13 +2,13 @@
 import React from 'react';
 import { Trophy, Flame, Target, TrendingUp, Clock, Brain, Star, Zap, BookOpen } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-
+import { useStudyStats } from '../../../contexts/UserDataContext';
 
 function OverallMasteryV2(){
   const { dailySessions, todaySession, currentStreak, longestStreak } = useStudyStats();
 
   const todayStats = {
-    minutesStudied: Math.round(todaySession.minutes),
+    minutesStudied: todaySession?.minutesStudied ?? 0,
     cardsStudied: todaySession.spacedRep + todaySession.cramming,
     currentStreak,
     bestStreak: longestStreak
@@ -122,7 +122,7 @@ function OverallMasteryV2(){
               <Tooltip content={<CustomTooltip />} />
               <Line 
                 type="monotone" 
-                dataKey="minutes" 
+                dataKey="minutesStudied" 
                 stroke="#10B981" 
                 strokeWidth={3}
                 dot={(props) => {

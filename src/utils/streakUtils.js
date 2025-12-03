@@ -212,7 +212,8 @@ export const updateUserAndPartyStreak = async (db, userId, currentPartyId = null
     try {
       const memberRef = doc(db, 'parties', currentPartyId, 'members', userId);
       await updateDoc(memberRef, {
-        streak: streakResult.currentStreak
+        streak: streakResult.currentStreak,
+        longestStreak: streakResult.longestStreak
       });
     } catch (error) {
       console.error('Error updating party member streak:', error);
