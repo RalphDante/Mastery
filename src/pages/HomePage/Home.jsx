@@ -17,7 +17,7 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
 
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
-import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
+// import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
