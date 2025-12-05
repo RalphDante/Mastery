@@ -134,6 +134,8 @@ export const AuthProvider = ({ children }) => {
             avatar: "warrior_01",
             prefersSolo: false,
             lastBossAttackAt: null,
+            title: "progression-1",
+            unlockedTitles: [],
             
             stats: {
                 totalReviews: 0,

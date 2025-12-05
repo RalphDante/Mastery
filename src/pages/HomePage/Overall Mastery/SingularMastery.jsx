@@ -4,6 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useStudyStats } from '../../../contexts/UserDataContext';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { usePartyContext } from '../../../contexts/PartyContext';
+import { useNavigate } from 'react-router-dom';
 
 function SingularMastery() {
     const { dailySessions, todaySession, currentStreak, longestStreak } = useStudyStats();
@@ -15,6 +16,8 @@ function SingularMastery() {
     const currentUserLongestStreak = currentUser?.longestStreak || 0;
 
     const isPro = userProfile?.subscription?.tier === 'pro'; 
+
+    const navigate = useNavigate();
 
    
 
@@ -187,7 +190,9 @@ function SingularMastery() {
               <p className="text-slate-300 mb-6 max-w-sm">
                 Track your study trends, identify patterns, and stay motivated with weekly insights
               </p>
-              <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold px-8 py-3 rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30">
+              <button className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold px-8 py-3 rounded-xl transition-all transform hover:scale-105 shadow-lg shadow-purple-500/30"
+                onClick={()=>{navigate('/pricing')}}
+              >
                 Upgrade to Pro
               </button>
             </div>

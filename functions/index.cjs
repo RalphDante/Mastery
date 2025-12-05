@@ -406,10 +406,10 @@ exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) =
     const avatarChanged = beforeData.avatar !== afterData.avatar;
     const tierChanged = beforeData.subscription?.tier !== afterData.subscription?.tier;
     const nameChanged = beforeData.displayName !== afterData.displayName;
+    const titleChanged = beforeData.title !== afterData.title;
 
     
-    // Only proceed if avatar or tier changed
-    if (!avatarChanged && !tierChanged && !nameChanged) {
+    if (!avatarChanged && !tierChanged && !nameChanged && !titleChanged) {
       return;
     }
     
@@ -424,6 +424,7 @@ exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) =
     console.log(`👤 User ${userId} data changed:`, {
       avatarChanged,
       tierChanged,
+      titleChanged,
       newAvatar: afterData.avatar,
       newTier: afterData.subscription?.tier
     });
@@ -434,6 +435,7 @@ exports.onUserAvatarUpdate = onDocumentUpdated('users/{userId}', async (event) =
     if (avatarChanged) updates.avatar = afterData.avatar;
     if (tierChanged) updates.tier = afterData.subscription?.tier || 'free';
     if (nameChanged) updates.displayName = afterData.displayName;
+    if (titleChanged) updates.title = afterData.title;
     
     // Sync to party membership (pass partyId to avoid extra read)
     await updateUserInParties(userId, updates, afterData.currentPartyId);
@@ -1343,7 +1345,9 @@ exports.dailyLeaderboardUpdate = onSchedule(
           avatar: userData.avatar || 'warrior_01',
           level: userData.level || 1,
           isPro: userData.subscription?.tier === 'pro' || false,
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
+          title: userData.title || null,
+          streak: userData.stats?.currentStreak || 0
         }, { merge: true });
         
         batchCount++;
@@ -1362,7 +1366,9 @@ exports.dailyLeaderboardUpdate = onSchedule(
           avatar: userData.avatar || 'warrior_01',
           level: userData.level || 1,
           isPro: userData.subscription?.tier === 'pro' || false,
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
+          title: userData.title || null,
+          streak: userData.stats?.currentStreak || 0
         }, { merge: true });
         
         batchCount++;
@@ -1423,7 +1429,9 @@ exports.getWeeklyLeaderboard = onCall(async (request) => {
         minutes: data.minutes || 0,
         avatar: data.avatar || 'warrior_01',
         level: data.level || 1,
-        isPro: data.isPro || false
+        isPro: data.isPro || false,
+        streak: data.streak || 0,          
+        title: data.title 
       };
     });
     

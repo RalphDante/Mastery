@@ -1,8 +1,9 @@
 // components/LeaderboardList.jsx
-import { Trophy } from 'lucide-react';
+import { Trophy, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { getAvatarPath } from '../../configs/avatarConfig';
+import { getDisplayTitle } from '../../configs/titlesConfig';
 
 function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false }) {
   const navigate = useNavigate();
@@ -29,10 +30,11 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
   return (
     <div className="bg-slate-800/70 border border-slate-700 rounded-2xl shadow-lg overflow-hidden">
       {/* Header - Hidden on mobile, shown on md+ */}
-      <div className="hidden md:grid md:grid-cols-4 px-4 py-3 text-sm font-semibold text-slate-400 border-b border-slate-700">
+      <div className="hidden md:grid md:grid-cols-[80px_1fr_120px_100px_120px] px-4 py-3 text-sm font-semibold text-slate-400 border-b border-slate-700">
         <span>Rank</span>
         <span>Player</span>
         <span>Level</span>
+        <span className="text-center">Streak</span>
         <span className="text-right">Minutes</span>
       </div>
 
@@ -44,20 +46,26 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
           const isPro = player.isPro;
           const isTopPro = isPro && isTop3;
           const avatarPath = getAvatarPath(player.avatar);
+          
+          // Get player's title
+          const playerTitle = getDisplayTitle({
+            level: player.level,
+            title: player.title
+          });
 
           return (
             <div
               key={player.userId}
               className={`
-                flex flex-col md:grid md:grid-cols-4 gap-3 md:gap-0 px-4 py-4 md:py-3 items-start md:items-center
+                flex flex-col md:grid md:grid-cols-[80px_1fr_120px_100px_120px] gap-3 md:gap-4 px-4 py-4 md:py-3 items-start md:items-center
                 transition-all cursor-default
                 ${isTop3 ? 'bg-gradient-to-r from-purple-800/20 to-transparent' : ''}
                 ${isPro && !isTop3 ? 'bg-gradient-to-r from-purple-900/10 to-transparent' : ''}
                 ${isTopPro ? 'ring-2 ring-yellow-500/70' : ''}
               `}
             >
-              {/* Mobile: Rank + Trophy at top */}
-              <div className="flex items-center gap-2 font-semibold w-full md:w-auto md:justify-start">
+              {/* Rank + Trophy */}
+              <div className="flex items-center gap-2 font-semibold w-full md:w-auto">
                 {isTop3 && (
                   <Trophy
                     className={`w-5 h-5 md:w-4 md:h-4 ${
@@ -72,7 +80,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
                 <span className="text-slate-200 text-lg md:text-base">#{rank}</span>
               </div>
 
-              {/* Avatar + Name + Pro Badge */}
+              {/* Avatar + Name + Title */}
               <div className="flex items-center gap-3 w-full md:w-auto">
                 <div className="relative flex-shrink-0">
                   {avatarPath ? (
@@ -105,14 +113,42 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
                   <p className="font-medium text-slate-100 truncate">
                     {player.displayName || 'Anonymous'}
                   </p>
-                  <p className="text-xs text-slate-400 md:hidden">
+                  {/* Title below name */}
+                  {playerTitle && (
+                    <p 
+                      className="text-xs font-medium truncate"
+                      style={{ color: playerTitle.color }}
+                    >
+                      {playerTitle.icon && `${playerTitle.icon} `}
+                      {playerTitle.title}
+                    </p>
+                  )}
+                  {/* Show level on mobile only */}
+                  <p className="text-xs text-slate-400 md:hidden mt-0.5">
                     Level {player.level || '-'}
                   </p>
                 </div>
               </div>
 
-              {/* Level - Hidden on mobile (shown in name block) */}
-              <span className="hidden md:block text-slate-300">{player.level || '-'}</span>
+              {/* Level - Hidden on mobile */}
+              <span className="hidden md:block text-slate-300 text-center">
+                {player.level || '-'}
+              </span>
+
+              {/* Streak */}
+              <div className="flex items-center justify-center gap-1.5 w-full md:w-auto">
+                <Flame 
+                  className={`w-5 h-5 md:w-4 md:h-4 ${
+                    (player.streak || 0) > 0 ? 'text-orange-500' : 'text-slate-600'
+                  }`}
+                />
+                <span className={`font-semibold ${
+                  (player.streak || 0) > 0 ? 'text-orange-400' : 'text-slate-500'
+                }`}>
+                  {player.streak || 0}
+                </span>
+                <span className="text-xs text-slate-500 md:hidden">day streak</span>
+              </div>
 
               {/* Minutes */}
               <div className="flex justify-between md:justify-end w-full md:w-auto text-right">
@@ -146,7 +182,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
         <div className="px-4 py-3 bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-t border-slate-700 text-center">
           <p className="text-sm text-slate-300 mb-2">
             Only <strong>Top 25</strong> shown for free. 
-            <strong className="text-purple-300">Pro unlocks the full leaderboard.</strong>
+            <strong className="text-purple-300"> Pro unlocks the full leaderboard.</strong>
           </p>
           <button
             onClick={() => navigate('/pricing')}

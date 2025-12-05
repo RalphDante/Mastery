@@ -13,6 +13,7 @@ import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { getAvatarPath } from '../../../configs/avatarConfig';
 import AvatarWithPlatform from '../../../components/AvatarWithPlatform';
+import { getDisplayTitle, getProgressionTitle } from '../../../configs/titlesConfig';
 
 function PartySection() {
 
@@ -28,9 +29,24 @@ function PartySection() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const navigate = useNavigate();
 
-  
+  // Party Profile
+  const currentUser = user?.uid ? partyMembers[user.uid] : null;
+  const currentUserStreak = currentUser?.streak || 0;
+
+  // Personal Profile
+
+
+  // Title
+  const currentProgressionTitle = getProgressionTitle(currentUserPersonalProfile?.level);
+  const displayedTitle = currentUserPersonalProfile?.title 
+  ? getDisplayTitle({
+      level: currentUserPersonalProfile?.level,
+      title: currentUserPersonalProfile?.title
+    })
+  : currentProgressionTitle;
+
+  const navigate = useNavigate();
 
   // Handler for toggling privacy
   const handleTogglePrivacy = async () => {
@@ -102,9 +118,7 @@ function PartySection() {
     ...data
   }));
 
-  // Party Profile
-  const currentUser = user?.uid ? partyMembers[user.uid] : null;
-  const currentUserStreak = currentUser?.streak || 0;
+
 
   // Calculate EXP progress for current level
   const expProgress = currentUser 
@@ -167,7 +181,8 @@ function PartySection() {
                 <EditProfile />
               </div>
 
-              <p className="text-xs text-slate-400">Lv.{currentUser?.level}</p>
+              <p className="text-xs text-slate-400">Lv.{currentUser?.level} - <span style={{color: displayedTitle?.color}}>{displayedTitle?.title}</span></p>
+
             </div>
 
             <div className='flex flex-col w-full gap-2'>
@@ -297,7 +312,10 @@ function PartySection() {
               {partyMembersArray.map((member) => {
                 const memberExpProgress = getExpProgressForMember(member);
                 const isCurrentUser = member.userId === user?.uid;
-                
+                const memberTitle = getDisplayTitle({
+                  level: member.level,
+                  title: member.title,
+                });
                 return (
                   <div 
                     key={member.userId}
@@ -338,7 +356,14 @@ function PartySection() {
                               }
                           </div>
                           
-                          <p className="text-xs text-slate-400">Lv.{member.level}</p>
+                          <p className="text-xs text-slate-400">
+                            Lv.{member.level} - 
+                            {memberTitle && (
+                              <span style={{ color: memberTitle.color }}>
+                                {' '}{memberTitle.title}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
 

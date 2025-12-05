@@ -10,12 +10,14 @@ import { useEffect } from "react";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { X } from "lucide-react";
 import { getAvatarPath } from "../../configs/avatarConfig";
+import TitlesSection from "./TitlesSection";
 
 function EditProfile() {
     const {user, userProfile, updateUserProfile} = useAuthContext();
     const { updateUserProfile: updatePartyProfile } = usePartyContext();
     const {isTutorialAtStep} = useTutorials();
     const [selectedAvatar, setSelectedAvatar] = useState(userProfile?.avatar || "");
+    const [selectedTitle, setSelectedTitle] = useState(userProfile?.title || "");
     const [displayName, setDisplayName] = useState(userProfile?.displayName || "");
     const [showModal, setShowModal] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -70,6 +72,7 @@ function EditProfile() {
         const currentAvatar = userProfile?.avatar || "";
         const userId = user?.uid;
         const lastNameChangeAt = userProfile?.lastNameChangeAt;
+        const currentTitle = userProfile?.title;
 
         // Validate user ID exists
         if (!userId) {
@@ -115,6 +118,11 @@ function EditProfile() {
         // Check if avatar changed (and is valid) - NO cooldown for avatar
         if (selectedAvatar && currentAvatar !== selectedAvatar) {
             updates.avatar = selectedAvatar;
+            hasChanges = true;
+        }
+
+        if (selectedTitle && currentTitle !== selectedTitle) {
+            updates.title = selectedTitle;
             hasChanges = true;
         }
 
@@ -343,12 +351,19 @@ function EditProfile() {
                     </span>
                   </div>
                 </div>
+                
 
+                <TitlesSection 
+                  selectedTitle={selectedTitle}
+                  setSelectedTitle={setSelectedTitle}
+                />
                 {/* Avatar Selection Preview */}
                 <AvatarSelection 
                     selectedAvatar={selectedAvatar}
                     setSelectedAvatar={setSelectedAvatar}
                 />
+
+              
 
                 {/* Error Message */}
                 {saveError && (
