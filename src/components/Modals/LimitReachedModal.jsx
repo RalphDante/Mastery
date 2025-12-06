@@ -44,7 +44,12 @@ function LimitReachedModal({ limitType, onClose }) {
           title: "Your Streak is at Risk!",
           emoji: "⚠️",
           subtitle: "Protect your progress with Pro"
-      }
+      },
+        analytics: {
+        title: "Unlock 30-Day Analytics!",
+        emoji: "📊",
+        subtitle: "See your complete monthly progress"
+    }
   };
 
   const msg = messages[limitType] || messages.cards;

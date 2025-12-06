@@ -25,6 +25,7 @@ export const UserDataProvider = ({ children }) => {
     const { user, userProfile } = useAuthContext();
     const [dailySessions, setDailySessions] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [extendedSessions, setExtendedSessions] = useState([]);
 
     const [todaySession, setTodaySession] = useState({ 
         minutesStudied: 0, 
@@ -109,7 +110,7 @@ export const UserDataProvider = ({ children }) => {
                 last7Days.push({
                     day: dayName,
                     date: dateStr,
-                    minutesStudied: Math.round(sessionData.minutesStudied),
+                    minutesStudied: Math.round(sessionData.minutesStudied) || 0,
                     cardsReviewed: sessionData.cardsReviewed,
                     isToday: i === 0
                 });
@@ -122,6 +123,65 @@ export const UserDataProvider = ({ children }) => {
             setIsLoading(false);
         }
     }, []);
+
+    const fetchExtendedSessions = useCallback(async (userId) => {
+        if (!userId) return;
+
+        setIsLoading(true);
+        try {
+            const extended = [];
+            const today = new Date();
+            
+            // Start at day 7 (yesterday was day 6), go back to day 29
+            for (let i = 29; i >= 7; i--) {
+                const date = new Date(today);
+                date.setDate(today.getDate() - i);
+                const dateStr = getLocalDateString(date);
+                const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+                
+                const sessionDocRef = doc(db, 'users', userId, 'dailySessions', dateStr);
+                const sessionDoc = await getDoc(sessionDocRef);
+                
+                let sessionData = { minutesStudied: 0, cardsReviewed: 0 };
+                if (sessionDoc.exists()) {
+                    const data = sessionDoc.data();
+                    sessionData = {
+                        minutesStudied: data.minutesStudied || 0,
+                        cardsReviewed: data.cardsReviewed || 0
+                    };
+                }
+                
+                extended.push({
+                    day: dayName,
+                    date: dateStr,
+                    minutesStudied: Math.round(sessionData.minutesStudied) || 0,
+                    cardsReviewed: sessionData.cardsReviewed,
+                    isToday: false
+                });
+            }
+            
+            setExtendedSessions(extended);
+        } catch (error) {
+            console.error('Error fetching extended sessions:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    // Only fetch extended sessions for pro users
+    useEffect(() => {
+        if (user?.uid && userProfile?.subscription?.tier === 'pro') {
+            fetchExtendedSessions(user.uid);
+        } else {
+            setExtendedSessions([]);
+        }
+    }, [user?.uid, userProfile?.subscription?.tier, fetchExtendedSessions]);
+
+    // Helper to get combined 30-day data
+    const getFullThirtyDays = useCallback(() => {
+        // Combine: [days 7-29 (oldest first)] + [days 0-6 (recent)]
+        return [...extendedSessions, ...dailySessions];
+    }, [extendedSessions, dailySessions]);
 
     // Fetch today's session on mount
     useEffect(() => {
@@ -152,7 +212,7 @@ export const UserDataProvider = ({ children }) => {
                     day.isToday 
                         ? { 
                             ...day, 
-                            minutesStudied: Math.round(todaySession.minutesStudied),
+                            minutesStudied: Math.round(todaySession.minutesStudied) || 0,
                             cardsReviewed: todaySession.cardsReviewed 
                           }
                         : day
@@ -163,6 +223,8 @@ export const UserDataProvider = ({ children }) => {
 
     const value = {
         dailySessions,
+        extendedSessions,           // Days 8-30 (pro only)
+        getFullThirtyDays,  
         incrementMinutes,
         incrementReviewedCards,
         todaySession,
