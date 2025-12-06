@@ -8,7 +8,7 @@ import { useUserDataContext } from '../../../contexts/UserDataContext';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 
 function SingularMastery() {
-  const { dailySessions, todaySession, getFullThirtyDays } = useUserDataContext();
+  const { dailySessionsWithToday, todaySession, getFullThirtyDays } = useUserDataContext();
   const {userProfile, user} = useAuthContext();
 
   const [period, setPeriod] = useState('7d');
@@ -17,7 +17,7 @@ function SingularMastery() {
   const {partyMembers} = usePartyContext();
 
   // Get the full 30 days data
-  const fullThirtyDays = getFullThirtyDays();
+  const fullThirtyDays = getFullThirtyDays;
   
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
   const currentUserStreak = currentUser?.streak || 0;
@@ -32,7 +32,7 @@ function SingularMastery() {
 
 
   // Calculate stats based on period
-  const displayData = period === '7d' ? dailySessions : fullThirtyDays;
+  const displayData = period === '7d' ? dailySessionsWithToday : fullThirtyDays;
   const periodTotal = displayData.reduce((sum, day) => sum + day.minutesStudied, 0);
   const periodAverage = Math.round(periodTotal / displayData.length);
 
@@ -51,23 +51,24 @@ function SingularMastery() {
   };
 
   const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      const dataPoint = displayData.find(d => d.day === label);
-      const isToday = dataPoint?.isToday;
-      
-      return (
-        <div className="bg-slate-800/95 backdrop-blur-sm border border-purple-500/30 rounded-lg p-3 shadow-xl">
-          <p className="text-white font-semibold mb-1">
-            {label} {isToday && <span className="text-green-400 text-xs ml-1">● Today</span>}
-          </p>
-          <p className="text-green-400 text-sm font-medium">
-            {payload[0].value} minutes
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
+  if (active && payload && payload.length) {
+    // Get data directly from the payload instead of searching by day name
+    const value = payload[0].value;
+    const isToday = payload[0].payload.isToday;
+    
+    return (
+      <div className="bg-slate-800/95 backdrop-blur-sm border border-purple-500/30 rounded-lg p-3 shadow-xl">
+        <p className="text-white font-semibold mb-1">
+          {label} {isToday && <span className="text-green-400 text-xs ml-1">● Today</span>}
+        </p>
+        <p className="text-green-400 text-sm font-medium">
+          {value} minutes
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
   return (
     <>
@@ -146,11 +147,16 @@ function SingularMastery() {
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
               <XAxis 
-                dataKey="day" 
+                dataKey="date"  // Use date instead of day for unique identification
                 stroke="#9CA3AF" 
-                fontSize={12}
+                fontSize={11}
                 tickLine={false}
                 axisLine={false}
+                interval="preserveStartEnd"
+                tickFormatter={(value) => {
+                  const date = new Date(value);
+                  return date.toLocaleDateString('en', { weekday: 'short' });
+                }}
               />
               <YAxis 
                 stroke="#9CA3AF"
@@ -245,15 +251,21 @@ function SingularMastery() {
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <div className="text-slate-400 text-sm font-medium mb-1">Total Minutes</div>
-                <div className="text-3xl font-bold text-white">{periodTotal}</div>
+                <div className="text-3xl font-bold text-white">
+                  {fullThirtyDays.reduce((sum, day) => sum + day.minutesStudied, 0)}
+                </div>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <div className="text-slate-400 text-sm font-medium mb-1">Daily Average</div>
-                <div className="text-3xl font-bold text-white">{periodAverage}</div>
+                <div className="text-3xl font-bold text-white">
+                  {Math.round(fullThirtyDays.reduce((sum, day) => sum + day.minutesStudied, 0) / fullThirtyDays.length)}
+                </div>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50">
                 <div className="text-slate-400 text-sm font-medium mb-1">Active Days</div>
-                <div className="text-3xl font-bold text-white">{fullThirtyDays.filter(d => d.minutesStudied > 0).length}</div>
+                <div className="text-3xl font-bold text-white">
+                  {fullThirtyDays.filter(d => d.minutesStudied > 0).length}
+                </div>
               </div>
             </div>
 
@@ -268,13 +280,17 @@ function SingularMastery() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                  <XAxis 
-                    dataKey="day" 
+                 <XAxis 
+                    dataKey="date"  // Use date instead of day for unique identification
                     stroke="#9CA3AF" 
                     fontSize={11}
                     tickLine={false}
                     axisLine={false}
                     interval="preserveStartEnd"
+                    tickFormatter={(value) => {
+                      const date = new Date(value);
+                      return date.toLocaleDateString('en', { weekday: 'short' });
+                    }}
                   />
                   <YAxis 
                     stroke="#9CA3AF"

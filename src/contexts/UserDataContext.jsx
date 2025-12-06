@@ -1,8 +1,9 @@
 // contexts/UserDataContext.js - STUDY DATA & STATS
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../api/firebase';
 import { useAuthContext } from './AuthContext';
+
 
 const UserDataContext = createContext();
 
@@ -110,6 +111,7 @@ export const UserDataProvider = ({ children }) => {
                 last7Days.push({
                     day: dayName,
                     date: dateStr,
+                    label: `${dayName} ${dateStr.slice(5)}`, // e.g., "Sat 12-06"
                     minutesStudied: Math.round(sessionData.minutesStudied) || 0,
                     cardsReviewed: sessionData.cardsReviewed,
                     isToday: i === 0
@@ -154,6 +156,7 @@ export const UserDataProvider = ({ children }) => {
                 extended.push({
                     day: dayName,
                     date: dateStr,
+                    label: `${dayName} ${dateStr.slice(5)}`, // e.g., "Fri 11-07"
                     minutesStudied: Math.round(sessionData.minutesStudied) || 0,
                     cardsReviewed: sessionData.cardsReviewed,
                     isToday: false
@@ -177,11 +180,25 @@ export const UserDataProvider = ({ children }) => {
         }
     }, [user?.uid, userProfile?.subscription?.tier, fetchExtendedSessions]);
 
+    // Sync todaySession changes into dailySessions array
+    const dailySessionsWithToday = useMemo(() => {
+        if (!dailySessions.length) return dailySessions;
+        
+        return dailySessions.map(day => 
+            day.isToday 
+                ? { 
+                    ...day, 
+                    minutesStudied: Math.round(todaySession.minutesStudied) || 0,
+                    cardsReviewed: todaySession.cardsReviewed 
+                }
+                : day
+        );
+    }, [dailySessions, todaySession.minutesStudied, todaySession.cardsReviewed]);
+
     // Helper to get combined 30-day data
-    const getFullThirtyDays = useCallback(() => {
-        // Combine: [days 7-29 (oldest first)] + [days 0-6 (recent)]
-        return [...extendedSessions, ...dailySessions];
-    }, [extendedSessions, dailySessions]);
+    const getFullThirtyDays = useMemo(() => {
+        return [...extendedSessions, ...dailySessionsWithToday];
+    }, [extendedSessions, dailySessionsWithToday]);
 
     // Fetch today's session on mount
     useEffect(() => {
@@ -204,25 +221,10 @@ export const UserDataProvider = ({ children }) => {
         }
     }, [user?.uid, fetchDailySessions]);
 
-   // Sync todaySession changes into dailySessions array
-    useEffect(() => {
-        if (todaySession.date && dailySessions.length > 0) {
-            setDailySessions(prev => 
-                prev.map(day => 
-                    day.isToday 
-                        ? { 
-                            ...day, 
-                            minutesStudied: Math.round(todaySession.minutesStudied) || 0,
-                            cardsReviewed: todaySession.cardsReviewed 
-                          }
-                        : day
-                )
-            );
-        }
-    }, [todaySession.minutesStudied, todaySession.cardsReviewed]);
+   
 
     const value = {
-        dailySessions,
+        dailySessionsWithToday,
         extendedSessions,           // Days 8-30 (pro only)
         getFullThirtyDays,  
         incrementMinutes,
@@ -242,12 +244,12 @@ export const UserDataProvider = ({ children }) => {
 // Specialized hooks
 export const useStudyStats = () => {
     const { userProfile } = useAuthContext();
-    const { dailySessions, todaySession } = useUserDataContext();
+    const { dailySessionsWithToday, todaySession } = useUserDataContext();
     
     return {
         currentStreak: userProfile?.stats?.currentStreak || 0,
         longestStreak: userProfile?.stats?.longestStreak || 0,
-        dailySessions,
+        dailySessions: dailySessionsWithToday,
         todaySession
     };
 };
