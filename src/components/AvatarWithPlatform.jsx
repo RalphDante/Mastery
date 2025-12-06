@@ -107,8 +107,7 @@ function AvatarWithPlatform({
       {/* Streak badge with clipping container */}
       {showStreak && streak !== 0 && (
         <div className="absolute -top-2 left-0 right-0 h-8 overflow-hidden pointer-events-none">
-          <div className="absolute top-2 left-3 -translate-x-1/2 bg-orange-500 px-2 py-0.5 rounded-full border-2 border-slate-900 flex items-center gap-1 pointer-events-auto">
-            <span className="text-xs">🔥</span>
+          <div className="absolute top-2 left-3 -translate-x-1/2 bg-orange-500 px-2 py-0.5  border-2 border-slate-900 flex items-center gap-1 pointer-events-auto">
             <span className="text-xs font-bold text-white">{streak}</span>
           </div>
         </div>

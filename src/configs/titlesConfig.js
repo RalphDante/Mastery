@@ -61,8 +61,8 @@ export const SPECIAL_TITLES = {
     icon: "🎃", 
     rarity: "Seasonal 2025"
   },
-  top1_global: { 
-    id: "top1_global",
+  top1_monthly: { 
+    id: "top1_monthly",
     title: "World #1", 
     color: "#E91E63", 
     // icon: "🌍", 
@@ -75,6 +75,13 @@ export const SPECIAL_TITLES = {
     icon: "🧪", 
     rarity: "Early Supporter"
   },
+  top1_weekly: { 
+    id: "top1_weekly",
+    title: "The Honored One", 
+    color: "#b000e1ff", 
+    // icon: "🌍", 
+    rarity: "Achievement",
+  }
 };
 
 // Helper function to get progression title based on level
