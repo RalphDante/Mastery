@@ -123,9 +123,9 @@ export const generateFlashcardsFromText = async (text, user, isTopicGeneration =
         throw new Error('User not authenticated');
     }
 
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
     if (!apiKey) {
-        throw new Error('API key not configured');
+        throw new Error('Groq API key not configured');
     }
 
     // Determine flashcard count and prompt based on type
@@ -136,24 +136,24 @@ export const generateFlashcardsFromText = async (text, user, isTopicGeneration =
         flashcardCount = 25;
         promptText = `Create ${flashcardCount} educational flashcards about "${text}" AND a descriptive deck name.
 
-            CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-            {
-            "deckName": "Short descriptive name (max 50 chars)",
-            "flashcards": [
-                {"question": "Your question here", "answer": "Your answer here"}
-            ]
-            }
+CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+{
+  "deckName": "Short descriptive name (max 50 chars)",
+  "flashcards": [
+    {"question": "Your question here", "answer": "Your answer here"}
+  ]
+}
 
-            REQUIREMENTS:
-            - deckName should be descriptive (e.g., "World War II: Key Events")
-            - Exactly ${flashcardCount} flashcards
-            - Questions should be clear, specific, and educational
-            - Answers should be concise but complete
-            - Use proper JSON escaping
-            - No line breaks within strings
-            - Double quotes only
+REQUIREMENTS:
+- deckName should be descriptive (e.g., "World War II: Key Events")
+- Exactly ${flashcardCount} flashcards
+- Questions should be clear, specific, and educational
+- Answers should be concise but complete
+- Use proper JSON escaping
+- No line breaks within strings
+- Double quotes only
 
-            Topic: ${text}`;
+Topic: ${text}`;
     } else {
         // File/image upload generation
         const estimateFlashcardCount = (textLength) => {
@@ -168,66 +168,81 @@ export const generateFlashcardsFromText = async (text, user, isTopicGeneration =
         
         promptText = `You are an expert educational content creator. Create ${flashcardCount} high-quality flashcards AND a deck name from the provided text.
 
-            CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-            {
-            "deckName": "Short descriptive name (max 50 chars)",
-            "flashcards": [
-                {"question": "Your question here", "answer": "Your answer here"}
-            ]
-            }
+CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+{
+  "deckName": "Short descriptive name (max 50 chars)",
+  "flashcards": [
+    {"question": "Your question here", "answer": "Your answer here"}
+  ]
+}
 
-            FLASHCARD QUALITY GUIDELINES:
-            - Questions should test understanding, not just memorization
-            - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
-            - Questions should be specific and unambiguous
-            - Answers should be concise but complete (1-3 sentences typically)
-            - Include both factual recall AND conceptual understanding questions
-            - For complex topics, break them into smaller, focused questions
-            - Use clear, direct language
-            - Avoid overly obvious or trivial questions
+FLASHCARD QUALITY GUIDELINES:
+- Questions should test understanding, not just memorization
+- Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
+- Questions should be specific and unambiguous
+- Answers should be concise but complete (1-3 sentences typically)
+- Include both factual recall AND conceptual understanding questions
+- For complex topics, break them into smaller, focused questions
+- Use clear, direct language
+- Avoid overly obvious or trivial questions
 
-            DECK NAME GUIDELINES:
-            - Should summarize the main topic/subject
-            - Max 50 characters
-            - No quotes or special formatting
-            - Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
+DECK NAME GUIDELINES:
+- Should summarize the main topic/subject
+- Max 50 characters
+- No quotes or special formatting
+- Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
 
-            FORMATTING REQUIREMENTS:
-            - Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
-            - Use proper JSON escaping for quotes
-            - No line breaks within strings
-            - Exactly ${flashcardCount} flashcards
-            - Double quotes only
+FORMATTING REQUIREMENTS:
+- Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
+- Use proper JSON escaping for quotes
+- No line breaks within strings
+- Exactly ${flashcardCount} flashcards
+- Double quotes only
 
-            Text to process: ${text}`;
+Text to process: ${text}`;
     }
 
-    // Create AI function for generateAIContent helper
+    // Create AI function for generateAIContent helper using Groq
     const aiFunction = async () => {
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+            'https://api.groq.com/openai/v1/chat/completions',
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
                 body: JSON.stringify({
-                    contents: [{
-                        parts: [{ text: promptText }]
-                    }]
+                    model: 'llama-3.3-70b-versatile', // Fast and good at following instructions
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are an expert educational content creator that produces high-quality flashcards in valid JSON format. You always return pure JSON without any markdown formatting or code blocks.'
+                        },
+                        {
+                            role: 'user',
+                            content: promptText
+                        }
+                    ],
+                    temperature: 0.7, // Balanced creativity
+                    max_tokens: 4000, // Enough for many flashcards
+                    top_p: 0.9
                 })
             }
         );
 
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Groq API request failed: ${response.status} - ${errorData.error?.message || response.statusText}`);
         }
 
         const data = await response.json();
         
-        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
-            throw new Error('Invalid response from AI service');
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response from Groq API');
         }
         
-        return data.candidates[0].content.parts[0].text;
+        return data.choices[0].message.content;
     };
 
     // Use the AI limits helper
