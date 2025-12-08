@@ -48,7 +48,7 @@ export default function SessionCompleteScreen({
         onClick={onReset} 
         className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg"
       >
-        Take a break
+        Start A New Session
       </button>
     </>
   );

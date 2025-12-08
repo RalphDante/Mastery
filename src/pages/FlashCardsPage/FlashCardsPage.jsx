@@ -15,8 +15,6 @@ import DeckActionsDropdown from './DeckActionsDropdown';
 import BattleSection from './BattleSection';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 
-import Boss from '../HomePage/Boss/Boss.jsx';
-import { createPortal } from 'react-dom';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 

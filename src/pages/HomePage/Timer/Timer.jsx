@@ -29,6 +29,8 @@ function Timer({
   const {incrementMinutes} = useUserDataContext();
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
+  const [showAdPromo, setShowAdPromo] = useState(false);
+
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
@@ -390,10 +392,16 @@ function Timer({
     handleTimerComplete?.();
 
     if (count % 2 === 0 && !isPro) {
-    setTimeout(() => {
+      setTimeout(() => {
         console.log('Showing interstitial ad...');
         showInterstitialAd();
-      }, 3000); // 3 seconds - gives user time to see "Session Complete!"
+        
+        // Show promo 5 seconds after triggering ad
+        // (gives user time to see/close the ad)
+        setTimeout(() => {
+          setShowAdPromo(true);
+        }, 5000); // 5 seconds total
+      }, 3000);
     }
     
 }, [saveStudyTime, authUser, db, handleTimerComplete, selectedDuration, isPro]);
@@ -809,6 +817,12 @@ function Timer({
   // Render
   return (
     <>
+      {showAdPromo && (
+          <LimitReachedModal 
+              limitType="ads" 
+              onClose={() => setShowAdPromo(false)} 
+          />
+      )}
       {showStreakFreezePrompt && (
         <LimitReachedModal 
           limitType="streak"

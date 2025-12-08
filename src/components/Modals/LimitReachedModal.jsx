@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { useState } from 'react';
 import { openCheckout, priceIds } from '../../utils/checkout';
 import { useAuth } from '../../hooks/useAuth';
+import { createPortal } from 'react-dom';
 
 function LimitReachedModal({ limitType, onClose }) {
   const [showMonthly, setShowMonthly] = useState(false);
@@ -49,7 +50,12 @@ function LimitReachedModal({ limitType, onClose }) {
         title: "Unlock 30-Day Analytics!",
         emoji: "📊",
         subtitle: "See your complete monthly progress"
-    }
+      },
+       ads: {  // ✅ ADD THIS
+        title: "Tired of Ads?",
+        emoji: "🚫",
+        subtitle: "Study without interruptions with Pro"
+      }
   };
 
   const msg = messages[limitType] || messages.cards;
@@ -59,8 +65,9 @@ function LimitReachedModal({ limitType, onClose }) {
     openCheckout(priceId, 'pro', authUser, signIn);
   };
 
-  return (
+  return createPortal(
     <>
+    
     {showModal ? 
 
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
@@ -111,18 +118,39 @@ function LimitReachedModal({ limitType, onClose }) {
 
                 {/* Benefits */}
                 <div className="space-y-1 text-xs text-left text-gray-500 bg-white/50 rounded-lg p-3">
-                <div className="font-semibold flex items-start gap-2">
-                    <span className="text-green-600">✓</span>
-                    <span>Turn any notes into flashcards in 15 seconds (unlimited AI)</span>
-                </div>
-                <div className="font-semibold flex items-start gap-2">
-                    <span className="text-green-600">✓</span>
-                    <span>Fight bosses with your party - accountability that actually works</span>
-                </div>
-                <div className="font-semibold flex items-start gap-2">
-                    <span className="text-green-600">✓</span>
-                    <span>Level up while studying - beats staring at boring flashcards</span>
-                </div>
+                    {limitType === 'ads' ? (
+                        // Special benefits for ad promo
+                        <>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Zero ads - completely uninterrupted studying</span>
+                            </div>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Unlimited AI flashcard generation</span>
+                            </div>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Level up faster with exclusive RPG features</span>
+                            </div>
+                        </>
+                    ) : (
+                        // Default benefits for other limit types
+                        <>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Turn any notes into flashcards in 15 seconds (unlimited AI)</span>
+                            </div>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Fight bosses with your party - accountability that actually works</span>
+                            </div>
+                            <div className="font-semibold flex items-start gap-2">
+                                <span className="text-green-600">✓</span>
+                                <span>Level up while studying - beats staring at boring flashcards</span>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* CTA */}
@@ -179,7 +207,7 @@ function LimitReachedModal({ limitType, onClose }) {
     }
     </>
 
-  );
+  ,document.body);
 }
 
 export default LimitReachedModal;
