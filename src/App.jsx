@@ -10,51 +10,61 @@ import { useEffect } from "react";
 // Component that loads ads only for free users
 function AdLoader() {
   const { userProfile } = useAuthContext();
-  const isPro = userProfile?.subscription?.tier === "pro";
 
+ 
   useEffect(() => {
+    // Always clean up any existing nap5k script first
+    const existingScript = document.querySelector('script[src="https://nap5k.com/tag.min.js"]');
+    if (existingScript) {
+      document.body.removeChild(existingScript);
+      console.log('🧹 Removed existing ad script');
+    }
+
+    // 1. Pro users → no ads ever
+    const isPro = userProfile?.subscription?.tier === "pro";
     if (isPro) {
-      console.log('⭐ Pro user - skipping banner ads');
+      console.log('⭐ Pro user - no ads');
       return;
     }
 
-    console.log('📺 Loading banner ads for free user');
+    // 2. No userProfile yet → assume not ready, don't load ads (safe default)
+    if (!userProfile?.createdAt) {
+      console.log('⏳ User profile not loaded yet - skipping ads');
+      return;
+    }
+
+    // 3. Calculate account age
+    const createdAt = userProfile.createdAt.toDate ? userProfile.createdAt.toDate() : new Date(userProfile.createdAt);
+    const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+
+    if (hoursSinceCreation < 24) {
+      const hoursLeft = (24 - hoursSinceCreation).toFixed(1);
+      console.log(`🛡️ New user protection active: ${hoursLeft} hours remaining`);
+      return;
+    }
+
+    // 4. Free user + older than 24h → load ads
+    console.log('📺 Loading ads for free user (24h grace period over)');
+
     const script = document.createElement('script');
-    script.dataset.zone = '10293511';
     script.src = 'https://nap5k.com/tag.min.js';
+    script.dataset.zone = '10293511';
     script.async = true;
     document.body.appendChild(script);
 
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
-        console.log('🧹 Banner ad script removed');
+        console.log('🧹 Ad script cleaned up');
       }
     };
-  }, [isPro]);
+  }, [userProfile]);
 
   return null;
 }
 
 
 function App() {
-
-  // Load In-Page Push Banner on app mount
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.dataset.zone = '10293511';
-    script.src = 'https://nap5k.com/tag.min.js';
-    script.async = true;
-    document.body.appendChild(script);
-
-    // Cleanup when component unmounts
-    return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-      }
-    };
-  }, []); // Empty array = runs once on mount
-
   return (
     <AuthProvider>
       <PartyProvider>
