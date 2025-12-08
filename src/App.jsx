@@ -5,7 +5,7 @@ import { DeckCacheProvider } from "./contexts/DeckCacheContext";
 import { LeaderboardProvider } from "./contexts/LeaderboardContext.jsx";
 import { PartyProvider } from "./contexts/PartyContext";
 import { UserDataProvider } from "./contexts/UserDataContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Component that loads ads only for free users
 function AdLoader() {
