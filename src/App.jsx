@@ -10,42 +10,50 @@ import { useEffect } from "react";
 // Component that loads ads only for free users
 function AdLoader() {
   const { userProfile } = useAuthContext();
+  const [isBigScreen, setIsBigScreen] = useState(window.innerWidth >= 992);
+
+  useEffect(() => {
+    const handleResize = () => setIsBigScreen(window.innerWidth >= 992);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
  
   useEffect(() => {
-    // Always clean up any existing nap5k script first
+    // This effect MUST react to BOTH userProfile and screen size
+    if (!isBigScreen) {
+      console.log('Mobile/small screen → removing banner ads');
+      const existing = document.querySelector('script[src="https://nap5k.com/tag.min.js"]');
+      if (existing) existing.remove();
+      return;
+    }
+
+    // Clean any old script first
     const existingScript = document.querySelector('script[src="https://nap5k.com/tag.min.js"]');
-    if (existingScript) {
-      document.body.removeChild(existingScript);
-      console.log('🧹 Removed existing ad script');
-    }
+    if (existingScript) existingScript.remove();
 
-    // 1. Pro users → no ads ever
-    const isPro = userProfile?.subscription?.tier === "pro";
-    if (isPro) {
-      console.log('⭐ Pro user - no ads');
+    // Pro user?
+    if (userProfile?.subscription?.tier === "pro") {
+      console.log('Pro user - no ads');
       return;
     }
 
-    // 2. No userProfile yet → assume not ready, don't load ads (safe default)
+    // Profile not loaded yet?
     if (!userProfile?.createdAt) {
-      console.log('⏳ User profile not loaded yet - skipping ads');
+      console.log('Profile not loaded - skipping ads');
       return;
     }
 
-    // 3. Calculate account age
-    const createdAt = userProfile.createdAt.toDate ? userProfile.createdAt.toDate() : new Date(userProfile.createdAt);
-    const hoursSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
-
-    if (hoursSinceCreation < 24) {
-      const hoursLeft = (24 - hoursSinceCreation).toFixed(1);
-      console.log(`🛡️ New user protection active: ${hoursLeft} hours remaining`);
+    // 24h protection?
+    const createdAt = userProfile.createdAt.toDate?.() ?? new Date(userProfile.createdAt);
+    const hoursOld = (Date.now() - createdAt.getTime()) / 36e5; // 1000*60*60
+    if (hoursOld < 24) {
+      console.log(`New user protection: ${(24 - hoursOld).toFixed(1)}h left`);
       return;
     }
 
-    // 4. Free user + older than 24h → load ads
-    console.log('📺 Loading ads for free user (24h grace period over)');
-
+    // All checks passed → load ads
+    console.log('Loading banner ads (big screen + free + >24h)');
     const script = document.createElement('script');
     script.src = 'https://nap5k.com/tag.min.js';
     script.dataset.zone = '10293511';
@@ -53,12 +61,9 @@ function AdLoader() {
     document.body.appendChild(script);
 
     return () => {
-      if (document.body.contains(script)) {
-        document.body.removeChild(script);
-        console.log('🧹 Ad script cleaned up');
-      }
+      if (document.body.contains(script)) script.remove();
     };
-  }, [userProfile]);
+  }, [userProfile, isBigScreen]);
 
   return null;
 }
