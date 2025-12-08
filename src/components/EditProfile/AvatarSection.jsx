@@ -11,7 +11,7 @@ function AvatarSelection({selectedAvatar, setSelectedAvatar}) {
     const navigate = useNavigate();
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     
-    const isPro = currentUser.subscription?.tier === "pro";
+    const isPro = currentUser?.subscription?.tier === "pro";
 
     const handleAvatarClick = (avatar) => {
         // Check if avatar is premium and user is not pro

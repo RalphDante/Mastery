@@ -12,6 +12,9 @@ import { useUserDataContext } from '../../../contexts/UserDataContext';
 import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
+import { showInterstitialAd } from '../../../components/InterstitialAd';
+import { useAuthContext } from '../../../contexts/AuthContext';
+import SessionCompleteScreen from './SessionCompleteScreen';
 
 function Timer({
   authUser,
@@ -21,6 +24,7 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
+  const {userProfile} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile} = usePartyContext();
   const {incrementMinutes} = useUserDataContext();
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
@@ -30,6 +34,9 @@ function Timer({
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
   const sessionTimerRef = useRef(null);
   const lastSaveRef = useRef(0);               // Track last save in SECONDS not ref ticks
+
+  const currentUser = userProfile;
+  const isPro = currentUser?.subscription?.tier === "pro";
 
   const isSavingRef = useRef(false);
   const audioRef = useRef(null);
@@ -41,7 +48,7 @@ function Timer({
 
 
   const durations = [
-    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -370,11 +377,26 @@ function Timer({
         console.error('Error clearing timer:', err);
       }
     }
+
+    // ✅ INCREMENT SESSION COUNT HERE (when timer completes)
+    const count = (parseInt(localStorage.getItem('sessionCount') || '0') + 1);
+    localStorage.setItem('sessionCount', count.toString());
+    console.log(`Session ${count} completed`);
+
+
+
     setShowCompletion(true);
 
     handleTimerComplete?.();
+
+    if (count % 2 === 0 && !isPro) {
+    setTimeout(() => {
+        console.log('Showing interstitial ad...');
+        showInterstitialAd();
+      }, 3000); // 3 seconds - gives user time to see "Session Complete!"
+    }
     
-}, [saveStudyTime, authUser, db, handleTimerComplete, selectedDuration]);
+}, [saveStudyTime, authUser, db, handleTimerComplete, selectedDuration, isPro]);
 
   const startTimer = async (skipStreakCheck = false) => {
     if (!authUser) return;
@@ -865,46 +887,13 @@ function Timer({
           </>
         ) : showCompletion ? (
           <>
-            <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">
-              <div>
-                  <img 
-                    src="/images/sword-x.png"
-                    alt="sword-x image"
-                    className="w-24 h-24 object-contain"
-                  />
-
-              </div>
-              <h2 className="text-2xl font-bold text-green-400">Session Complete!</h2>
-              <p className="text-slate-300">Great work on your {selectedDuration} minute session</p>
-              
-              <div className="bg-slate-900 border border-slate-700 p-4 rounded-lg w-full max-w-xs">
-                <p className="text-sm text-slate-400 mb-3">Rewards Earned:</p>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Experience</span>
-                    <span className="text-yellow-500 font-bold">+{getCurrentRewards().xp} XP</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Health</span>
-                    <span className="text-red-500 font-bold">+{getCurrentRewards().health} HP</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Mana</span>
-                    <span className="text-blue-500 font-bold">+{getCurrentRewards().mana} MANA</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-300">Boss Damage</span>
-                    <span className="text-red-400 font-bold">{getCurrentRewards().damage} DMG</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* <ServerCostBanner /> */}
-
-            <button onClick={resetTimer} className="w-full bg-green-600 hover:bg-green-500 text-white font-medium py-3 rounded-lg">
-              Start New Session
-            </button>
+            {showCompletion && (
+              <SessionCompleteScreen 
+                selectedDuration={selectedDuration}
+                rewards={getCurrentRewards()}
+                onReset={resetTimer}
+              />
+            )}
           </>
         ) : (
           <>

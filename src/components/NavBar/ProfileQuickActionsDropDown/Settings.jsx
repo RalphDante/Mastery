@@ -55,7 +55,7 @@ const Settings = () => {
   }
 };
 
-  const isPro = currentUser.subscription.tier === 'pro';
+  const isPro = currentUser?.subscription.tier === 'pro';
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
