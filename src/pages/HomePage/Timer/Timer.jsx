@@ -15,6 +15,8 @@ import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
+import StreakModal from '../../../contexts/StreakModal';
+import { Confetti } from '../../../components/ConfettiAndToasts';
 
 function Timer({
   authUser,
@@ -24,11 +26,12 @@ function Timer({
   deckId = null,
   onTimeUpdate = null,
 }) {
-  const {userProfile} = useAuthContext();
-  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile} = usePartyContext();
+  const {userProfile, user} = useAuthContext();
+  const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers} = usePartyContext();
   const {incrementMinutes} = useUserDataContext();
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
@@ -448,6 +451,11 @@ function Timer({
         
         if (streakResult.isNewStreak) {
           console.log(`🔥 Streak maintained! ${streakResult.currentStreak} days`);
+          setShowStreakModal(true);
+        } else if (streakResult.streakChanged){
+          console.log(`Streak Lost! ${streakResult.currentStreak} days`);
+        } else {
+          console.log("Streak already updated")
         }
 
       } catch (streakError) {
@@ -810,6 +818,17 @@ function Timer({
   // Render
   return (
     <>
+      {showStreakModal && (
+        <>
+          <Confetti /> 
+          <StreakModal 
+            streak={(user?.uid ? partyMembers[user.uid]?.streak : null) || 1}
+            onClose={setShowStreakModal}
+            user={user}
+          />
+        </>
+       
+      )}
   
       {showStreakFreezePrompt && (
         <LimitReachedModal 
@@ -817,6 +836,7 @@ function Timer({
           onClose={() => {
             setShowStreakFreezePrompt(false);
             startTimer(true);
+            setShowStreakModal(true);
           }}
         />
       )}

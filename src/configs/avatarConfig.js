@@ -31,14 +31,23 @@ export const AVATARS = [
     isPremium: false,
     format: "webp"
   },
+  // Obtainable avatars
+  {
+    id: "skeleton_01", 
+    name: "Skeleton", 
+    isPremium: false,
+    format: "webp",
+    obtainable: true
+  },
+
+  // Premium avatars
   { 
     id: "golem_01", 
     name: "Golem", 
     isPremium: true,
     format: "gif"
   },
-  
-  // Premium avatars
+
   { 
     id: "knight-idle", 
     name: "Knight", 
@@ -46,6 +55,19 @@ export const AVATARS = [
     format: "gif"
   },
 ];
+
+export const getRandomObtainableAvatar = () => {
+  const obtainableAvatars = AVATARS.filter(
+    (avatar) => avatar.obtainable === true
+  );
+
+  if (obtainableAvatars.length === 0) {
+    return null; // or fallback to a default avatar
+  }
+
+  const randomIndex = Math.floor(Math.random() * obtainableAvatars.length);
+  return obtainableAvatars[randomIndex];
+};
 
 // Helper function to get avatar format by ID
 export const getAvatarFormat = (avatarId) => {

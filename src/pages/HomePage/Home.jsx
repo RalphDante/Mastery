@@ -136,7 +136,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
       )} */}
       {showTimerStart && (
         <>
-          <Confetti />
           <TimerStartedToast 
             xpAmount={100}
             onComplete={() => setShowTimerStart(false)}
