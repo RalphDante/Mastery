@@ -233,13 +233,7 @@ export default function LeaderboardPage() {
 
           {/* Update Info Row */}
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400 pt-3">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span>Last updated: <strong>{getLastUpdated()}</strong></span>
-              <span className="hidden sm:inline">•</span>
-              <span className="text-purple-400">
-                Next update in <strong>{timeLeft}</strong>
-              </span>
-            </div>
+           
 
             <div className="flex items-center gap-3">
               {!isPro && hasRank && (

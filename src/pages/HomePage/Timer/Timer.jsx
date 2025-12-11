@@ -124,8 +124,8 @@ function Timer({
       now = new Date();
       const dateKey = now.toLocaleDateString('en-CA');
 
-      const weekId = getWeekId();
-      const monthId = getMonthId();
+      const weekId = getWeekId(now);
+      const monthId = getMonthId(now);
 
 
       await runTransaction(db, async (transaction) => {

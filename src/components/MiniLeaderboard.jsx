@@ -275,13 +275,7 @@ export default function MiniLeaderboard() {
       {/* ────── Compact Update Bar (same as full page) ────── */}
       <div className="bg-slate-800/70 rounded-xl p-3 mt-3 border border-slate-700 mb-3">
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-xs text-slate-400">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span>Last updated: <strong>{getLastUpdated()}</strong></span>
-            <span className="hidden sm:inline">•</span>
-            <span className="text-purple-400">
-              Next update in <strong>{timeLeft}</strong>
-            </span>
-          </div>
+          
 
           <div className="flex items-center gap-3 text-right">
             {minsToday === 0 && !hasRank && (
