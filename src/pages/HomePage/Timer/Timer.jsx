@@ -17,6 +17,7 @@ import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
 import StreakModal from '../../../contexts/StreakModal';
 import { Confetti } from '../../../components/ConfettiAndToasts';
+import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
 
 function Timer({
   authUser,
@@ -123,6 +124,10 @@ function Timer({
       now = new Date();
       const dateKey = now.toLocaleDateString('en-CA');
 
+      const weekId = getWeekId();
+      const monthId = getMonthId();
+
+
       await runTransaction(db, async (transaction) => {
         const userRef = doc(db, 'users', authUser.uid);
         const dailySessionRef = doc(db, 'users', authUser.uid, 'dailySessions', dateKey);
@@ -188,8 +193,49 @@ function Timer({
           transaction.update(userRef, updateData);
 
           transaction.update(userRef, {
-            'activeTimer.lastSavedAt': serverTimestamp()   // ← ADD THIS
+            'activeTimer.lastSavedAt': serverTimestamp()  
           });
+
+          const weeklyLeaderboardRef = doc(
+            db, 
+            'leaderboards', 
+            'weekly', 
+            weekId, 
+            authUser.uid
+          );
+          
+          const monthlyLeaderboardRef = doc(
+            db, 
+            'leaderboards', 
+            'monthly', 
+            monthId, 
+            authUser.uid
+          );
+
+          transaction.set(weeklyLeaderboardRef, {
+            displayName: currentData.displayName || 'Anonymous',
+            minutes: increment(fullMinutes),
+            avatar: currentData.avatar || 'warrior_01',
+            level: newLevel || currentData.level || 1,
+            isPro: currentData.subscription?.tier === 'pro' || false,
+            updatedAt: serverTimestamp(),
+            title: currentData.title || null,
+            streak: currentData.stats?.currentStreak || 0
+          }, { merge: true });
+
+          // Update monthly leaderboard
+          transaction.set(monthlyLeaderboardRef, {
+            displayName: currentData.displayName || 'Anonymous',
+            minutes: increment(fullMinutes),
+            avatar: currentData.avatar || 'warrior_01',
+            level: newLevel || currentData.level || 1,
+            isPro: currentData.subscription?.tier === 'pro' || false,
+            updatedAt: serverTimestamp(),
+            title: currentData.title || null,
+            streak: currentData.stats?.currentStreak || 0
+          }, { merge: true });
+
+          console.log(`📊 Updated leaderboards: +${fullMinutes} minutes`);
 
           if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
             const partyData = partyDoc.data();

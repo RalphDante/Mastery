@@ -34,7 +34,7 @@ export function useLeaderboard() {
 }
 
 /* ---------- helpers ---------- */
-function getWeekId(date = new Date()) {
+export function getWeekId(date = new Date()) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   d.setDate(d.getDate() + 4 - (d.getDay() || 7));
@@ -43,7 +43,7 @@ function getWeekId(date = new Date()) {
   return `${d.getFullYear()}-W${weekNo.toString().padStart(2, '0')}`;
 }
 
-function getMonthId(date = new Date()) {
+export function getMonthId(date = new Date()) {
   const d = new Date(date);
   return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`;
 }
