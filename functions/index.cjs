@@ -1261,7 +1261,6 @@ function getYesterdayDate(date) {
 }
 
 
-
 // ======================
 // GET WEEKLY LEADERBOARD
 // ======================
