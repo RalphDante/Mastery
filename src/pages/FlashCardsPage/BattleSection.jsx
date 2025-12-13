@@ -8,6 +8,7 @@ import {
     getExpProgressForCurrentLevel, 
     getLevelFromTotalExp 
 } from "../../utils/playerStatsUtils";
+import AvatarWithPlatform from "../../components/AvatarWithPlatform";
 
 function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths, cardCount, children, deckId, currentUser}){
 
@@ -178,39 +179,14 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                 <div className="hidden sm:flex flex-col flex-1 rounded-2xl h-fit" onClick={openModal}>
                     <div className="flex flex-row items-center gap-3">
                     {/* Avatar */}
-                    <div className="relative flex-shrink-0">
-                        <div className="w-24 h-24 border-2 rounded-lg overflow-hidden bg-slate-700 border-purple-500/50">
-                        {currentUser?.avatar ? (
-                            currentUser.avatar === "knight-idle" ? (
-                            <div 
-                                className="knight-idle" 
-                                style={{ 
-                                transform: 'scale(2.5)', 
-                                imageRendering: 'pixelated',
-                                position: 'relative',
-                                top: '0px',
-                                left: '-13px'
-                                }}
-                            />
-                            ) : (
-                            <img 
-                                src={`/images/avatars/${currentUser.avatar}.png`}
-                                alt={currentUser?.displayName}
-                                className="w-full h-full p-2 object-cover"
-                            />
-                            )
-                        ) : null}
-                        </div>
-                        
-                        {currentUser?.tier === "pro" && (
-                        <img
-                            src="/images/icons/pro-badge.png"
-                            className="absolute -top-1 -right-1 w-7 h-7 object-cover"
-                            alt="Pro"
-                        />
-                        )}
-                    </div>
-                    
+                    <AvatarWithPlatform 
+                        avatar={currentUser?.avatar}
+                        displayName={currentUser?.displayName}
+                        tier={currentUser?.tier}
+                        streak={currentUser?.streak}
+                        size="small"
+                        onClick={openModal}
+                    />
                     {/* Stats */}
                     <div className="flex-1 min-w-0">
                         <div className="mb-2">
@@ -387,32 +363,14 @@ function BattleSection({deckData, knowAnswer, dontKnowAnswer, deaths, setDeaths,
                             {/* User Profile */}
                             <div className="flex flex-row w-full items-center">
                                 {/* Avatar */}
-                    
-                                <div 
-                                className="relative cursor-pointer hover:opacity-80 transition-opacity"
-                                onClick={openModal}
-                                >
-                                <div className={`w-20 h-20 border-2 rounded-lg overflow-hidden bg-slate-700 mr-2 border-purple-500/50`}>
-                                    {
-                                        currentUser?.avatar ? currentUser.avatar === "knight-idle" ?
-                                        (<div className="knight-idle" style={{ 
-                                            transform: 'scale(2.5)', 
-                                            imageRendering: 'pixelated',
-                                            position: 'relative',
-                                            top: '0px',      // Move down
-                                            left: '-13px'       // Move right
-                                        }}></div>)
-                                        : <img 
-                                        src={`/images/avatars/${currentUser.avatar}.png`}
-                                        alt={currentUser?.displayName}
-                                        className="w-full h-full p-2 object-cover"
-                                        
-                                        /> :
-                                        ""
-                                    }
-                                </div>
-                                </div>
-                                
+                                <AvatarWithPlatform 
+                                    avatar={currentUser?.avatar}
+                                    displayName={currentUser?.displayName}
+                                    tier={currentUser?.tier}
+                                    streak={currentUser?.streak}
+                                    size="small"
+                                    onClick={openModal}
+                                />
                                 <div className='flex flex-col w-full'>
                                     {/* User Info */}
                                     <div className="text-left">
