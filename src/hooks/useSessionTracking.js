@@ -6,6 +6,7 @@ import { calculateLevelUp, PLAYER_CONFIG } from "../utils/playerStatsUtils";
 import { handleBossDefeat } from "../utils/bossUtils";
 import { usePartyContext } from "../contexts/PartyContext";
 import { useUserDataContext } from "../contexts/UserDataContext";
+import { getWeekId, getMonthId } from "../contexts/LeaderboardContext";
 
 // Reward configuration for flashcard reviews
 const CARD_REWARDS = PLAYER_CONFIG.FLASHCARD_REWARDS;
@@ -71,15 +72,39 @@ export const useSessionTracking = (user, db, isFinished) => {
             const now = new Date();
             const dateKey = now.toLocaleDateString('en-CA');
 
+
+            const weekId = getWeekId(now);
+            const monthId = getMonthId(now);
+
+            const estimatedMinutes = Math.ceil(totalCards * 0.5);
+
             await runTransaction(db, async (transaction) => {
                 const userRef = doc(db, 'users', user.uid);
                 const dailySessionRef = doc(db, 'users', user.uid, 'dailySessions', dateKey);
+                
+                const weeklyLeaderboardRef = doc(
+                    db, 
+                    'leaderboards', 
+                    'weekly', 
+                    weekId, 
+                    user.uid
+                );
+                
+                const monthlyLeaderboardRef = doc(
+                    db, 
+                    'leaderboards', 
+                    'monthly', 
+                    monthId, 
+                    user.uid
+                );
 
                 const userDoc = await transaction.get(userRef);
                 const dailyDoc = await transaction.get(dailySessionRef);
 
                 if (userDoc.exists()) {
                     const currentData = userDoc.data();
+
+           
 
                     // Get party/member data if in party
                     let partyDoc = null;
@@ -169,6 +194,30 @@ export const useSessionTracking = (user, db, isFinished) => {
                     }
 
                     transaction.update(userRef, updateData);
+
+                    transaction.set(weeklyLeaderboardRef, {
+                        displayName: currentData.displayName || 'Anonymous',
+                        minutes: increment(estimatedMinutes),
+                        avatar: currentData.avatar || 'warrior_01',
+                        level: newLevel || currentData.level || 1,
+                        isPro: currentData.subscription?.tier === 'pro' || false,
+                        updatedAt: serverTimestamp(),
+                        title: currentData.title || null,
+                        streak: currentData.stats?.currentStreak || 0
+                    }, { merge: true });
+                    
+                    transaction.set(monthlyLeaderboardRef, {
+                        displayName: currentData.displayName || 'Anonymous',
+                        minutes: increment(estimatedMinutes),
+                        avatar: currentData.avatar || 'warrior_01',
+                        level: newLevel || currentData.level || 1,
+                        isPro: currentData.subscription?.tier === 'pro' || false,
+                        updatedAt: serverTimestamp(),
+                        title: currentData.title || null,
+                        streak: currentData.stats?.currentStreak || 0
+                    }, { merge: true });
+                    
+                    console.log(`📊 Updated leaderboards: +${estimatedMinutes} minutes (from ${totalCards} flashcards)`);
 
                     // Handle party boss damage if in party
                     if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
@@ -328,7 +377,6 @@ export const useSessionTracking = (user, db, isFinished) => {
                 lastActiveAt: now
             });
 
-            const estimatedMinutes = Math.ceil(totalCards * 0.5);
             incrementMinutes(estimatedMinutes);
             
             // console.log(`✅ Session write: ${totalCards} cards (${correctCount} correct, ${incorrectCount} incorrect)`);
