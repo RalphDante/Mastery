@@ -968,7 +968,7 @@ function Timer({
             <div className="text-left">
               <h2 className="text-lg font-semibold mb-1">Session Active</h2>
               <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Set an alarm on your phone to remind you when to return!
+              <span className='text-yellow-400'>Pro tip:</span> Something special might drop when you finish... 🎁
               </p>
             </div>
 
