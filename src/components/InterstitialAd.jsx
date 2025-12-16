@@ -4,7 +4,7 @@ export const showInterstitialAd = () => {
   console.log('🌍 Current domain:', window.location.hostname);
   
   const script = document.createElement('script');
-  script.dataset.zone = '10292910';
+  script.dataset.zone = '10332190';
   script.src = 'https://groleegni.net/vignette.min.js';
   
   script.onload = () => console.log('✅ Ad script loaded successfully');
