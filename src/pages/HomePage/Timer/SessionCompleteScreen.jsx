@@ -1,13 +1,42 @@
 // components/SessionCompleteScreen.jsx
-import React from 'react';
+import React, { useState } from 'react';
+import { getSessionRewards } from '../../../configs/rewardsConfig';
+import LootRevealModal from '../../../components/Modals/LootRevealModal';
 
 export default function SessionCompleteScreen({ 
   selectedDuration, 
   rewards, 
-  onReset 
+  onReset,
+  userProfile,
+  userId
 }) {
+
+  const [showLootRevealModal, setShowLootRevealModal] = useState(selectedDuration >= 15);
+
+
+
+  let numRolls = 0;
+  const durationMinutes = selectedDuration;
+  if (durationMinutes >= 60) numRolls = 2;
+  else if (durationMinutes >= 45) numRolls = 2;
+  else if (durationMinutes >= 25) numRolls = 1;
+  else if (durationMinutes >= 15) numRolls = 1;
+
+  const user = userProfile;
+  const isPro = user?.subscription?.tier === "pro";
+
+
   return (
     <>
+      {showLootRevealModal && (
+        <LootRevealModal 
+          numRolls={numRolls}
+          userCollection={user}
+          isPro={isPro}
+          onClose={()=>setShowLootRevealModal(false)}
+          userId={userId}
+        />
+      )}
       <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">
         <div>
           <img 

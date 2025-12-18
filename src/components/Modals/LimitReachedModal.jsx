@@ -55,6 +55,11 @@ function LimitReachedModal({ limitType, onClose }) {
         title: "Tired of Ads?",
         emoji: "🚫",
         subtitle: "Study without interruptions with Pro"
+      },
+      avatars: {  // ✅ ADD THIS
+        title: "Stand Out!",
+        emoji: "🥷🏻",
+        subtitle: "Get Exclusive Animated Avatars"
       }
   };
 

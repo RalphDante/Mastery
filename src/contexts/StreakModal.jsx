@@ -3,7 +3,6 @@ import { X, Flame, Trophy, Check } from "lucide-react";
 import { arrayUnion, doc, setDoc, updateDoc } from "firebase/firestore";
 import { useAuthContext } from "./AuthContext";
 import { db } from "../api/firebase";
-import { getRandomObtainableAvatar } from "../configs/avatarConfig";
 import { useUserDataContext } from "./UserDataContext";
 
 function StreakModal({ streak, onClose, user }) {
@@ -16,16 +15,6 @@ function StreakModal({ streak, onClose, user }) {
   
 
 
-  const randomSkin = getRandomObtainableAvatar();
-
-  const handleGiveReward = async () =>{
-    if(!unlockedSkins){
-      const userRef = doc(db, "users", user.uid);
-      await updateDoc(userRef, {
-        unlockedSkins: arrayUnion(randomSkin)
-      });
-    }
-  }
 
   return createPortal(
     <>

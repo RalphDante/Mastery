@@ -1,73 +1,105 @@
-// avatarConfig.js - Single source of truth for all avatars
+// avatarConfig.js
 export const AVATARS = [
-  // Free avatars
+  // Starter avatars (given at signup, not droppable)
   { 
     id: "warrior_01", 
     name: "Warrior", 
     isPremium: false,
-    format: "png"
-  },
-  { 
-    id: "wizard_01", 
-    name: "Wizard", 
-    isPremium: false,
-    format: "webp"
-  },
-  { 
-    id: "wizard_02", 
-    name: "Wizard", 
-    isPremium: false,
-    format: "webp"
+    format: "png",
+    rarity: "starter",
+    droppable: false
   },
   { 
     id: "warrior_02", 
     name: "Warrior II", 
     isPremium: false,
-    format: "webp"
+    format: "webp",
+    rarity: "starter",
+    droppable: false
   },
   { 
     id: "warrior_03", 
-    name: "Warrior III", 
+    name: "Warrior", 
     isPremium: false,
-    format: "webp"
+    format: "webp",
+    rarity: "starter",
+    droppable: false
   },
-  // Obtainable avatars
+  { 
+    id: "wizard_01", 
+    name: "Wizard", 
+    isPremium: false,
+    format: "webp",
+    rarity: "starter",
+    droppable: false
+  },
+  { 
+    id: "wizard_02", 
+    name: "Wizard", 
+    isPremium: false,
+    format: "webp",
+    rarity: "starter",
+    droppable: false
+  },
+
+
+  // Droppable avatars - FREE TIER
   {
     id: "skeleton_01", 
     name: "Skeleton", 
     isPremium: false,
     format: "webp",
-    obtainable: true
+    rarity: "rare",
+    droppable: true
+  },
+  {
+    id: "necromancer_01", 
+    name: "Dark Wizard", 
+    isPremium: false,
+    format: "webp",
+    rarity: "legendary",
+    droppable: true
   },
 
-  // Premium avatars
+  // Droppable avatars - PRO ONLY (animated)
   { 
     id: "golem_01", 
     name: "Golem", 
     isPremium: true,
-    format: "gif"
+    format: "webp",
+    rarity: "rare",
+    droppable: false,
+    animated: true
   },
-
   { 
     id: "knight-idle", 
     name: "Knight", 
     isPremium: true,
-    format: "gif"
+    format: "gif",
+    rarity: "legendary",
+    droppable: false,
+    animated: true
   },
+  { 
+    id: "wizard_ruined", 
+    name: "Wizard", 
+    isPremium: true,
+    format: "webp",
+    rarity: "legendary",
+    droppable: true,
+    animated: true
+  }
 ];
 
-export const getRandomObtainableAvatar = () => {
-  const obtainableAvatars = AVATARS.filter(
-    (avatar) => avatar.obtainable === true
+// Helper: Get droppable avatars by rarity and premium status
+export const getDroppableAvatars = (rarity, isPro = false) => {
+  return AVATARS.filter(avatar => 
+    avatar.droppable === true &&
+    avatar.rarity === rarity &&
+    (isPro || !avatar.isPremium) // If not pro, exclude premium avatars
   );
-
-  if (obtainableAvatars.length === 0) {
-    return null; // or fallback to a default avatar
-  }
-
-  const randomIndex = Math.floor(Math.random() * obtainableAvatars.length);
-  return obtainableAvatars[randomIndex];
 };
+
 
 // Helper function to get avatar format by ID
 export const getAvatarFormat = (avatarId) => {
@@ -93,3 +125,4 @@ export const AVATAR_FORMATS = AVATARS.reduce((acc, avatar) => {
   acc[avatar.id] = avatar.format;
   return acc;
 }, {});
+
