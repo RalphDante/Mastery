@@ -473,7 +473,7 @@ function Timer({
           if (isStreakAtRisk(lastStudyDate)) {
             const hasFreeze = (userData?.stats?.freezesAvailable || 0) > 0;
             
-            if (!hasFreeze) {
+            if (!hasFreeze && !isPro) {
               setStreakAtRisk(true);
               setShowStreakFreezePrompt(true);
               startTimeRef.current = null;
