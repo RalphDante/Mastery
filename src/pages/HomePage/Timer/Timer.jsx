@@ -29,7 +29,7 @@ function Timer({
 }) {
   const {userProfile, user} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers} = usePartyContext();
-  const {incrementMinutes} = useUserDataContext();
+  const {incrementMinutes, incrementExp} = useUserDataContext();
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
@@ -95,7 +95,10 @@ function Timer({
 
     const MAX_MINUTES_PER_SAVE = 180; // 3 hours max
     const fullMinutes = Math.floor(secondsToSave / 60);
-    
+     // Calculate exp based on tier
+    const expPerMinute = isPro ? 20 : 10;
+    const expEarned = fullMinutes * expPerMinute;
+  
     // 🔥 CRITICAL: Add minimum validation too
     if (fullMinutes <= 0 || fullMinutes > MAX_MINUTES_PER_SAVE) {
       console.error('Invalid minutes to save:', fullMinutes, 'from seconds:', secondsToSave);
@@ -212,9 +215,13 @@ function Timer({
             authUser.uid
           );
 
+         
+
+
           transaction.set(weeklyLeaderboardRef, {
             displayName: currentData.displayName || 'Anonymous',
             minutes: increment(fullMinutes),
+            exp: increment(expEarned), // ← ADD THIS LINE
             avatar: currentData.avatar || 'warrior_01',
             level: newLevel || currentData.level || 1,
             isPro: currentData.subscription?.tier === 'pro' || false,
@@ -222,11 +229,11 @@ function Timer({
             title: currentData.title || null,
             streak: currentData.stats?.currentStreak || 0
           }, { merge: true });
-
-          // Update monthly leaderboard
+          
           transaction.set(monthlyLeaderboardRef, {
             displayName: currentData.displayName || 'Anonymous',
             minutes: increment(fullMinutes),
+            exp: increment(expEarned), // ← ADD THIS LINE
             avatar: currentData.avatar || 'warrior_01',
             level: newLevel || currentData.level || 1,
             isPro: currentData.subscription?.tier === 'pro' || false,
@@ -234,8 +241,8 @@ function Timer({
             title: currentData.title || null,
             streak: currentData.stats?.currentStreak || 0
           }, { merge: true });
-
-          console.log(`📊 Updated leaderboards: +${fullMinutes} minutes`);
+          
+          console.log(`📊 Updated leaderboards: +${fullMinutes} minutes, +${expEarned} exp`);
 
           if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
             const partyData = partyDoc.data();
@@ -350,6 +357,7 @@ function Timer({
           transaction.update(dailySessionRef, {
             minutesStudied: (existingData.minutesStudied || 0) + fullMinutes,
             lastSessionAt: now,
+            expEarned: (existingData.expEarned || 0) + expEarned
           });
         } else {
           transaction.set(dailySessionRef, {
@@ -358,6 +366,8 @@ function Timer({
             lastSessionAt: now,
             minutesStudied: fullMinutes,
             cardsReviewed: 0,
+            expEarned: expEarned
+
           });
         }
       });
@@ -379,6 +389,8 @@ function Timer({
       });
 
       incrementMinutes(fullMinutes);
+      incrementExp(expEarned);
+
       
       if (onTimeUpdate) onTimeUpdate(fullMinutes);
     } catch (err) {

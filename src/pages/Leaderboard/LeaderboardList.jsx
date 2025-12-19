@@ -35,7 +35,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
         <span>Player</span>
         <span>Level</span>
         <span className="text-center">Streak</span>
-        <span className="text-right">Minutes</span>
+        <span className="text-right">Exp</span>
       </div>
 
       {/* Rows */}
@@ -150,11 +150,11 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
                 <span className="text-xs text-slate-500 md:hidden">day streak</span>
               </div>
 
-              {/* Minutes */}
+              {/* EXP */}
               <div className="flex justify-between md:justify-end w-full md:w-auto text-right">
-                <span className="md:hidden text-slate-400 text-sm">Minutes</span>
+                <span className="md:hidden text-slate-400 text-sm">EXP</span>
                 <span className="text-purple-300 font-semibold text-lg md:text-base">
-                  {player.minutes?.toLocaleString() || 0}
+                  {player.exp?.toLocaleString() || 0}
                 </span>
               </div>
             </div>

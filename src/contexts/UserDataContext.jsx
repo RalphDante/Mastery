@@ -31,6 +31,7 @@ export const UserDataProvider = ({ children }) => {
     const [todaySession, setTodaySession] = useState({ 
         minutesStudied: 0, 
         cardsReviewed: 0,
+        expEarned: 0,
         date: getLocalDateString()
     });
 
@@ -48,6 +49,7 @@ export const UserDataProvider = ({ children }) => {
                 sessionData = {
                     minutesStudied: data.minutesStudied || 0,
                     cardsReviewed: data.spacedSessions || 0,
+                    expEarned: data.expEarned || 0
                 };
             }
             
@@ -65,6 +67,13 @@ export const UserDataProvider = ({ children }) => {
         setTodaySession(prev => ({
             ...prev,
             minutesStudied: prev.minutesStudied + amount
+        }));
+    }, []);
+
+    const incrementExp = useCallback((amount) => {
+        setTodaySession(prev => ({
+            ...prev,
+            expEarned: prev.expEarned + amount
         }));
     }, []);
 
@@ -228,6 +237,7 @@ export const UserDataProvider = ({ children }) => {
         extendedSessions,           // Days 8-30 (pro only)
         getFullThirtyDays,  
         incrementMinutes,
+        incrementExp,
         incrementReviewedCards,
         todaySession,
         isLoading,

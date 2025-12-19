@@ -50,7 +50,8 @@ export default function LeaderboardPage() {
 
   // ────── User state ──────
   const isPro = userProfile?.subscription?.tier === 'pro';
-  const minutesToday = todaySession?.minutesStudied ?? 0; // ← Use real-time today data
+  const minutesToday = todaySession?.minutesStudied ?? 0; 
+  const expToday = todaySession?.expEarned ?? 0;
   const hasRank = !!data?.currentUserRank;
 
   // ────── Last updated ──────
@@ -223,10 +224,10 @@ export default function LeaderboardPage() {
             </div>
             <div className="text-right">
               <div className="text-2xl font-bold text-emerald-400">
-                {minutesToday}m
+                {expToday}exp
               </div>
               <div className="text-xs text-slate-500">
-                {minutesToday === 0 ? "Start studying!" : "Counts tomorrow"}
+                {minutesToday === 0 ? "Start grinding!" : ""}
               </div>
             </div>
           </div>

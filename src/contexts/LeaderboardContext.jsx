@@ -56,14 +56,14 @@ const fetchLeaderboardPage = async (timeframe, lastDocSnapshot = null) => {
 
   let q = query(
     collection(db, colPath),
-    orderBy('minutes', 'desc'),
+    orderBy('exp', 'desc'),
     limit(PAGE_SIZE)
   );
 
   if (lastDocSnapshot) {
     q = query(
       collection(db, colPath),
-      orderBy('minutes', 'desc'),
+      orderBy('exp', 'desc'),
       startAfter(lastDocSnapshot), // ✅ Pass the actual DocumentSnapshot
       limit(PAGE_SIZE)
     );
@@ -121,7 +121,7 @@ export function LeaderboardProvider({ children }) {
         // 1. Top N
         const q = query(
           collection(db, colPath),
-          orderBy('minutes', 'desc'),
+          orderBy('exp', 'desc'),
           limit(limitCount)
         );
         const snap = await getDocs(q);
@@ -146,7 +146,7 @@ export function LeaderboardProvider({ children }) {
             const countSnap = await getCountFromServer(
               query(
                 collection(db, colPath),
-                where('minutes', '>', currentUserData.minutes)
+                where('exp', '>', currentUserData.exp)
               )
             );
             currentUserRank = countSnap.data().count + 1;
