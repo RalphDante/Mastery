@@ -73,7 +73,7 @@ export const UserDataProvider = ({ children }) => {
     const incrementExp = useCallback((amount) => {
         setTodaySession(prev => ({
             ...prev,
-            expEarned: prev.expEarned + amount
+            expEarned: (prev.expEarned || 0) + amount  // ✅ Fallback to 0 if undefined
         }));
     }, []);
 
@@ -217,7 +217,9 @@ export const UserDataProvider = ({ children }) => {
             setTodaySession({ 
                 minutesStudied: 0,  
                 cardsReviewed: 0,  
-                date: getLocalDateString() });
+                date: getLocalDateString(),
+                expEarned: 0
+            });
         }
     }, [user?.uid, fetchTodaySession]);
 

@@ -2,6 +2,7 @@ import { createPortal } from "react-dom";
 import { generateBonusLoot } from "../../configs/rewardsConfig";
 import { useState } from "react";
 import { applyRewardsToUser } from "../../utils/rewardsService";
+import { useUserDataContext } from "../../contexts/UserDataContext";
 
 const RARITY_COLORS = {
   uncommon: {
@@ -191,6 +192,7 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
   const [isRolling, setIsRolling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const {incrementExp} = useUserDataContext();
   
   const handleRoll = () => {
     setIsRolling(true);
@@ -236,7 +238,7 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
       });
       
       // Save to Firestore
-      await applyRewardsToUser(userId, aggregatedRewards);
+      await applyRewardsToUser(userId, aggregatedRewards, incrementExp);
       
       // Close modal after successful save
       onClose();

@@ -17,8 +17,10 @@ import { ArrowLeft } from 'lucide-react';
 import LimitReachedModal from '../../components/Modals/LimitReachedModal';
 import { awardWithXP } from '../../utils/giveAwardUtils';
 import { usePartyContext } from '../../contexts/PartyContext';
+import { useUserDataContext } from '../../contexts/UserDataContext';
 
 function CreateDeck() {
+    const {incrementExp} = useUserDataContext();
     const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
     const { getCardLimits, isPremium, user, userProfile } = useAuthContext();
     const { advanceStep, isTutorialAtStep } = useTutorials();
@@ -370,7 +372,7 @@ function CreateDeck() {
             const isUserFirstDeck = isFirstTime;
 
             if(isUserFirstDeck){
-                await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
+                await awardWithXP(user.uid, 100, updateUserProfile, userProfile, incrementExp);
             }
 
             navigate(`/flashcards/${deckRef.id}`, {

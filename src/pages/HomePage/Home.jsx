@@ -19,9 +19,10 @@ import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 // import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
+import { useUserDataContext } from '../../contexts/UserDataContext.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
-
+  const {incrementExp} = useUserDataContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showBoss, setShowBoss] = useState(false); 
   const {isTutorialAtStep, completeTutorial, advanceStep, tutorials, loading} = useTutorials();
@@ -61,7 +62,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     if(isTutorialAtStep('start-timer', 1)){
 
       setShowTimerStart(true);
-      await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
+      await awardWithXP(user.uid, 100, updateUserProfile, userProfile, incrementExp);
       advanceStep('start-timer')
       
       setTimeout(() => {
@@ -76,7 +77,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
     // If tutorial exists and is not completed, complete it
     if (tutorials['start-timer'] && !tutorials['start-timer'].completed) {
       setShowTimerComplete(true);
-      await awardWithXP(user.uid, 200, updateUserProfile, userProfile);
+      await awardWithXP(user.uid, 200, updateUserProfile, userProfile, incrementExp);
 
       completeTutorial('start-timer');
     }

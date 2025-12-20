@@ -153,7 +153,7 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
               {/* EXP */}
               <div className="flex justify-between md:justify-end w-full md:w-auto text-right">
                 <span className="md:hidden text-slate-400 text-sm">EXP</span>
-                <span className="text-purple-300 font-semibold text-lg md:text-base">
+                <span className="text-yellow-300 font-semibold text-lg md:text-base">
                   {player.exp?.toLocaleString() || 0}
                 </span>
               </div>

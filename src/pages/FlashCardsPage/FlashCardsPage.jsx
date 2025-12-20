@@ -20,9 +20,10 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
 import { Confetti, FirstDeckCelebration, SessionCompleteToast, DeckIncentiveToast } from '../../components/ConfettiAndToasts.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
+import { useUserDataContext } from '../../contexts/UserDataContext.jsx';
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
-
+    const {incrementExp} = useUserDataContext();
     const [showFirstDeckCelebration, setShowFirstDeckCelebration] = useState(false);
     const [deaths, setDeaths] = useState(0);
 
@@ -159,7 +160,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
 
     const handleSessionComplete = async () => {
         setShowSessionComplete(true);
-        await awardWithXP(user.uid, 200, updateUserProfile, userProfile);
+        await awardWithXP(user.uid, 200, updateUserProfile, userProfile, incrementExp);
     };
 
     // Handler to update mute state

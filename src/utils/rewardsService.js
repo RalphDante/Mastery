@@ -2,13 +2,13 @@ import { doc, setDoc, arrayUnion, Timestamp } from 'firebase/firestore';
 import { db } from '../api/firebase';
 import { awardWithXP } from './giveAwardUtils.js';
 
-export async function applyRewardsToUser(userId, rewards) {
+export async function applyRewardsToUser(userId, rewards, incrementExp) {
   try {
     /* -----------------------------
        1. XP (delegate to authority)
     ----------------------------- */
     if (rewards.bonusXP > 0) {
-      await awardWithXP(userId, rewards.bonusXP);
+      await awardWithXP(userId, rewards.bonusXP, null, null, incrementExp);
     }
 
     /* -----------------------------
