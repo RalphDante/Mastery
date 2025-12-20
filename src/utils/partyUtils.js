@@ -10,10 +10,10 @@ import {
   arrayUnion, 
   runTransaction,
   getDoc, 
-  limit
+  limit,
+  increment
 } from 'firebase/firestore';
 import { db } from '../api/firebase';
-
 
 export const PARTY_CONFIG = {
   MAX_MEMBERS: 6,
@@ -411,6 +411,75 @@ export const leaveAndJoinParty = async (userId, oldPartyId, newPartyId, displayN
   } catch (error) {
     console.error('Error switching parties:', error);
     throw error;
+  }
+};
+
+export const kickMember = async (partyId, memberId, kickedBy) => {
+  try {
+    await runTransaction(db, async (transaction) => {
+      // ═══════════════════════════════════════════════════════════
+      // 🔥 STEP 1: READ - Get all necessary documents
+      // ═══════════════════════════════════════════════════════════
+      const partyRef = doc(db, 'parties', partyId);
+      const partyDoc = await transaction.get(partyRef);
+      
+      if (!partyDoc.exists()) {
+        throw new Error('Party not found');
+      }
+      
+      const partyData = partyDoc.data();
+      
+      // Verify the person kicking is the party leader
+      if (partyData.leaderId !== kickedBy) {
+        throw new Error('Only the party leader can kick members');
+      }
+      
+      // Can't kick yourself (leader should use leaveParty or disbandParty)
+      if (memberId === kickedBy) {
+        throw new Error('Leaders cannot kick themselves');
+      }
+      
+      const memberRef = doc(db, 'parties', partyId, 'members', memberId);
+      const memberDoc = await transaction.get(memberRef);
+      
+      if (!memberDoc.exists()) {
+        throw new Error('Member not found in party');
+      }
+      
+      const userRef = doc(db, 'users', memberId);
+      const userDoc = await transaction.get(userRef);
+      
+      if (!userDoc.exists()) {
+        throw new Error('User not found');
+      }
+      
+      // ═══════════════════════════════════════════════════════════
+      // 🔥 STEP 2: WRITE - Update all documents
+      // ═══════════════════════════════════════════════════════════
+      
+      // Remove member from party subcollection
+      transaction.delete(memberRef);
+      
+      // Decrement party member count
+      transaction.update(partyRef, {
+        memberCount: increment(-1)
+      });
+      
+      // Remove party from user's profile
+      transaction.update(userRef, {
+        currentPartyId: null
+      });
+      
+      // Log the kicked member's stats (useful for debugging/analytics)
+      const memberData = memberDoc.data();
+      console.log(`✅ Kicked ${memberData.displayName} (${memberData.currentBossDamage || 0} damage) from party ${partyId}`);
+    });
+    
+    return { success: true };
+    
+  } catch (error) {
+    console.error('❌ Error kicking member:', error);
+    return { success: false, error: error.message };
   }
 };
 
