@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import { getExpProgressForCurrentLevel } from '../../../utils/playerStatsUtils';
 import { PLAYER_CONFIG } from '../../../utils/playerStatsUtils';
-import { X } from 'lucide-react';
+import { X, UserMinus } from 'lucide-react'; // Added UserMinus icon
 import { useNavigate } from 'react-router-dom';
 import EditProfile from '../../../components/EditProfile/EditProfile';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import InviteModal from './InviteModal';
 import PartyInfoSection from './PartyInfoSection';
-import { leaveParty, togglePartyPrivacy } from '../../../utils/partyUtils';
+import { leaveParty, togglePartyPrivacy, kickMember } from '../../../utils/partyUtils'; // Added kickMember
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { getAvatarPath } from '../../../configs/avatarConfig';
 import AvatarWithPlatform from '../../../components/AvatarWithPlatform';
@@ -47,6 +47,9 @@ function PartySection() {
   : currentProgressionTitle;
 
   const navigate = useNavigate();
+
+  // Check if current user is party leader
+  const isPartyLeader = partyProfile?.leaderId === user?.uid;
 
   // Handler for toggling privacy
   const handleTogglePrivacy = async () => {
@@ -107,6 +110,37 @@ function PartySection() {
     } catch (error) {
       console.error('Failed to leave party:', error);
       alert(error.message || 'Failed to leave party');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handler for kicking member
+  const handleKickMember = async (memberId, memberName) => {
+    if (!partyProfile?.id || !user?.uid) return;
+    
+    // Confirm before kicking
+    const confirmed = window.confirm(
+      `Are you sure you want to kick ${memberName} from the party?`
+    );
+    
+    if (!confirmed) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await kickMember(partyProfile.id, memberId, user.uid);
+      
+      if (result.success) {
+        // Refresh party to get updated member list
+        await refreshPartyProfile();
+        alert(`${memberName} has been removed from the party`);
+      } else {
+        alert(result.error || 'Failed to kick member');
+      }
+      
+    } catch (error) {
+      console.error('Failed to kick member:', error);
+      alert(error.message || 'Failed to kick member');
     } finally {
       setIsLoading(false);
     }
@@ -319,8 +353,20 @@ function PartySection() {
                 return (
                   <div 
                     key={member.userId}
-                    className={`flex flex-row items-center gap-4 p-3 rounded-lg bg-slate-700/50 border-2 border-slate-600`}
+                    className={`flex flex-row items-center gap-4 p-3 rounded-lg bg-slate-700/50 border-2 border-slate-600 relative`}
                   >
+                    {/* Kick Button - Only show for leader and not for themselves */}
+                    {isPartyLeader && !isCurrentUser && (
+                      <button
+                        onClick={() => handleKickMember(member.userId, member.displayName)}
+                        disabled={isLoading}
+                        className="absolute top-2 right-2 p-1.5 bg-red-600 hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors group"
+                        title={`Kick ${member.displayName}`}
+                      >
+                        <UserMinus className="w-4 h-4 text-white" />
+                      </button>
+                    )}
+
                     {/* Avatar */}
                     <div className="relative flex-shrink-0">
                       <AvatarWithPlatform
@@ -346,6 +392,9 @@ function PartySection() {
                               
                             </p>
                             {isCurrentUser && <span className="ml-2 text-xs text-blue-300">(You)</span>}
+                            {partyProfile?.leaderId === member.userId && (
+                              <span className="ml-2 text-xs text-yellow-400">(Leader)</span>
+                            )}
                             {member?.tier === "pro" ? 
                                 <img
                                   src="/images/icons/pro-badge.png"
