@@ -11,6 +11,7 @@ import { useTutorials } from "../../contexts/TutorialContext";
 import { X } from "lucide-react";
 import { getAvatarPath } from "../../configs/avatarConfig";
 import TitlesSection from "./TitlesSection";
+import BoostersSection from "./BoostersSection";
 
 function EditProfile() {
     const {user, userProfile, updateUserProfile} = useAuthContext();
@@ -352,7 +353,6 @@ function EditProfile() {
                   </div>
                 </div>
                 
-
                 <TitlesSection 
                   selectedTitle={selectedTitle}
                   setSelectedTitle={setSelectedTitle}
@@ -362,6 +362,9 @@ function EditProfile() {
                     selectedAvatar={selectedAvatar}
                     setSelectedAvatar={setSelectedAvatar}
                 />
+
+                <BoostersSection />
+
 
               
 

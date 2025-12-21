@@ -11,7 +11,7 @@ export default function SessionCompleteScreen({
   userId
 }) {
 
-  const [showLootRevealModal, setShowLootRevealModal] = useState(60 >= 15);
+  const [showLootRevealModal, setShowLootRevealModal] = useState(selectedDuration >= 15);
 
 
 
@@ -30,7 +30,7 @@ export default function SessionCompleteScreen({
     <>
       {showLootRevealModal && (
         <LootRevealModal 
-          numRolls={5}
+          numRolls={numRolls}
           userCollection={user}
           isPro={isPro}
           onClose={()=>setShowLootRevealModal(false)}

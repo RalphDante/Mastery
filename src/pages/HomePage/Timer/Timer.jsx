@@ -18,6 +18,7 @@ import SessionCompleteScreen from './SessionCompleteScreen';
 import StreakModal from '../../../contexts/StreakModal';
 import { Confetti } from '../../../components/ConfettiAndToasts';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
+import { Zap } from 'lucide-react';
 
 function Timer({
   authUser,
@@ -50,10 +51,11 @@ function Timer({
   const correctSoundEffect = useRef(null);
   const daggerWooshSFX = useRef(null);
 
-
+  const activeBooster = currentUser?.activeBooster;
+  const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
 
   const durations = [
-    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
+    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -96,7 +98,22 @@ function Timer({
     const MAX_MINUTES_PER_SAVE = 180; // 3 hours max
     const fullMinutes = Math.floor(secondsToSave / 60);
      // Calculate exp based on tier
-    const expPerMinute = isPro ? 20 : 10;
+
+    const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE; // Base for free users
+    let expMultiplier = isPro ? 2 : 1;
+
+    const activeBooster = currentUser?.activeBooster;
+    const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
+    if (hasActiveBooster) {
+      // Additive stacking (Pro 2x + Booster 2x = 4x total)
+      expMultiplier += (activeBooster.multiplier - 1);
+      
+      // Cap at 5x to prevent abuse
+      expMultiplier = Math.min(expMultiplier, 5);
+      console.log(`🔥 Booster active: ${activeBooster.multiplier}x (total: ${expMultiplier}x)`);
+    }
+
+    const expPerMinute = baseExpPerMinute * expMultiplier;
     const expEarned = fullMinutes * expPerMinute;
   
     // 🔥 CRITICAL: Add minimum validation too
@@ -162,7 +179,7 @@ function Timer({
           const currentHealth = currentData.health || 0;
           const currentMana = currentData.mana || 0;
 
-          newExp = currentExp + (fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE);
+          newExp = currentExp + (fullMinutes * expPerMinute);
           newHealth = Math.min(
             PLAYER_CONFIG.BASE_HEALTH, 
             currentHealth + (fullMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE)
@@ -935,31 +952,6 @@ function Timer({
                   Return when timer ends to claim rewards
                 </p>
               </div>
-            
-              {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
-                <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
-                <div className="flex justify-between space-x-2 items-center">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-yellow-400 font-medium">+{getCurrentRewards().xp}</span>
-                    <span className="text-slate-400 text-xs">XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-500 font-medium">+{getCurrentRewards().health}</span>
-                    <span className="text-slate-400 text-xs">HP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-blue-500 font-medium">+{getCurrentRewards().mana}</span>
-                    <span className="text-slate-400 text-xs">MANA</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-400 font-medium">{getCurrentRewards().damage}</span>
-                    <span className="text-slate-400 text-xs">DMG</span>
-                  </div>
-                </div>
-              </div> */}
-              
-            
-              
             </div>
 
             
@@ -1001,6 +993,41 @@ function Timer({
                     className="transition-all duration-1000 ease-out"/>
                 </svg>
               </div>
+
+                 
+              {isSessionActive && (hasActiveBooster || isPro) && (
+                <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500 rounded-lg p-3 mb-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-purple-400 animate-pulse" />
+                      <span className="text-white font-semibold">
+                        {hasActiveBooster && isPro ? (
+                          // Both Pro + Booster
+                          `${2 + (activeBooster.multiplier - 1)}x XP Active!`
+                        ) : hasActiveBooster ? (
+                          // Just Booster
+                          `${activeBooster.multiplier}x XP Boost Active!`
+                        ) : (
+                          // Just Pro
+                          `2x Pro XP Active!`
+                        )}
+                      </span>
+                      {hasActiveBooster && (
+                        <span className="text-slate-300 text-sm">
+                          ({Math.floor((activeBooster.endsAt - Date.now()) / 60000)}m left)
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Breakdown for Pro + Booster */}
+                    {hasActiveBooster && isPro && (
+                      <span className="text-slate-400 text-xs">
+                        (Pro 2x + Booster {activeBooster.multiplier}x)
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full max-w-xs">
                 <p className="text-sm text-slate-400 mb-2 text-center">Earning per minute:</p>

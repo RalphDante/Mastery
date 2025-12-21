@@ -248,10 +248,10 @@ export const AuthProvider = ({ children }) => {
     };
 
     const refreshUserProfile = useCallback(async () => {
-        if (user?.uid) {
-            await fetchUserProfile(user.uid);
+        if (auth.currentUser?.uid) { // ← Use auth.currentUser instead of user
+          await fetchUserProfile(auth.currentUser.uid);
         }
-    }, []);
+      }, []);
 
     const isPremium = () => {
         return userProfile?.subscription?.tier === 'premium' || 
