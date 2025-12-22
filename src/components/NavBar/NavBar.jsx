@@ -37,7 +37,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                         <div className="hidden md:flex space-x-6">
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/'); }}>Home</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/about'); }}>About</a>
-                            <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/contactme'); }}>Contact Me</a>
+                            <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/contactme'); }}>Help</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/blog'); }}>Blog</a>
                             <a href="#" className="text-slate-300 hover:text-violet-400 transition-colors" onClick={(e) => { e.preventDefault(); navigate('/leaderboard'); }}>Leaderboard</a>
                         </div>
@@ -98,7 +98,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                 <div className="flex flex-col space-y-3 px-4">
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/'); setIsMobileMenuOpen(false); }}>Home</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/about'); setIsMobileMenuOpen(false); }}>About</a>
-                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/contactme'); setIsMobileMenuOpen(false); }}>Contact Me</a>
+                    <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/contactme'); setIsMobileMenuOpen(false); }}>Help</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/blog'); setIsMobileMenuOpen(false); }}>Blog</a>
                     <a href="#" className="block text-slate-200 hover:text-violet-400 transition-colors py-2" onClick={(e) => { e.preventDefault(); navigate('/leaderboard'); setIsMobileMenuOpen(false); }}>Leaderboard</a>
                     

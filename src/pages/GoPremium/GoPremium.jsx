@@ -183,7 +183,7 @@ function GoPremium() {
         {/* Hero Section */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 bg-gradient-to-r from-violet-400 via-purple-400 to-white bg-clip-text text-transparent px-2 leading-tight">
-            Gain A Positively Unfair Advantage In School
+            Gain A Positively Unfair Advantage In Life
           </h1>
           <p className="text-lg sm:text-2xl text-violet-200 font-medium mt-4">
             For less than a coffee per month

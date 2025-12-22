@@ -15,10 +15,10 @@ import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
-import StreakModal from '../../../contexts/StreakModal';
 import { Confetti } from '../../../components/ConfettiAndToasts';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
 import { Zap } from 'lucide-react';
+import StreakModal from '../../../components/Modals/StreakModal';
 
 function Timer({
   authUser,

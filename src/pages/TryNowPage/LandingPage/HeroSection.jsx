@@ -21,7 +21,7 @@ const HeroSection = ({setShowModal, signIn}) => {
             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent block py-2">
               Unfair Advantage
             </span>
-            In School
+            In School And In Life
           </h1>
 
           {/* Stats */}

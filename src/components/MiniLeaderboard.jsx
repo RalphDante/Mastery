@@ -98,7 +98,7 @@ export default function MiniLeaderboard() {
               <span className="text-slate-400 text-sm">Today's progress</span>
               <div className="text-right">
                 <div className="text-2xl font-bold text-emerald-400">
-                  {formatMinutes(minsToday)}
+                  {formatMinutes(expToday)}
                 </div>
                 <div className="text-xs text-slate-500">
                   {minsToday === 0 
