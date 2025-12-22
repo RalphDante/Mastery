@@ -134,7 +134,7 @@ export default function LeaderboardPage() {
             <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-5 max-w-sm mx-auto">
               <div className="text-slate-400 text-sm mb-1">Your progress today</div>
               <div className="text-4xl font-bold text-emerald-400">
-                {minutesToday}m
+                {expToday}exp
               </div>
               <div className="text-xs text-slate-500 mt-1">
                 {minutesToday === 0 
