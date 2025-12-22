@@ -14,8 +14,7 @@ import { useAuthContext } from '../../contexts/AuthContext.jsx';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
-import MiniLeaderboard from '../../components/MiniLeaderBoard.jsx';
-
+import MiniLeaderboard from '../../components/MiniLeaderboard.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 // import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
