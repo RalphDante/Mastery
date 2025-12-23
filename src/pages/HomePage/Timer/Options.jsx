@@ -8,7 +8,7 @@ import { useTutorials } from "../../../contexts/TutorialContext";
 import { doc, getDoc } from 'firebase/firestore';
 
 
-function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, handleTimerStart, handleTimerComplete}){
+function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, handleTimerStart, handleTimerComplete, timerStartRef}){
     const {loading} = useAuthContext();
     const folders = useFolders();
     const [studyMode, setStudyMode] = useState('options');
@@ -95,6 +95,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                 authUser={authUser}
                 handleTimerStart={handleTimerStart}
                 handleTimerComplete={handleTimerComplete}
+                timerStartRef={timerStartRef}
             />;
         case "flashcards":
             return <LearningHubSection 

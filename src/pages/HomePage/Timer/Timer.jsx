@@ -6,7 +6,6 @@ import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils
 import { serverTimestamp } from 'firebase/firestore';
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
-import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
 import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
@@ -15,11 +14,9 @@ import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
-import { Confetti } from '../../../components/ConfettiAndToasts';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
 import { Zap } from 'lucide-react';
 import StreakModal from '../../../components/Modals/StreakModal';
-import NewUserBattleModal from '../../../components/Modals/NewUserBattleModal';
 
 function Timer({
   authUser,
@@ -28,14 +25,20 @@ function Timer({
   handleTimerComplete,
   deckId = null,
   onTimeUpdate = null,
+  timerStartRef
 }) {
   const {userProfile, user} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers} = usePartyContext();
   const {incrementMinutes, incrementExp} = useUserDataContext();
+
+  const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
+  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
+
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
-  const [showNewUserBattleModal, setShowNewUserBattleModal] = useState(true);
+
+
 
 
   const startTimeRef = useRef(null);           // NEW: When timer actually started
@@ -73,9 +76,6 @@ function Timer({
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
 
-  const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
-
-  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
 
 
 
@@ -619,6 +619,12 @@ function Timer({
     } 
   };
 
+  useEffect(() => {
+    if (timerStartRef) {
+      timerStartRef.current = startTimer;
+    }
+  }, [startTimer, timerStartRef]);
+
   const pauseTimer = () => {
     setIsRunning(false);
     lastPauseTimeRef.current = Date.now();
@@ -896,17 +902,6 @@ function Timer({
   // Render
   return (
     <>
-      {showNewUserBattleModal && (
-        <>
-          <NewUserBattleModal 
-            onStartSession={()=>{
-              startTimer(true);
-              setShowNewUserBattleModal(false);
-            }}
-            onClose={setShowNewUserBattleModal}
-          />
-        </>
-      )}
       {showStreakModal && (
         <>
           <StreakModal 
