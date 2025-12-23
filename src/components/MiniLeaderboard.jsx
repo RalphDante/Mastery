@@ -155,7 +155,7 @@ export default function MiniLeaderboard() {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-purple-400 flex items-center gap-2">
           <Users className="w-5 h-5 text-purple-400" />
-          Leaderboard
+          Global Leaderboard
         </h2>
         <button
           onClick={() => navigate("/leaderboard")}

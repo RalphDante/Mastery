@@ -19,6 +19,7 @@ import { Confetti } from '../../../components/ConfettiAndToasts';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
 import { Zap } from 'lucide-react';
 import StreakModal from '../../../components/Modals/StreakModal';
+import NewUserBattleModal from '../../../components/Modals/NewUserBattleModal';
 
 function Timer({
   authUser,
@@ -34,6 +35,8 @@ function Timer({
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
+  const [showNewUserBattleModal, setShowNewUserBattleModal] = useState(true);
+
 
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
@@ -64,7 +67,7 @@ function Timer({
   ];
 
 
-  const [selectedDuration, setSelectedDuration] = useState(5);
+  const [selectedDuration, setSelectedDuration] = useState(25);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
@@ -893,9 +896,19 @@ function Timer({
   // Render
   return (
     <>
+      {showNewUserBattleModal && (
+        <>
+          <NewUserBattleModal 
+            onStartSession={()=>{
+              startTimer(true);
+              setShowNewUserBattleModal(false);
+            }}
+            onClose={setShowNewUserBattleModal}
+          />
+        </>
+      )}
       {showStreakModal && (
         <>
-          <Confetti /> 
           <StreakModal 
             streak={(user?.uid ? partyMembers[user.uid]?.streak : null) || 1}
             onClose={setShowStreakModal}

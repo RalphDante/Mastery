@@ -49,7 +49,7 @@ function EditProfile() {
             const showTimer = setTimeout(() => {
               tooltipPopupSFX.current?.play().catch(console.error); // Play on show
               setShowCustomizeTip(true);
-            }, 10000);
+            }, 15000);
 
             // Auto-hide after 3s + 15s = 18s total
             const hideTimer = setTimeout(() => {

@@ -27,8 +27,9 @@ function SignUpBtn({signIn}) {
             await auth.signOut();
             console.log('✅ User signed out');
             // No need to delete Firestore user document here, keep it for historical data
+            window.location.href = '/';
+
             alert('Signed out successfully!');
-            navigate('/'); // Navigate to home or login page after sign out
         } catch (error) {
             console.error('❌ Error signing out:', error);
             alert('Error signing out. Please try again.');
