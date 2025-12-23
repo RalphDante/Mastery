@@ -471,7 +471,7 @@ function Timer({
 
     handleTimerComplete?.();
 
-    if (count % 2 === 0 && !isPro) {
+    if (!isPro) {
       setTimeout(() => {
         console.log('Showing interstitial ad...');
         showInterstitialAd();
