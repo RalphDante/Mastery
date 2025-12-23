@@ -1,9 +1,126 @@
 // components/LeaderboardList.jsx
-import { Trophy, Flame } from 'lucide-react';
+import { Trophy, Flame, X, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
 import { getAvatarPath } from '../../configs/avatarConfig';
 import { getDisplayTitle } from '../../configs/titlesConfig';
+import { useState } from 'react';
+
+
+function PlayerDetailModal({ player, rank, onClose }) {
+  if (!player) return null;
+
+  const hoursPlayed = Math.floor((player.minutes || 0) / 60);
+  const minutesRemainder = (player.minutes || 0) % 60;
+  const avatarPath = getAvatarPath(player.avatar);
+
+
+  return (
+    <div 
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-slate-800 border-2 border-slate-700 rounded-2xl shadow-2xl max-w-md w-full p-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        
+
+        {/* Header */}
+        <div className="relative flex items-center gap-4 mb-6">
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            className="absolute top-1 right-1 text-slate-400 hover:text-slate-200 transition"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          <div className="relative">
+            {player.avatar ? (
+              <img
+                src={avatarPath}
+                alt={player.displayName}
+                className="w-20 h-20 rounded-full border-4 border-purple-500"
+              />
+            ) : (
+              <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full border-4 border-purple-500 flex items-center justify-center text-3xl font-bold text-white">
+                {player.displayName?.charAt(0) || '?'}
+              </div>
+            )}
+            {player.isPro && (
+              <div className="absolute -bottom-1 -right-1 w-8 h-8">
+                <div className="w-full h-full bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center text-xs font-bold border-2 border-slate-800">
+                  PRO
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-slate-100 mb-1">
+              {player.displayName || 'Anonymous'}
+            </h2>
+            <div className="flex items-center gap-2 text-slate-400">
+              <Trophy className="w-4 h-4 text-yellow-500" />
+              <span>Rank #{rank}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          {/* Level */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="text-slate-400 text-sm mb-1">Level</div>
+            <div className="text-2xl font-bold text-purple-400">
+              {player.level || 0}
+            </div>
+          </div>
+
+          {/* EXP */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="text-slate-400 text-sm mb-1">Experience</div>
+            <div className="text-2xl font-bold text-yellow-400">
+              {player.exp?.toLocaleString() || 0}
+            </div>
+          </div>
+
+          {/* Streak */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+              <Flame className="w-4 h-4" />
+              Streak
+            </div>
+            <div className="text-2xl font-bold text-orange-400">
+              {player.streak || 0} days
+            </div>
+          </div>
+
+          {/* Time Played */}
+          <div className="bg-slate-900/50 rounded-xl p-4 border border-slate-700">
+            <div className="text-slate-400 text-sm mb-1 flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              Time Played
+            </div>
+            <div className="text-2xl font-bold text-blue-400">
+              {hoursPlayed}h {minutesRemainder}m
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Info */}
+        <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 rounded-xl p-4 border border-purple-700/50">
+          <div className="text-center">
+            <div className="text-slate-300 text-sm mb-1">Total Minutes Played</div>
+            <div className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+              {player.minutes?.toLocaleString() || 0}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false }) {
   const navigate = useNavigate();
@@ -13,6 +130,19 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
   
   const MAX_FREE_USERS = 25;
   const canLoadMore = isPro || users.length < MAX_FREE_USERS;
+
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [selectedRank, setSelectedRank] = useState(null);
+
+  const handlePlayerClick = (player, rank) => {
+    setSelectedPlayer(player);
+    setSelectedRank(rank);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedPlayer(null);
+    setSelectedRank(null);
+  };
 
   if (!users || users.length === 0) {
     return (
@@ -56,13 +186,14 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
           return (
             <div
               key={player.userId}
-              className={`
-                flex flex-col md:grid md:grid-cols-[80px_1fr_120px_100px_120px] gap-3 md:gap-4 px-4 py-4 md:py-3 items-start md:items-center
-                transition-all cursor-default
-                ${isTop3 ? 'bg-gradient-to-r from-purple-800/20 to-transparent' : ''}
-                ${isPro && !isTop3 ? 'bg-gradient-to-r from-purple-900/10 to-transparent' : ''}
-                ${isTopPro ? 'ring-2 ring-yellow-500/70' : ''}
-              `}
+              onClick={() => handlePlayerClick(player, rank)}
+                className={`
+                  flex flex-col md:grid md:grid-cols-[80px_1fr_120px_100px_120px] gap-3 md:gap-4 px-4 py-4 md:py-3 items-start md:items-center
+                  transition-all cursor-pointer hover:bg-slate-700/50
+                  ${isTop3 ? 'bg-gradient-to-r from-purple-800/20 to-transparent' : ''}
+                  ${isPro && !isTop3 ? 'bg-gradient-to-r from-purple-900/10 to-transparent' : ''}
+                  ${isTopPro ? 'ring-2 ring-yellow-500/70' : ''}
+                `}
             >
               {/* Rank + Trophy */}
               <div className="flex items-center gap-2 font-semibold w-full md:w-auto">
@@ -191,6 +322,16 @@ function LeaderboardList({ users, currentUserRank, periodId, loadingMore = false
             Unlock Full Leaderboard
           </button>
         </div>
+      )}
+
+
+      {/* Player Detail Modal */}
+      {selectedPlayer && (
+        <PlayerDetailModal
+          player={selectedPlayer}
+          rank={selectedRank}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   );
