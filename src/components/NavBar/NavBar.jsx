@@ -69,10 +69,7 @@ function NavBar({ onCreateFolderClick, onCreateDeckClick, onCreateWithAIModalCli
                                 className="relative bg-gradient-to-r from-yellow-400 to-orange-400 hover:from-yellow-500 hover:to-orange-500 text-slate-900 font-bold px-4 py-2 rounded-lg transition-all transform hover:scale-105 shadow-lg text-sm whitespace-nowrap"
                             >
                                 Try Pro Free
-                                {/* Ad-Free badge */}
-                                <span className="absolute -top-2 -right-2 bg-green-500 text-white text-[8px] font-bold px-1 py-0.1 rounded-full shadow-md">
-                                    AD-FREE
-                                </span>
+                              
                             </button>
                         )}
 

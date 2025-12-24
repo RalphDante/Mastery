@@ -121,10 +121,21 @@ function GoPremium() {
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
+          <div className="font-medium">Dominate The Leaderboard</div>
+          <div className="text-gray-500 text-xs">
+            Pro members earn 2x XP from every study session. While free users grind, 
+            you're already #1. Your Pro badge and animated avatar make sure everyone knows it.
+          </div>
+        </div>
+      </li>
+      
+      <li className="flex items-start">
+        <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+        <div>
           <div className="font-medium">Never Run Out When It Matters Most</div>
           <div className="text-gray-500 text-xs">
-            Free users get 5 AI generations per month - that's maybe 2 lectures. Pro users turn every single class into flashcards instantly. 
-            No more choosing between Chemistry and Biology.
+            Free users get 5 AI generations per month - that's maybe 2 lectures. 
+            Pro users turn every single class into flashcards instantly. No more choosing.
           </div>
         </div>
       </li>
@@ -132,10 +143,10 @@ function GoPremium() {
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Build Your Complete Study Empire</div>
+          <div className="font-medium">Build Your Private Study Squad</div>
           <div className="text-gray-500 text-xs">
-            Free: 100 cards, 5 decks (you'll hit this in week 1)
-            Pro: Unlimited cards and decks - your entire degree in one place
+            Create private parties with your friends, unlock premium bosses, and track 
+            your group's progress. Free users can only join public parties.
           </div>
         </div>
       </li>
@@ -143,9 +154,10 @@ function GoPremium() {
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Show Everyone You're That Student</div>
+          <div className="font-medium">Unlimited Everything</div>
           <div className="text-gray-500 text-xs">
-            Get the exclusive Pro badge, unlock animated avatars, and flex your progress publicly. Free users stay basic; Pro users look like champions.
+            Free: 100 cards, 5 decks (you'll hit this in week 1). 
+            Pro: Unlimited cards, decks, and folders - your entire degree in one place.
           </div>
         </div>
       </li>
@@ -153,9 +165,20 @@ function GoPremium() {
       <li className="flex items-start">
         <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
         <div>
-          <div className="font-medium">Track Your Dominance</div>
+          <div className="font-medium">30-Day Analytics & Streak Protection</div>
           <div className="text-gray-500 text-xs">
-            See exactly how much you're crushing it with your 7-day progress dashboard. Watch your study streaks, boss defeats, and level gains.
+            See your complete study history, boss defeats, and level progression. 
+            Free users only see 7 days and have no streak protection.
+          </div>
+        </div>
+      </li>
+      
+      <li className="flex items-start">
+        <Check className="w-4 h-4 mr-2 text-green-400 mt-0.5 flex-shrink-0" />
+        <div>
+          <div className="font-medium">Ad-Free Studying</div>
+          <div className="text-gray-500 text-xs">
+            Focus on your work without interruptions. Free users see ads after every timer session.
           </div>
         </div>
       </li>

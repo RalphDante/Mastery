@@ -15,8 +15,10 @@ import { showInterstitialAd } from '../../../components/InterstitialAd';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
-import { Zap } from 'lucide-react';
+import { Zap, Trophy } from 'lucide-react';
 import StreakModal from '../../../components/Modals/StreakModal';
+import SessionStatsCard from './SessionStatsCard';
+import { useNavigate } from 'react-router-dom';
 
 function Timer({
   authUser,
@@ -38,9 +40,7 @@ function Timer({
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
-
-
-
+  const navigate = useNavigate();
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
@@ -947,7 +947,7 @@ function Timer({
                 Start {selectedDuration} Min Session
               </button>
               
-            <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
+              <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
                 <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
                   <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
                   <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
@@ -959,6 +959,25 @@ function Timer({
                 <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
                   Return when timer ends to claim rewards
                 </p>
+                
+                {/* NEW: Pro CTA */}
+                {!isPro && (
+                  <div className="mt-3 pt-3 border-t border-slate-700/50">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <Trophy className="w-4 h-4 text-yellow-400" />
+                      <span className="text-slate-300 text-xs">
+                        <span className="text-purple-400 font-semibold">
+                          <button 
+                            onClick={()=>{navigate('/pricing')}}
+                            className="text-purple-400 hover:text-purple-300 font-semibold underline decoration-dotted"
+                          >
+                            Pro Members
+                          </button>{' '}</span> 
+                          earn double XP
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -979,12 +998,12 @@ function Timer({
           </>
         ) : (
           <>
-            <div className="text-left">
+            {/* <div className="text-left">
               <h2 className="text-lg font-semibold mb-1">Session Active</h2>
               <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
               <span className='text-yellow-400'>Pro tip:</span> Work for 15+ mins and something special might drop when you finish... 🎁
               </p>
-            </div>
+            </div> */}
 
             <div className="flex-1 flex flex-col justify-center items-center">
               <div className="relative mb-6">
@@ -1037,27 +1056,14 @@ function Timer({
                 </div>
               )}
 
-              <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full max-w-xs">
-                <p className="text-sm text-slate-400 mb-2 text-center">Earning per minute:</p>
-                <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-yellow-500 font-medium">{Math.round(getCurrentRewards().xp/selectedDuration)}</span>
-                    <span className="text-slate-400">XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-blue-500 font-medium">{Math.round(getCurrentRewards().mana/selectedDuration)}</span>
-                    <span className="text-slate-400">MANA</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-green-400 font-medium">{Math.round(getCurrentRewards().health/selectedDuration)}</span>
-                    <span className="text-slate-400">HP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-400 font-medium">{Math.round(getCurrentRewards().damage/selectedDuration)}</span>
-                    <span className="text-slate-400">DMG</span>
-                  </div>
-                </div>
-              </div>
+                
+              <SessionStatsCard 
+                rewards={getCurrentRewards()}
+                selectedDuration={selectedDuration}
+                isPro={isPro}
+                hasActiveBooster={hasActiveBooster}
+                onProClick={() => {navigate('/pricing')}}
+              />
             </div>
 
             <div className="flex space-x-3">
