@@ -29,7 +29,7 @@ function Timer({
   onTimeUpdate = null,
   timerStartRef
 }) {
-  const {userProfile, user} = useAuthContext();
+  const {user} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
   const {incrementMinutes, incrementExp} = useUserDataContext();
 
@@ -41,6 +41,9 @@ function Timer({
   const [showStreakModal, setShowStreakModal] = useState(false);
 
   const [isResuming, setIsResuming] = useState(false);
+
+  const userProfile = user?.uid ? partyMembers[user.uid] : null;
+
   const originalBossHealthRef = useRef(null);
   const originalMemberDamageRef = useRef(null);
   const lastSyncedMinuteRef = useRef(0);
@@ -95,97 +98,6 @@ function Timer({
     }
   }, [loading, isTutorialAtStep]);
 
-  // ============================================================================
-  // 🔥 NEW: Calculate predicted stats based on elapsed time
-  // ============================================================================
-  useEffect(() => {
-    if (!isRunning || !userProfile || isResuming || isLoadingPartyData) return;
-  
-    const minutesElapsed = Math.floor(timeElapsed / 60);
-    
-    // 🔥 NEW: Optimistically update context every minute
-    if (minutesElapsed > lastSyncedMinuteRef.current) {
-      const minutesDelta = minutesElapsed - lastSyncedMinuteRef.current;
-      
-      // Calculate exp for the new minutes
-      const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE;
-      let expMultiplier = isPro ? 2 : 1;
-      if (hasActiveBooster) {
-        expMultiplier += (activeBooster.multiplier - 1);
-        expMultiplier = Math.min(expMultiplier, 5);
-      }
-      const expPerMinute = baseExpPerMinute * expMultiplier;
-      const expForNewMinutes = minutesDelta * expPerMinute;
-      
-      // Increment context (this updates charts/stats)
-      incrementMinutes(minutesDelta);
-      incrementExp(expForNewMinutes);
-      
-      // Update the last synced minute
-      lastSyncedMinuteRef.current = minutesElapsed;
-      
-      console.log(`📊 Optimistic update: +${minutesDelta} min, +${expForNewMinutes} XP`);
-    }
-    
-    // Calculate exp multiplier for predicted stats
-    const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE;
-    let expMultiplier = isPro ? 2 : 1;
-    if (hasActiveBooster) {
-      expMultiplier += (activeBooster.multiplier - 1);
-      expMultiplier = Math.min(expMultiplier, 5);
-    }
-    const expPerMinute = baseExpPerMinute * expMultiplier;
-  
-    // Predicted gains
-    const predictedExpGain = minutesElapsed * expPerMinute;
-    const predictedHealthGain = Math.min(
-      PLAYER_CONFIG.BASE_HEALTH - (userProfile.health || 0),
-      minutesElapsed * PLAYER_CONFIG.HEALTH_PER_MINUTE
-    );
-    const predictedManaGain = Math.min(
-      PLAYER_CONFIG.BASE_MANA - (userProfile.mana || 0),
-      minutesElapsed * PLAYER_CONFIG.MANA_PER_MINUTE
-    );
-  
-    // Calculate predicted level
-    const currentExp = userProfile.exp || 0;
-    const currentLevel = userProfile.level || 1;
-    const newExp = currentExp + predictedExpGain;
-    const { newLevel } = calculateLevelUp(currentExp, newExp, currentLevel);
-  
-    // Calculate predicted damage
-    const baseDamage = minutesElapsed * 10;
-    const levelMultiplier = 1 + (newLevel * 0.05);
-    const predictedDamage = Math.floor(baseDamage * levelMultiplier);
-  
-    setPredictedStats({
-      exp: predictedExpGain,
-      health: predictedHealthGain,
-      mana: predictedManaGain,
-      damage: predictedDamage,
-      level: newLevel
-    });
-  
-    // 🔥 Update context with predicted values (for UI display only)
-    updateUserProfile({
-      exp: newExp,
-      level: newLevel,
-      health: Math.min(PLAYER_CONFIG.BASE_HEALTH, (userProfile.health || 0) + predictedHealthGain),
-      mana: Math.min(PLAYER_CONFIG.BASE_MANA, (userProfile.mana || 0) + predictedManaGain)
-    });
-  
-     // 🔥 Update predicted boss damage AND member damage
-    if (partyProfile?.currentBoss && originalBossHealthRef.current !== null) {
-      // ✅ Calculate from ORIGINAL health, not current
-      const predictedBossHealth = Math.max(0, originalBossHealthRef.current - predictedDamage);
-      updateBossHealth(predictedBossHealth);
-      
-      // ✅ Calculate member damage from ORIGINAL + predicted
-      const totalMemberDamage = (originalMemberDamageRef.current || 0) + predictedDamage;
-      updateMemberDamage(authUser.uid, totalMemberDamage);
-    }
-  
-  }, [timeElapsed, isRunning, userProfile, isPro, hasActiveBooster, activeBooster, updateUserProfile, updateBossHealth, updateMemberDamage, partyProfile, authUser, isResuming, isLoadingPartyData, incrementMinutes, incrementExp]);
 
 
   // Initialize alarm sound
@@ -630,12 +542,84 @@ function Timer({
     // 🔥 Start the interval (SIMPLE - just update display)
     if (!sessionTimerRef.current) {
       sessionTimerRef.current = setInterval(() => {
-        const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
-        const elapsed = Math.floor(totalElapsed / 1000);
-        setTimeElapsed(elapsed);
+        const totalElapsed = Date.now() - startTimeRef.current - (pausedTimeRef.current || 0);
+        const elapsedSeconds = Math.floor(totalElapsed / 1000);
+        const elapsedMinutes = Math.floor(elapsedSeconds / 60);
+    
+        setTimeElapsed(elapsedSeconds);
+    
+        // === PER-MINUTE OPTIMISTIC UI UPDATE (only when a new minute completes) ===
+        if (elapsedMinutes > lastSyncedMinuteRef.current && userProfile) {
+          const minutesDelta = elapsedMinutes - lastSyncedMinuteRef.current;
+    
+          // Calculate XP multiplier
+          const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE;
+          let expMultiplier = isPro ? 2 : 1;
+          if (hasActiveBooster) {
+            expMultiplier += (activeBooster.multiplier - 1);
+            expMultiplier = Math.min(expMultiplier, 5);
+          }
+          const expPerMinute = baseExpPerMinute * expMultiplier;
+          const expGained = minutesDelta * expPerMinute;
+    
+          // Optimistically update global charts/stats
+          incrementMinutes(minutesDelta);
+          incrementExp(expGained);
+    
+          // Calculate predicted stats for this session
+          const totalMinutes = elapsedMinutes;
+          const totalExpGain = totalMinutes * expPerMinute;
+    
+          const currentExp = userProfile.exp || 0;
+          const currentLevel = userProfile.level || 1;
+          const newTotalExp = currentExp + totalExpGain;
+          const { newLevel } = calculateLevelUp(currentExp, newTotalExp, currentLevel);
+    
+          const baseDamage = totalMinutes * 10;
+          const levelMultiplier = 1 + (newLevel * 0.05);
+          const predictedDamage = Math.floor(baseDamage * levelMultiplier);
+    
+          const healthGain = Math.min(
+            PLAYER_CONFIG.BASE_HEALTH - (userProfile.health || 0),
+            totalMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE
+          );
+          const manaGain = Math.min(
+            PLAYER_CONFIG.BASE_MANA - (userProfile.mana || 0),
+            totalMinutes * PLAYER_CONFIG.MANA_PER_MINUTE
+          );
+    
+          // Update predicted stats for SessionStatsCard
+          setPredictedStats({
+            exp: Math.floor(totalExpGain),
+            health: healthGain,
+            mana: manaGain,
+            damage: predictedDamage,
+            level: newLevel
+          });
 
-        // Timer finished
-        if (elapsed >= selectedDuration * 60) {
+          updateUserProfile({
+            exp: newTotalExp,
+            level: newLevel,
+            health: Math.min(PLAYER_CONFIG.BASE_HEALTH, (userProfile.health || 0) + healthGain),
+            mana: Math.min(PLAYER_CONFIG.BASE_MANA, (userProfile.mana || 0) + manaGain)
+          });
+    
+          // Update boss health and member damage optimistically
+          if (originalBossHealthRef.current !== null) {
+            const newBossHealth = Math.max(0, originalBossHealthRef.current - predictedDamage);
+            updateBossHealth(newBossHealth);
+    
+            const totalMemberDamage = (originalMemberDamageRef.current || 0) + predictedDamage;
+            updateMemberDamage(authUser.uid, totalMemberDamage);
+          }
+    
+          lastSyncedMinuteRef.current = elapsedMinutes;
+    
+          console.log(`Live update: +${minutesDelta} min, +${expGained} XP`);
+        }
+    
+        // Timer complete?
+        if (elapsedSeconds >= selectedDuration * 60) {
           handleCompletion();
         }
       }, 1000);
@@ -792,6 +776,57 @@ useEffect(() => {
           lastSyncedMinuteRef.current = minutesElapsed;
           console.log(`✅ Set last synced minute to: ${minutesElapsed}`);
 
+          // 🔥 ADD THIS - Calculate predicted stats for resumed session
+          if (minutesElapsed > 0 && userDoc.exists()) {
+            const userData = userDoc.data();  // ← THIS IS REQUIRED
+
+            const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE;
+            let expMultiplier = isPro ? 2 : 1;
+            if (hasActiveBooster) {
+              expMultiplier += (activeBooster.multiplier - 1);
+              expMultiplier = Math.min(expMultiplier, 5);
+            }
+            const expPerMinute = baseExpPerMinute * expMultiplier;
+            const totalExpGain = minutesElapsed * expPerMinute;
+
+            const currentExp = userData?.exp || 0;
+            const currentLevel = userData?.level || 1;
+            const newTotalExp = currentExp + totalExpGain;
+            const { newLevel } = calculateLevelUp(currentExp, newTotalExp, currentLevel);
+
+            const baseDamage = minutesElapsed * 10;
+            const levelMultiplier = 1 + (newLevel * 0.05);
+            const predictedDamage = Math.floor(baseDamage * levelMultiplier);
+
+            const healthGain = Math.min(
+              PLAYER_CONFIG.BASE_HEALTH - (userProfile.health || 0),
+              minutesElapsed * PLAYER_CONFIG.HEALTH_PER_MINUTE
+            );
+            const manaGain = Math.min(
+              PLAYER_CONFIG.BASE_MANA - (userProfile.mana || 0),
+              minutesElapsed * PLAYER_CONFIG.MANA_PER_MINUTE
+            );
+
+            // Update predicted stats for display
+            setPredictedStats({
+              exp: Math.floor(totalExpGain),
+              health: healthGain,
+              mana: manaGain,
+              damage: predictedDamage,
+              level: newLevel
+            });
+
+            // Update userProfile context for UI
+            updateUserProfile({
+              exp: newTotalExp,
+              level: newLevel,
+              health: Math.min(PLAYER_CONFIG.BASE_HEALTH, (userProfile.health || 0) + healthGain),
+              mana: Math.min(PLAYER_CONFIG.BASE_MANA, (userProfile.mana || 0) + manaGain)
+            });
+
+            console.log(`✅ Resumed with predicted stats: ${totalExpGain} XP, ${predictedDamage} DMG`);
+          }
+
           // ✅ WAIT for party profile to load fresh boss data
           if (userProfile?.currentPartyId && refreshPartyProfile) {
             await refreshPartyProfile();
@@ -826,10 +861,11 @@ useEffect(() => {
           // Start interval
           if (!sessionTimerRef.current) {
             sessionTimerRef.current = setInterval(() => {
-              const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+              const totalElapsed = Date.now() - startTimeRef.current - (pausedTimeRef.current || 0);
               const elapsed = Math.floor(totalElapsed / 1000);
               setTimeElapsed(elapsed);
               
+              // Timer complete?
               if (elapsed >= durationSeconds) {
                 handleCompletion();
               }
