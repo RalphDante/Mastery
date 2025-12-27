@@ -1070,35 +1070,10 @@ useEffect(() => {
                 isPro={isPro}
                 hasActiveBooster={hasActiveBooster}
                 onProClick={() => {navigate('/pricing')}}
+                predictedStats={predictedStats}
               />
 
-              {/* 🔥 NEW: Show real-time predicted gains */}
-              {isRunning && predictedStats.exp > 0 && (
-                <div className="mt-3 bg-slate-900/80 border border-slate-600 rounded-lg p-3 w-full max-w-xs">
-                  <p className="text-slate-400 text-xs text-center mb-2">Current Progress:</p>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="text-center">
-                      <div className="text-yellow-400 font-bold">+{predictedStats.exp} XP</div>
-                      <div className="text-slate-500">Earned</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-orange-400 font-bold">{predictedStats.damage} DMG</div>
-                      <div className="text-slate-500">Dealt</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-red-400 font-bold">+{predictedStats.health} HP</div>
-                      <div className="text-slate-500">Restored</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-blue-400 font-bold">+{predictedStats.mana} MP</div>
-                      <div className="text-slate-500">Restored</div>
-                    </div>
-                  </div>
-                  <p className="text-slate-500 text-xs text-center mt-2 italic">
-                    Updates saved when timer completes
-                  </p>
-                </div>
-              )}
+              
             </div>
 
             <div className="flex space-x-3">
