@@ -33,7 +33,7 @@ function Timer({
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
   const {incrementMinutes, incrementExp} = useUserDataContext();
 
-  const {isTutorialAtStep} = useTutorials();
+  const {isTutorialAtStep, loading} = useTutorials();
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
 
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
@@ -65,6 +65,7 @@ function Timer({
   const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
 
   const durations = [
+    { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -87,6 +88,12 @@ function Timer({
     damage: 0,
     level: 0
   });
+
+  useEffect(() => {
+    if (!loading && isTutorialAtStep('start-timer', 1)) {
+      setSelectedDuration(5);
+    }
+  }, [loading, isTutorialAtStep]);
 
   // ============================================================================
   // 🔥 NEW: Calculate predicted stats based on elapsed time

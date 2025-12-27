@@ -74,20 +74,8 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   };
 
   const handleTimerStart = async () => {
-
-
     if(isTutorialAtStep('start-timer', 1)){
-
-      setTimeout(async ()=>{
-        setShowTimerStart(true);
-        await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
-        advanceStep('start-timer')
-      }, 5000)
-  
-      
-      setTimeout(() => {
-        setShowTimerIncentive(true);
-      }, 10000);
+      advanceStep('start-timer')
     }
   };
 

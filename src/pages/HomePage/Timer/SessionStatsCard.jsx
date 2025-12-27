@@ -1,5 +1,6 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function SessionStatsCard({ 
   rewards, 
@@ -9,6 +10,8 @@ function SessionStatsCard({
   onProClick,
   predictedStats
 }) {
+  const {partyProfile} = usePartyContext();
+
   return (
     <div className="bg-slate-900 border border-slate-600 rounded-lg w-full max-w-xs">
       {/* Pro Banner at top */}
@@ -41,8 +44,18 @@ function SessionStatsCard({
               <div className="text-slate-500">Earned</div>
             </div>
             <div className="text-center">
-              <div className="text-orange-400 font-bold">{predictedStats.damage} DMG</div>
-              <div className="text-slate-500">Dealt</div>
+              {partyProfile?.currentBoss?.isAlive ? (
+                <>
+                  <div className="text-orange-400 font-bold">{predictedStats.damage} DMG</div>
+                  <div className="text-slate-500">Dealt</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-orange-400 font-bold">0 DMG</div>
+                  <div className="text-slate-500">Boss Defeated</div>
+                </>
+              )}
+            
             </div>
             <div className="text-center">
               <div className="text-red-400 font-bold">+{predictedStats.health} HP</div>
