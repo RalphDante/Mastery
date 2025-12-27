@@ -94,7 +94,7 @@ function Timer({
 
   useEffect(() => {
     if (!loading && isTutorialAtStep('start-timer', 1)) {
-      setSelectedDuration(5);
+      setSelectedDuration(2);
     }
   }, [loading, isTutorialAtStep]);
 
@@ -401,6 +401,25 @@ function Timer({
   // ============================================================================
   const handleCompletion = useCallback(async () => {
     console.log('Timer completed!');
+
+    // ✅ FIX: Check if we already saved this session
+    if (startTimeRef.current) {
+      const savedSessionKey = `completed_${authUser.uid}_${startTimeRef.current}`;
+      const alreadySaved = localStorage.getItem(savedSessionKey);
+      
+      if (alreadySaved === 'saved' || alreadySaved === 'saving') {
+        console.log('⚠️ Session already saved in resume, skipping duplicate');
+        
+        // Just show completion screen
+        setShowCompletion(true);
+        setIsRunning(false);
+        if (sessionTimerRef.current) {
+          clearInterval(sessionTimerRef.current);
+          sessionTimerRef.current = null;
+        }
+        return;
+      }
+    }
     
     if (sessionTimerRef.current) {
       clearInterval(sessionTimerRef.current);
@@ -709,14 +728,14 @@ useEffect(() => {
   const checkForActiveTimer = async () => {
     if (!authUser || hasResumedRef.current) return;
 
+    hasResumedRef.current = true;
+
     try {
       const userRef = doc(db, 'users', authUser.uid);
       const userDoc = await getDoc(userRef);
       const activeTimer = userDoc.data()?.activeTimer;
 
       if (activeTimer?.isActive && activeTimer.startedAt) {
-        if (hasResumedRef.current) return;
-
         const startedAt = activeTimer.startedAt.toDate();
         const durationSeconds = activeTimer.duration;
         const now = Date.now();
@@ -736,7 +755,6 @@ useEffect(() => {
           return;
         }
 
-        hasResumedRef.current = true;
 
         if (elapsedSeconds < durationSeconds) {
           console.log(`✅ Resuming timer: ${elapsedSeconds}s elapsed of ${durationSeconds}s`);
@@ -765,13 +783,7 @@ useEffect(() => {
           const expPerMinute = baseExpPerMinute * expMultiplier;
           const totalExpEarned = minutesElapsed * expPerMinute;
           
-          // Update context with elapsed time
-          if (minutesElapsed > 0) {
-            incrementMinutes(minutesElapsed);
-            incrementExp(totalExpEarned);
-            console.log(`📊 Resumed session: +${minutesElapsed} min, +${totalExpEarned} XP added to context`);
-          }
-          
+      
           // Set lastSyncedMinute to the current elapsed minutes
           lastSyncedMinuteRef.current = minutesElapsed;
           console.log(`✅ Set last synced minute to: ${minutesElapsed}`);
@@ -955,8 +967,6 @@ useEffect(() => {
           console.log('✅ Timer completed while closed - awarding time');
           
           const minutesToSave = Math.floor(durationSeconds / 60);
-          
-          // 🔥 NEW: Check if we already saved this session
           const savedSessionKey = `completed_${authUser.uid}_${startedAt.getTime()}`;
           const alreadySaved = localStorage.getItem(savedSessionKey);
           
@@ -964,17 +974,13 @@ useEffect(() => {
             console.log('⚠️ Session already saved, skipping duplicate save');
             await updateDoc(userRef, { 'activeTimer.isActive': false });
           } else {
-            // 🔥 Mark as "being saved" BEFORE the save
             localStorage.setItem(savedSessionKey, 'saving');
             
             try {
               await saveCompletedSession(minutesToSave);
-              
-              // 🔥 Mark as "saved" AFTER successful save
               localStorage.setItem(savedSessionKey, 'saved');
               console.log('✅ Session saved successfully');
               
-              // 🔥 Clean up old saved session markers (keep last 5)
               const allKeys = Object.keys(localStorage);
               const sessionKeys = allKeys
                 .filter(k => k.startsWith(`completed_${authUser.uid}_`))
@@ -984,10 +990,19 @@ useEffect(() => {
               sessionKeys.slice(5).forEach(k => localStorage.removeItem(k));
             } catch (err) {
               console.error('❌ Failed to save session:', err);
-              // Don't remove the marker - retry next reload
             }
           }
 
+          // ✅ FIX: Clear timer state to prevent double save
+          setIsRunning(false);
+          startTimeRef.current = null;
+          pausedTimeRef.current = 0;
+          lastPauseTimeRef.current = null;
+          originalBossHealthRef.current = null;
+          originalMemberDamageRef.current = null;
+          lastSyncedMinuteRef.current = 0;
+          setPredictedStats({ exp: 0, health: 0, mana: 0, damage: 0, level: 0 });
+          
           setShowCompletion(true);
           setSelectedDuration(Math.ceil(durationSeconds / 60));
           setIsSessionActive(true);
