@@ -19,6 +19,7 @@ export const usePartyContext = () => {
 };
 
 export const PartyProvider = ({ children }) => {
+    console.log("PartyProvider rendered")
     const { user, userProfile, refreshUserProfile } = useAuthContext();
     const [partyProfile, setPartyProfile] = useState(null);
     const [partyMembers, setPartyMembers] = useState({});
