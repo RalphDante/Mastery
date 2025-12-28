@@ -47,6 +47,7 @@ function Timer({
   const originalBossHealthRef = useRef(null);
   const originalMemberDamageRef = useRef(null);
   const lastSyncedMinuteRef = useRef(0);
+  const lastIncrementedMinuteRef = useRef(0);
 
   const navigate = useNavigate();
   
@@ -455,7 +456,7 @@ function Timer({
   // ============================================================================
   const startTimer = async (skipStreakCheck = false) => {
     if (!authUser) return;
-    
+    lastIncrementedMinuteRef.current = 0;
     correctSoundEffect.current.play().catch(err=>console.log(err));
     daggerWooshSFX.current.play().catch(err=>console.log(err));
    
@@ -671,6 +672,7 @@ function Timer({
     startTimeRef.current = null;
     hasResumedRef.current = false;
     pausedTimeRef.current = 0;
+    lastIncrementedMinuteRef.current = 0;
     lastPauseTimeRef.current = null;
     originalBossHealthRef.current = null;
     originalMemberDamageRef.current = null;
@@ -740,6 +742,7 @@ function Timer({
 
   const selectDuration = (duration) => {
     if (!isSessionActive) {
+      lastIncrementedMinuteRef.current = 0;
       setSelectedDuration(duration);
       setTimeElapsed(0);
       startTimeRef.current = null;
@@ -856,9 +859,18 @@ useEffect(() => {
               mana: Math.min(PLAYER_CONFIG.BASE_MANA, currentMana + manaGain)
             });
 
-            incrementMinutes(minutesElapsed);
-            incrementExp(totalExpGain);
-
+            if (minutesElapsed > lastIncrementedMinuteRef.current) {
+              const minutesToIncrement = minutesElapsed - lastIncrementedMinuteRef.current;
+              const expToIncrement = minutesToIncrement * expPerMinute;
+              
+              incrementMinutes(minutesToIncrement);
+              incrementExp(expToIncrement);
+              
+              lastIncrementedMinuteRef.current = minutesElapsed;
+              console.log(`Live update: +${minutesToIncrement} min, +${expToIncrement} XP (total: ${minutesElapsed})`);
+            }     
+            
+            lastIncrementedMinuteRef.current = minutesElapsed;
 
             console.log(`✅ Resumed with predicted stats: ${totalExpGain} XP, ${predictedDamage} DMG`);
           }
@@ -912,8 +924,17 @@ useEffect(() => {
                 const expPerMinute = baseExpPerMinute * expMultiplier;
                 const expGained = minutesDelta * expPerMinute;
           
-                incrementMinutes(minutesDelta);
-                incrementExp(expGained);
+                // ✅ ONLY INCREMENT IF WE HAVEN'T ALREADY
+                if (elapsedMinutes > lastIncrementedMinuteRef.current) {
+                  const minutesToIncrement = elapsedMinutes - lastIncrementedMinuteRef.current;
+                  const expToIncrement = minutesToIncrement * expPerMinute;
+                  
+                  incrementMinutes(minutesToIncrement);
+                  incrementExp(expToIncrement);
+                  
+                  lastIncrementedMinuteRef.current = elapsedMinutes;
+                  console.log(`Live update: +${minutesToIncrement} min, +${expToIncrement} XP (total: ${elapsedMinutes})`);
+                }
           
                 const totalMinutes = elapsedMinutes;
                 const totalExpGain = totalMinutes * expPerMinute;
