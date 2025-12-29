@@ -45,6 +45,7 @@ export default function MiniLeaderboard() {
   // ────── User state ──────
   const isPro      = weeklyData?.currentUser?.isPro ?? false;
   const minsToday  = todaySession?.minutesStudied ?? 0;
+  const expToday = todaySession?.expEarned ?? 0;
   const hasRank    = !!weeklyData?.currentUserRank;
 
   if (loading) {
@@ -57,7 +58,7 @@ export default function MiniLeaderboard() {
 
   // ────── Empty Leaderboard State ──────
   if (!weeklyData?.topUsers?.length) {
-    const formatMinutes = (m) => `${m}m`;
+    const formatMinutes = (m) => `${m}exp`;
     
     return (
       <div className="mt-4 bg-slate-800/70 border border-slate-700 rounded-2xl p-4 shadow-md">
@@ -97,7 +98,7 @@ export default function MiniLeaderboard() {
               <span className="text-slate-400 text-sm">Today's progress</span>
               <div className="text-right">
                 <div className="text-2xl font-bold text-emerald-400">
-                  {formatMinutes(minsToday)}
+                  {formatMinutes(expToday)}
                 </div>
                 <div className="text-xs text-slate-500">
                   {minsToday === 0 
@@ -146,7 +147,7 @@ export default function MiniLeaderboard() {
 
   // ────── Normal Leaderboard (existing code) ──────
   const top3 = weeklyData.topUsers.slice(0, 3);
-  const format = (m) => (m != null ? `${m}m` : "0m");
+  const format = (m) => (m != null ? `${m}exp` : "0exp");
 
   return (
     <div className="mt-4 bg-slate-800/70 border border-slate-700 rounded-2xl p-4 shadow-md">
@@ -154,7 +155,7 @@ export default function MiniLeaderboard() {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-bold text-purple-400 flex items-center gap-2">
           <Users className="w-5 h-5 text-purple-400" />
-          Leaderboard
+          Global Leaderboard
         </h2>
         <button
           onClick={() => navigate("/leaderboard")}
@@ -172,7 +173,7 @@ export default function MiniLeaderboard() {
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-emerald-400">
-              {minsToday}m
+              {expToday}exp
             </div>
             <div className="text-xs text-slate-500">
               {minsToday === 0 ? "Start studying!" : "Counts tomorrow"}
@@ -221,8 +222,8 @@ export default function MiniLeaderboard() {
                 </span>
               </div>
 
-              <span className="text-purple-300 font-semibold">
-                {format(u.minutes)}
+              <span className="text-yellow-300 font-semibold">
+                {format(u.exp)}
               </span>
             </div>
           );
@@ -265,8 +266,8 @@ export default function MiniLeaderboard() {
               </span>
             </div>
 
-            <span className="text-purple-300 font-semibold">
-              {format(weeklyData.currentUserData?.minutes)}
+            <span className="text-yellow-300 font-semibold">
+              {format(weeklyData.currentUserData?.exp)}
             </span>
           </div>
         </>

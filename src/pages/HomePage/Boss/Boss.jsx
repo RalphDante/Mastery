@@ -29,34 +29,15 @@ function Boss() {
 
   return (
     <>
-      {hasNotStartedASession ? (
-        <div className="bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-lg p-8 flex flex-col items-center justify-center min-h-[400px]">
-          <div className="text-7xl mb-4 opacity-50 grayscale">👾</div>
-          <div className="text-center">
-            <h3 className="text-xl font-bold text-slate-200 mb-3">
-              Unlock Boss Battles
-            </h3>
-            <p className="text-slate-400 mb-4 max-w-sm">
-              Start a study session to start fighting bosses with your party!
-            </p>
-            <div className="inline-flex items-center space-x-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-full text-sm font-semibold">
-              
-              <span>← Start your first session</span>
-              <span>⚔️</span>
-
-            </div>
-          </div>
-        </div>
-      ) : (
-         <div className="w-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
       
-          {bossStatus ? 
-            <CurrentBossFight /> : 
-            <BossVictoryScreen />
-            }
-          
-        </div>
-      )}
+        <div className="w-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+    
+        {bossStatus ? 
+          <CurrentBossFight /> : 
+          <BossVictoryScreen />
+          }
+        
+      </div>
     </>
    
   );

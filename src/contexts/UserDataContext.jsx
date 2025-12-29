@@ -31,6 +31,7 @@ export const UserDataProvider = ({ children }) => {
     const [todaySession, setTodaySession] = useState({ 
         minutesStudied: 0, 
         cardsReviewed: 0,
+        expEarned: 0,
         date: getLocalDateString()
     });
 
@@ -48,6 +49,7 @@ export const UserDataProvider = ({ children }) => {
                 sessionData = {
                     minutesStudied: data.minutesStudied || 0,
                     cardsReviewed: data.spacedSessions || 0,
+                    expEarned: data.expEarned || 0
                 };
             }
             
@@ -65,6 +67,13 @@ export const UserDataProvider = ({ children }) => {
         setTodaySession(prev => ({
             ...prev,
             minutesStudied: prev.minutesStudied + amount
+        }));
+    }, []);
+
+    const incrementExp = useCallback((amount) => {
+        setTodaySession(prev => ({
+            ...prev,
+            expEarned: (prev.expEarned || 0) + amount  // ✅ Fallback to 0 if undefined
         }));
     }, []);
 
@@ -208,7 +217,9 @@ export const UserDataProvider = ({ children }) => {
             setTodaySession({ 
                 minutesStudied: 0,  
                 cardsReviewed: 0,  
-                date: getLocalDateString() });
+                date: getLocalDateString(),
+                expEarned: 0
+            });
         }
     }, [user?.uid, fetchTodaySession]);
 
@@ -228,6 +239,7 @@ export const UserDataProvider = ({ children }) => {
         extendedSessions,           // Days 8-30 (pro only)
         getFullThirtyDays,  
         incrementMinutes,
+        incrementExp,
         incrementReviewedCards,
         todaySession,
         isLoading,

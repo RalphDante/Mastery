@@ -1,9 +1,7 @@
 import { createPortal } from "react-dom";
 import { X, Flame, Trophy, Check } from "lucide-react";
-import { arrayUnion, doc, setDoc, updateDoc } from "firebase/firestore";
-import { useAuthContext } from "./AuthContext";
-import { db } from "../api/firebase";
-import { useUserDataContext } from "./UserDataContext";
+import { useUserDataContext } from "../../contexts/UserDataContext";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 function StreakModal({ streak, onClose, user }) {
   const {userProfile} = useAuthContext();

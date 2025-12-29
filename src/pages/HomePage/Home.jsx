@@ -1,8 +1,7 @@
 import {auth, functions} from '../../api/firebase.js'
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Confetti, TimerStartedToast, WelcomeStudyToast, TimerIncentiveToast, TimerCompleteToast } from '../../components/ConfettiAndToasts.jsx';
-
 import { db } from '../../api/firebase.js';
 
 
@@ -13,11 +12,12 @@ import Options from './Timer/Options.jsx';
 import { useAuthContext } from '../../contexts/AuthContext.jsx';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
-
 import MiniLeaderboard from '../../components/MiniLeaderboard.jsx';
+
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 // import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
+import NewUserBattleModal from '../../components/Modals/NewUserBattleModal.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -37,12 +37,31 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
 
+  const [showNewUserBattleModal, setShowNewUserBattleModal] = useState(false);
+  const timerStartRef = useRef(null); // ← Store reference to timer's start function
+
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
   const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
+  const hasNotStartedASession = hasNotStartedAFlashcardSession && hasNotStartedATimerSession;
+
+  const navigate = useNavigate();
+
+
+  // Show modal when user is brand new
+  useEffect(() => {
+    if (loading) return;
+    
+    if (hasNotStartedASession) {
+      const timer = setTimeout(() => {
+        setShowNewUserBattleModal(true);
+      }, 1000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, hasNotStartedASession]);
   
 
   
-  const navigate = useNavigate();
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
 
   const testExpiration = async () => {
@@ -59,13 +78,16 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
     if(isTutorialAtStep('start-timer', 1)){
 
-      setShowTimerStart(true);
-      await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
-      advanceStep('start-timer')
+      setTimeout(async ()=>{
+        setShowTimerStart(true);
+        await awardWithXP(user.uid, 100, updateUserProfile, userProfile);
+        advanceStep('start-timer')
+      }, 5000)
+  
       
       setTimeout(() => {
         setShowTimerIncentive(true);
-      }, 3000);
+      }, 10000);
     }
   };
 
@@ -127,12 +149,19 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
-     {/* {showWelcomeToast && (
-        <WelcomeStudyToast 
-          xpAmount={300}
-          onComplete={() => setShowWelcomeToast(false)}
+     {showNewUserBattleModal && (
+        <NewUserBattleModal 
+          onStartSession={() => {
+            // Call the timer's start function with skipStreakCheck=true
+            if (timerStartRef.current) {
+              timerStartRef.current(true);
+            }
+            setShowNewUserBattleModal(false);
+          }}
+          onClose={() => setShowNewUserBattleModal(false)}
         />
-      )} */}
+      )}
+
       {showTimerStart && (
         <>
           <TimerStartedToast 
@@ -182,6 +211,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                     onCreateWithAIModalClick={onCreateWithAIModalClick}
                     handleTimerStart={handleTimerStart}
                     handleTimerComplete={handleTimerComplete}
+                    timerStartRef={timerStartRef}
                   />
                   <SingularMastery />
 
@@ -254,6 +284,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                       onCreateWithAIModalClick={onCreateWithAIModalClick}
                       handleTimerStart={handleTimerStart}
                       handleTimerComplete={handleTimerComplete}
+                      timerStartRef={timerStartRef}
                     />
 
                     <SingularMastery />

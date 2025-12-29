@@ -6,7 +6,6 @@ import { calculateLevelUp, PLAYER_CONFIG } from '../../../utils/playerStatsUtils
 import { serverTimestamp } from 'firebase/firestore';
 import { handleBossDefeat } from '../../../utils/bossUtils';
 
-import ServerCostBanner from '../ServerCostBanner';
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
 import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
@@ -15,9 +14,11 @@ import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import SessionCompleteScreen from './SessionCompleteScreen';
-import StreakModal from '../../../contexts/StreakModal';
-import { Confetti } from '../../../components/ConfettiAndToasts';
 import { getMonthId, getWeekId } from '../../../contexts/LeaderboardContext';
+import { Zap, Trophy } from 'lucide-react';
+import StreakModal from '../../../components/Modals/StreakModal';
+import SessionStatsCard from './SessionStatsCard';
+import { useNavigate } from 'react-router-dom';
 
 function Timer({
   authUser,
@@ -26,14 +27,20 @@ function Timer({
   handleTimerComplete,
   deckId = null,
   onTimeUpdate = null,
+  timerStartRef
 }) {
   const {userProfile, user} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers} = usePartyContext();
-  const {incrementMinutes} = useUserDataContext();
+  const {incrementMinutes, incrementExp} = useUserDataContext();
+
+  const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
+  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
+
   const [showStreakFreezePrompt, setShowStreakFreezePrompt] = useState(false);
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
+  const navigate = useNavigate();
   const startTimeRef = useRef(null);           // NEW: When timer actually started
   const pausedTimeRef = useRef(0);             // NEW: Total time spent paused
   const lastPauseTimeRef = useRef(null);       // NEW: When last pause began
@@ -50,7 +57,8 @@ function Timer({
   const correctSoundEffect = useRef(null);
   const daggerWooshSFX = useRef(null);
 
-
+  const activeBooster = currentUser?.activeBooster;
+  const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
 
   const durations = [
     // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
@@ -62,15 +70,12 @@ function Timer({
   ];
 
 
-  const [selectedDuration, setSelectedDuration] = useState(5);
+  const [selectedDuration, setSelectedDuration] = useState(25);
   const [isRunning, setIsRunning] = useState(false);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [showCompletion, setShowCompletion] = useState(false);
 
-  const {isTutorialAtStep, isInTutorial, advanceStep, } = useTutorials();
-
-  const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
 
 
 
@@ -95,7 +100,25 @@ function Timer({
 
     const MAX_MINUTES_PER_SAVE = 180; // 3 hours max
     const fullMinutes = Math.floor(secondsToSave / 60);
-    
+     // Calculate exp based on tier
+
+    const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE; // Base for free users
+    let expMultiplier = isPro ? 2 : 1;
+
+    const activeBooster = currentUser?.activeBooster;
+    const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
+    if (hasActiveBooster) {
+      // Additive stacking (Pro 2x + Booster 2x = 4x total)
+      expMultiplier += (activeBooster.multiplier - 1);
+      
+      // Cap at 5x to prevent abuse
+      expMultiplier = Math.min(expMultiplier, 5);
+      console.log(`🔥 Booster active: ${activeBooster.multiplier}x (total: ${expMultiplier}x)`);
+    }
+
+    const expPerMinute = baseExpPerMinute * expMultiplier;
+    const expEarned = fullMinutes * expPerMinute;
+  
     // 🔥 CRITICAL: Add minimum validation too
     if (fullMinutes <= 0 || fullMinutes > MAX_MINUTES_PER_SAVE) {
       console.error('Invalid minutes to save:', fullMinutes, 'from seconds:', secondsToSave);
@@ -159,7 +182,7 @@ function Timer({
           const currentHealth = currentData.health || 0;
           const currentMana = currentData.mana || 0;
 
-          newExp = currentExp + (fullMinutes * PLAYER_CONFIG.EXP_PER_MINUTE);
+          newExp = currentExp + (fullMinutes * expPerMinute);
           newHealth = Math.min(
             PLAYER_CONFIG.BASE_HEALTH, 
             currentHealth + (fullMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE)
@@ -212,9 +235,13 @@ function Timer({
             authUser.uid
           );
 
+         
+
+
           transaction.set(weeklyLeaderboardRef, {
             displayName: currentData.displayName || 'Anonymous',
             minutes: increment(fullMinutes),
+            exp: increment(expEarned), // ← ADD THIS LINE
             avatar: currentData.avatar || 'warrior_01',
             level: newLevel || currentData.level || 1,
             isPro: currentData.subscription?.tier === 'pro' || false,
@@ -222,11 +249,11 @@ function Timer({
             title: currentData.title || null,
             streak: currentData.stats?.currentStreak || 0
           }, { merge: true });
-
-          // Update monthly leaderboard
+          
           transaction.set(monthlyLeaderboardRef, {
             displayName: currentData.displayName || 'Anonymous',
             minutes: increment(fullMinutes),
+            exp: increment(expEarned), // ← ADD THIS LINE
             avatar: currentData.avatar || 'warrior_01',
             level: newLevel || currentData.level || 1,
             isPro: currentData.subscription?.tier === 'pro' || false,
@@ -234,8 +261,8 @@ function Timer({
             title: currentData.title || null,
             streak: currentData.stats?.currentStreak || 0
           }, { merge: true });
-
-          console.log(`📊 Updated leaderboards: +${fullMinutes} minutes`);
+          
+          console.log(`📊 Updated leaderboards: +${fullMinutes} minutes, +${expEarned} exp`);
 
           if (currentData.currentPartyId && partyDoc && partyDoc.exists()) {
             const partyData = partyDoc.data();
@@ -350,6 +377,7 @@ function Timer({
           transaction.update(dailySessionRef, {
             minutesStudied: (existingData.minutesStudied || 0) + fullMinutes,
             lastSessionAt: now,
+            expEarned: (existingData.expEarned || 0) + expEarned
           });
         } else {
           transaction.set(dailySessionRef, {
@@ -358,6 +386,8 @@ function Timer({
             lastSessionAt: now,
             minutesStudied: fullMinutes,
             cardsReviewed: 0,
+            expEarned: expEarned
+
           });
         }
       });
@@ -379,6 +409,8 @@ function Timer({
       });
 
       incrementMinutes(fullMinutes);
+      incrementExp(expEarned);
+
       
       if (onTimeUpdate) onTimeUpdate(fullMinutes);
     } catch (err) {
@@ -439,7 +471,7 @@ function Timer({
 
     handleTimerComplete?.();
 
-    if (count % 2 === 0 && !isPro) {
+    if (!isPro) {
       setTimeout(() => {
         console.log('Showing interstitial ad...');
         showInterstitialAd();
@@ -586,6 +618,12 @@ function Timer({
       }, 1000);
     } 
   };
+
+  useEffect(() => {
+    if (timerStartRef) {
+      timerStartRef.current = startTimer;
+    }
+  }, [startTimer, timerStartRef]);
 
   const pauseTimer = () => {
     setIsRunning(false);
@@ -866,7 +904,6 @@ function Timer({
     <>
       {showStreakModal && (
         <>
-          <Confetti /> 
           <StreakModal 
             streak={(user?.uid ? partyMembers[user.uid]?.streak : null) || 1}
             onClose={setShowStreakModal}
@@ -910,7 +947,7 @@ function Timer({
                 Start {selectedDuration} Min Session
               </button>
               
-            <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
+              <div className="mt-3 bg-slate-900/50 border border-slate-700 rounded-lg px-3 py-3">
                 <div className="flex flex-wrap justify-center items-center gap-x-3 gap-y-2 text-sm">
                   <span className="text-yellow-400 font-semibold whitespace-nowrap">+{getCurrentRewards().xp} XP</span>
                   <span className="text-red-400 font-semibold whitespace-nowrap">+{getCurrentRewards().health} HP</span>
@@ -922,32 +959,26 @@ function Timer({
                 <p className="text-center text-slate-400 text-xs mt-2.5 leading-relaxed">
                   Return when timer ends to claim rewards
                 </p>
+                
+                {/* NEW: Pro CTA */}
+                {!isPro && (
+                  <div className="mt-3 pt-3 border-t border-slate-700/50">
+                    <div className="flex items-center justify-center gap-2 text-sm">
+                      <Trophy className="w-4 h-4 text-yellow-400" />
+                      <span className="text-slate-300 text-xs">
+                        <span className="text-purple-400 font-semibold">
+                          <button 
+                            onClick={()=>{navigate('/pricing')}}
+                            className="text-purple-400 hover:text-purple-300 font-semibold underline decoration-dotted"
+                          >
+                            Pro Members
+                          </button>{' '}</span> 
+                          earn double XP
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-            
-              {/* <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg">
-                <p className="text-sm text-center text-slate-400 mb-2">Session rewards:</p>
-                <div className="flex justify-between space-x-2 items-center">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-yellow-400 font-medium">+{getCurrentRewards().xp}</span>
-                    <span className="text-slate-400 text-xs">XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-500 font-medium">+{getCurrentRewards().health}</span>
-                    <span className="text-slate-400 text-xs">HP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-blue-500 font-medium">+{getCurrentRewards().mana}</span>
-                    <span className="text-slate-400 text-xs">MANA</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-400 font-medium">{getCurrentRewards().damage}</span>
-                    <span className="text-slate-400 text-xs">DMG</span>
-                  </div>
-                </div>
-              </div> */}
-              
-            
-              
             </div>
 
             
@@ -967,12 +998,12 @@ function Timer({
           </>
         ) : (
           <>
-            <div className="text-left">
+            {/* <div className="text-left">
               <h2 className="text-lg font-semibold mb-1">Session Active</h2>
               <p className="mb-2 text-slate-400 text-sm text-center max-w-md">
-              <span className='text-yellow-400'>Pro tip:</span> Study for 15+ mins and something special might drop when you finish... 🎁
+              <span className='text-yellow-400'>Pro tip:</span> Work for 15+ mins and something special might drop when you finish... 🎁
               </p>
-            </div>
+            </div> */}
 
             <div className="flex-1 flex flex-col justify-center items-center">
               <div className="relative mb-6">
@@ -990,27 +1021,49 @@ function Timer({
                 </svg>
               </div>
 
-              <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg w-full max-w-xs">
-                <p className="text-sm text-slate-400 mb-2 text-center">Earning per minute:</p>
-                <div className="flex justify-between items-center text-sm">
-                  <div className="flex items-center space-x-1">
-                    <span className="text-yellow-500 font-medium">{Math.round(getCurrentRewards().xp/selectedDuration)}</span>
-                    <span className="text-slate-400">XP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-blue-500 font-medium">{Math.round(getCurrentRewards().mana/selectedDuration)}</span>
-                    <span className="text-slate-400">MANA</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-green-400 font-medium">{Math.round(getCurrentRewards().health/selectedDuration)}</span>
-                    <span className="text-slate-400">HP</span>
-                  </div>
-                  <div className="flex items-center space-x-1">
-                    <span className="text-red-400 font-medium">{Math.round(getCurrentRewards().damage/selectedDuration)}</span>
-                    <span className="text-slate-400">DMG</span>
+                 
+              {isSessionActive && (hasActiveBooster || isPro) && (
+                <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border border-purple-500 rounded-lg p-3 mb-3">
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-purple-400 animate-pulse" />
+                      <span className="text-white font-semibold">
+                        {hasActiveBooster && isPro ? (
+                          // Both Pro + Booster
+                          `${2 + (activeBooster.multiplier - 1)}x XP Active!`
+                        ) : hasActiveBooster ? (
+                          // Just Booster
+                          `${activeBooster.multiplier}x XP Boost Active!`
+                        ) : (
+                          // Just Pro
+                          `2x Pro XP Active!`
+                        )}
+                      </span>
+                      {hasActiveBooster && (
+                        <span className="text-slate-300 text-sm">
+                          ({Math.floor((activeBooster.endsAt - Date.now()) / 60000)}m left)
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Breakdown for Pro + Booster */}
+                    {hasActiveBooster && isPro && (
+                      <span className="text-slate-400 text-xs">
+                        (Pro 2x + Booster {activeBooster.multiplier}x)
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
+
+                
+              <SessionStatsCard 
+                rewards={getCurrentRewards()}
+                selectedDuration={selectedDuration}
+                isPro={isPro}
+                hasActiveBooster={hasActiveBooster}
+                onProClick={() => {navigate('/pricing')}}
+              />
             </div>
 
             <div className="flex space-x-3">
