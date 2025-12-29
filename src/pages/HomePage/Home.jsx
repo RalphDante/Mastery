@@ -39,7 +39,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [showNewUserBattleModal, setShowNewUserBattleModal] = useState(false);
   const timerStartRef = useRef(null); // ← Store reference to timer's start function
-
+  const userData = userProfile;
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
   const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
   const hasNotStartedASession = hasNotStartedAFlashcardSession && hasNotStartedATimerSession;
@@ -51,7 +51,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   useEffect(() => {
     if (loading) return;
     
-    if (hasNotStartedASession) {
+    if (hasNotStartedASession && !userData?.activeTimer?.isActive) {
       const timer = setTimeout(() => {
         setShowNewUserBattleModal(true);
       }, 1000);
