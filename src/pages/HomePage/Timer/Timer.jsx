@@ -977,7 +977,7 @@ useEffect(() => {
           if (userDoc.exists()) {
             const userData = userDoc.data();
             
-            if (userData.currentPartyId) { // ← ADD THIS CHECK
+            if (userData.currentPartyId) {
               const partyRef = doc(db, 'parties', userData.currentPartyId);
               const freshPartyDoc = await getDoc(partyRef);
               if (freshPartyDoc.exists()) {
@@ -985,13 +985,34 @@ useEffect(() => {
                 originalBossHealthRef.current = freshBossHealth;
                 console.log('✅ Captured FRESH boss health:', freshBossHealth);
               }
-    
+
               const memberRef = doc(db, 'parties', userData.currentPartyId, 'members', authUser.uid);
               const freshMemberDoc = await getDoc(memberRef);
               if (freshMemberDoc.exists()) {
-                freshMemberDamage = freshMemberDoc.data()?.currentBossDamage || 0;
+                const freshMemberData = freshMemberDoc.data();
+                freshMemberDamage = freshMemberData.currentBossDamage || 0;
                 originalMemberDamageRef.current = freshMemberDamage;
                 console.log('✅ Captured FRESH member damage:', freshMemberDamage);
+                
+                // ✅ UPDATE: Also capture fresh member stats
+                const freshMemberProfile = {
+                  exp: freshMemberData.exp || 0,
+                  level: freshMemberData.level || 1,
+                  health: freshMemberData.health || 0,
+                  mana: freshMemberData.mana || 0
+                };
+                
+                // Update partyMembersRef with fresh data
+                partyMembersRef.current = {
+                  ...partyMembersRef.current,
+                  [authUser.uid]: {
+                    ...partyMembersRef.current[authUser.uid],
+                    ...freshMemberProfile,
+                    currentBossDamage: freshMemberDamage
+                  }
+                };
+                
+                console.log('✅ Updated member profile with fresh stats:', freshMemberProfile);
               } else {
                 originalMemberDamageRef.current = 0;
               }
