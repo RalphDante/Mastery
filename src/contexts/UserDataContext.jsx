@@ -244,6 +244,7 @@ export const UserDataProvider = ({ children }) => {
         todaySession,
         isLoading,
         refreshDailySessions: () => fetchDailySessions(user?.uid),
+        refreshTodaySession: () => fetchTodaySession(user?.uid), 
     };
 
     return (

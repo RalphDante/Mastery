@@ -31,7 +31,7 @@ export const PartyProvider = ({ children }) => {
         if (!partyId) {
             setPartyProfile(null);
             setPartyMembers({});
-            return;
+            return { partyData: null, membersData: {} };
         }
 
         try {
@@ -53,15 +53,19 @@ export const PartyProvider = ({ children }) => {
                 setPartyMembers(membersObject);
                 
                 console.log('✅ Party loaded:', partyData.title, 'with', Object.keys(membersObject).length, 'members');
+                return { partyData, membersData: membersObject };
+
             } else {
                 console.warn('⚠️ Party not found:', partyId);
                 setPartyProfile(null);
                 setPartyMembers({});
+                return { partyData: null, membersData: {} };
             }
         } catch (error) {
             console.error('❌ Error fetching party profile:', error);
             setPartyProfile(null);
-            setPartyMembers({});
+            setPartyMembers({});   
+            return { partyData: null, membersData: {} };
         }
     }, []);
 
@@ -187,9 +191,10 @@ export const PartyProvider = ({ children }) => {
 
     const refreshPartyProfile = useCallback(async () => {
         if (userProfile?.currentPartyId) {
-            await fetchPartyProfile(userProfile.currentPartyId);
+            return await fetchPartyProfile(userProfile.currentPartyId); // ← Return data
         }
-    },[]);
+        return { partyData: null, membersData: {} };
+    }, [userProfile?.currentPartyId, fetchPartyProfile]);
 
     // Boss system setters
     const updateBossHealth = useCallback((newHealth) => {
