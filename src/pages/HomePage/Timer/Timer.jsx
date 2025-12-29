@@ -70,6 +70,12 @@ function Timer({
   const handleCompletionRef = useRef(null);
   const selectedDurationRef = useRef(selectedDuration);
 
+  const sessionStartExpRef = useRef(0);
+  const sessionStartHealthRef = useRef(0);
+  const sessionStartManaRef = useRef(0);
+  const sessionStartLevelRef = useRef(1);
+  const activeUserProfileRef = useRef(null);
+
   const currentUser = memberProfile;
   const isPro = currentUser?.subscription?.tier === "pro";
 
@@ -479,7 +485,8 @@ function Timer({
     resumeFromMinutes = 0, 
     freshBossHealth = null, // ← NEW
     freshMemberDamage = null,
-    resumeStartTime = null
+    resumeStartTime = null,
+    freshMemberProfile = null
     ) => {
     if (!authUser) return;
     if (!isResuming) {
@@ -501,6 +508,20 @@ function Timer({
       if (partyProfile?.currentBoss) {
         originalBossHealthRef.current = partyProfile.currentBoss.currentHealth;
         console.log('✅ Captured original boss health:', originalBossHealthRef.current);
+      }
+
+      if (partyMembers?.[authUser.uid]) {
+        activeUserProfileRef.current = partyMembers[authUser.uid]; // ✅ Set it here
+        sessionStartExpRef.current = partyMembers[authUser.uid].exp || 0;
+        sessionStartHealthRef.current = partyMembers[authUser.uid].health || 0;
+        sessionStartManaRef.current = partyMembers[authUser.uid].mana || 0;
+        sessionStartLevelRef.current = partyMembers[authUser.uid].level || 1;
+        console.log('✅ Captured session start stats:', {
+          exp: sessionStartExpRef.current,
+          health: sessionStartHealthRef.current,
+          mana: sessionStartManaRef.current,
+          level: sessionStartLevelRef.current
+        });
       }
 
       // ✅ Capture original member damage (0 for new session)
@@ -567,6 +588,7 @@ function Timer({
       startTimeRef.current = resumeStartTime;
       pausedTimeRef.current = 0;
       lastPauseTimeRef.current = null;
+      activeUserProfileRef.current = freshMemberProfile; // ✅ Set it here for resume
      } else if (lastPauseTimeRef.current !== null) {
       // 🔥 Resuming from pause - add paused time
       pausedTimeRef.current += now - lastPauseTimeRef.current;
@@ -579,7 +601,7 @@ function Timer({
       const bossHealthToUse = freshBossHealth ?? originalBossHealthRef.current;
       const memberDamageToUse = freshMemberDamage ?? originalMemberDamageRef.current;
       
-      const currentUserProfile = user?.uid ? partyMembersRef.current[user.uid] : null;
+      const currentUserProfile = activeUserProfileRef.current ?? (user?.uid ? partyMembersRef.current[user.uid] : null);
       
       if (currentUserProfile) {
         // Calculate XP multiplier
@@ -700,8 +722,9 @@ function Timer({
             const totalMinutes = elapsedMinutes;
             const totalExpGain = totalMinutes * expPerMinute;
             
-            const currentExp = currentUserProfile.exp || 0;
-            const currentLevel = currentUserProfile.level || 1;
+            const currentExp = sessionStartExpRef.current;
+            const currentLevel = sessionStartLevelRef.current;
+
             const newTotalExp = currentExp + totalExpGain;
             const { newLevel } = calculateLevelUp(currentExp, newTotalExp, currentLevel);
             
@@ -907,27 +930,36 @@ useEffect(() => {
   const checkForActiveTimer = async () => {
     if (!authUser || hasResumedRef.current || resumeInProgress.current) return;
 
-    // ✅ ADD THIS: Skip if timer is already running
     if (isRunning || isSessionActive) {
       console.log('⏭️ Timer already active, skipping resume check');
       return;
     }
 
     resumeInProgress.current = true;
+    
     try {
+      // ✅ SINGLE USER FETCH
       const userRef = doc(db, 'users', authUser.uid);
       const userDoc = await getDoc(userRef);
-      const activeTimer = userDoc.data()?.activeTimer;
+      
+      if (!userDoc.exists()) {
+        console.error('❌ User document not found');
+        return;
+      }
+      
+      const userData = userDoc.data();
+      const activeTimer = userData?.activeTimer;
 
       if (activeTimer?.isActive && activeTimer.startedAt) {
         const startedAt = activeTimer.startedAt.toDate();
         const durationSeconds = activeTimer.duration;
         const now = Date.now();
         const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
+        
         if (elapsedSeconds < 3) {
-        console.log('⏭️ Timer just started, skipping resume logic');
-        return;
-      }
+          console.log('⏭️ Timer just started, skipping resume logic');
+          return;
+        }
 
         // Validate elapsed time
         if (elapsedSeconds < -300) {
@@ -943,7 +975,6 @@ useEffect(() => {
           return;
         }
 
-        // ✅ CRITICAL: Set AFTER validation, BEFORE resume logic
         hasResumedRef.current = true;
 
         if (elapsedSeconds < durationSeconds) {
@@ -951,8 +982,6 @@ useEffect(() => {
 
           setIsResuming(true);
           setIsLoadingPartyData(true);
-          
-         
           setSelectedDuration(Math.ceil(durationSeconds / 60));
           setTimeElapsed(elapsedSeconds);
           setIsSessionActive(true);
@@ -962,70 +991,66 @@ useEffect(() => {
           lastSyncedMinuteRef.current = minutesElapsed;
           console.log(`✅ Set last synced minute to: ${minutesElapsed}`);
 
-          // 🔥 Refresh party data to get fresh boss health
-          if (currentPartyId && refreshPartyProfile) {
-            await refreshPartyProfile();
-            console.log('✅ Party data refreshed');
+          // ✅ CHECK PARTY ID FROM ALREADY-FETCHED DATA
+          if (!userData.currentPartyId) {
+            console.error('❌ User has no party, aborting resume');
+            setIsResuming(false);
+            setIsLoadingPartyData(false);
+            hasResumedRef.current = false;
+            return;
           }
 
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // ✅ FETCH PARTY DATA DIRECTLY FROM FIRESTORE
+          const [freshPartyDoc, freshMemberDoc] = await Promise.all([
+            getDoc(doc(db, 'parties', userData.currentPartyId)),
+            getDoc(doc(db, 'parties', userData.currentPartyId, 'members', authUser.uid))
+          ]);
 
-          let freshBossHealth;
-          let freshMemberDamage;
+          if (!freshMemberDoc.exists()) {
+            console.error('❌ Member document not found');
+            setIsResuming(false);
+            setIsLoadingPartyData(false);
+            hasResumedRef.current = false;
+            return;
+          }
+
+          const freshMemberProfile = freshMemberDoc.data();
+          const freshBossHealth = freshPartyDoc.exists() 
+            ? freshPartyDoc.data()?.currentBoss?.currentHealth 
+            : null;
+          const freshMemberDamage = freshMemberProfile.currentBossDamage || 0;
+
+          // ✅ SET SESSION START REFS
+          sessionStartExpRef.current = freshMemberProfile.exp || 0;
+          sessionStartHealthRef.current = freshMemberProfile.health || 0;
+          sessionStartManaRef.current = freshMemberProfile.mana || 0;
+          sessionStartLevelRef.current = freshMemberProfile.level || 1;
           
-          // 🔥 Capture fresh boss health and member damage
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            if (userData.currentPartyId) {
-              const partyRef = doc(db, 'parties', userData.currentPartyId);
-              const freshPartyDoc = await getDoc(partyRef);
-              if (freshPartyDoc.exists()) {
-                freshBossHealth = freshPartyDoc.data()?.currentBoss?.currentHealth;
-                originalBossHealthRef.current = freshBossHealth;
-                console.log('✅ Captured FRESH boss health:', freshBossHealth);
-              }
+          // ✅ UPDATE PARTY MEMBERS REF
+          partyMembersRef.current = {
+            ...partyMembersRef.current,
+            [authUser.uid]: freshMemberProfile
+          };
+          
+          console.log('✅ Updated member profile with fresh stats:', freshMemberProfile);
 
-              const memberRef = doc(db, 'parties', userData.currentPartyId, 'members', authUser.uid);
-              const freshMemberDoc = await getDoc(memberRef);
-              if (freshMemberDoc.exists()) {
-                const freshMemberData = freshMemberDoc.data();
-                freshMemberDamage = freshMemberData.currentBossDamage || 0;
-                originalMemberDamageRef.current = freshMemberDamage;
-                console.log('✅ Captured FRESH member damage:', freshMemberDamage);
-                
-                // ✅ UPDATE: Also capture fresh member stats
-                const freshMemberProfile = {
-                  exp: freshMemberData.exp || 0,
-                  level: freshMemberData.level || 1,
-                  health: freshMemberData.health || 0,
-                  mana: freshMemberData.mana || 0
-                };
-                
-                // Update partyMembersRef with fresh data
-                partyMembersRef.current = {
-                  ...partyMembersRef.current,
-                  [authUser.uid]: {
-                    ...partyMembersRef.current[authUser.uid],
-                    ...freshMemberProfile,
-                    currentBossDamage: freshMemberDamage
-                  }
-                };
-                
-                console.log('✅ Updated member profile with fresh stats:', freshMemberProfile);
-              } else {
-                originalMemberDamageRef.current = 0;
-              }
-            } else {
-              console.log('⚠️ User not in a party');
-              originalBossHealthRef.current = null;
-              originalMemberDamageRef.current = 0;
-            }
-          }
+          // ✅ SET ORIGINAL REFS
+          originalBossHealthRef.current = freshBossHealth;
+          originalMemberDamageRef.current = freshMemberDamage;
 
-          // 🔥 START WITH OPTIMISTIC UPDATES - Pass elapsed minutes!
-          // I feel like this is getting called again when we start a new timer.
-          startTimer(true, true, minutesElapsed, freshBossHealth, freshMemberDamage, startedAt.getTime())
+          console.log('✅ Captured FRESH boss health:', freshBossHealth);
+          console.log('✅ Captured FRESH member damage:', freshMemberDamage);
+
+          // ✅ START TIMER WITH ALL FRESH DATA
+          startTimer(
+            true,                    // skipStreakCheck
+            true,                    // isResuming
+            minutesElapsed,          // resumeFromMinutes
+            freshBossHealth,         // freshBossHealth
+            freshMemberDamage,       // freshMemberDamage
+            startedAt.getTime(),     // resumeStartTime
+            freshMemberProfile       // freshMemberProfile
+          );
 
           setTimeout(() => {
             setIsResuming(false);
@@ -1065,7 +1090,6 @@ useEffect(() => {
             }
           }
 
-          // ✅ FIX: Clear ALL state IMMEDIATELY after save
           setIsRunning(false);
           setIsSessionActive(true);
           setTimeElapsed(0);
@@ -1085,25 +1109,14 @@ useEffect(() => {
       console.error('Error checking active timer:', error);
       setIsResuming(false);
       setIsLoadingPartyData(false);
-    }  finally {
-      resumeInProgress.current = false; // ← ADD THIS!
+      hasResumedRef.current = false;
+    } finally {
+      resumeInProgress.current = false;
     }
   };
 
   checkForActiveTimer();
-}, [
-  authUser, 
-  db, 
-  saveCompletedSession, 
-  handleCompletion, 
-  handleTimerComplete, 
-  currentPartyId, 
-  refreshPartyProfile, 
-  isPro, 
-  hasActiveBooster, 
-  activeBooster, 
-  incrementMinutes, 
-  incrementExp, startTimer, isRunning, isSessionActive]);
+}, [authUser, db]);  // ← MINIMAL DEPS
   // ============================================================================
   // 🔥 VISIBILITY CHANGE HANDLER
   // ============================================================================
