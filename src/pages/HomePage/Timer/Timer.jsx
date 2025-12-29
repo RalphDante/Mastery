@@ -40,6 +40,13 @@ function Timer({
   const [streakAtRisk, setStreakAtRisk] = useState(false);
   const [showStreakModal, setShowStreakModal] = useState(false);
 
+  const [selectedDuration, setSelectedDuration] = useState(25);
+  const [isRunning, setIsRunning] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [timeElapsed, setTimeElapsed] = useState(0);
+  const [showCompletion, setShowCompletion] = useState(false);
+  const [isLoadingPartyData, setIsLoadingPartyData] = useState(false);
+
   const [isResuming, setIsResuming] = useState(false);
 
   const memberProfile = user?.uid ? partyMembers[user.uid] : null;
@@ -60,6 +67,8 @@ function Timer({
   const lastPauseTimeRef = useRef(null);
   const pausedTimeRef = useRef(null);
   const resumeInProgress = useRef(false);
+  const handleCompletionRef = useRef(null);
+  const selectedDurationRef = useRef(selectedDuration);
 
   const currentUser = memberProfile;
   const isPro = currentUser?.subscription?.tier === "pro";
@@ -80,12 +89,7 @@ function Timer({
     { label: '60 min', value: 60, damage: 600, xp: 600, mana: 180, health: 60  },
   ];
 
-  const [selectedDuration, setSelectedDuration] = useState(25);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isSessionActive, setIsSessionActive] = useState(false);
-  const [timeElapsed, setTimeElapsed] = useState(0);
-  const [showCompletion, setShowCompletion] = useState(false);
-  const [isLoadingPartyData, setIsLoadingPartyData] = useState(false);
+ 
 
   // 🔥 NEW: Predicted stats for real-time UI updates
   const [predictedStats, setPredictedStats] = useState({
@@ -105,6 +109,10 @@ function Timer({
   useEffect(() => {
     partyMembersRef.current = partyMembers;
   }, [partyMembers]);
+
+  useEffect(() => {
+    selectedDurationRef.current = selectedDuration;
+  }, [selectedDuration]);
   
 
   // Initialize alarm sound
@@ -458,6 +466,10 @@ function Timer({
     }
   }, [saveCompletedSession, selectedDuration, isPro, handleTimerComplete]);
 
+  useEffect(() => {
+    handleCompletionRef.current = handleCompletion;
+  }, [handleCompletion]);
+
   // ============================================================================
   // 🔥 SIMPLIFIED START TIMER
   // ============================================================================
@@ -466,7 +478,8 @@ function Timer({
     isResuming = false, 
     resumeFromMinutes = 0, 
     freshBossHealth = null, // ← NEW
-    freshMemberDamage = null
+    freshMemberDamage = null,
+    resumeStartTime = null
     ) => {
     if (!authUser) return;
     if (!isResuming) {
@@ -550,7 +563,11 @@ function Timer({
         startedAt: now,
         duration: selectedDuration * 60
       }));
-    } else if (lastPauseTimeRef.current !== null) {
+    } else if (isResuming && resumeStartTime !== null) {  // ← ADD THIS
+      startTimeRef.current = resumeStartTime;
+      pausedTimeRef.current = 0;
+      lastPauseTimeRef.current = null;
+     } else if (lastPauseTimeRef.current !== null) {
       // 🔥 Resuming from pause - add paused time
       pausedTimeRef.current += now - lastPauseTimeRef.current;
       lastPauseTimeRef.current = null;
@@ -735,8 +752,9 @@ function Timer({
         }
     
         // Timer complete?
-        if (elapsedSeconds >= selectedDuration * 60) {
-          handleCompletion();
+        if (elapsedSeconds >= selectedDurationRef.current * 60) {
+          console.log('🎯 Timer completion condition met!');
+          handleCompletionRef.current?.()
         }
       }, 1000);
     }
@@ -758,7 +776,6 @@ function Timer({
     incrementExp,
     updateBossHealth,
     updateMemberDamage,
-    handleCompletion
   ]);
 
   useEffect(() => {
@@ -935,9 +952,7 @@ useEffect(() => {
           setIsResuming(true);
           setIsLoadingPartyData(true);
           
-          startTimeRef.current = startedAt.getTime();
-          pausedTimeRef.current = 0;
-          lastPauseTimeRef.current = null;
+         
           setSelectedDuration(Math.ceil(durationSeconds / 60));
           setTimeElapsed(elapsedSeconds);
           setIsSessionActive(true);
@@ -989,7 +1004,7 @@ useEffect(() => {
 
           // 🔥 START WITH OPTIMISTIC UPDATES - Pass elapsed minutes!
           // I feel like this is getting called again when we start a new timer.
-          startTimer(true, true, minutesElapsed, freshBossHealth, freshMemberDamage);
+          startTimer(true, true, minutesElapsed, freshBossHealth, freshMemberDamage, startedAt.getTime())
 
           setTimeout(() => {
             setIsResuming(false);
@@ -1078,7 +1093,7 @@ useEffect(() => {
         const elapsed = Math.floor(totalElapsed / 1000);
         
         if (elapsed >= selectedDuration * 60 && !showCompletion) {
-          handleCompletion();
+          handleCompletionRef.current?.();  // ← Use ref instead
         } else {
           setTimeElapsed(elapsed);
         }
@@ -1087,7 +1102,7 @@ useEffect(() => {
     
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isRunning, selectedDuration, handleCompletion, showCompletion]);
+  }, [isRunning, selectedDuration, showCompletion]);
 
   // Cleanup on unmount
   useEffect(() => {
