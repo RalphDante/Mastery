@@ -31,7 +31,7 @@ function Timer({
 }) {
   const {user, userProfile:authUserProfile} = useAuthContext();
   const {updateBossHealth, updateMemberDamage, updateLastBossResults, resetAllMembersBossDamage, updateUserProfile, partyProfile, partyMembers, refreshPartyProfile} = usePartyContext();
-  const {incrementMinutes, incrementExp, refreshTodaySession} = useUserDataContext();
+  const {refreshTodaySession, todaySession, setTodaySession} = useUserDataContext();
 
   const {isTutorialAtStep, loading} = useTutorials();
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
@@ -69,6 +69,12 @@ function Timer({
   const resumeInProgress = useRef(false);
   const handleCompletionRef = useRef(null);
   const selectedDurationRef = useRef(selectedDuration);
+
+  const sessionStartTodayMinutesRef = useRef(0);
+  const sessionStartTodayExpRef = useRef(0);
+  const sessionStartTodayCardsRef = useRef(0);
+
+
 
   const sessionStartExpRef = useRef(0);
   const sessionStartHealthRef = useRef(0);
@@ -119,7 +125,7 @@ function Timer({
   useEffect(() => {
     selectedDurationRef.current = selectedDuration;
   }, [selectedDuration]);
-  
+
 
   // Initialize alarm sound
   useEffect(()=>{
@@ -403,7 +409,17 @@ function Timer({
     } catch (err) {
       console.error('Error saving study time:', err);
     }
-  }, [authUser, db, isPro, hasActiveBooster, activeBooster, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage, incrementMinutes, incrementExp]);
+  }, [authUser, db, isPro, hasActiveBooster, activeBooster, onTimeUpdate, updateBossHealth, updateMemberDamage, updateUserProfile, updateLastBossResults, resetAllMembersBossDamage,
+    refreshPartyProfile, refreshTodaySession]);
+
+
+  const saveCompletedSessionRef = useRef(saveCompletedSession);
+  const handleTimerCompleteRef = useRef(handleTimerComplete);
+
+  useEffect(() => {
+    saveCompletedSessionRef.current = saveCompletedSession;
+    handleTimerCompleteRef.current = handleTimerComplete;
+  }, [saveCompletedSession, handleTimerComplete]);
 
   // ============================================================================
   // 🔥 SIMPLIFIED COMPLETION HANDLER
@@ -443,7 +459,7 @@ function Timer({
     }
     
     // 🔥 Calculate total time and save (accounting for paused time)
-    const totalElapsed = Date.now() - startTimeRef.current - pausedTimeRef.current;
+    const totalElapsed = Date.now() - startTimeRef.current - (pausedTimeRef.current || 0);
     const totalSeconds = Math.floor(totalElapsed / 1000);
     const cappedSeconds = Math.min(totalSeconds, selectedDuration * 60);
     const minutesToSave = Math.floor(cappedSeconds / 60);
@@ -492,17 +508,36 @@ function Timer({
     if (!isResuming) {
       lastIncrementedMinuteRef.current = 0;
     }
-    correctSoundEffect.current.play().catch(err=>console.log(err));
-    daggerWooshSFX.current.play().catch(err=>console.log(err));
+     // 🔥 SAFETY: Clear any existing interval before starting
+    if (sessionTimerRef.current) {
+      console.warn('⚠️ Clearing existing interval before starting new timer');
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+
+   
   
     const now = Date.now();
     
     // First start only
     if (!isResuming && startTimeRef.current === null) {
+      correctSoundEffect.current.play().catch(err=>console.log(err));
+      daggerWooshSFX.current.play().catch(err=>console.log(err));
+
       startTimeRef.current = now;
       pausedTimeRef.current = 0;
       lastPauseTimeRef.current = null;
       lastSyncedMinuteRef.current = 0;
+
+      sessionStartTodayMinutesRef.current = todaySession.minutesStudied || 0;
+      sessionStartTodayExpRef.current = todaySession.expEarned || 0;
+      sessionStartTodayCardsRef.current = todaySession.cardsReviewed || 0;
+      
+      console.log('✅ Captured today session start:', {
+        minutes: sessionStartTodayMinutesRef.current,
+        exp: sessionStartTodayExpRef.current,
+        cards: sessionStartTodayCardsRef.current
+      });
 
       // 🔥 CAPTURE ORIGINAL BOSS HEALTH
       if (partyProfile?.currentBoss) {
@@ -614,15 +649,11 @@ function Timer({
         const expPerMinute = baseExpPerMinute * expMultiplier;
         const totalExpGain = resumeFromMinutes * expPerMinute;
         
-        // Update global stats
-        const minutesToIncrement = resumeFromMinutes - lastIncrementedMinuteRef.current;
-        if (minutesToIncrement > 0) {
-          const expToIncrement = minutesToIncrement * expPerMinute;
-          incrementMinutes(minutesToIncrement);
-          incrementExp(expToIncrement);
-          lastIncrementedMinuteRef.current = resumeFromMinutes;
-          console.log(`✅ Global stats updated: +${minutesToIncrement} min, +${expToIncrement} XP`);
-        }
+        setTodaySession(prev => ({
+          ...prev,
+          minutesStudied: sessionStartTodayMinutesRef.current + resumeFromMinutes,
+          expEarned: sessionStartTodayExpRef.current + totalExpGain
+        }));
         
         // Calculate predicted stats
         const currentExp = currentUserProfile.exp || 0;
@@ -694,16 +725,12 @@ function Timer({
     
         setTimeElapsed(elapsedSeconds);
     
-        // === PER-MINUTE OPTIMISTIC UI UPDATE (only when a new minute completes) ===
         if (elapsedMinutes > lastSyncedMinuteRef.current) {
-          console.log(`✅ Condition TRUE: ${elapsedMinutes} > ${lastSyncedMinuteRef.current}`);
+          console.log(`✅ Minute ${elapsedMinutes} hit - calculating stats`);
+          
           const currentUserProfile = user?.uid ? partyMembersRef.current[user.uid] : null;
           
           if (currentUserProfile) {
-            console.log(`✅ userProfile exists, proceeding with increment`);
-            
-            const minutesDelta = elapsedMinutes - lastSyncedMinuteRef.current;
-            
             // Calculate XP multiplier
             const baseExpPerMinute = PLAYER_CONFIG.EXP_PER_MINUTE;
             let expMultiplier = isPro ? 2 : 1;
@@ -712,33 +739,37 @@ function Timer({
               expMultiplier = Math.min(expMultiplier, 5);
             }
             const expPerMinute = baseExpPerMinute * expMultiplier;
-            const expGained = minutesDelta * expPerMinute;
             
-            // Optimistically update global charts/stats
-            incrementMinutes(minutesDelta);
-            incrementExp(expGained);
+            // Calculate total session gains
+            const totalExpGain = elapsedMinutes * expPerMinute;
             
-            // Calculate predicted stats for this session
-            const totalMinutes = elapsedMinutes;
-            const totalExpGain = totalMinutes * expPerMinute;
+            // 🔥 UPDATE TODAY'S SESSION (CALCULATED, NOT INCREMENTED)
+            setTodaySession(prev => ({
+              ...prev,
+              minutesStudied: sessionStartTodayMinutesRef.current + elapsedMinutes,
+              expEarned: sessionStartTodayExpRef.current + totalExpGain
+            }));
             
+            // Calculate predicted stats
             const currentExp = sessionStartExpRef.current;
             const currentLevel = sessionStartLevelRef.current;
-
+            const currentHealth = sessionStartHealthRef.current;
+            const currentMana = sessionStartManaRef.current;
+    
             const newTotalExp = currentExp + totalExpGain;
             const { newLevel } = calculateLevelUp(currentExp, newTotalExp, currentLevel);
             
-            const baseDamage = totalMinutes * 10;
+            const baseDamage = elapsedMinutes * 10;
             const levelMultiplier = 1 + (newLevel * 0.05);
             const predictedDamage = Math.floor(baseDamage * levelMultiplier);
             
             const healthGain = Math.min(
-              PLAYER_CONFIG.BASE_HEALTH - (currentUserProfile.health || 0),
-              totalMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE
+              PLAYER_CONFIG.BASE_HEALTH - currentHealth,
+              elapsedMinutes * PLAYER_CONFIG.HEALTH_PER_MINUTE
             );
             const manaGain = Math.min(
-              PLAYER_CONFIG.BASE_MANA - (currentUserProfile.mana || 0),
-              totalMinutes * PLAYER_CONFIG.MANA_PER_MINUTE
+              PLAYER_CONFIG.BASE_MANA - currentMana,
+              elapsedMinutes * PLAYER_CONFIG.MANA_PER_MINUTE
             );
             
             // Update predicted stats for SessionStatsCard
@@ -749,12 +780,13 @@ function Timer({
               damage: predictedDamage,
               level: newLevel
             });
-
+    
+            // Update user profile optimistically
             updateUserProfile({
               exp: newTotalExp,
               level: newLevel,
-              health: Math.min(PLAYER_CONFIG.BASE_HEALTH, (currentUserProfile.health || 0) + healthGain),
-              mana: Math.min(PLAYER_CONFIG.BASE_MANA, (currentUserProfile.mana || 0) + manaGain)
+              health: Math.min(PLAYER_CONFIG.BASE_HEALTH, currentHealth + healthGain),
+              mana: Math.min(PLAYER_CONFIG.BASE_MANA, currentMana + manaGain)
             });
             
             // Update boss health and member damage optimistically
@@ -767,10 +799,7 @@ function Timer({
             }
             
             lastSyncedMinuteRef.current = elapsedMinutes;
-            
-            console.log(`✅ INCREMENTED: +${minutesDelta} min, +${expGained} XP`);
-          } else {
-            console.log(`❌ userProfile is NULL/UNDEFINED - skipping increment!`);
+            console.log(`✅ Stats calculated for minute ${elapsedMinutes}`);
           }
         }
     
@@ -795,10 +824,9 @@ function Timer({
     updateUserAndPartyStreak,
     updateUserProfile,
     handleTimerStart,
-    incrementMinutes,
-    incrementExp,
     updateBossHealth,
     updateMemberDamage,
+    setTodaySession
   ]);
 
   useEffect(() => {
@@ -844,6 +872,9 @@ function Timer({
     originalBossHealthRef.current = null;
     originalMemberDamageRef.current = null;
     lastSyncedMinuteRef.current = 0;
+    sessionStartTodayMinutesRef.current = 0;
+    sessionStartTodayExpRef.current = 0;
+    sessionStartTodayCardsRef.current = 0;
     setPredictedStats({ exp: 0, health: 0, mana: 0, damage: 0, level: 0 });
     
     // Clear from database
@@ -941,6 +972,7 @@ useEffect(() => {
       // ✅ SINGLE USER FETCH
       const userRef = doc(db, 'users', authUser.uid);
       const userDoc = await getDoc(userRef);
+      const todaySession = await refreshTodaySession();
       
       if (!userDoc.exists()) {
         console.error('❌ User document not found');
@@ -1026,6 +1058,14 @@ useEffect(() => {
           sessionStartManaRef.current = freshMemberProfile.mana || 0;
           sessionStartLevelRef.current = freshMemberProfile.level || 1;
           
+          sessionStartTodayMinutesRef.current = todaySession.minutesStudied || 0;
+          sessionStartTodayExpRef.current = todaySession.expEarned || 0;
+          sessionStartTodayCardsRef.current = todaySession.cardsReviewed || 0;
+
+          console.log('✅ Captured today session base for resume:', {
+            minutes: sessionStartTodayMinutesRef.current,
+            exp: sessionStartTodayExpRef.current
+          });
           // ✅ UPDATE PARTY MEMBERS REF
           partyMembersRef.current = {
             ...partyMembersRef.current,
@@ -1042,7 +1082,7 @@ useEffect(() => {
           console.log('✅ Captured FRESH member damage:', freshMemberDamage);
 
           // ✅ START TIMER WITH ALL FRESH DATA
-          startTimer(
+          timerStartRef?.current?.(
             true,                    // skipStreakCheck
             true,                    // isResuming
             minutesElapsed,          // resumeFromMinutes
@@ -1073,8 +1113,8 @@ useEffect(() => {
             localStorage.setItem(savedSessionKey, 'saving');
             
             try {
-              await handleTimerComplete?.();
-              await saveCompletedSession(minutesToSave);
+              await handleTimerCompleteRef.current?.();
+              await saveCompletedSessionRef.current(minutesToSave);
               localStorage.setItem(savedSessionKey, 'saved');
               console.log('✅ Session saved successfully');
               
@@ -1116,7 +1156,7 @@ useEffect(() => {
   };
 
   checkForActiveTimer();
-}, [authUser, db]);  // ← MINIMAL DEPS
+}, [authUser, db, timerStartRef]);  // ← MINIMAL DEPS
   // ============================================================================
   // 🔥 VISIBILITY CHANGE HANDLER
   // ============================================================================
