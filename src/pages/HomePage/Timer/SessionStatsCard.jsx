@@ -1,15 +1,19 @@
 import React from 'react';
 import { Trophy } from 'lucide-react';
+import { usePartyContext } from '../../../contexts/PartyContext';
 
 function SessionStatsCard({ 
   rewards, 
   selectedDuration, 
   isPro, 
   hasActiveBooster,
-  onProClick 
+  onProClick,
+  predictedStats
 }) {
+  const {partyProfile} = usePartyContext();
+
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-lg w-full max-w-xs">
+    <div className="bg-slate-900 border border-slate-600 rounded-lg w-full max-w-xs">
       {/* Pro Banner at top */}
       {!isPro && !hasActiveBooster && (
         <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 border-b border-purple-500/30 px-3 py-2">
@@ -31,35 +35,41 @@ function SessionStatsCard({
         </div>
       )}
       
-      {/* Earnings - with small /min indicator */}
-      <div className="p-3">
-        <div className="flex justify-between items-center text-sm">
-          <div className="flex flex-col items-center">
-            <span className="text-yellow-500 font-medium">
-              {Math.round(rewards.xp / selectedDuration)}
-            </span>
-            <span className="text-slate-400 text-[10px]">XP/min</span>
+      
+        <div className=" p-3 w-full max-w-xs">
+          <p className="text-slate-400 text-xs text-center mb-2">Current Progress:</p>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="text-center">
+              <div className="text-yellow-400 font-bold">+{predictedStats.exp} XP</div>
+              <div className="text-slate-500">Earned</div>
+            </div>
+            <div className="text-center">
+              {partyProfile?.currentBoss?.isAlive ? (
+                <>
+                  <div className="text-orange-400 font-bold">{predictedStats.damage} DMG</div>
+                  <div className="text-slate-500">Dealt</div>
+                </>
+              ) : (
+                <>
+                  <div className="text-orange-400 font-bold">0 DMG</div>
+                  <div className="text-slate-500">Boss Defeated</div>
+                </>
+              )}
+            
+            </div>
+            <div className="text-center">
+              <div className="text-red-400 font-bold">+{predictedStats.health} HP</div>
+              <div className="text-slate-500">Restored</div>
+            </div>
+            <div className="text-center">
+              <div className="text-blue-400 font-bold">+{predictedStats.mana} MP</div>
+              <div className="text-slate-500">Restored</div>
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <span className="text-blue-500 font-medium">
-              {Math.round(rewards.mana / selectedDuration)}
-            </span>
-            <span className="text-slate-400 text-[10px]">MP/min</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-green-400 font-medium">
-              {Math.round(rewards.health / selectedDuration)}
-            </span>
-            <span className="text-slate-400 text-[10px]">HP/min</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <span className="text-red-400 font-medium">
-              {Math.round(rewards.damage / selectedDuration)}
-            </span>
-            <span className="text-slate-400 text-[10px]">DMG/min</span>
-          </div>
+          <p className="text-slate-500 text-xs text-center mt-2 italic">
+            Updates saved when timer completes
+          </p>
         </div>
-      </div>
     </div>
   );
 }

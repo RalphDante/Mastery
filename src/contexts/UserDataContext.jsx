@@ -57,6 +57,10 @@ export const UserDataProvider = ({ children }) => {
                 ...sessionData,
                 date: todayStr
             });
+
+            return {
+                ...sessionData
+            }
         } catch (error) {
             console.error('Error fetching today session:', error);
         }
@@ -241,9 +245,11 @@ export const UserDataProvider = ({ children }) => {
         incrementMinutes,
         incrementExp,
         incrementReviewedCards,
+        setTodaySession,
         todaySession,
         isLoading,
         refreshDailySessions: () => fetchDailySessions(user?.uid),
+        refreshTodaySession: () => fetchTodaySession(user?.uid), 
     };
 
     return (
