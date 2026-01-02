@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import AnnualDiscountCard from './AnnualDiscountCard';
 
 function GoPremium() {
   const {authUser, signIn} = useAuth();
@@ -8,6 +9,9 @@ function GoPremium() {
   const [masteryStudyProMonthlyPrice, setMasteryStudyProMonthlyPrice] = useState('$4.99');
   const [masteryStudyProYearlyPrice, setMasteryStudyProYearlyPrice] = useState('$39.99');
   const [selectedPlan, setSelectedPlan] = useState('annual'); // For mobile toggle
+
+  // a state to control when to show the offer
+  const [showNewYearOffer, setShowNewYearOffer] = useState(true);
 
   const env = import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox";
 
@@ -21,7 +25,7 @@ function GoPremium() {
       : import.meta.env.VITE_SANDBOX_PADDLE_PRICE_PRO_MONTHLY,
     proYearly: env === "production" 
       ? import.meta.env.VITE_PADDLE_PRICE_PRO_YEARLY
-      : import.meta.env.VITE_SANDBOX_PADDLE_PRICE_PRO_YEARLY
+      : import.meta.env.VITE_SANDBOX_PADDLE_PRICE_PRO_YEARLY,
   };
 
   const monthItems = [{ quantity: 1, priceId: priceIds.proMonthly }];
@@ -91,21 +95,22 @@ function GoPremium() {
       const url = new URL(checkoutData);
       const plan = url.searchParams.get("plan");
       const priceId = url.searchParams.get("priceId");
-      openCheckout(priceId, plan);
+      const discount = url.searchParams.get("discount");
+      openCheckout(priceId, plan, discount);
     }
   }, [authUser]);
 
-  const openCheckout = useCallback(async (priceId, planName) => {
+  const openCheckout = useCallback(async (priceId, planName, discountCode = null) => {
     if (!paddleLoaded) return;
     if (!authUser) {
       const currentUrl = window.location.href;
-      const checkoutUrl = `${currentUrl}?startCheckout=true&plan=${planName}&priceId=${priceId}`;
+      const checkoutUrl = `${currentUrl}?startCheckout=true&plan=${planName}&priceId=${priceId}${discountCode ? `&discount=${discountCode}` : ''}`;
       localStorage.setItem("postLoginCheckout", checkoutUrl);
       await signIn();
       return;
     }
     
-    window.Paddle.Checkout.open({
+    const checkoutConfig = {
       items: [{ quantity: 1, priceId }],
       customer: { email: authUser.email },
       customData: { plan: planName, userId: authUser.uid, userEmail: authUser.email },
@@ -113,7 +118,14 @@ function GoPremium() {
         successUrl: `${window.location.origin}/welcome-pro`,
       },
       closeCallback: () => console.log("Checkout closed"),
-    });
+    };
+  
+    // Add discount code if provided
+    if (discountCode) {
+      checkoutConfig.discountCode = discountCode;
+    }
+  
+    window.Paddle.Checkout.open(checkoutConfig);
   }, [authUser, paddleLoaded, signIn]);
 
   const FeatureList = () => (
@@ -206,7 +218,7 @@ function GoPremium() {
         {/* Hero Section */}
         <div className="text-center mb-6 sm:mb-8">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-3 bg-gradient-to-r from-violet-400 via-purple-400 to-white bg-clip-text text-transparent px-2 leading-tight">
-            Gain A Positively Unfair Advantage In Life
+            Gain A Positively Unfair Advantage In School and Life
           </h1>
           <p className="text-lg sm:text-2xl text-violet-200 font-medium mt-4">
             For less than a coffee per month
@@ -233,11 +245,11 @@ function GoPremium() {
               onClick={() => setSelectedPlan('annual')}
               className={`px-6 py-2 rounded-full font-semibold text-sm transition-all ${
                 selectedPlan === 'annual'
-                  ? 'bg-yellow-400 text-black'
+                  ? showNewYearOffer ? 'bg-red-500' : 'bg-yellow-400 text-black'
                   : 'text-violet-200 hover:text-white'
               }`}
             >
-              Annual (Save 33%)
+              Annual (Save {showNewYearOffer ? '50' : '33'}%)
             </button>
             <button
               onClick={() => setSelectedPlan('monthly')}
@@ -256,30 +268,40 @@ function GoPremium() {
         <div className="mb-8 sm:mb-12 max-w-3xl mx-auto">
           {/* Desktop: Side by side */}
           <div className="hidden md:grid md:grid-cols-2 gap-6">
-            {/* Annual Card */}
-            <div className="bg-white rounded-2xl p-6 lg:p-8 text-gray-800 relative shadow-xl">
-              <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <div className="bg-yellow-400 px-4 py-1 rounded-full text-xs sm:text-sm font-bold text-black">
-                  Best deal
+            {/* Annual Card - Show NEW YEAR OFFER or REGULAR */}
+            {showNewYearOffer ? (
+              // 🎉 NEW YEAR SPECIAL CARD
+              <AnnualDiscountCard 
+                priceIds={priceIds}
+                openCheckout={openCheckout}
+                FeatureList={FeatureList}
+              />
+            ) : (
+              // REGULAR ANNUAL CARD (your existing code)
+              <div className="bg-white rounded-2xl p-6 lg:p-8 text-gray-800 relative shadow-xl">
+                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-yellow-400 px-4 py-1 rounded-full text-xs sm:text-sm font-bold text-black">
+                    Best deal
+                  </div>
+                </div>
+                <div className="text-center">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Annual</h3>
+                  <div className="mb-3 sm:mb-4">
+                    <div className="text-xs sm:text-sm text-gray-600 mb-1">Billed at $39.99/year, that's like</div>
+                    <div className="text-4xl sm:text-5xl font-bold text-black mb-1">$3.33</div>
+                    <div className="text-base sm:text-lg text-gray-600">/month</div>
+                  </div>
+                  <div className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">Start with free 7-day trial</div>
+                  <button 
+                    className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-base sm:text-lg transition-all text-black"
+                    onClick={() => openCheckout(priceIds.proYearly, 'pro')}
+                  >
+                    Start My 7-Day Free Trial
+                  </button>
+                  <FeatureList />
                 </div>
               </div>
-              <div className="text-center">
-                <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Annual</h3>
-                <div className="mb-3 sm:mb-4">
-                  <div className="text-xs sm:text-sm text-gray-600 mb-1">Billed at $39.99/year, that's like</div>
-                  <div className="text-4xl sm:text-5xl font-bold text-black mb-1">$3.33</div>
-                  <div className="text-base sm:text-lg text-gray-600">/month</div>
-                </div>
-                <div className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">Start with free 7-day trial</div>
-                <button 
-                  className="w-full py-3 sm:py-4 px-4 sm:px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-base sm:text-lg transition-all text-black"
-                  onClick={() => openCheckout(priceIds.proYearly, 'pro')}
-                >
-                  Start My 7-Day Free Trial
-                </button>
-                <FeatureList />
-              </div>
-            </div>
+            )}
 
             {/* Monthly Card */}
             <div className="bg-white rounded-2xl p-6 lg:p-8 text-gray-800 shadow-lg">
@@ -305,27 +327,35 @@ function GoPremium() {
           {/* Mobile: Single card with toggle */}
           <div className="md:hidden">
             {selectedPlan === 'annual' ? (
-              <div className="bg-white rounded-2xl p-6 text-gray-800 shadow-xl">
-                <div className="text-center">
-                  <div className="inline-block bg-yellow-400 px-4 py-1 rounded-full text-xs font-bold text-black mb-3">
-                    Best deal - Save 33%
+              showNewYearOffer ? 
+              <AnnualDiscountCard 
+                priceIds={priceIds}
+                openCheckout={openCheckout}
+                FeatureList={FeatureList}
+              />
+              : <div className="bg-white rounded-2xl p-6 text-gray-800 shadow-xl">
+                  <div className="text-center">
+                    <div className="inline-block bg-yellow-400 px-4 py-1 rounded-full text-xs font-bold text-black mb-3">
+                      Best deal - Save 33%
+                    </div>
+                    <h3 className="text-2xl font-bold mb-3">Annual</h3>
+                    <div className="mb-4">
+                      <div className="text-sm text-gray-600 mb-1">Billed at $39.99/year, that's like</div>
+                      <div className="text-5xl font-bold text-black mb-1">$3.33</div>
+                      <div className="text-lg text-gray-600">/month</div>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-6">Start with free 7-day trial</div>
+                    <button 
+                      className="w-full py-4 px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
+                      onClick={() => openCheckout(priceIds.proYearly, 'pro')}
+                    >
+                      Start My 7-Day Free Trial
+                    </button>
+                    <FeatureList />
                   </div>
-                  <h3 className="text-2xl font-bold mb-3">Annual</h3>
-                  <div className="mb-4">
-                    <div className="text-sm text-gray-600 mb-1">Billed at $39.99/year, that's like</div>
-                    <div className="text-5xl font-bold text-black mb-1">$3.33</div>
-                    <div className="text-lg text-gray-600">/month</div>
-                  </div>
-                  <div className="text-sm text-gray-600 mb-6">Start with free 7-day trial</div>
-                  <button 
-                    className="w-full py-4 px-6 bg-yellow-400 mb-4 hover:bg-yellow-500 rounded-xl font-bold text-lg transition-all text-black"
-                    onClick={() => openCheckout(priceIds.proYearly, 'pro')}
-                  >
-                    Start My 7-Day Free Trial
-                  </button>
-                  <FeatureList />
                 </div>
-              </div>
+            
+            
             ) : (
               <div className="bg-white rounded-2xl p-6 text-gray-800 shadow-xl">
                 <div className="text-center">
@@ -501,7 +531,7 @@ function GoPremium() {
     <div className="text-gray-800 flex-1 min-w-0">
       <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30-Day Money-Back Guarantee</h3>
       <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-        If Mastery doesn't help you study faster, remember more, and actually enjoy learning in the next 30 days, 
+        If Mastery doesn't help you study faster, remember more, and actually enjoy working in the next 30 days, 
         I'll refund every penny. No questions asked. No hard feelings.
       </p>
     </div>

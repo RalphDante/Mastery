@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
 
-const MonthlyPricingCard = ({ masteryStudyProMonthlyPrice = "$1", priceIds, openCheckout }) => {
+const MonthlyPricingCard = ({ masteryStudyProMonthlyPrice = "$1", priceIds, openCheckout, FeatureList }) => {
   // Set end date to match your banner
   const endDate = new Date('2025-08-28T23:59:59');
   
@@ -41,8 +41,7 @@ const MonthlyPricingCard = ({ masteryStudyProMonthlyPrice = "$1", priceIds, open
           🔥 FLASH SALE - 80% OFF
         </div>
       </div>
-
-      <div className="text-center mt-4">
+      <div className="text-center mt-4 pb-4">
         <h3 className="text-2xl font-bold mb-4">Monthly</h3>
         <div className="mb-4">
           <div className="text-sm text-gray-600 mb-1">Limited time offer</div>
@@ -57,15 +56,7 @@ const MonthlyPricingCard = ({ masteryStudyProMonthlyPrice = "$1", priceIds, open
           <div className="text-sm text-orange-600 font-semibold">Then $4.99/month</div>
         </div>
 
-        {/* Countdown Timer */}
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
-          <div className="flex items-center justify-center space-x-2 text-red-600">
-            <Clock size={16} className="animate-pulse" />
-            <span className="text-sm font-semibold">
-              Offer expires in: {timeLeft.days} days {timeLeft.hours} hours
-            </span>
-          </div>
-        </div>
+        
 
         <div className="text-sm text-gray-600 mb-6">Recurring billing. Cancel anytime.</div>
         
@@ -80,6 +71,12 @@ const MonthlyPricingCard = ({ masteryStudyProMonthlyPrice = "$1", priceIds, open
         {/* Money back guarantee */}
         
       </div>
+
+      <div>
+        {FeatureList()}
+
+      </div>
+      
     </div>
   );
 };
