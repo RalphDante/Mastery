@@ -68,9 +68,9 @@ export const SPECIAL_TITLES = {
     // icon: "🌍", 
     rarity: "Achievement"
   },
-  beta_tester: { 
-    id: "beta_tester",
-    title: "Beta Legend", 
+  beta_tester_2025: { 
+    id: "beta_tester_2025",
+    title: "2025 Beta Tester", 
     color: "#607D8B", 
     icon: "🧪", 
     rarity: "Early Supporter"
@@ -81,6 +81,13 @@ export const SPECIAL_TITLES = {
     color: "#b000e1ff", 
     // icon: "🌍", 
     rarity: "Achievement",
+  },
+  christmas_2025: { 
+    id: "christmas_2025",
+    title: "Christmas 2025", 
+    color: "#5BD13F",
+    icon: "🎄", 
+    rarity: "Seasonal 2025",
   }
 };
 
