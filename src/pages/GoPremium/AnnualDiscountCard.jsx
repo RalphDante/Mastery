@@ -36,8 +36,18 @@ const AnnualDiscountCard = ({ priceIds, openCheckout, FeatureList }) => {
   return (
     <div className="bg-white rounded-2xl p-6 lg:p-8 text-gray-800 relative shadow-xl border-2 border-red-300">
       {/* Flash Sale Banner */}
-      <div className="absolute -top-5 left-1/2 transform -translate-x-1/2">
-        <div className="bg-red-500 text-center text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg">
+      <div className="
+        absolute 
+        -top-4 sm:-top-5 
+        left-1/2 
+        -translate-x-1/2
+      ">
+        <div className="
+          bg-red-500 text-white text-center font-bold shadow-lg rounded-full
+          px-2 py-0.5 text-[10px]
+          sm:px-3 sm:py-1 sm:text-xs
+          md:px-4 md:py-1.5 md:text-sm
+        ">
           NEW YEAR SPECIAL - 50% OFF FIRST YEAR
         </div>
       </div>
