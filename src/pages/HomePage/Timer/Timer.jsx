@@ -83,7 +83,7 @@ function Timer({
   const activeUserProfileRef = useRef(null);
 
   const currentUser = memberProfile;
-  const isPro = currentUser?.subscription?.tier === "pro";
+  const isPro = authUserProfile?.subscription?.tier === "pro";
 
   const audioRef = useRef(null);
   const correctSoundEffect = useRef(null);

@@ -6,6 +6,7 @@ import { usePartyContext } from '../../../contexts/PartyContext';
 import { useNavigate } from 'react-router-dom';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
+import { createPortal } from 'react-dom';
 
 function SingularMastery() {
   const { dailySessionsWithToday, todaySession, getFullThirtyDays } = useUserDataContext();
@@ -224,7 +225,7 @@ function SingularMastery() {
       </div>
 
       {/* 30-Day Fullscreen Modal (Pro users only) */}
-      {show30DayModal && isPro && (
+      {show30DayModal && isPro && createPortal(
         <div 
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-[9999] p-4 backdrop-blur-sm"
           onClick={() => setShow30DayModal(false)}
@@ -333,7 +334,7 @@ function SingularMastery() {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
     
     </>
