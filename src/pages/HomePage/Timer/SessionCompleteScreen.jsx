@@ -8,12 +8,9 @@ export default function SessionCompleteScreen({
   rewards, 
   onReset,
   userProfile,
-  userId
+  userId,
+  hasNotStartedATimerSession
 }) {
-
-  const [showLootRevealModal, setShowLootRevealModal] = useState(selectedDuration >= 15);
-
-
 
   let numRolls = 0;
   const durationMinutes = selectedDuration;
@@ -21,6 +18,14 @@ export default function SessionCompleteScreen({
   else if (durationMinutes >= 45) numRolls = 2;
   else if (durationMinutes >= 25) numRolls = 1;
   else if (durationMinutes >= 15) numRolls = 1;
+
+  if (hasNotStartedATimerSession && numRolls === 0) {
+    numRolls = 1;
+  }
+
+  const shouldShowModal = hasNotStartedATimerSession || numRolls > 0;
+  
+  const [showLootRevealModal, setShowLootRevealModal] = useState(shouldShowModal);
 
   const user = userProfile;
   const isPro = user?.subscription?.tier === "pro";
@@ -35,6 +40,7 @@ export default function SessionCompleteScreen({
           isPro={isPro}
           onClose={()=>setShowLootRevealModal(false)}
           userId={userId}
+          isFirstTimer={hasNotStartedATimerSession}
         />
       )}
       <div className="text-center flex-1 flex flex-col justify-center items-center space-y-1">

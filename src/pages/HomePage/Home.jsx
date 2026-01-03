@@ -87,7 +87,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
       setShowTimerComplete(true);
       await awardWithXP(user.uid, 200, updateUserProfile, userProfile);
 
-      completeTutorial('start-timer');
     }
 };
 

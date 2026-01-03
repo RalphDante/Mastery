@@ -4,21 +4,30 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { AVATARS, getAvatarPath } from "../../configs/avatarConfig";
 import LimitReachedModal from "../Modals/LimitReachedModal";
+import { useTutorials } from "../../contexts/TutorialContext";
 
 function AvatarSelection({selectedAvatar, setSelectedAvatar}) {
     const {userProfile} = useAuthContext();
+    const {isTutorialAtStep} = useTutorials();
     const currentUser = userProfile;
 
     const navigate = useNavigate();
     const [showUpgradeModal, setShowUpgradeModal] = useState(false);
     const [hoveredAvatar, setHoveredAvatar] = useState(null);
+
+    const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1)
     
     const isPro = currentUser?.subscription?.tier === "pro";
     const unlockedAvatars = currentUser?.unlockedAvatars || [];
 
     // Helper function to check if avatar is unlocked
     const isAvatarUnlocked = (avatar) => {
-        // Starter avatars are always unlocked
+        // Special case: wizard_01 and wizard_02 are locked until first timer completion
+        if ((avatar.id === 'wizard_01' || avatar.id === 'wizard_02') && hasNotStartedATimerSession) {
+            return false;
+        }
+        
+        // Starter avatars are always unlocked (except wizards handled above)
         if (avatar.rarity === "starter") return true;
         
         // Premium avatars require pro subscription
@@ -35,6 +44,11 @@ function AvatarSelection({selectedAvatar, setSelectedAvatar}) {
 
     // Helper function to get tooltip text for locked avatars
     const getTooltipText = (avatar) => {
+        // Special tooltip for locked wizard avatars
+        if ((avatar.id === 'wizard_01' || avatar.id === 'wizard_02') && hasNotStartedATimerSession) {
+            return "Complete your first timer session to unlock";
+        }
+        
         if (avatar.isPremium && !isPro) {
             return "Obtainable by upgrading to Pro";
         }

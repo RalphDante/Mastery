@@ -78,7 +78,7 @@ function NewUserBattleModal({ onStartSession, onClose }) {
         return (
           <>
             <Crown className="w-5 h-5" />
-            Start 5min & Lead the Charge
+            Start 1min & Lead the Charge
           </>
         );
       }
@@ -87,7 +87,7 @@ function NewUserBattleModal({ onStartSession, onClose }) {
         return (
           <>
             <Swords className="w-5 h-5" />
-            Start 5min Session
+            Start 1min Session
           </>
         );
       }
@@ -95,7 +95,7 @@ function NewUserBattleModal({ onStartSession, onClose }) {
       return (
         <>
           <Swords className="w-5 h-5" />
-          Start 5min & Join Battle
+          Start 1min & Join Battle
         </>
       );
     };

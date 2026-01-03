@@ -114,8 +114,8 @@ function Timer({
 
   useEffect(() => {
     if (!loading && isTutorialAtStep('start-timer', 1)) {
-      setSelectedDuration(5);
-    }
+      setSelectedDuration(1);
+    } 
   }, [loading, isTutorialAtStep]);
 
   useEffect(() => {
@@ -863,6 +863,7 @@ function Timer({
     setIsSessionActive(false);
     setTimeElapsed(0);
     setShowCompletion(false);
+    setSelectedDuration(25);
     
     startTimeRef.current = null;
     hasResumedRef.current = false;
@@ -1193,7 +1194,21 @@ useEffect(() => {
     };
   }, []);
 
-  const getCurrentRewards = () => durations.find(d => d.value === selectedDuration) || durations[1];
+  const getCurrentRewards = () => {
+    // Special case for 1-minute tutorial timer
+    if (selectedDuration === 1) {
+      return {
+        label: '1 min',
+        value: 1,
+        damage: 10,
+        xp: 10,
+        mana: 3,
+        health: 1
+      };
+    }
+    
+    return durations.find(d => d.value === selectedDuration) || durations[1];
+  };
   const progress = Math.min((timeElapsed / (selectedDuration * 60)) * 100, 100);
   const timeLeft = Math.max(selectedDuration * 60 - timeElapsed, 0);
 
@@ -1283,6 +1298,7 @@ useEffect(() => {
             onReset={resetTimer}
             userProfile={authUserProfile}
             userId={user?.uid}
+            hasNotStartedATimerSession={hasNotStartedATimerSession}
           />
         ) : (
           <>

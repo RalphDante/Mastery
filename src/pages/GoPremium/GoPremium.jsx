@@ -522,21 +522,21 @@ function GoPremium() {
           </div>
       </div>
 
-{/* Guarantee */}
-<div className="bg-white rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md max-w-3xl mx-auto">
-  <div className="flex items-start">
-    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
-      <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
-    </div>
-    <div className="text-gray-800 flex-1 min-w-0">
-      <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30-Day Money-Back Guarantee</h3>
-      <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
-        If Mastery doesn't help you study faster, remember more, and actually enjoy working in the next 30 days, 
-        I'll refund every penny. No questions asked. No hard feelings.
-      </p>
-    </div>
-  </div>
-</div>
+        {/* Guarantee */}
+        <div className="bg-white rounded-xl p-4 sm:p-6 mb-6 sm:mb-8 shadow-md max-w-3xl mx-auto">
+          <div className="flex items-start">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center mr-3 sm:mr-4 flex-shrink-0">
+              <Check className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            </div>
+            <div className="text-gray-800 flex-1 min-w-0">
+              <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">30-Day Money-Back Guarantee</h3>
+              <p className="text-gray-600 text-xs sm:text-sm leading-relaxed">
+                If Mastery doesn't help you study faster, remember more, and actually enjoy working in the next 30 days, 
+                I'll refund every penny. No questions asked. No hard feelings.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* P.S. Section */}
         <div className="text-center w-full mx-auto mb-6 sm:mb-8">
