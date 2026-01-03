@@ -1,6 +1,7 @@
 // StudyTimeTracker.jsx - Fixed Autosave
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { doc, setDoc, getDoc, updateDoc, runTransaction } from 'firebase/firestore';
+import { getLocalDateKey } from '../../utils/streakUtils';
 
 const StudyTimeTracker = ({ 
   authUser, 
@@ -158,7 +159,7 @@ const StudyTimeTracker = ({
     
     try {
       const now = new Date();
-      const dateKey = now.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+      const dateKey = getLocalDateKey(now); // YYYY-MM-DD format
       const minutesStudied = timeInSecondsToSave / 60; // Include fractional minutes
       
       console.log(`Saving ${minutesStudied.toFixed(2)} minutes to Firebase`);

@@ -8,7 +8,7 @@ import { handleBossDefeat } from '../../../utils/bossUtils';
 
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
-import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
+import { getLocalDateKey, isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
@@ -172,7 +172,7 @@ function Timer({
 
     try {
       now = new Date();
-      const dateKey = now.toLocaleDateString('en-CA');
+      const dateKey = getLocalDateKey(now);
       const weekId = getWeekId(now);
       const monthId = getMonthId(now);
 
