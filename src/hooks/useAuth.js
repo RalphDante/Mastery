@@ -3,6 +3,7 @@ import { onAuthStateChanged, signInWithPopup, signInWithRedirect, getRedirectRes
 import { auth, db } from "../api/firebase";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { doc, getDoc } from "firebase/firestore";
 
 // Auth service with all the business logic
 export const authService = {
@@ -12,20 +13,7 @@ export const authService = {
         const { onSuccess, onError, navigate } = options;
         
         try {
-            console.log('🔐 Starting authentication flow...');
-
-            // if (import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox') {
-            //     console.log('🧪 Dev mode - using instant demo account');
-                
-            //     const { signInAnonymously } = await import('firebase/auth');
-            //     const result = await signInAnonymously(auth);
-            //     const user = result.user;
-                
-            //     console.log('✅ Demo user created:', user.uid);
-            //     if (onSuccess) onSuccess(user);
-            //     return;
-            // }
-            
+            console.log('Starting authentication flow...');
             
             const provider = new GoogleAuthProvider();
             provider.addScope('email');
@@ -35,13 +23,26 @@ export const authService = {
             });
             
             try {
-                console.log('🔄 Using popup authentication...');
+                console.log('Using popup authentication...');
                 const result = await signInWithPopup(auth, provider);
                 const user = result.user;
-                console.log('✅ User signed in via popup:', user.displayName, user.email);
+                console.log('User signed in via popup:', user.displayName, user.email);
                 
-                // Let AuthProvider's onAuthStateChanged handle profile creation
-                // and party assignment automatically
+                // Check if user is new or returning
+                const isNewUser = result._tokenResponse?.isNewUser || false;
+                
+                // Alternative: Check if user profile exists in Firestore
+                const userDocRef = doc(db, "users", user.uid);
+                const userDoc = await getDoc(userDocRef);
+                const hasCompletedOnboarding = userDoc.exists() && userDoc.data()?.hasCompletedOnboarding;
+                
+                // Navigate based on user status
+                if (navigate) {
+                    if (isNewUser || !hasCompletedOnboarding) {
+                        console.log('New user - navigating to onboarding');
+                        navigate('/onboarding');
+                    } 
+                }
                 
                 if (onSuccess) onSuccess(user);
                 
@@ -62,7 +63,7 @@ export const authService = {
                     }
                     
                     await signInWithRedirect(auth, provider);
-                } else {
+                }  else {
                     throw popupError;
                 }
             }
