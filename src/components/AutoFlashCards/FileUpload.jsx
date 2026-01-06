@@ -1419,7 +1419,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                             <span className="text-gray-500 text-xs">OR</span>
                             <div className="relative mt-2 w-full max-w-xs mx-auto">
                                <input 
-                                    placeholder="Type a topic..." 
+                                    placeholder="Type a topic... (e.g., Parts of a cell)"
                                     className="w-full bg-slate-700 text-white px-3 py-2 pr-10 rounded-lg text-sm"
                                     value={topic}
                                     onChange={e => setTopic(e.target.value)}

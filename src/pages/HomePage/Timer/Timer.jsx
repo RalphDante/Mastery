@@ -112,11 +112,7 @@ function Timer({
     level: 0
   });
 
-  useEffect(() => {
-    if (!loading && isTutorialAtStep('start-timer', 1)) {
-      setSelectedDuration(1);
-    } 
-  }, [loading, isTutorialAtStep]);
+ 
 
   useEffect(() => {
     partyMembersRef.current = partyMembers;
