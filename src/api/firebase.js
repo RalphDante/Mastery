@@ -40,12 +40,12 @@ const functions = getFunctions(app);
 const useEmulators = import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox';
 
 if (useEmulators) {
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
-  console.log('🔧 Connected to Firebase emulators');
-} else {
-  console.log('🌐 Using production Firebase');
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  const host = isLocalhost ? '127.0.0.1' : location.hostname;
+  
+  connectFirestoreEmulator(db, host, 8080);
+  connectAuthEmulator(auth, `http://${host}:9099`);
+  connectFunctionsEmulator(functions, host, 5001);
 }
 
 export { db, auth, app, functions, analytics };
