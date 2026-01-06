@@ -211,7 +211,7 @@ function AppContent(){
               /> */}
 
               {/* DISCOUNT BANNERS */}
-              <ProBanner />
+              {/* <ProBanner /> */}
 
               <ShowNavBar>
                 <NavBar 

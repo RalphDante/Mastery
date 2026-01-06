@@ -104,102 +104,117 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                         ((!loading && (!folders || folders.length === 0)) ? (
                             <>
                             <button 
-          onClick={openAIOption}
-          className={`w-full group ${hasNotStartedAFlashcardSession ? 'animate-pulse' : ''} relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50`}
-        >
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-          <div className="relative z-10 flex items-center gap-4">
-            {/* Text Content - Left Side */}
-            <div className="flex-1 text-left">
-              <h3 className="text-xl font-bold text-white mb-1">Create Flashcards</h3>
-              <p className="text-xs text-white/80">Fight your notes (2x more rewards)</p>
-            </div>
-            {/* Image - Right Side */}
-            <img 
-              src="/images/bosses-headline-image.webp" 
-              alt="A picture of the bosses in the game"
-              className="w-28 h-auto rounded-lg flex-shrink-0"
-              loading="eager"
-              width="600"
-              height="400"
-            />
-          </div>
-          <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
-              <path fill="#ffb245" d="M13.995 4.077v.06A11 11 0 0 1 16.22 8.42c.605 2.167.876 4.414.805 6.662a1 1 0 0 1 0 .113a6.3 6.3 0 0 0-.721-1.846a4.4 4.4 0 0 0-1.367-1.45c.025.064.059.113.059.168a7 7 0 0 1 .528 2.245a4.7 4.7 0 0 1-1.076 3.41a1.4 1.4 0 0 0-.113.203l-.069-.065a3.95 3.95 0 0 0-.138-2.374c-.578 2.216-2.068 3.538-4.047 4.437c2.404-.01 4.723-.375 6.697-1.856c.015.533-.148.958-.696 1.841c1.673-.839 2.403-2.23 2.586-4.012c.45.536.755 1.178.888 1.866c.128.656.192 1.327.286 1.974c.71-1.747.686-3.593.444-5.512c2.137 1.248 3.02 3.266 3.701 5.428a25 25 0 0 0-.133-3.494c-.17-1.698-.59-3.36-1.248-4.935a11.84 11.84 0 0 0-6.638-6.583a8.8 8.8 0 0 0-1.973-.563m-2.734.11c-.306.522-.587 1.06-.933 1.539a18 18 0 0 1-1.14 1.524a1.3 1.3 0 0 1-.943.43l.445-2.083a.6.6 0 0 0-.143.188c-.3.46-.592.928-.908 1.372a.63.63 0 0 1-.726.247c-.493-.144-.987-.282-1.48-.44a.26.26 0 0 0-.326.08A18 18 0 0 1 3.785 8.42c-1.076.953-2.24 1.746-3.785 1.638v.065c.434 1.026.864 2.053 1.318 3.074a1.65 1.65 0 0 0 .69.74a12 12 0 0 1-.183-1.283c-.024-.523.094-.617.617-.667a.17.17 0 0 1 .203.129c.074.187.163.37.246.558c.104-.227.193-.44.296-.642a.3.3 0 0 1 .149-.133c.222-.094.45-.168.686-.257l.177.356c.153-.35.296-.696.46-1.037a.375.375 0 0 1 .468-.173v.242a4.93 4.93 0 0 0 .493 2.626a4.2 4.2 0 0 1 .281 1.046c.04.162-.043.257-.196.257l-.4.044a1.7 1.7 0 0 1 .27.247c.075.094.179.27.144.32a.9.9 0 0 1-.39.267a.54.54 0 0 1-.315 0a10 10 0 0 1-.81-.272a4 4 0 0 1-.414-.212l-.08.094l.716.612a1.55 1.55 0 0 0 1.24.41a.987.987 0 0 0 .986-.988c.045-.306.005-.616.045-.922a2.7 2.7 0 0 1 .927-1.974a2.56 2.56 0 0 0-1.214.74a6.4 6.4 0 0 1-.079-1.135a1.545 1.545 0 0 1 1.402-1.653a21 21 0 0 1 1.648-.281c.805-.08 1.599-.246 2.369-.494a4.4 4.4 0 0 0 1.406-.794a18 18 0 0 1-2.872.38a8.88 8.88 0 0 0 3.4-4.777c-1.056 1.48-2.202 2.867-3.87 3.701a22.7 22.7 0 0 0 1.447-4.086zM5.443 8.07c-.03.153-.054.305-.094.454c-.074.29-.163.577-.237.868a.197.197 0 0 1-.198.178c-.384.045-.764.103-1.183.157zM9.4 10.775a4 4 0 0 0-.577.053a2.9 2.9 0 0 0-1.48.523a.99.99 0 0 0-.43.923a1.1 1.1 0 0 1 .972-.671a3.07 3.07 0 0 1 1.762.34c.49.234.772.76.696 1.298a2.34 2.34 0 0 1-.687 1.377a5.8 5.8 0 0 1-1.914 1.308a9.7 9.7 0 0 0-2.32 1.41a3.95 3.95 0 0 0-1.396 2.567h5.921a2.023 2.023 0 0 1 .987-2.551l-.26 1.115a5.43 5.43 0 0 0 1.243-2.665c.171.407.245.848.216 1.288a5.6 5.6 0 0 0 .44-2.866l.518.561c-.049-.4-.09-.755-.134-1.11a3.1 3.1 0 0 0-1.865-2.585a4.2 4.2 0 0 0-1.692-.315"/>
-            </svg>
-          </div>
-        </button>
+                            onClick={openAIOption}
+                            className={`w-full group relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50`}
+                            >
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                            <div className="relative z-10 flex items-center gap-4">
+                                {/* Text Content - Left Side */}
+                                <div className="flex-1 text-left">
+                                <h3 className="text-xl font-bold text-white mb-1">Create Flashcards</h3>
+                                <p className="text-xs text-white/80">Fight your notes (2x more rewards)</p>
+                                </div>
+                                {/* Image - Right Side */}
+                                <img 
+                                src="/images/bosses-headline-image.webp" 
+                                alt="A picture of the bosses in the game"
+                                className="w-28 h-auto rounded-lg flex-shrink-0"
+                                loading="eager"
+                                width="600"
+                                height="400"
+                                />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
+                                <path fill="#ffb245" d="M13.995 4.077v.06A11 11 0 0 1 16.22 8.42c.605 2.167.876 4.414.805 6.662a1 1 0 0 1 0 .113a6.3 6.3 0 0 0-.721-1.846a4.4 4.4 0 0 0-1.367-1.45c.025.064.059.113.059.168a7 7 0 0 1 .528 2.245a4.7 4.7 0 0 1-1.076 3.41a1.4 1.4 0 0 0-.113.203l-.069-.065a3.95 3.95 0 0 0-.138-2.374c-.578 2.216-2.068 3.538-4.047 4.437c2.404-.01 4.723-.375 6.697-1.856c.015.533-.148.958-.696 1.841c1.673-.839 2.403-2.23 2.586-4.012c.45.536.755 1.178.888 1.866c.128.656.192 1.327.286 1.974c.71-1.747.686-3.593.444-5.512c2.137 1.248 3.02 3.266 3.701 5.428a25 25 0 0 0-.133-3.494c-.17-1.698-.59-3.36-1.248-4.935a11.84 11.84 0 0 0-6.638-6.583a8.8 8.8 0 0 0-1.973-.563m-2.734.11c-.306.522-.587 1.06-.933 1.539a18 18 0 0 1-1.14 1.524a1.3 1.3 0 0 1-.943.43l.445-2.083a.6.6 0 0 0-.143.188c-.3.46-.592.928-.908 1.372a.63.63 0 0 1-.726.247c-.493-.144-.987-.282-1.48-.44a.26.26 0 0 0-.326.08A18 18 0 0 1 3.785 8.42c-1.076.953-2.24 1.746-3.785 1.638v.065c.434 1.026.864 2.053 1.318 3.074a1.65 1.65 0 0 0 .69.74a12 12 0 0 1-.183-1.283c-.024-.523.094-.617.617-.667a.17.17 0 0 1 .203.129c.074.187.163.37.246.558c.104-.227.193-.44.296-.642a.3.3 0 0 1 .149-.133c.222-.094.45-.168.686-.257l.177.356c.153-.35.296-.696.46-1.037a.375.375 0 0 1 .468-.173v.242a4.93 4.93 0 0 0 .493 2.626a4.2 4.2 0 0 1 .281 1.046c.04.162-.043.257-.196.257l-.4.044a1.7 1.7 0 0 1 .27.247c.075.094.179.27.144.32a.9.9 0 0 1-.39.267a.54.54 0 0 1-.315 0a10 10 0 0 1-.81-.272a4 4 0 0 1-.414-.212l-.08.094l.716.612a1.55 1.55 0 0 0 1.24.41a.987.987 0 0 0 .986-.988c.045-.306.005-.616.045-.922a2.7 2.7 0 0 1 .927-1.974a2.56 2.56 0 0 0-1.214.74a6.4 6.4 0 0 1-.079-1.135a1.545 1.545 0 0 1 1.402-1.653a21 21 0 0 1 1.648-.281c.805-.08 1.599-.246 2.369-.494a4.4 4.4 0 0 0 1.406-.794a18 18 0 0 1-2.872.38a8.88 8.88 0 0 0 3.4-4.777c-1.056 1.48-2.202 2.867-3.87 3.701a22.7 22.7 0 0 0 1.447-4.086zM5.443 8.07c-.03.153-.054.305-.094.454c-.074.29-.163.577-.237.868a.197.197 0 0 1-.198.178c-.384.045-.764.103-1.183.157zM9.4 10.775a4 4 0 0 0-.577.053a2.9 2.9 0 0 0-1.48.523a.99.99 0 0 0-.43.923a1.1 1.1 0 0 1 .972-.671a3.07 3.07 0 0 1 1.762.34c.49.234.772.76.696 1.298a2.34 2.34 0 0 1-.687 1.377a5.8 5.8 0 0 1-1.914 1.308a9.7 9.7 0 0 0-2.32 1.41a3.95 3.95 0 0 0-1.396 2.567h5.921a2.023 2.023 0 0 1 .987-2.551l-.26 1.115a5.43 5.43 0 0 0 1.243-2.665c.171.407.245.848.216 1.288a5.6 5.6 0 0 0 .44-2.866l.518.561c-.049-.4-.09-.755-.134-1.11a3.1 3.1 0 0 0-1.865-2.585a4.2 4.2 0 0 0-1.692-.315"/>
+                                </svg>
+                            </div>
+                            </button>
 
-        {/* Pomodoro Timer Card - Horizontal Layout */}
-        <button
-          onClick={openTimer}
-          className={`w-full group ${hasNotStartedATimerSession ? 'animate-pulse' : ''} relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50`}
-        >
-          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-          <div className="relative z-10 flex items-center gap-4">
-            {/* Text Content - Left Side */}
-            <div className="flex-1 text-left">
-              <h3 className="text-xl font-bold text-white mb-1">Pomodoro Timer</h3>
-              <p className="text-xs text-white/80">Channel your focus (Steady damage and earn rewards)</p>
-            </div>
-            {/* Timer Icon - Right Side */}
-            <div className="flex-shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-auto" viewBox="0 0 24 24">
-                <path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/>
-                <path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/>
-              </svg>
-            </div>
-          </div>
-          <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
-              <path fill="#ffd932ff" d="M19 13v-3h-1V9h-1V6h-1V4h-1V3h-1V2h-1V1h-2v1h1v2h-1v2h-1v1H9v1H8v1H7v1H6v3h1v2H6v-1H5v-2H4v2H3v3h1v2h1v1h1v1h1v1h1v1h8v-1h1v-1h1v-1h1v-2h1v-5zm-2 7h-1v1h-2v1h-4v-1H9v-4h1v-1h1v-1h1v-1h1v-3h-1v-1h-1V9h1v1h2v2h1v5h-1v2h1v-1h1v-1h1z"/>
-            </svg>
-          </div>
-        </button>
+                            {/* Pomodoro Timer Card - Horizontal Layout */}
+                            <button
+                            onClick={openTimer}
+                            className={`w-full group relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50`}
+                            >
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                            <div className="relative z-10 flex items-center gap-4">
+                                {/* Text Content - Left Side */}
+                                <div className="flex-1 text-left">
+                                <h3 className="text-xl font-bold text-white mb-1">Pomodoro Timer</h3>
+                                <p className="text-xs text-white/80">Channel your focus (Steady damage and earn rewards)</p>
+                                </div>
+                                {/* Timer Icon - Right Side */}
+                                <div className="flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-auto" viewBox="0 0 24 24">
+                                    <path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/>
+                                    <path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/>
+                                </svg>
+                                </div>
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
+                                <path fill="#ffd932ff" d="M19 13v-3h-1V9h-1V6h-1V4h-1V3h-1V2h-1V1h-2v1h1v2h-1v2h-1v1H9v1H8v1H7v1H6v3h1v2H6v-1H5v-2H4v2H3v3h1v2h1v1h1v1h1v1h1v1h8v-1h1v-1h1v-1h1v-2h1v-5zm-2 7h-1v1h-2v1h-4v-1H9v-4h1v-1h1v-1h1v-1h1v-3h-1v-1h-1V9h1v1h2v2h1v5h-1v2h1v-1h1v-1h1z"/>
+                                </svg>
+                            </div>
+                            </button>
                             </>
 
                         ) : (
                             // Fight Bosses Card
                             <>
                             <button 
-                                onClick={openFlashcards}
-                                className="group relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50"
+                            onClick={openFlashcards}
+                            className="w-full group relative overflow-hidden bg-gradient-to-br from-red-600 to-orange-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/50"
                             >
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-                                <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
-                                 
-                                    <img 
-                                    src="/images/bosses-headline-image.webp" 
-                                    alt="A picture of the bosses in the game"
-                                    className="w-30 h-auto rounded-2xl"
-                                    loading="eager"
-                                    width="600"
-                                    height="400"
-                                    />
-                                    <h3 className="text-2xl font-bold text-white">Your Decks</h3>
-                                    <p className="text-sm text-white/80">Battle through your flashcards</p>
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                            <div className="relative z-10 flex items-center gap-4">
+                                {/* Text Content - Left Side */}
+                                <div className="flex-1 text-left">
+                                <h3 className="text-xl font-bold text-white mb-1">Your Decks</h3>
+                                <p className="text-xs text-white/80">Battle through your flashcards</p>
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-14 h-auto" viewBox="0 0 24 24"><path fill="#ffb245" d="M13.995 4.077v.06A11 11 0 0 1 16.22 8.42c.605 2.167.876 4.414.805 6.662a1 1 0 0 1 0 .113a6.3 6.3 0 0 0-.721-1.846a4.4 4.4 0 0 0-1.367-1.45c.025.064.059.113.059.168a7 7 0 0 1 .528 2.245a4.7 4.7 0 0 1-1.076 3.41a1.4 1.4 0 0 0-.113.203l-.069-.065a3.95 3.95 0 0 0-.138-2.374c-.578 2.216-2.068 3.538-4.047 4.437c2.404-.01 4.723-.375 6.697-1.856c.015.533-.148.958-.696 1.841c1.673-.839 2.403-2.23 2.586-4.012c.45.536.755 1.178.888 1.866c.128.656.192 1.327.286 1.974c.71-1.747.686-3.593.444-5.512c2.137 1.248 3.02 3.266 3.701 5.428a25 25 0 0 0-.133-3.494c-.17-1.698-.59-3.36-1.248-4.935a11.84 11.84 0 0 0-6.638-6.583a8.8 8.8 0 0 0-1.973-.563m-2.734.11c-.306.522-.587 1.06-.933 1.539a18 18 0 0 1-1.14 1.524a1.3 1.3 0 0 1-.943.43l.445-2.083a.6.6 0 0 0-.143.188c-.3.46-.592.928-.908 1.372a.63.63 0 0 1-.726.247c-.493-.144-.987-.282-1.48-.44a.26.26 0 0 0-.326.08A18 18 0 0 1 3.785 8.42c-1.076.953-2.24 1.746-3.785 1.638v.065c.434 1.026.864 2.053 1.318 3.074a1.65 1.65 0 0 0 .69.74a12 12 0 0 1-.183-1.283c-.024-.523.094-.617.617-.667a.17.17 0 0 1 .203.129c.074.187.163.37.246.558c.104-.227.193-.44.296-.642a.3.3 0 0 1 .149-.133c.222-.094.45-.168.686-.257l.177.356c.153-.35.296-.696.46-1.037a.375.375 0 0 1 .468-.173v.242a4.93 4.93 0 0 0 .493 2.626a4.2 4.2 0 0 1 .281 1.046c.04.162-.043.257-.196.257l-.4.044a1.7 1.7 0 0 1 .27.247c.075.094.179.27.144.32a.9.9 0 0 1-.39.267a.54.54 0 0 1-.315 0a10 10 0 0 1-.81-.272a4 4 0 0 1-.414-.212l-.08.094l.716.612a1.55 1.55 0 0 0 1.24.41a.987.987 0 0 0 .986-.988c.045-.306.005-.616.045-.922a2.7 2.7 0 0 1 .927-1.974a2.56 2.56 0 0 0-1.214.74a6.4 6.4 0 0 1-.079-1.135a1.545 1.545 0 0 1 1.402-1.653a21 21 0 0 1 1.648-.281c.805-.08 1.599-.246 2.369-.494a4.4 4.4 0 0 0 1.406-.794a18 18 0 0 1-2.872.38a8.88 8.88 0 0 0 3.4-4.777c-1.056 1.48-2.202 2.867-3.87 3.701a22.7 22.7 0 0 0 1.447-4.086zM5.443 8.07c-.03.153-.054.305-.094.454c-.074.29-.163.577-.237.868a.197.197 0 0 1-.198.178c-.384.045-.764.103-1.183.157zM9.4 10.775a4 4 0 0 0-.577.053a2.9 2.9 0 0 0-1.48.523a.99.99 0 0 0-.43.923a1.1 1.1 0 0 1 .972-.671a3.07 3.07 0 0 1 1.762.34c.49.234.772.76.696 1.298a2.34 2.34 0 0 1-.687 1.377a5.8 5.8 0 0 1-1.914 1.308a9.7 9.7 0 0 0-2.32 1.41a3.95 3.95 0 0 0-1.396 2.567h5.921a2.023 2.023 0 0 1 .987-2.551l-.26 1.115a5.43 5.43 0 0 0 1.243-2.665c.171.407.245.848.216 1.288a5.6 5.6 0 0 0 .44-2.866l.518.561c-.049-.4-.09-.755-.134-1.11a3.1 3.1 0 0 0-1.865-2.585a4.2 4.2 0 0 0-1.692-.315"/></svg>
-                                </div>
+                                {/* Image - Right Side */}
+                                <img 
+                                src="/images/bosses-headline-image.webp" 
+                                alt="A picture of the bosses in the game"
+                                className="w-28 h-auto rounded-lg flex-shrink-0"
+                                loading="eager"
+                                width="600"
+                                height="400"
+                                />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
+                                <path fill="#ffb245" d="M13.995 4.077v.06A11 11 0 0 1 16.22 8.42c.605 2.167.876 4.414.805 6.662a1 1 0 0 1 0 .113a6.3 6.3 0 0 0-.721-1.846a4.4 4.4 0 0 0-1.367-1.45c.025.064.059.113.059.168a7 7 0 0 1 .528 2.245a4.7 4.7 0 0 1-1.076 3.41a1.4 1.4 0 0 0-.113.203l-.069-.065a3.95 3.95 0 0 0-.138-2.374c-.578 2.216-2.068 3.538-4.047 4.437c2.404-.01 4.723-.375 6.697-1.856c.015.533-.148.958-.696 1.841c1.673-.839 2.403-2.23 2.586-4.012c.45.536.755 1.178.888 1.866c.128.656.192 1.327.286 1.974c.71-1.747.686-3.593.444-5.512c2.137 1.248 3.02 3.266 3.701 5.428a25 25 0 0 0-.133-3.494c-.17-1.698-.59-3.36-1.248-4.935a11.84 11.84 0 0 0-6.638-6.583a8.8 8.8 0 0 0-1.973-.563m-2.734.11c-.306.522-.587 1.06-.933 1.539a18 18 0 0 1-1.14 1.524a1.3 1.3 0 0 1-.943.43l.445-2.083a.6.6 0 0 0-.143.188c-.3.46-.592.928-.908 1.372a.63.63 0 0 1-.726.247c-.493-.144-.987-.282-1.48-.44a.26.26 0 0 0-.326.08A18 18 0 0 1 3.785 8.42c-1.076.953-2.24 1.746-3.785 1.638v.065c.434 1.026.864 2.053 1.318 3.074a1.65 1.65 0 0 0 .69.74a12 12 0 0 1-.183-1.283c-.024-.523.094-.617.617-.667a.17.17 0 0 1 .203.129c.074.187.163.37.246.558c.104-.227.193-.44.296-.642a.3.3 0 0 1 .149-.133c.222-.094.45-.168.686-.257l.177.356c.153-.35.296-.696.46-1.037a.375.375 0 0 1 .468-.173v.242a4.93 4.93 0 0 0 .493 2.626a4.2 4.2 0 0 1 .281 1.046c.04.162-.043.257-.196.257l-.4.044a1.7 1.7 0 0 1 .27.247c.075.094.179.27.144.32a.9.9 0 0 1-.39.267a.54.54 0 0 1-.315 0a10 10 0 0 1-.81-.272a4 4 0 0 1-.414-.212l-.08.094l.716.612a1.55 1.55 0 0 0 1.24.41a.987.987 0 0 0 .986-.988c.045-.306.005-.616.045-.922a2.7 2.7 0 0 1 .927-1.974a2.56 2.56 0 0 0-1.214.74a6.4 6.4 0 0 1-.079-1.135a1.545 1.545 0 0 1 1.402-1.653a21 21 0 0 1 1.648-.281c.805-.08 1.599-.246 2.369-.494a4.4 4.4 0 0 0 1.406-.794a18 18 0 0 1-2.872.38a8.88 8.88 0 0 0 3.4-4.777c-1.056 1.48-2.202 2.867-3.87 3.701a22.7 22.7 0 0 0 1.447-4.086zM5.443 8.07c-.03.153-.054.305-.094.454c-.074.29-.163.577-.237.868a.197.197 0 0 1-.198.178c-.384.045-.764.103-1.183.157zM9.4 10.775a4 4 0 0 0-.577.053a2.9 2.9 0 0 0-1.48.523a.99.99 0 0 0-.43.923a1.1 1.1 0 0 1 .972-.671a3.07 3.07 0 0 1 1.762.34c.49.234.772.76.696 1.298a2.34 2.34 0 0 1-.687 1.377a5.8 5.8 0 0 1-1.914 1.308a9.7 9.7 0 0 0-2.32 1.41a3.95 3.95 0 0 0-1.396 2.567h5.921a2.023 2.023 0 0 1 .987-2.551l-.26 1.115a5.43 5.43 0 0 0 1.243-2.665c.171.407.245.848.216 1.288a5.6 5.6 0 0 0 .44-2.866l.518.561c-.049-.4-.09-.755-.134-1.11a3.1 3.1 0 0 0-1.865-2.585a4.2 4.2 0 0 0-1.692-.315"/>
+                                </svg>
+                            </div>
                             </button>
+
+                            {/* Pomodoro Timer Card - Horizontal Layout */}
                             <button
-                                onClick={openTimer}
-                                className={`group ${hasNotStartedATimerSession ? 'animate-pulse' : ''} relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50`}
+                            onClick={openTimer}
+                            className="w-full group relative overflow-hidden bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/50"
                             >
-                                <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
-                                <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
-                                    <div className="text-5xl">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 24 24"><path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/><path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/></svg>
-                                        {/* <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 12 12"><path fill="#9e9fdcff" d="M3 3H2v1h1Zm0 0h5V2H6V1H5v1H3Zm-1 9h1v-1H2Zm0-2h1V9H2ZM1 9h1V4H1Zm2 2h5v-1H3Zm5 1h1v-1H8ZM0 4h1V3h1V2H0Zm8 6h1V9H8ZM5 7h3V6H6V4H5Zm4 2h1V4H9ZM8 4h1V3H8Zm2 0h1V2H9v1h1Zm0 0"/></svg> */}
-                                    </div>
-                                    <h3 className="text-2xl font-bold text-white">Pomodoro Timer</h3>
-                                    <p className="text-sm text-white/80">Channel your focus in timed bursts<br></br> (Steady damage and earn rewards)</p>
+                            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
+                            <div className="relative z-10 flex items-center gap-4">
+                                {/* Text Content - Left Side */}
+                                <div className="flex-1 text-left">
+                                <h3 className="text-xl font-bold text-white mb-1">Pomodoro Timer</h3>
+                                <p className="text-xs text-white/80">Channel your focus in timed bursts (Steady damage and earn rewards)</p>
                                 </div>
-                                <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-14 h-auto" viewBox="0 0 24 24"><path fill="#ffd932ff" d="M19 13v-3h-1V9h-1V6h-1V4h-1V3h-1V2h-1V1h-2v1h1v2h-1v2h-1v1H9v1H8v1H7v1H6v3h1v2H6v-1H5v-2H4v2H3v3h1v2h1v1h1v1h1v1h1v1h8v-1h1v-1h1v-1h1v-2h1v-5zm-2 7h-1v1h-2v1h-4v-1H9v-4h1v-1h1v-1h1v-1h1v-3h-1v-1h-1V9h1v1h2v2h1v5h-1v2h1v-1h1v-1h1z"/></svg>
+                                {/* Timer Icon - Right Side */}
+                                <div className="flex-shrink-0">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-16 h-auto" viewBox="0 0 24 24">
+                                    <path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/>
+                                    <path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/>
+                                </svg>
                                 </div>
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-auto" viewBox="0 0 24 24">
+                                <path fill="#ffd932ff" d="M19 13v-3h-1V9h-1V6h-1V4h-1V3h-1V2h-1V1h-2v1h1v2h-1v2h-1v1H9v1H8v1H7v1H6v3h1v2H6v-1H5v-2H4v2H3v3h1v2h1v1h1v1h1v1h1v1h8v-1h1v-1h1v-1h1v-2h1v-5zm-2 7h-1v1h-2v1h-4v-1H9v-4h1v-1h1v-1h1v-1h1v-3h-1v-1h-1V9h1v1h2v2h1v5h-1v2h1v-1h1v-1h1z"/>
+                                </svg>
+                            </div>
                             </button>
                             </>
                         )) : (
