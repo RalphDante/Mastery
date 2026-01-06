@@ -117,7 +117,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                                     width="600"
                                     height="400"
                                     />
-                                    <h3 className="text-2xl font-bold text-white">Flashcards</h3>
+                                    <h3 className="text-2xl font-bold text-white">Create Flashcards</h3>
                                     <p className="text-sm text-white/80">Fight your notes <br></br>(2x more rewards)</p>
                                 </div>
                                 <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
@@ -133,11 +133,11 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
                                 <div className="relative z-10 flex flex-col items-center justify-center space-y-3">
                                     <div className="text-5xl">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 24 24"><path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/><path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/></svg>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-32 h-auto" viewBox="0 0 24 24"><path fill="#ffffffff" d="M22 9V7h-1V5h-1V4h-1V3h-2V2h-2V1H9v1H7v1H5v1H4v1H3v2H2v2H1v6h1v2h1v2h1v1h1v1h2v1h2v1h6v-1h2v-1h2v-1h1v-1h1v-2h1v-2h1V9zm-1 6h-1v2h-1v2h-2v1h-2v1H9v-1H7v-1H5v-2H4v-2H3V9h1V7h1V5h2V4h2V3h6v1h2v1h2v2h1v2h1z"/><path fill="#ffd736ff" d="M16 15v1h-1v1h-1v-1h-1v-1h-1v-1h-1V5h2v8h1v1h1v1z"/></svg>
                                         {/* <svg xmlns="http://www.w3.org/2000/svg" className="w-20 h-auto" viewBox="0 0 12 12"><path fill="#9e9fdcff" d="M3 3H2v1h1Zm0 0h5V2H6V1H5v1H3Zm-1 9h1v-1H2Zm0-2h1V9H2ZM1 9h1V4H1Zm2 2h5v-1H3Zm5 1h1v-1H8ZM0 4h1V3h1V2H0Zm8 6h1V9H8ZM5 7h3V6H6V4H5Zm4 2h1V4H9ZM8 4h1V3H8Zm2 0h1V2H9v1h1Zm0 0"/></svg> */}
                                     </div>
                                     <h3 className="text-2xl font-bold text-white">Pomodoro Timer</h3>
-                                    <p className="text-sm text-white/80">Channel your focus in timed bursts<br></br> (Steady damage and earn rewards)</p>
+                                    <p className="text-sm text-white/80">Channel your focus<br></br> (Steady damage and earn rewards)</p>
                                 </div>
                                 <div className="absolute -bottom-2 -right-2 text-6xl opacity-40 group-hover:opacity-20 transition-opacity">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="w-14 h-auto" viewBox="0 0 24 24"><path fill="#ffd932ff" d="M19 13v-3h-1V9h-1V6h-1V4h-1V3h-1V2h-1V1h-2v1h1v2h-1v2h-1v1H9v1H8v1H7v1H6v3h1v2H6v-1H5v-2H4v2H3v3h1v2h1v1h1v1h1v1h1v1h8v-1h1v-1h1v-1h1v-2h1v-5zm-2 7h-1v1h-2v1h-4v-1H9v-4h1v-1h1v-1h1v-1h1v-3h-1v-1h-1V9h1v1h2v2h1v5h-1v2h1v-1h1v-1h1z"/></svg>
