@@ -19,11 +19,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
     const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
 
-    useEffect(() => {
-        if (hasNotStartedATimerSession) {
-            setStudyMode("timer");
-        }
-    }, [hasNotStartedATimerSession]);
+  
 
     useEffect(() => {
         const checkForActiveTimer = async () => {
@@ -41,11 +37,8 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                 // Check if user has never studied before
                 const hasNeverStudied = !userData?.lastStudyDate;
 
-                // Switch to timer if: active timer OR never studied before
-                if (hasNeverStudied) {
-                    console.log('First-time user detected, showing timer view');
-                    setStudyMode('timer');
-                } else if (activeTimer?.isActive && activeTimer.startedAt) {
+            
+                if (activeTimer?.isActive && activeTimer.startedAt) {
                     console.log('Active timer detected, switching to timer view');
                     setStudyMode('timer');
                 }

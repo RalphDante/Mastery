@@ -17,7 +17,6 @@ import MiniLeaderboard from '../../components/MiniLeaderboard.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 // import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
-import NewUserBattleModal from '../../components/Modals/NewUserBattleModal.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
@@ -37,29 +36,13 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024);
 
 
-  const [showNewUserBattleModal, setShowNewUserBattleModal] = useState(false);
   const timerStartRef = useRef(null); // ← Store reference to timer's start function
   const userData = userProfile;
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
   const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
   const hasNotStartedASession = hasNotStartedAFlashcardSession && hasNotStartedATimerSession;
 
-  const navigate = useNavigate();
-
-
-  // Show modal when user is brand new
-  useEffect(() => {
-    if (loading) return;
-    
-    if (hasNotStartedASession && !userData?.activeTimer?.isActive) {
-      const timer = setTimeout(() => {
-        setShowNewUserBattleModal(true);
-      }, 1000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [loading, hasNotStartedASession]);
-  
+  const navigate = useNavigate();  
 
   
   const manuallyProcessExpired = httpsCallable(functions, 'manuallyProcessExpired');
@@ -136,19 +119,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
-     {showNewUserBattleModal && (
-        <NewUserBattleModal 
-          onStartSession={() => {
-            // Call the timer's start function with skipStreakCheck=true
-            if (timerStartRef.current) {
-              timerStartRef.current(true);
-            }
-            setShowNewUserBattleModal(false);
-          }}
-          onClose={() => setShowNewUserBattleModal(false)}
-        />
-      )}
-
       {showTimerStart && (
         <>
           <TimerStartedToast 
