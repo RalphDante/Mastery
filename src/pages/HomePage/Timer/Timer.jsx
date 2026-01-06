@@ -1251,7 +1251,7 @@ useEffect(() => {
 
               <button 
                 onClick={()=>startTimer()} 
-                className={`${hasNotStartedATimerSession ? 'animate-pulse' : ''} w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
+                className={`w-full bg-red-600 hover:bg-red-500 text-white font-bold text-xl rounded-lg py-4 transition-all shadow-lg hover:shadow-xl`}
               >
                 Start {selectedDuration} Min Session
               </button>
