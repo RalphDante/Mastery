@@ -8,7 +8,7 @@ import { handleBossDefeat } from '../../../utils/bossUtils';
 
 import { usePartyContext } from '../../../contexts/PartyContext';
 import { useUserDataContext } from '../../../contexts/UserDataContext';
-import { isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
+import { getLocalDateKey, isStreakAtRisk, updateUserAndPartyStreak } from '../../../utils/streakUtils';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import LimitReachedModal from '../../../components/Modals/LimitReachedModal';
 import { showInterstitialAd } from '../../../components/InterstitialAd';
@@ -83,7 +83,7 @@ function Timer({
   const activeUserProfileRef = useRef(null);
 
   const currentUser = memberProfile;
-  const isPro = currentUser?.subscription?.tier === "pro";
+  const isPro = authUserProfile?.subscription?.tier === "pro";
 
   const audioRef = useRef(null);
   const correctSoundEffect = useRef(null);
@@ -93,7 +93,7 @@ function Timer({
   const hasActiveBooster = activeBooster && activeBooster.endsAt > Date.now();
 
   const durations = [
-    // { label: '2 min', value: 2, damage: 10, xp: 10, mana: 3, health: 1 },
+    // { label: '1 min', value: 1, damage: 10, xp: 10, mana: 3, health: 1 },
     { label: '5 min', value: 5, damage: 50, xp: 50, mana: 15, health: 5 },
     { label: '15 min', value: 15, damage: 150, xp: 150, mana: 45, health: 15 },
     { label: '25 min', value: 25, damage: 250, xp: 250, mana: 75, health: 25  },
@@ -114,8 +114,8 @@ function Timer({
 
   useEffect(() => {
     if (!loading && isTutorialAtStep('start-timer', 1)) {
-      setSelectedDuration(5);
-    }
+      setSelectedDuration(1);
+    } 
   }, [loading, isTutorialAtStep]);
 
   useEffect(() => {
@@ -159,7 +159,7 @@ function Timer({
     if (hasActiveBooster) {
       expMultiplier += (activeBooster.multiplier - 1);
       expMultiplier = Math.min(expMultiplier, 5);
-      console.log(`🔥 Booster active: ${activeBooster.multiplier}x (total: ${expMultiplier}x)`);
+      console.log(`Booster active: ${activeBooster.multiplier}x (total: ${expMultiplier}x)`);
     }
 
     const expPerMinute = baseExpPerMinute * expMultiplier;
@@ -172,7 +172,7 @@ function Timer({
 
     try {
       now = new Date();
-      const dateKey = now.toLocaleDateString('en-CA');
+      const dateKey = getLocalDateKey(now);
       const weekId = getWeekId(now);
       const monthId = getMonthId(now);
 
@@ -398,14 +398,14 @@ function Timer({
       });
 
       await refreshPartyProfile();
-      console.log("✅ Refreshed party profile");
+      console.log("Refreshed party profile");
 
       await refreshTodaySession();
-      console.log("✅ Refreshed today session");
+      console.log("Refreshed today session");
 
       if (onTimeUpdate) onTimeUpdate(minutesToSave);
       
-      console.log(`✅ Session saved: ${minutesToSave} minutes, ${expEarned} XP`);
+      console.log(`Session saved: ${minutesToSave} minutes, ${expEarned} XP`);
     } catch (err) {
       console.error('Error saving study time:', err);
     }
@@ -433,7 +433,7 @@ function Timer({
       const alreadySaved = localStorage.getItem(savedSessionKey);
       
       if (alreadySaved === 'saved' || alreadySaved === 'saving') {
-        console.log('⚠️ Session already saved in resume, skipping duplicate');
+        console.log('Session already saved in resume, skipping duplicate');
         
         // Just show completion screen
         setShowCompletion(true);
@@ -467,7 +467,7 @@ function Timer({
     if (minutesToSave > 0) {
 
       await saveCompletedSession(minutesToSave);
-      console.log(`✅ Saved ${minutesToSave} minutes`);
+      console.log(`Saved ${minutesToSave} minutes`);
     }
 
     // Increment session count for ads
@@ -533,7 +533,7 @@ function Timer({
       sessionStartTodayExpRef.current = todaySession.expEarned || 0;
       sessionStartTodayCardsRef.current = todaySession.cardsReviewed || 0;
       
-      console.log('✅ Captured today session start:', {
+      console.log('Captured today session start:', {
         minutes: sessionStartTodayMinutesRef.current,
         exp: sessionStartTodayExpRef.current,
         cards: sessionStartTodayCardsRef.current
@@ -542,7 +542,7 @@ function Timer({
       // 🔥 CAPTURE ORIGINAL BOSS HEALTH
       if (partyProfile?.currentBoss) {
         originalBossHealthRef.current = partyProfile.currentBoss.currentHealth;
-        console.log('✅ Captured original boss health:', originalBossHealthRef.current);
+        console.log('Captured original boss health:', originalBossHealthRef.current);
       }
 
       if (partyMembers?.[authUser.uid]) {
@@ -551,7 +551,7 @@ function Timer({
         sessionStartHealthRef.current = partyMembers[authUser.uid].health || 0;
         sessionStartManaRef.current = partyMembers[authUser.uid].mana || 0;
         sessionStartLevelRef.current = partyMembers[authUser.uid].level || 1;
-        console.log('✅ Captured session start stats:', {
+        console.log('Captured session start stats:', {
           exp: sessionStartExpRef.current,
           health: sessionStartHealthRef.current,
           mana: sessionStartManaRef.current,
@@ -562,7 +562,7 @@ function Timer({
       // ✅ Capture original member damage (0 for new session)
       if (partyMembers?.[authUser.uid]) {
         originalMemberDamageRef.current = partyMembers[authUser.uid].currentBossDamage || 0;
-        console.log('✅ Captured original member damage:', originalMemberDamageRef.current);
+        console.log('Captured original member damage:', originalMemberDamageRef.current);
       } else {
         originalMemberDamageRef.current = 0;
       }
@@ -609,9 +609,9 @@ function Timer({
           isActive: true
         }
       }).then(() => {
-        console.log('✅ Timer saved to database');
+        console.log('Timer saved to database');
       }).catch(err => {
-        console.error('❌ Failed to save timer:', err);
+        console.error('Failed to save timer:', err);
       });
 
       // 🔥 Save to localStorage as backup
@@ -632,7 +632,7 @@ function Timer({
 
     // 🔥 APPLY OPTIMISTIC UPDATES FOR ELAPSED MINUTES
     if (resumeFromMinutes > 0) {
-      console.log(`🔄 Applying optimistic updates for ${resumeFromMinutes} elapsed minutes`);
+      console.log(`Applying optimistic updates for ${resumeFromMinutes} elapsed minutes`);
       const bossHealthToUse = freshBossHealth ?? originalBossHealthRef.current;
       const memberDamageToUse = freshMemberDamage ?? originalMemberDamageRef.current;
       
@@ -706,9 +706,9 @@ function Timer({
         }
         
         lastSyncedMinuteRef.current = resumeFromMinutes;
-        console.log(`✅ Optimistic updates applied: ${totalExpGain} XP, ${predictedDamage} DMG`);
+        console.log(`Optimistic updates applied: ${totalExpGain} XP, ${predictedDamage} DMG`);
       } else {
-        console.warn('⚠️ No userProfile found for optimistic updates');
+        console.warn('No userProfile found for optimistic updates');
       }
     }
     
@@ -726,7 +726,7 @@ function Timer({
         setTimeElapsed(elapsedSeconds);
     
         if (elapsedMinutes > lastSyncedMinuteRef.current) {
-          console.log(`✅ Minute ${elapsedMinutes} hit - calculating stats`);
+          console.log(`Minute ${elapsedMinutes} hit - calculating stats`);
           
           const currentUserProfile = user?.uid ? partyMembersRef.current[user.uid] : null;
           
@@ -799,13 +799,13 @@ function Timer({
             }
             
             lastSyncedMinuteRef.current = elapsedMinutes;
-            console.log(`✅ Stats calculated for minute ${elapsedMinutes}`);
+            console.log(`Stats calculated for minute ${elapsedMinutes}`);
           }
         }
     
         // Timer complete?
         if (elapsedSeconds >= selectedDurationRef.current * 60) {
-          console.log('🎯 Timer completion condition met!');
+          console.log('Timer completion condition met!');
           handleCompletionRef.current?.()
         }
       }, 1000);
@@ -851,7 +851,7 @@ function Timer({
   const resetTimer = async () => {
     // ✅ FIX: Don't save if completion screen is showing (already saved)
   if (showCompletion) {
-    console.log('⚠️ Completion screen showing, skipping save');
+    console.log('Completion screen showing, skipping save');
     
     // Just clear state without saving
     if (sessionTimerRef.current) {
@@ -863,6 +863,7 @@ function Timer({
     setIsSessionActive(false);
     setTimeElapsed(0);
     setShowCompletion(false);
+    setSelectedDuration(25);
     
     startTimeRef.current = null;
     hasResumedRef.current = false;
@@ -898,9 +899,9 @@ function Timer({
     const minutesElapsed = Math.floor(timeElapsed / 60);
     
     if (minutesElapsed > 0) {
-      console.log(`⚠️ Timer reset with ${minutesElapsed} minutes elapsed - saving...`);
+      console.log(`Timer reset with ${minutesElapsed} minutes elapsed - saving...`);
       await saveCompletedSession(minutesElapsed);
-      console.log(`✅ Saved ${minutesElapsed} minutes from reset timer`);
+      console.log(`Saved ${minutesElapsed} minutes from reset timer`);
     }
   }
     
@@ -953,7 +954,7 @@ function Timer({
 // ✅ ADD THIS: Reset on mount
 useEffect(() => {
   hasResumedRef.current = false;
-  console.log('🔄 Timer component mounted, reset hasResumedRef');
+  console.log('Timer component mounted, reset hasResumedRef');
 }, []);
 
 // Resume effect with corrected hasResumedRef placement
@@ -962,7 +963,7 @@ useEffect(() => {
     if (!authUser || hasResumedRef.current || resumeInProgress.current) return;
 
     if (isRunning || isSessionActive) {
-      console.log('⏭️ Timer already active, skipping resume check');
+      console.log('Timer already active, skipping resume check');
       return;
     }
 
@@ -989,7 +990,7 @@ useEffect(() => {
         const elapsedSeconds = Math.floor((now - startedAt.getTime()) / 1000);
         
         if (elapsedSeconds < 3) {
-          console.log('⏭️ Timer just started, skipping resume logic');
+          console.log('Timer just started, skipping resume logic');
           return;
         }
 
@@ -1010,7 +1011,7 @@ useEffect(() => {
         hasResumedRef.current = true;
 
         if (elapsedSeconds < durationSeconds) {
-          console.log(`✅ Resuming timer: ${elapsedSeconds}s elapsed of ${durationSeconds}s`);
+          console.log(`Resuming timer: ${elapsedSeconds}s elapsed of ${durationSeconds}s`);
 
           setIsResuming(true);
           setIsLoadingPartyData(true);
@@ -1021,7 +1022,7 @@ useEffect(() => {
 
           const minutesElapsed = Math.floor(elapsedSeconds / 60);
           lastSyncedMinuteRef.current = minutesElapsed;
-          console.log(`✅ Set last synced minute to: ${minutesElapsed}`);
+          console.log(`Set last synced minute to: ${minutesElapsed}`);
 
           // ✅ CHECK PARTY ID FROM ALREADY-FETCHED DATA
           if (!userData.currentPartyId) {
@@ -1062,7 +1063,7 @@ useEffect(() => {
           sessionStartTodayExpRef.current = todaySession.expEarned || 0;
           sessionStartTodayCardsRef.current = todaySession.cardsReviewed || 0;
 
-          console.log('✅ Captured today session base for resume:', {
+          console.log('Captured today session base for resume:', {
             minutes: sessionStartTodayMinutesRef.current,
             exp: sessionStartTodayExpRef.current
           });
@@ -1072,14 +1073,14 @@ useEffect(() => {
             [authUser.uid]: freshMemberProfile
           };
           
-          console.log('✅ Updated member profile with fresh stats:', freshMemberProfile);
+          console.log('Updated member profile with fresh stats:', freshMemberProfile);
 
           // ✅ SET ORIGINAL REFS
           originalBossHealthRef.current = freshBossHealth;
           originalMemberDamageRef.current = freshMemberDamage;
 
-          console.log('✅ Captured FRESH boss health:', freshBossHealth);
-          console.log('✅ Captured FRESH member damage:', freshMemberDamage);
+          console.log('Captured FRESH boss health:', freshBossHealth);
+          console.log('Captured FRESH member damage:', freshMemberDamage);
 
           // ✅ START TIMER WITH ALL FRESH DATA
           timerStartRef?.current?.(
@@ -1095,12 +1096,12 @@ useEffect(() => {
           setTimeout(() => {
             setIsResuming(false);
             setIsLoadingPartyData(false);
-            console.log('✅ Boss updates re-enabled');
+            console.log('Boss updates re-enabled');
           }, 500);
 
         } else {
           // Timer completed while closed
-          console.log('✅ Timer completed while closed - awarding time');
+          console.log('Timer completed while closed - awarding time');
           
           const minutesToSave = Math.floor(durationSeconds / 60);
           const savedSessionKey = `completed_${authUser.uid}_${startedAt.getTime()}`;
@@ -1116,7 +1117,7 @@ useEffect(() => {
               await handleTimerCompleteRef.current?.();
               await saveCompletedSessionRef.current(minutesToSave);
               localStorage.setItem(savedSessionKey, 'saved');
-              console.log('✅ Session saved successfully');
+              console.log('Session saved successfully');
               
               const allKeys = Object.keys(localStorage);
               const sessionKeys = allKeys
@@ -1193,7 +1194,21 @@ useEffect(() => {
     };
   }, []);
 
-  const getCurrentRewards = () => durations.find(d => d.value === selectedDuration) || durations[1];
+  const getCurrentRewards = () => {
+    // Special case for 1-minute tutorial timer
+    if (selectedDuration === 1) {
+      return {
+        label: '1 min',
+        value: 1,
+        damage: 10,
+        xp: 10,
+        mana: 3,
+        health: 1
+      };
+    }
+    
+    return durations.find(d => d.value === selectedDuration) || durations[1];
+  };
   const progress = Math.min((timeElapsed / (selectedDuration * 60)) * 100, 100);
   const timeLeft = Math.max(selectedDuration * 60 - timeElapsed, 0);
 
@@ -1283,6 +1298,7 @@ useEffect(() => {
             onReset={resetTimer}
             userProfile={authUserProfile}
             userId={user?.uid}
+            hasNotStartedATimerSession={hasNotStartedATimerSession}
           />
         ) : (
           <>

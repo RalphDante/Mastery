@@ -9,7 +9,7 @@ import { doc, getDoc, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
  * @returns {object} - Updated streak information
  */
 
-const getLocalDateKey = (date) => {
+export const getLocalDateKey = (date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { applyRewardsToUser } from "../../utils/rewardsService";
 import { useUserDataContext } from "../../contexts/UserDataContext";
 import { useAuthContext } from "../../contexts/AuthContext";
+import { useTutorials } from "../../contexts/TutorialContext";
+import { getAvatarPath } from "../../configs/avatarConfig";
 
 const RARITY_COLORS = {
   uncommon: {
@@ -20,8 +22,89 @@ const RARITY_COLORS = {
     text: 'text-purple-400',
     bg: 'from-purple-500 to-pink-600',
     glow: 'shadow-purple-500/50'
+  },
+  starter: {
+    text: 'text-slate-400',
+    bg: 'from-slate-500 to-gray-600',
+    glow: 'shadow-slate-500/50'
   }
 };
+
+// 🔥 Avatars that get "unlocked" on first timer completion
+const FIRST_TIMER_UNLOCKS = [
+  {
+    id: 'wizard_01',
+    name: 'Wizard',
+    rarity: 'starter'
+  },
+  {
+    id: 'wizard_02',
+    name: 'Wizard II',
+    rarity: 'starter'
+  }
+];
+
+function AvatarUnlockDisplay({ avatars }) {
+  return (
+    <div className="flex flex-col items-center gap-6 my-8 animate-in fade-in zoom-in duration-500">
+      <div className="text-center">
+        <h3 className="text-2xl font-bold text-green-400 mb-2">Avatars Unlocked!</h3>
+        <p className="text-gray-400 text-sm">
+          These avatars are now available for selection
+        </p>
+      </div>
+      
+      <div className="flex gap-6 flex-wrap justify-center">
+        {avatars.map((avatar) => {
+          const rarityStyle = RARITY_COLORS[avatar.rarity];
+          const avatarPath = getAvatarPath(avatar.id);
+          
+          return (
+            <div key={avatar.id} className="flex flex-col items-center gap-3">
+              <div className={`w-32 h-32 bg-gradient-to-br ${rarityStyle?.bg || 'from-slate-500 to-gray-600'} rounded-2xl flex items-center justify-center shadow-2xl ${rarityStyle?.glow} transform hover:rotate-3 transition-all overflow-hidden`}>
+                {avatarPath ? (
+                  <img 
+                    src={avatarPath}
+                    alt={avatar.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="text-6xl">🧙</div>
+                )}
+              </div>
+              
+              <div className="text-center">
+                <p className={`text-lg font-bold ${rarityStyle?.text || 'text-slate-400'}`}>
+                  {avatar.name}
+                </p>
+                <span className={`inline-block px-3 py-1 ${rarityStyle?.bg ? `bg-gradient-to-r ${rarityStyle.bg}` : 'bg-slate-500'} text-white rounded-full text-xs uppercase tracking-wide font-semibold mt-1`}>
+                  {avatar.rarity}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      <div className="mt-4 px-6 py-3 bg-green-500/10 border border-green-500/30 rounded-lg">
+        <p className="text-sm text-green-300 text-center">
+          Click the pencil
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 256 256"
+            className="inline w-4 h-4 mx-1 align-middle text-white"
+          >
+            <path
+              fill="currentColor"
+              d="m230.14 70.54l-44.68-44.69a20 20 0 0 0-28.29 0L33.86 149.17A19.85 19.85 0 0 0 28 163.31V208a20 20 0 0 0 20 20h44.69a19.86 19.86 0 0 0 14.14-5.86L230.14 98.82a20 20 0 0 0 0-28.28M93 180l71-71l11 11l-71 71Zm-17-17l-11-11l71-71l11 11Zm-24 10l15.51 15.51L83 204H52Zm140-70l-39-39l18.34-18.34l39 39Z"
+            />
+          </svg>
+          icon to select the avatar!
+        </p>
+      </div>
+    </div>
+  );
+}
 
 function RewardDisplay({ reward }) {
   const rarityStyle = reward.rarity ? RARITY_COLORS[reward.rarity] : null;
@@ -187,29 +270,64 @@ function RewardsSummary({ rewards }) {
   );
 }
 
-function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
+function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose, isFirstTimer = false }) {
   const [currentRoll, setCurrentRoll] = useState(0);
   const [allRewards, setAllRewards] = useState([]);
   const [isRolling, setIsRolling] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [showingFirstTimerReward, setShowingFirstTimerReward] = useState(false);
   const {incrementExp} = useUserDataContext();
   const {refreshUserProfile} = useAuthContext();
+  const {completeTutorial, isTutorialAtStep} = useTutorials();
+  
+  // 🔥 Calculate total rolls including first-timer chest
+  const totalRolls = numRolls;
   
   const handleRoll = () => {
     setIsRolling(true);
     
     // Chest opening animation (1-1.5 seconds)
     setTimeout(() => {
-      const reward = generateBonusLoot(userCollection, isPro);
-      // Don't save yet - just collect the reward
-      setAllRewards(prev => [...prev, reward]);
-      setIsRolling(false);
-      setCurrentRoll(prev => prev + 1);
+      // 🔥 First roll for first-timers = avatars
+      if (isFirstTimer && currentRoll === 0) {
+        setShowingFirstTimerReward(true);
+        setIsRolling(false);
+        setCurrentRoll(prev => prev + 1);
+      } else {
+        // Normal loot generation
+        const reward = generateBonusLoot(userCollection, isPro);
+        setAllRewards(prev => [...prev, reward]);
+        setIsRolling(false);
+        setCurrentRoll(prev => prev + 1);
+      }
     }, 1500);
   };
   
+  const handleContinueFromAvatars = () => {
+    // 🔥 Complete the tutorial when they see the avatars
+    if (isFirstTimer && isTutorialAtStep('start-timer', 1)) {
+      completeTutorial('start-timer');
+    }
+    
+    setShowingFirstTimerReward(false);
+    
+    // If there are more rolls (from 15+ min session), continue
+    // Otherwise close
+    if (currentRoll < totalRolls) {
+      // They'll click "Next Roll" to continue
+    } else {
+      onClose();
+    }
+  };
+  
   const handleClaimRewards = async () => {
+    // If only showed first-timer avatars with no other rolls
+    if (allRewards.length === 0) {
+      onClose();
+      return;
+    }
+    
     setIsSaving(true);
     setError(null);
     
@@ -255,14 +373,38 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
   return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[10000] p-4">
       <div className="bg-slate-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-8 border border-slate-700">
-        {currentRoll < numRolls ? (
+        {showingFirstTimerReward ? (
+          // 🔥 Show avatar unlock after chest animation
+          <div className="flex flex-col items-center">
+            <h2 className="text-3xl font-bold text-white">
+              First Session Complete!
+            </h2>
+            
+            <AvatarUnlockDisplay avatars={FIRST_TIMER_UNLOCKS} />
+            
+            <button 
+              onClick={handleContinueFromAvatars}
+              className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg rounded-xl hover:scale-105 transition-transform shadow-lg shadow-green-500/50"
+            >
+              {currentRoll < totalRolls ? 'Continue to Bonus Loot' : 'Awesome!'}
+            </button>
+          </div>
+        ) : currentRoll < totalRolls ? (
           // Still have rolls left
           <div className="flex flex-col items-center">
             <h2 className="text-3xl font-bold text-white mb-2">
-              Bonus Loot! ({currentRoll + 1}/{numRolls})
+              {isFirstTimer && currentRoll === 0 ? (
+                "You earned a Welcome Chest! 🎁"
+              ) : (
+                `Bonus Loot! (${isFirstTimer ? currentRoll : currentRoll + 1}/${totalRolls})`
+              )}
             </h2>
             <p className="text-gray-400 mb-6">
-              You earned {numRolls} roll{numRolls > 1 ? 's' : ''} for completing your session!
+              {isFirstTimer && currentRoll === 0 ? (
+                "Let's see what you got!"
+              ) : (
+                `You earned ${numRolls} bonus roll${numRolls > 1 ? 's' : ''} for completing your session!`
+              )}
             </p>
             
             {isRolling ? (
@@ -278,9 +420,12 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
               </div>
             ) : (
               <>
-                {/* Show current reward */}
-                {allRewards[currentRoll - 1] && (
+                {/* Show current reward (only for non-first-timer rolls) */}
+                {!isFirstTimer && allRewards[currentRoll - 1] && (
                   <RewardDisplay reward={allRewards[currentRoll - 1]} />
+                )}
+                {isFirstTimer && currentRoll > 0 && allRewards[currentRoll - 2] && (
+                  <RewardDisplay reward={allRewards[currentRoll - 2]} />
                 )}
                 
                 <button 
@@ -299,7 +444,7 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
               All Rewards Claimed!
             </h2>
             
-            <RewardsSummary rewards={allRewards} />
+            {allRewards.length > 0 && <RewardsSummary rewards={allRewards} />}
             
             {error && (
               <div className="w-full max-w-md mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
@@ -313,13 +458,15 @@ function LootRevealModal({ numRolls, userCollection, userId, isPro, onClose }) {
                 disabled={isSaving}
                 className="px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold text-lg rounded-xl hover:scale-105 transition-transform shadow-lg shadow-green-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSaving ? 'Saving...' : 'Claim All Rewards'}
+                {isSaving ? 'Saving...' : (allRewards.length > 0 ? 'Claim All Rewards' : 'Close')}
               </button>
             </div>
             
-            <p className="text-sm text-gray-500 mt-4">
-              Your rewards will be added to your inventory
-            </p>
+            {allRewards.length > 0 && (
+              <p className="text-sm text-gray-500 mt-4">
+                Your rewards will be added to your inventory
+              </p>
+            )}
           </div>
         )}
       </div>

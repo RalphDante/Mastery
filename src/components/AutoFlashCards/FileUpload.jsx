@@ -136,70 +136,106 @@ export const generateFlashcardsFromText = async (text, user, isTopicGeneration =
         flashcardCount = 25;
         promptText = `Create ${flashcardCount} educational flashcards about "${text}" AND a descriptive deck name.
 
-CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-{
-  "deckName": "Short descriptive name (max 50 chars)",
-  "flashcards": [
-    {"question": "Your question here", "answer": "Your answer here"}
-  ]
-}
+                    CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+                    {
+                    "deckName": "Short descriptive name (max 50 chars)",
+                    "flashcards": [
+                        {"question": "Your question here", "answer": "Your answer here"}
+                    ]
+                    }
 
-REQUIREMENTS:
-- deckName should be descriptive (e.g., "World War II: Key Events")
-- Exactly ${flashcardCount} flashcards
-- Questions should be clear, specific, and educational
-- Answers should be concise but complete
-- Use proper JSON escaping
-- No line breaks within strings
-- Double quotes only
+                    REQUIREMENTS:
+                    - deckName should be descriptive (e.g., "World War II: Key Events")
+                    - Exactly ${flashcardCount} flashcards
+                    - Questions should be clear, specific, and educational
+                    - Answers should be concise but complete
+                    - Use proper JSON escaping
+                    - No line breaks within strings
+                    - Double quotes only
 
-Topic: ${text}`;
+                    Topic: ${text}`;
     } else {
         // File/image upload generation
-        const estimateFlashcardCount = (textLength) => {
-            if (textLength < 500) return 15;
-            if (textLength < 1500) return 30;
-            if (textLength < 3000) return 50;
-            if (textLength < 5000) return 75;
-            return 100;
-        };
         
-        flashcardCount = estimateFlashcardCount(text.length);
+        // Check if this is a CSV with specific row count request
+        const csvMatch = text.match(/Total rows: (\d+)/);
         
-        promptText = `You are an expert educational content creator. Create ${flashcardCount} high-quality flashcards AND a deck name from the provided text.
-
-CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-{
-  "deckName": "Short descriptive name (max 50 chars)",
-  "flashcards": [
-    {"question": "Your question here", "answer": "Your answer here"}
-  ]
-}
-
-FLASHCARD QUALITY GUIDELINES:
-- Questions should test understanding, not just memorization
-- Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
-- Questions should be specific and unambiguous
-- Answers should be concise but complete (1-3 sentences typically)
-- Include both factual recall AND conceptual understanding questions
-- For complex topics, break them into smaller, focused questions
-- Use clear, direct language
-- Avoid overly obvious or trivial questions
-
-DECK NAME GUIDELINES:
-- Should summarize the main topic/subject
-- Max 50 characters
-- No quotes or special formatting
-- Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
-
-FORMATTING REQUIREMENTS:
-- Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
-- Use proper JSON escaping for quotes
-- No line breaks within strings
-- Exactly ${flashcardCount} flashcards
-- Double quotes only
-
-Text to process: ${text}`;
+        if (csvMatch && text.includes('CSV FILE - CONVERT TO FLASHCARDS')) {
+            // CSV file - use exact row count
+            flashcardCount = parseInt(csvMatch[1]);
+            
+            promptText = `You are converting a CSV file to flashcards.
+    
+                        CRITICAL RULES:
+                        1. Create EXACTLY ${flashcardCount} flashcards - one for each row in the CSV
+                        2. Do NOT generate extra flashcards or additional questions
+                        3. Convert each row directly into a flashcard
+                        4. If a row has 2 columns, use them as question/answer
+                        5. If a row has more columns, intelligently create a question and answer from all the data
+                        
+                        Return ONLY a valid JSON object with this EXACT format:
+                        {
+                        "deckName": "Short descriptive name based on the CSV content (max 50 chars)",
+                        "flashcards": [
+                            {"question": "Your question here", "answer": "Your answer here"}
+                        ]
+                        }
+                        
+                        FORMATTING REQUIREMENTS:
+                        - Return ONLY valid JSON (no explanations, no markdown, no code blocks)
+                        - Use proper JSON escaping
+                        - Exactly ${flashcardCount} flashcards
+                        - Double quotes only
+                        
+                        CSV Data to convert:
+                        ${text}`;
+                            } else {
+                                // Regular file - use existing logic
+                                const estimateFlashcardCount = (textLength) => {
+                                    if (textLength < 500) return 15;
+                                    if (textLength < 1500) return 30;
+                                    if (textLength < 3000) return 50;
+                                    if (textLength < 5000) return 75;
+                                    return 100;
+                                };
+                                
+                                flashcardCount = estimateFlashcardCount(text.length);
+                                
+                                promptText = `You are an expert educational content creator. Create ${flashcardCount} high-quality flashcards AND a deck name from the provided text.
+                        
+                        CRITICAL: Return ONLY a valid JSON object with this EXACT format:
+                        {
+                        "deckName": "Short descriptive name (max 50 chars)",
+                        "flashcards": [
+                            {"question": "Your question here", "answer": "Your answer here"}
+                        ]
+                        }
+                        
+                        FLASHCARD QUALITY GUIDELINES:
+                        - Questions should test understanding, not just memorization
+                        - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
+                        - Questions should be specific and unambiguous
+                        - Answers should be concise but complete (1-3 sentences typically)
+                        - Include both factual recall AND conceptual understanding questions
+                        - For complex topics, break them into smaller, focused questions
+                        - Use clear, direct language
+                        - Avoid overly obvious or trivial questions
+                        
+                        DECK NAME GUIDELINES:
+                        - Should summarize the main topic/subject
+                        - Max 50 characters
+                        - No quotes or special formatting
+                        - Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
+                        
+                        FORMATTING REQUIREMENTS:
+                        - Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
+                        - Use proper JSON escaping for quotes
+                        - No line breaks within strings
+                        - Exactly ${flashcardCount} flashcards
+                        - Double quotes only
+                        
+                        Text to process: ${text}`;
+        }
     }
 
     // Create AI function for generateAIContent helper using Groq
@@ -495,6 +531,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
         accept: {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt'],
+            'text/csv': ['.csv'],
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
             'application/vnd.openxmlformats-officedocument.presentationml.presentation': ['.pptx'],
             'image/*': ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
@@ -573,6 +610,8 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                             allExtractedText = await readPPTX(file);
                         } else if (fileType === 'text/plain') {
                             allExtractedText = await readTextFile(file);
+                        } else if (fileType === 'text/csv') {  // ADD THIS BLOCK
+                            allExtractedText = await readCSV(file);
                         }
 
                         // Log processing completion
@@ -1065,6 +1104,54 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
         });
     };
 
+    const readCSV = async (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const csvText = event.target.result;
+                    
+                    // Parse CSV
+                    const lines = csvText.split('\n').filter(line => line.trim());
+                    
+                    if (lines.length === 0) {
+                        reject(new Error('CSV file is empty'));
+                        return;
+                    }
+                    
+                    // Get headers
+                    const headers = lines[0].split(',').map(h => 
+                        h.trim().replace(/^"|"$/g, '')
+                    );
+                    
+                    // Format for AI: Simple, direct conversion request
+                    let formattedText = `CSV FILE - CONVERT TO FLASHCARDS\n\n`;
+                    formattedText += `CRITICAL INSTRUCTION: Create EXACTLY ONE flashcard for each row below. Do NOT generate additional flashcards or expand on the content. Just convert what's provided.\n\n`;
+                    formattedText += `Total rows: ${lines.length - 1}\n`;
+                    formattedText += `Columns: ${headers.join(' | ')}\n\n`;
+                    
+                    // Include ALL rows (since user wants all their data as flashcards)
+                    formattedText += `DATA TO CONVERT:\n\n`;
+                    for (let i = 1; i < lines.length; i++) {
+                        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                        if (values.some(v => v)) { // Skip completely empty rows
+                            formattedText += `Row ${i}: ${values.join(' | ')}\n`;
+                        }
+                    }
+                    
+                    formattedText += `\n--- End of CSV data ---\n\n`;
+                    formattedText += `Remember: Create EXACTLY ${lines.length - 1} flashcards, one per row.`;
+                    
+                    resolve(formattedText);
+                } catch (error) {
+                    reject(new Error(`CSV parsing failed: ${error.message}`));
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    };
+
     const startCamera = async () => {
         try {
             setStatus('Starting camera...');
@@ -1312,7 +1399,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                                         <path fill="currentColor" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
                                     </svg>
                                     </div>
-                                    <p className="text-white font-black text-xl">DROP PDF OR DOCX HERE</p>
+                                    <p className="text-white font-black text-xl">DROP PDF, DOCX, OR CSV HERE</p>
                                     <p className="text-purple-300 text-sm">or click to browse • Max 8MB</p>
                                 </div>
                             </div>
