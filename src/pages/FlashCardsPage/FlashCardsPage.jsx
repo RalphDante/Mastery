@@ -543,9 +543,10 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                 <div className="flex justify-between mb-1">
                     <button
                         onClick={() => navigate('/')}
-                        className="gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
+                        className="flex justify-center items-center  gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
                     >
                         <ArrowLeft className="w-4 h-4" />
+                        <span className='truncate max-w-36'>{displayName}</span>
                     </button>
                     
                     <DeckActionsDropdown 
