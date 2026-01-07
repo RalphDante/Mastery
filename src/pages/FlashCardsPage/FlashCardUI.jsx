@@ -444,7 +444,7 @@ function FlashCardUI({
                 return;
             }
             return(
-                <div className="flex justify-center items-center lg:hidden">
+                <div className="flex justify-center items-center">
                     <button 
                     onClick={() => setRedoDeck(true)}
                     className="min-w-80 bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"

@@ -50,7 +50,7 @@ function BossVictoryScreen({rankings}) {
   };
 
   return (
-    <div>
+    <div className='p-6'>
       {/* Victory Banner */}
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-yellow-500 via-yellow-400 to-yellow-500"></div>
     

@@ -228,7 +228,9 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
                 {showBoss ? (
                   <div className="space-y-6">
 
-                    <Boss />
+                    <Boss 
+                      collapsible={true}
+                    />
                     <MiniLeaderboard />  
                   </div>
                   
