@@ -514,16 +514,6 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     return (
         <>
-        {/* 1. First Deck Created Celebration */}
-        {showFirstDeckCelebration && (
-            <>
-                <Confetti />
-                <FirstDeckCelebration 
-                    onComplete={() => setShowFirstDeckCelebration(false)}
-                />
-            </>
-        )}
-
         {/* 2. Incentive Toast (before studying) */}
         {showDeckIncentive && (
             <DeckIncentiveToast 

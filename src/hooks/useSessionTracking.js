@@ -26,7 +26,9 @@ export const useSessionTracking = (user, db, isFinished) => {
         updateMemberDamage, 
         updateLastBossResults, 
         resetAllMembersBossDamage, 
-        updateUserProfile
+        updateUserProfile,
+        partyMembers,
+        partyProfile
     } = usePartyContext();
 
     const { incrementMinutes } = useUserDataContext();
@@ -50,6 +52,23 @@ export const useSessionTracking = (user, db, isFinished) => {
             setSessionStartTime(new Date());
         }
     }, [user, sessionStartTime]);
+
+    const calculateImmediateRewards = useCallback((isCorrect) => {
+        const baseReward = isCorrect ? CARD_REWARDS.CORRECT : CARD_REWARDS.INCORRECT;
+        
+
+        const estimatedLevel = partyMembers[user?.uid]?.level || 1;
+        
+        const levelMultiplier = 1 + (estimatedLevel * 0.05);
+        const scaledDamage = Math.floor(baseReward.damage * levelMultiplier);
+        
+        return {
+            exp: baseReward.exp,
+            damage: scaledDamage,
+            health: baseReward.health,
+            mana: baseReward.mana
+        };
+    }, [partyMembers, user?.uid]);
 
     // Clear any pending timeout
     const clearWriteTimeout = useCallback(() => {
@@ -398,16 +417,14 @@ export const useSessionTracking = (user, db, isFinished) => {
 
     // Main tracking function - call this when a card is reviewed
     const trackCardReview = useCallback((isCorrect) => {
-        // STRICT MODE PROTECTION: Check if already processing
         if (trackingInProgressRef.current) {
             console.log('⚠️ trackCardReview blocked - already in progress');
             return;
         }
         
-        // Set lock IMMEDIATELY (synchronous)
         trackingInProgressRef.current = true;
         
-        // Increment using REF (synchronous, not async like setState)
+        // Increment refs
         if (isCorrect) {
             pendingCorrectRef.current += 1;
         } else {
@@ -415,28 +432,54 @@ export const useSessionTracking = (user, db, isFinished) => {
         }
         
         const totalPending = pendingCorrectRef.current + pendingIncorrectRef.current;
-        setDisplayCount(totalPending); // Update UI
+        setDisplayCount(totalPending);
+        
+        // 🎯 OPTIMISTIC UPDATE - Update context immediately for instant UI feedback
+        const rewards = calculateImmediateRewards(isCorrect);
+        
+        // Get current values from partyMembers
+        const currentMember = partyMembers[user.uid];
+        const currentExp = currentMember?.exp || 0;
+        const currentHealth = currentMember?.health || 0;
+        const currentMana = currentMember?.mana || 0;
+        
+        // Update with new calculated values
+        updateUserProfile({
+            exp: currentExp + rewards.exp,
+            health: Math.min(PLAYER_CONFIG.BASE_HEALTH, currentHealth + rewards.health),
+            mana: Math.min(PLAYER_CONFIG.BASE_MANA, currentMana + rewards.mana),
+            lastStudyDate: new Date()
+        });
+        
+        // If in party, update boss health immediately too
+        if (currentMember && partyProfile?.currentBoss) {
+            const currentBossHealth = partyProfile.currentBoss.currentHealth || 0;
+            const newBossHealth = Math.max(0, currentBossHealth - rewards.damage);
+            
+            updateBossHealth(newBossHealth);
+            updateMemberDamage(user.uid, (currentMember?.currentBossDamage || 0) + rewards.damage);
+        }
         
         console.log(`📝 Card tracked (${isCorrect ? 'correct' : 'incorrect'}). Pending: ${totalPending}/${BATCH_SIZE}`);
+        console.log(`⚡ Optimistic update: +${rewards.exp} XP, +${rewards.health} HP, +${rewards.mana} MP, ${rewards.damage} DMG`);
         
-        // Check if we need to write
+        // Check if we need to write to database
         if (totalPending >= BATCH_SIZE) {
             const correctToWrite = pendingCorrectRef.current;
             const incorrectToWrite = pendingIncorrectRef.current;
             
-            // Reset immediately
             pendingCorrectRef.current = 0;
             pendingIncorrectRef.current = 0;
             setDisplayCount(0);
             
+            // Write to database (this will reconcile with actual values)
             writeSessionData(correctToWrite, incorrectToWrite).finally(() => {
                 trackingInProgressRef.current = false;
             });
         } else {
-            // Not writing yet, release lock immediately
             trackingInProgressRef.current = false;
         }
-    }, [writeSessionData, BATCH_SIZE]);
+    }, [calculateImmediateRewards, updateUserProfile, updateMemberDamage, user?.uid, partyMembers, BATCH_SIZE, writeSessionData, partyProfile]);
 
     // Force write function (useful for manual triggers)
     const forceWrite = useCallback(() => {

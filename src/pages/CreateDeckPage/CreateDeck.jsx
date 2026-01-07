@@ -15,7 +15,6 @@ import { useTutorials } from '../../contexts/TutorialContext';
 import { useDeckCache } from '../../contexts/DeckCacheContext';
 import { ArrowLeft } from 'lucide-react';
 import LimitReachedModal from '../../components/Modals/LimitReachedModal';
-import { awardWithXP } from '../../utils/giveAwardUtils';
 import { usePartyContext } from '../../contexts/PartyContext';
 import { useUserDataContext } from '../../contexts/UserDataContext';
 
@@ -371,9 +370,6 @@ function CreateDeck() {
 
             const isUserFirstDeck = isFirstTime;
 
-            if(isUserFirstDeck){
-                await awardWithXP(user.uid, 100, updateUserProfile, userProfile, incrementExp);
-            }
 
             navigate(`/flashcards/${deckRef.id}`, {
                 state: {

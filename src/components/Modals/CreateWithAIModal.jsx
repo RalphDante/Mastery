@@ -9,7 +9,6 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 import LimitReachedModal from "./LimitReachedModal";
-import { awardWithXP } from "../../utils/giveAwardUtils";
 import { useUserDataContext } from "../../contexts/UserDataContext";
 
 function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
@@ -354,9 +353,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
       }
 
       
-      if (isFirstDeck) {
-        await awardWithXP(user.uid, 100, updateUserProfile, userProfile, incrementExp);
-      }
+
   
       navigate(`/flashcards/${newDeckRef.id}`, {
         state: {
