@@ -2,6 +2,8 @@
 import React, { useState } from 'react';
 import { getSessionRewards } from '../../../configs/rewardsConfig';
 import LootRevealModal from '../../../components/Modals/LootRevealModal';
+import { Trophy } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function SessionCompleteScreen({ 
   selectedDuration, 
@@ -9,8 +11,11 @@ export default function SessionCompleteScreen({
   onReset,
   userProfile,
   userId,
-  hasNotStartedATimerSession
+  hasNotStartedATimerSession,
+  onUpgrade // NEW: Add this prop
 }) {
+
+  const navigate = useNavigate();
 
   let numRolls = 0;
   const durationMinutes = selectedDuration;
@@ -30,6 +35,15 @@ export default function SessionCompleteScreen({
   const user = userProfile;
   const isPro = user?.subscription?.tier === "pro";
 
+  // Calculate what they COULD have earned with Pro
+  const proRewards = {
+    xp: rewards.xp * 2,
+    health: rewards.health,
+    mana: rewards.mana,
+    damage: rewards.damage
+  };
+
+  const missedXP = proRewards.xp - rewards.xp;
 
   return (
     <>
@@ -61,7 +75,14 @@ export default function SessionCompleteScreen({
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-slate-300">Experience</span>
-              <span className="text-yellow-500 font-bold">+{rewards.xp} XP</span>
+              <div className="flex items-center gap-2">
+                <span className="text-yellow-500 font-bold">+{!isPro ? rewards.xp : proRewards.xp} XP</span>
+                {!isPro && (
+                  <span className="text-xs text-slate-500 line-through">
+                    {proRewards.xp}
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-300">Health</span>
@@ -76,6 +97,23 @@ export default function SessionCompleteScreen({
               <span className="text-red-400 font-bold">{rewards.damage} DMG</span>
             </div>
           </div>
+
+          {/* Pro Upsell - Only show if not Pro */}
+          {!isPro && (
+            <div className="mt-3 pt-3 border-t border-slate-700/50">
+              <div className="flex items-center justify-center gap-2 text-sm">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="text-slate-300 text-xs">
+                  <button 
+                    onClick={()=>{navigate('/pricing')}}
+                    className="text-purple-400 hover:text-purple-300 font-semibold underline decoration-dotted"
+                  >
+                    Pro Members
+                  </button>{' '}earn double XP
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -109,7 +109,7 @@ function CurrentBossFight({collapsible = false}) {
         <div className="flex-1 lg:flex-none lg:w-full">
           {/* Boss Name */}
           <div className="flex items-center gap-2 mb-1 lg:justify-center">
-            <span className={`text-sm md:text-base lg:text-lg font-bold truncate ${difficultyStyle.text}`}>
+            <span className={`text-sm md:text-base lg:text-lg font-bold ${difficultyStyle.text}`}>
               {bossName}
             </span>
           </div>
@@ -181,7 +181,7 @@ function CurrentBossFight({collapsible = false}) {
                       <span className={index < 3 ? 'text-xs md:text-sm' : 'text-slate-500 text-[10px] md:text-xs'}>
                         {getMedal(index) || `${index + 1}`}
                       </span>
-                      <span className={`text-[10px] md:text-xs font-medium truncate max-w-[80px] md:max-w-[100px] lg:max-w-[120px] 
+                      <span className={`text-[10px] md:text-xs font-medium 
                         ${contributor.userId === user?.uid ? "text-blue-400" : "text-slate-200"}
                       `}>
                         {contributor.displayName}

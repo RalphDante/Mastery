@@ -83,7 +83,7 @@ function SingularMastery() {
         <div className="p-6">
           {/* Header with stats pills */}
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-s lg:text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="text-xs lg:text-xl font-bold text-white flex items-center gap-2">
               Today's Progress
             </h3>
             
