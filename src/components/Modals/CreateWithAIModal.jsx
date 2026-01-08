@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
 import { app } from "../../api/firebase"
-import FileUpload, { generateFlashcardsFromText } from "../AutoFlashCards/FileUpload";
+import FileUpload from "../AutoFlashCards/FileUpload";
+import { generateFlashcardsFromText } from "../../utils/aiServices/flashCardGeneration";
 import { useNavigate } from "react-router-dom";
 import { RefreshCw, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 import { usePartyContext } from "../../contexts/PartyContext";
