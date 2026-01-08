@@ -222,7 +222,8 @@ export const useSessionTracking = (user, db, isFinished) => {
                         isPro: currentData.subscription?.tier === 'pro' || false,
                         updatedAt: serverTimestamp(),
                         title: currentData.title || null,
-                        streak: currentData.stats?.currentStreak || 0
+                        streak: currentData.stats?.currentStreak || 0,
+                        exp: increment(totalExpGained)
                     }, { merge: true });
                     
                     transaction.set(monthlyLeaderboardRef, {
@@ -233,7 +234,8 @@ export const useSessionTracking = (user, db, isFinished) => {
                         isPro: currentData.subscription?.tier === 'pro' || false,
                         updatedAt: serverTimestamp(),
                         title: currentData.title || null,
-                        streak: currentData.stats?.currentStreak || 0
+                        streak: currentData.stats?.currentStreak || 0,
+                        exp: increment(totalExpGained)
                     }, { merge: true });
                     
                     console.log(`📊 Updated leaderboards: +${estimatedMinutes} minutes (from ${totalCards} flashcards)`);
