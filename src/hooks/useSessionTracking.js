@@ -31,7 +31,7 @@ export const useSessionTracking = (user, db, isFinished) => {
         partyProfile
     } = usePartyContext();
 
-    const { incrementMinutes } = useUserDataContext();
+    const { incrementMinutes, incrementExp } = useUserDataContext();
 
     // Refs for counters to avoid async state issues
     const pendingCorrectRef = useRef(0);
@@ -96,6 +96,7 @@ export const useSessionTracking = (user, db, isFinished) => {
             const monthId = getMonthId(now);
 
             const estimatedMinutes = Math.ceil(totalCards * 0.5);
+            let totalExpGained;
 
             await runTransaction(db, async (transaction) => {
                 const userRef = doc(db, 'users', user.uid);
@@ -159,7 +160,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                     };
 
                     // Calculate total EXP first to determine level
-                    const totalExpGained = baseCorrectRewards.exp + baseIncorrectRewards.exp;
+                    totalExpGained = baseCorrectRewards.exp + baseIncorrectRewards.exp;
 
                     // Update player stats (calculate new level first)
                     const currentExp = currentData.exp || 0;
@@ -369,6 +370,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                         // Estimate study time: ~30 seconds per card = 0.5 minutes
                         minutesStudied: (existingData.minutesStudied || 0) + Math.ceil(totalCards * 0.5),
                         lastSessionAt: now,
+                        expEarned: (existingData.expEarned || 0) + totalExpGained
                     });
                 } else {
                     transaction.set(dailySessionRef, {
@@ -377,6 +379,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                         lastSessionAt: now,
                         minutesStudied: Math.ceil(totalCards * 0.5),
                         cardsReviewed: totalCards,
+                        expEarned: totalExpGained
                     });
                 }
             });
@@ -399,6 +402,8 @@ export const useSessionTracking = (user, db, isFinished) => {
             });
 
             incrementMinutes(estimatedMinutes);
+            incrementExp(totalExpGained);
+
             
             // console.log(`✅ Session write: ${totalCards} cards (${correctCount} correct, ${incorrectCount} incorrect)`);
             // console.log(`   Base Rewards: +${totalExpGained} XP, +${baseDamage} base DMG`);
