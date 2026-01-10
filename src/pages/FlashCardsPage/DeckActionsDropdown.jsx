@@ -1,6 +1,8 @@
 import { Ellipsis } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import PracticeTestModal from "../../components/Modals/PracticeTestModal";
+import { generatePracticeTest } from "../../utils/aiServices/practiceTestGeneration";
 
 function DeckActionsDropdown({ 
     deckId, 
@@ -11,6 +13,9 @@ function DeckActionsDropdown({
     onToggleMute  
 }) {
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [showTestModal, setShowTestModal] = useState(false);
+    const [generatingTest, setGeneratingTest] = useState(false);
+    const [showLimitModal, setShowLimitModal] = useState(false);
     const dropdownRef = useRef(null);
     const navigate = useNavigate();
 
@@ -43,7 +48,51 @@ function DeckActionsDropdown({
         });
     };
 
+    // Handler for generating test
+    const handleGenerateTest = async (config) => {
+        setShowTestModal(false);
+        setGeneratingTest(true);
+
+        try {
+        const result = await generatePracticeTest(
+            flashCards,  // Your existing flashCards array
+            config,      // { type: 'mixed', count: 20 }
+            user
+        );
+
+        console.log(result);
+
+        // Navigate to practice test page with questions
+        // navigate('/practice-test', {
+        //     state: {
+        //     questions: result.questions,
+        //     deckName: deckData?.title || 'Practice Test',
+        //     deckId: paramDeckId
+        //     }
+        // });
+
+        } catch (error) {
+        console.error('Error generating practice test:', error);
+        
+        if (error.code === 'LIMIT_REACHED') {
+            setShowLimitModal(true);
+        } else {
+            alert(error.message || 'Failed to generate practice test. Please try again.');
+        }
+        } finally {
+        setGeneratingTest(false);
+        }
+    };
+
     return (
+    
+        <>
+         <PracticeTestModal
+            isOpen={showTestModal}
+            onClose={() => setShowTestModal(false)}
+            onGenerate={handleGenerateTest}
+            maxQuestions={flashCards.length}
+        />
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={toggleDropdown}
@@ -98,8 +147,28 @@ function DeckActionsDropdown({
                         </span>
                     </div>
                 </button>
+
+
+                <div className="border-t border-gray-700 my-1"></div>
+
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        if (!isOwner) return;
+                        setShowTestModal(true);
+                    }}
+                    disabled={!isOwner}
+                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
+                        isOwner
+                        ? "text-slate-200 hover:bg-gray-700"
+                        : "text-gray-500 cursor-not-allowed opacity-50"
+                    }`}
+                >
+                   Simulate Exam
+                </button>
             </div>
         </div>
+        </>
     );
 }
 
