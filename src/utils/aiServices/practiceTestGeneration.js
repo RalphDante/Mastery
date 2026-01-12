@@ -1,51 +1,4 @@
-// src/utils/aiServices/practiceTestGeneration.js
-
-// OBJECT STRUCTURES
-
-// MULTIPLE CHOICE
-// {
-//   id: "q_1704729600000_0",           // Unique ID
-//   sourceCardId: "card_abc123",        // Original flashcard ID (if matched)
-//   type: "multiple_choice",
-//   question: "What is the powerhouse of the cell?",
-//   answer: "Mitochondria",
-//   choices: [
-//     "Nucleus",
-//     "Mitochondria",      // Correct answer in random position
-//     "Ribosome",
-//     "Golgi Apparatus"
-//   ],
-//   userAnswer: null,      // User's selected answer (filled after answering)
-//   isCorrect: null,       // Boolean (calculated after answering)
-//   points: 10,
-//   order: 1
-// }
-
-// TRUE OR FALSE
-// {
-//   id: "q_1704729600000_2",
-//   sourceCardId: "card_ghi789",
-//   type: "fill_blank",
-//   question: "The ___ is known as the powerhouse of the cell",
-//   answer: "mitochondria",
-//   userAnswer: null,      // User's typed answer
-//   isCorrect: null,
-//   points: 10,
-//   order: 3
-// }
-
-// FILL IN THE BLANK
-// {
-//   id: "q_1704729600000_2",
-//   sourceCardId: "card_ghi789",
-//   type: "fill_blank",
-//   question: "The ___ is known as the powerhouse of the cell",
-//   answer: "mitochondria",
-//   userAnswer: null,      // User's typed answer
-//   isCorrect: null,
-//   points: 10,
-//   order: 3
-// }
+// src/utils/aiServices/practiceTestGeneration.js - WITH AUTO-FIX
 
 import { generateAIContent } from '../subscriptionLimits/aiLimitsHelper';
 
@@ -72,17 +25,27 @@ export const generatePracticeTest = async (flashcards, config, user) => {
     throw new Error('No flashcards available to generate test');
   }
 
-  if (config.count > flashcards.length) {
-    throw new Error(`Cannot generate ${config.count} questions from only ${flashcards.length} flashcards`);
+  // Filter out image-based flashcards (AI can't process them)
+  const textFlashcards = flashcards.filter(card => 
+    card.question_type === 'text' && card.answer_type === 'text'
+  );
+
+  if (textFlashcards.length === 0) {
+    throw new Error('No text-based flashcards available. Practice tests require text flashcards.');
   }
 
-  // Format flashcards for AI (handle text and image types)
-  const flashcardsText = formatFlashcardsForAI(flashcards);
+  if (config.count > textFlashcards.length) {
+    throw new Error(`Cannot generate ${config.count} questions from only ${textFlashcards.length} text-based flashcards. Try reducing the count or adding more flashcards.`);
+  }
+
+  // ⭐ IMPROVED: Format flashcards with better structure
+  const flashcardsText = formatFlashcardsForAI(textFlashcards);
   
   // Get appropriate prompt based on test type
-  const promptText = getPromptForTestType(config, flashcardsText);
+  const promptText = getPromptForTestType(config, flashcardsText, textFlashcards.length);
 
-  console.log(`Generating ${config.count} ${config.type} questions...`);
+  console.log(`📝 Formatting ${textFlashcards.length} flashcards for AI...`);
+  console.log(`🎯 Generating ${config.count} ${config.type} questions...`);
 
   // Create AI function for Groq API
   const aiFunction = async () => {
@@ -99,14 +62,14 @@ export const generatePracticeTest = async (flashcards, config, user) => {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert at creating educational practice tests. You always return valid JSON without markdown formatting or code blocks.'
+              content: 'You are an expert at creating educational practice tests. You MUST base your questions DIRECTLY on the provided flashcards. You always return valid JSON without markdown formatting or code blocks.'
             },
             {
               role: 'user',
               content: promptText
             }
           ],
-          temperature: 0.8, // Higher for variety in questions
+          temperature: 0.7, // ⭐ Lowered from 0.8 to stay closer to source material
           max_tokens: 2000,
           top_p: 0.9
         })
@@ -134,7 +97,7 @@ export const generatePracticeTest = async (flashcards, config, user) => {
   const parsedData = parseTestQuestionsResponse(result.data);
   
   // Attach original flashcard IDs and metadata
-  const questionsWithIds = attachFlashcardIds(parsedData.questions, flashcards);
+  const questionsWithIds = attachFlashcardIds(parsedData.questions, textFlashcards);
   
   console.log(`✅ Generated ${questionsWithIds.length} ${config.type} questions`);
   
@@ -154,52 +117,43 @@ export const generatePracticeTest = async (flashcards, config, user) => {
 // ============================================
 
 /**
- * Formats flashcards into text for AI prompt
- * Handles both text and image content types
+ * ⭐ IMPROVED: Formats flashcards with numbered structure
  */
 const formatFlashcardsForAI = (flashcards) => {
   return flashcards.map((card, idx) => {
-    let cardText = `Card ${idx + 1}:`;
-    
-    // Handle question (text or image)
-    if (card.question_type === 'text') {
-      cardText += `\nQ: ${card.question}`;
-    } else if (card.question_type === 'image') {
-      cardText += `\nQ: [Image-based question]`;
-      // Note: AI can't see images, so we skip image questions
-    }
-    
-    // Handle answer (text or image)
-    if (card.answer_type === 'text') {
-      cardText += `\nA: ${card.answer}`;
-    } else if (card.answer_type === 'image') {
-      cardText += `\nA: [Image-based answer]`;
-      // Skip image answers for now
-    }
-    
-    return cardText;
+    return `[FLASHCARD ${idx + 1}]
+Question: ${card.question}
+Answer: ${card.answer}`;
   }).join('\n\n');
 };
 
 /**
- * Returns the appropriate prompt based on test type
+ * ⭐ IMPROVED: Returns the appropriate prompt based on test type
  */
-const getPromptForTestType = (config, flashcardsText) => {
+const getPromptForTestType = (config, flashcardsText, totalCards) => {
   const baseRequirements = `
+⚠️ CRITICAL REQUIREMENTS:
+1. You MUST use the EXACT content from the flashcards provided below
+2. DO NOT make up new questions - transform the flashcard content into test questions
+3. Each test question should directly relate to one of the flashcards
+4. The answers should match or be very close to the flashcard answers
+
 FORMATTING:
 - Use proper JSON formatting (double quotes only)
 - No markdown, no code blocks, just pure JSON
 - Return ONLY the JSON object, nothing else
 
 QUALITY:
-- Questions should test understanding, not just recall
+- Questions should test the same knowledge as the flashcards
 - Make questions clear and unambiguous
-- Ensure correct answers are actually correct
+- Ensure correct answers match the flashcard content
 `;
 
   // MIXED MODE - AI picks best type for each question
   if (config.type === 'mixed') {
-    return `Create ${config.count} practice test questions using a MIX of question types (multiple choice, true/false, and fill in the blank).
+    return `You have ${totalCards} flashcards. Create ${config.count} practice test questions using a MIX of question types (multiple choice, true/false, and fill in the blank).
+
+⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Use the flashcard's question and answer to create a test question.
 
 Return ONLY this JSON format:
 {
@@ -216,23 +170,27 @@ Return ONLY this JSON format:
 REQUIREMENTS:
 - Generate exactly ${config.count} questions
 - Use a variety of types: "multiple_choice", "true_false", "fill_blank"
-- Choose the question type that BEST tests each concept:
+- Choose the question type that BEST tests each flashcard concept:
   * multiple_choice: Good for comparing options or testing distinctions
   * true_false: Good for testing statements and misconceptions
   * fill_blank: Good for testing key terms and definitions
 - Aim for roughly equal distribution of types
 - For multiple_choice: Provide 4 choices, randomize correct answer position
-- For true_false: Create a statement, answer must be "true" or "false"
-- For fill_blank: Use "___" as the blank placeholder
+- For true_false: Create a statement based on the flashcard, answer must be "true" or "false"
+- For fill_blank: Use "___" as the blank placeholder (or we'll add it automatically)
 ${baseRequirements}
 
-Flashcards to base questions on:
-${flashcardsText}`;
+FLASHCARDS TO USE:
+${flashcardsText}
+
+Remember: Each question MUST be based directly on one of the flashcards above!`;
   }
   
   // MULTIPLE CHOICE ONLY
   if (config.type === 'multiple_choice') {
-    return `Create ${config.count} multiple choice questions from these flashcards.
+    return `You have ${totalCards} flashcards. Create ${config.count} multiple choice questions.
+
+⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Transform the flashcard into a multiple choice question.
 
 Return ONLY this JSON format:
 {
@@ -248,6 +206,7 @@ Return ONLY this JSON format:
 
 REQUIREMENTS:
 - Generate exactly ${config.count} multiple choice questions
+- Each question MUST be derived from one of the flashcards
 - Each question must have exactly 4 choices
 - The correct answer must appear in the choices array
 - Randomize the position of the correct answer (don't always put it first)
@@ -255,13 +214,29 @@ REQUIREMENTS:
 - Wrong answers should test common misconceptions
 ${baseRequirements}
 
-Flashcards:
-${flashcardsText}`;
+FLASHCARDS TO USE:
+${flashcardsText}
+
+Example transformation:
+Flashcard: "Q: What is the capital of France? A: Paris"
+→ Test Question: "What is the capital of France?" 
+   Choices: ["London", "Paris", "Berlin", "Rome"]
+   Answer: "Paris"`;
   }
   
   // TRUE/FALSE ONLY
   if (config.type === 'true_false') {
-    return `Create ${config.count} true/false questions from these flashcards.
+    return `You have ${totalCards} flashcards. Create ${config.count} true/false questions.
+
+⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Turn the flashcard into a true/false statement.
+
+⚠️ CRITICAL: True/false questions MUST be STATEMENTS, not questions!
+❌ WRONG: "Why is creating a budget important?" (This is a question)
+❌ WRONG: "What is the capital of France?" (This is a question)
+❌ WRONG: "How does photosynthesis work?" (This is a question)
+✅ CORRECT: "Creating a budget helps manage finances effectively" (This is a statement)
+✅ CORRECT: "Paris is the capital of France" (This is a statement)
+✅ CORRECT: "Photosynthesis occurs in plant cells" (This is a statement)
 
 Return ONLY this JSON format:
 {
@@ -276,20 +251,39 @@ Return ONLY this JSON format:
 
 REQUIREMENTS:
 - Generate exactly ${config.count} true/false questions
+- Each statement MUST be derived from one of the flashcards
+- The "question" field MUST contain a STATEMENT, NOT a question
+- NO question words allowed: Do NOT use "why", "what", "how", "when", "where", "who"
 - Answer must be either "true" or "false" (lowercase)
 - Create a mix of true and false statements (roughly 50/50 split)
-- For false statements, test common misconceptions or incorrect facts
+- For TRUE statements: Convert flashcard information into a factual statement
+- For FALSE statements: Create a statement that contradicts the flashcard
 - Make statements clear and unambiguous
 - Avoid trick questions or overly complex statements
 ${baseRequirements}
 
-Flashcards:
-${flashcardsText}`;
+FLASHCARDS TO USE:
+${flashcardsText}
+
+Example transformations:
+Flashcard: "Q: What is H2O? A: Water"
+→ TRUE statement: "H2O is the chemical formula for water" (answer: "true")
+→ FALSE statement: "H2O is the chemical formula for carbon dioxide" (answer: "false")
+
+Flashcard: "Q: Why is exercise important? A: It improves health"
+→ TRUE statement: "Exercise improves overall health" (answer: "true")
+→ FALSE statement: "Exercise has no effect on health" (answer: "false")
+
+Flashcard: "Q: When did WWII end? A: 1945"
+→ TRUE statement: "World War II ended in 1945" (answer: "true")
+→ FALSE statement: "World War II ended in 1939" (answer: "false")`;
   }
   
   // FILL IN THE BLANK ONLY
   if (config.type === 'fill_blank') {
-    return `Create ${config.count} fill in the blank questions from these flashcards.
+    return `You have ${totalCards} flashcards. Create ${config.count} fill in the blank questions.
+
+⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Turn the flashcard into a fill-in-the-blank question.
 
 Return ONLY this JSON format:
 {
@@ -304,15 +298,20 @@ Return ONLY this JSON format:
 
 REQUIREMENTS:
 - Generate exactly ${config.count} fill in the blank questions
-- Use exactly three underscores "___" to indicate the blank
-- Place the blank where a key term or concept should go
-- Answer should be a single word or short phrase (2-3 words max)
+- Each question MUST be derived from one of the flashcards
+- Ideally use "___" to indicate the blank, but if you forget we'll add it automatically
+- Place the blank where the flashcard's answer would go
+- The answer should be the flashcard's answer (or a close variation)
 - Provide enough context in the question for the answer to be clear
-- Don't make blanks too easy or too obvious
 ${baseRequirements}
 
-Flashcards:
-${flashcardsText}`;
+FLASHCARDS TO USE:
+${flashcardsText}
+
+Example transformation:
+Flashcard: "Q: What is the powerhouse of the cell? A: Mitochondria"
+→ Test Question: "The ___ is known as the powerhouse of the cell"
+   Answer: "mitochondria"`;
   }
   
   throw new Error(`Unknown test type: ${config.type}`);
@@ -394,12 +393,25 @@ const parseTestQuestionsResponse = (aiResponse) => {
         console.warn('❌ True/false has invalid answer:', q);
         return false;
       }
+      
+      // Check if it's a question instead of a statement
+      const questionWords = ['why', 'what', 'how', 'when', 'where', 'who', 'which', 'whose', 'whom'];
+      const firstWord = q.question.trim().split(' ')[0].toLowerCase();
+      const hasQuestionMark = q.question.includes('?');
+      
+      if (questionWords.includes(firstWord) || hasQuestionMark) {
+        console.warn('❌ True/false is a question, not a statement:', q.question);
+        return false;
+      }
     }
     
+    // ⭐ UPDATED: Auto-fix missing blanks instead of rejecting
     if (q.type === 'fill_blank') {
       if (!q.question.includes('___')) {
-        console.warn('❌ Fill blank missing "___":', q);
-        return false;
+        console.warn('⚠️ Fill blank missing "___", auto-fixing:', q.question);
+        // Auto-fix: Add blank at the end
+        q.question = q.question.trim() + ' ___';
+        console.log('✅ Fixed to:', q.question);
       }
     }
     
@@ -416,19 +428,27 @@ const parseTestQuestionsResponse = (aiResponse) => {
 };
 
 /**
- * Attaches flashcard IDs and adds metadata to questions
- * Tries to match generated questions back to source flashcards
+ * ⭐ IMPROVED: Attaches flashcard IDs with better matching
  */
 const attachFlashcardIds = (questions, flashcards) => {
   return questions.map((question, index) => {
-    // Try to find matching source flashcard by answer similarity
+    // Try to find matching source flashcard by content similarity
     const matchingCard = flashcards.find(card => {
-      if (!card.answer || card.answer_type !== 'text') return false;
+      // Check if question contains keywords from flashcard question
+      const questionLower = question.question.toLowerCase();
+      const cardQuestionLower = card.question.toLowerCase();
+      const cardAnswerLower = card.answer.toLowerCase();
       
-      const cardAnswer = card.answer.toLowerCase().trim();
-      const questionAnswer = question.answer.toLowerCase().trim();
+      // Simple keyword matching
+      const hasQuestionKeywords = cardQuestionLower.split(' ')
+        .filter(word => word.length > 3) // Only significant words
+        .some(word => questionLower.includes(word));
       
-      return cardAnswer.includes(questionAnswer) || questionAnswer.includes(cardAnswer);
+      const hasAnswerKeywords = cardAnswerLower.split(' ')
+        .filter(word => word.length > 3)
+        .some(word => questionLower.includes(word));
+      
+      return hasQuestionKeywords || hasAnswerKeywords;
     });
     
     // Build final question object with all metadata

@@ -1,14 +1,15 @@
-// FlashCardsPage.jsx - Parent handles ALL data fetching
+// FlashCardsPage.jsx - SIMPLIFIED with TestTypeUI component
 
-import { ArrowLeft, Globe, RotateCcw, Sparkles } from 'lucide-react';
-import { getFirestore, doc, getDoc, updateDoc, serverTimestamp, runTransaction, increment } from "firebase/firestore"; 
+import { ArrowLeft } from 'lucide-react';
+import { getFirestore, doc, getDoc } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
 import { useEffect, useState, useCallback, useRef } from "react"; 
 import { useParams } from "react-router-dom";
-import { X } from 'lucide-react';
+import { X, BookOpen, Brain } from 'lucide-react';
 
 import FlashCardUI from "./FlashCardUI";
+import TestTypeUI from "./TestTypeUI/TestTypeUI.jsx";  // ⭐ NEW COMPONENT
 import styles from './FlashCardsPage.module.css'
 import { useAuthContext } from '../../contexts/AuthContext';
 import DeckActionsDropdown from './DeckActionsDropdown';
@@ -18,190 +19,236 @@ import { useDeckCache } from '../../contexts/DeckCacheContext';
 import { useTutorials } from '../../contexts/TutorialContext.jsx';
 import { usePartyContext } from '../../contexts/PartyContext.jsx';
 
-import { Confetti, FirstDeckCelebration, SessionCompleteToast, DeckIncentiveToast } from '../../components/ConfettiAndToasts.jsx';
+import { Confetti, SessionCompleteToast, DeckIncentiveToast } from '../../components/ConfettiAndToasts.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 import { useUserDataContext } from '../../contexts/UserDataContext.jsx';
-import MultipleChoice from './TestTypeUI/MultipleChoice.jsx';
-import { FillInTheBlank } from './TestTypeUI/FillInTheBlank.jsx';
-import { TrueOrFalse } from './TestTypeUI/TrueOrFalse.jsx';
+import { generatePracticeTest } from '../../utils/aiServices/practiceTestGeneration.js';
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
     const {incrementExp} = useUserDataContext();
     const [showFirstDeckCelebration, setShowFirstDeckCelebration] = useState(false);
     const [deaths, setDeaths] = useState(0);
 
-    const {isInTutorial} = useTutorials();
-    const hasNotCreatedADeck = isInTutorial('create-deck')
-
-    const [originalDeckSize, setOriginalDeckSize] = useState(0);
-    const [phaseOneComplete, setPhaseOneComplete] = useState(false);
-    const { user, userProfile } = useAuthContext();
-    const {partyMembers, updateUserProfile} = usePartyContext();
-    const { fetchDeckAndCards } = useDeckCache();
-    const navigate = useNavigate();
-    const location = useLocation();
-    const { deckId: paramDeckId } = useParams(); 
-    const db = getFirestore(app); 
-
-    const currentUser = user?.uid ? partyMembers[user.uid] : null;
-
+    // ==========================================
+    // MODE STATE
+    // ==========================================
+    const [mode, setMode] = useState('study'); // 'study' or 'test'
 
     // ==========================================
-    // STATE - Progress Tracking
+    // TEST STATE
+    // ==========================================
+    const [testQuestions, setTestQuestions] = useState([]);
+    const [currentTestIndex, setCurrentTestIndex] = useState(0);
+    const [testAnswers, setTestAnswers] = useState({});
+    const [isGeneratingTest, setIsGeneratingTest] = useState(false);
+
+    // ==========================================
+    // SHARED STATE (used by both modes)
     // ==========================================
     const [knowAnswer, setKnowAnswer] = useState(0);
     const [dontKnowAnswer, setDontKnowAnswer] = useState(0);
-    const [percent, setPercent] = useState(0);
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Study mode specific
+    const [originalDeckSize, setOriginalDeckSize] = useState(0);
+    const [phaseOneComplete, setPhaseOneComplete] = useState(false);
     const [redoDeck, setRedoDeck] = useState(false);
 
-    // ==========================================
-    // STATE - Data (fetched by parent)
-    // ==========================================
+    // Data
     const [deckData, setDeckData] = useState(null);
     const [flashCards, setFlashCards] = useState([]);
-    const [deckOwnerData, setDeckOwnerData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const [showBossTip, setShowBossTip] = useState(false);
-    const bossTipSoundRef = useRef();
+    // Contexts
+    const { user, userProfile } = useAuthContext();
+    const {partyMembers, updateUserProfile} = usePartyContext();
+    const { fetchDeckAndCards } = useDeckCache();
+    const {isInTutorial} = useTutorials();
+    const hasNotCreatedADeck = isInTutorial('create-deck');
+    
+    // Navigation
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { deckId: paramDeckId } = useParams(); 
+    const db = getFirestore(app);
+    
+    const currentUser = user?.uid ? partyMembers[user.uid] : null;
 
-    // ==========================================
-    // TOASTS
-    // ==========================================
+    // UI State
+    const [isMuted, setIsMuted] = useState(() => {
+        return localStorage.getItem('soundMuted') === 'true';
+    });
     const [showDeckIncentive, setShowDeckIncentive] = useState(false);
     const [showSessionComplete, setShowSessionComplete] = useState(false);
 
     // ==========================================
-    // SFX TOGGLE
+    // TEST HANDLERS
     // ==========================================
-    // Add mute state at parent level
-    const [isMuted, setIsMuted] = useState(() => {
-        return localStorage.getItem('soundMuted') === 'true';
-    });
-    
-    useEffect(() => {
-        if (location.state?.showFirstDeckCelebration) {
-            setShowFirstDeckCelebration(true);
-            
-            // After FirstDeckCelebration (4 seconds), show incentive toast
-            setTimeout(() => {
-                setShowFirstDeckCelebration(false);
-                setTimeout(() => {
-                    setShowDeckIncentive(true); // Show "Get +200 XP if you finish!"
-                }, 500);
-            }, 4000);
-            
-            window.history.replaceState({}, document.title);
+    const handleGeneratePracticeTest = async (config) => {
+        setIsGeneratingTest(true);
+        setError(null);
+        
+        try {
+          const result = await generatePracticeTest(flashCards, config, user);
+          setTestQuestions(result.questions);
+          setCurrentTestIndex(0);
+          setTestAnswers({});
+          
+          // Reset boss battle stats for test mode
+          setKnowAnswer(0);
+          setDontKnowAnswer(0);
+          setDeaths(0);
+          
+          setMode('test');
+        } catch (err) {
+          setError(err.message);
+          console.error('Test generation error:', err);
+        } finally {
+          setIsGeneratingTest(false);
         }
-    }, [location.state]);
-
-    // ==========================================
-    // EFFECT - Calculate percentage
-    // ==========================================
-    useEffect(() => {
-        const totalAttempted = knowAnswer + dontKnowAnswer;
-        if (totalAttempted > 0) {
-            setPercent(Math.floor((knowAnswer / totalAttempted) * 100));
-        } else {
-            setPercent(0);
-        }
-    }, [knowAnswer, dontKnowAnswer]);
-
-    // ==========================================
-    // EFFECT - Show boss tip for new users
-    // ==========================================
-    useEffect(() => {
-        if (hasNotCreatedADeck && !loading && deckData) {
-            // Show tip after a brief delay so user can see the deck first
-            const showTimer = setTimeout(() => {
-                setShowBossTip(true);
-            }, 1000);
-
-            // Auto-hide after 5 seconds
-            const hideTimer = setTimeout(() => {
-                setShowBossTip(false);
-            }, 6000);
-
-            return () => {
-                clearTimeout(showTimer);
-                clearTimeout(hideTimer);
-            };
-        }
-    }, [hasNotCreatedADeck, loading, deckData]);
-
-    // Initialize the sound in a useEffect (add this with your other sound effects)
-    useEffect(() => {
-        bossTipSoundRef.current = new Audio("https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3");
-        bossTipSoundRef.current.volume = 0.3;
-    }, []);
-
-    // Update the show boss tip effect to play sound
-    useEffect(() => {
-        if (hasNotCreatedADeck && !loading && deckData) {
-            // Show tip after a brief delay so user can see the deck first
-            const showTimer = setTimeout(() => {
-                setShowBossTip(true);
-                // Play sound when showing
-                if (!isMuted && bossTipSoundRef.current) {
-                    bossTipSoundRef.current.play().catch(() => {});
-                }
-            }, 1000);
-
-            // Auto-hide after 5 seconds
-            const hideTimer = setTimeout(() => {
-                setShowBossTip(false);
-            }, 6000);
-
-            return () => {
-                clearTimeout(showTimer);
-                clearTimeout(hideTimer);
-            };
-        }
-    }, [hasNotCreatedADeck, loading, deckData, isMuted]);
-
-    const handleSessionComplete = async () => {
-        setShowSessionComplete(true);
-        await awardWithXP(user.uid, 200, updateUserProfile, userProfile, incrementExp);
     };
 
-    // Handler to update mute state
-    const handleToggleMute = useCallback(() => {
-        setIsMuted(prev => {
-            const newMuted = !prev;
-            localStorage.setItem('soundMuted', newMuted.toString());
-            return newMuted;
+    const handleExitTest = () => {
+        setMode('study');
+        setTestQuestions([]);
+        setCurrentTestIndex(0);
+        setTestAnswers({});
+        
+        // Reset stats (they'll be recalculated in study mode)
+        setKnowAnswer(0);
+        setDontKnowAnswer(0);
+        setDeaths(0);
+    };
+
+    const handleTestComplete = () => {
+        // Calculate final score
+        const results = calculateTestResults();
+        console.log('Test completed!', results);
+        
+        // Could show a completion modal here
+        // For now, just reset
+        handleExitTest();
+    };
+
+    // ==========================================
+    // CALCULATIONS
+    // ==========================================
+    const calculateTestResults = () => {
+        let correct = 0;
+        let attempted = 0;
+
+        testQuestions.forEach(q => {
+            const userAnswer = testAnswers[q.id];
+            if (userAnswer !== undefined && userAnswer !== null && userAnswer !== '') {
+                attempted++;
+                
+                let isCorrect = false;
+                if (q.type === 'multiple_choice' || q.type === 'true_false') {
+                    isCorrect = userAnswer === q.answer;
+                } else if (q.type === 'fill_blank') {
+                    isCorrect = userAnswer.toLowerCase().trim() === q.answer.toLowerCase().trim();
+                }
+                
+                if (isCorrect) correct++;
+            }
         });
-    }, []);
 
+        return {
+            correct,
+            attempted,
+            total: testQuestions.length,
+            percentage: attempted > 0 ? Math.round((correct / attempted) * 100) : 0
+        };
+    };
 
-    // ==========================================
-    // HELPER FUNCTION - Calculate Grade
-    // ==========================================
-    const calculateGrade = (currentIndex, knowAnswer)=>{
+    const calculateGrade = (currentIndex, knowAnswer) => {
         const percentage = Math.round((knowAnswer/currentIndex) * 100);
         let grade;
-
-       
+        
         if (percentage === 100) grade = "S";
         else if (percentage >= 80) grade = "A";
         else if (percentage >= 60) grade = "B";
         else if (percentage >= 40) grade = "C";
         else grade = "D";
 
-        const val = {
-            percentage,
-            grade
+        return { percentage, grade };
+    };
+
+    // ==========================================
+    // DATA LOADING
+    // ==========================================
+    const loadDeckData = useCallback(async () => {
+        if (!paramDeckId) {
+            setLoading(false);
+            return;
         }
 
+        setLoading(true);
+        setError(null);
 
-        return val;
-    }
+        try {
+            const result = await fetchDeckAndCards(paramDeckId);
+            
+            if (result.error) {
+                setError(result.error);
+                setLoading(false);
+                return;
+            }
 
-    // Render Score Container
+            setDeckData(result.deck);
+            setFlashCards(result.cards);
+            setOriginalDeckSize(result.cards.length);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error loading deck data:', err);
+            setError('Failed to load deck');
+            setLoading(false);
+        }
+    }, [user, paramDeckId, fetchDeckAndCards]);
+
+    // ==========================================
+    // EFFECTS
+    // ==========================================
+    useEffect(() => {
+        if (user === undefined) return;
+        loadDeckData();
+    }, [user, paramDeckId, fetchDeckAndCards]);
+
+    useEffect(() => {
+        if (location.state?.showFirstDeckCelebration) {
+            setShowFirstDeckCelebration(true);
+            setTimeout(() => {
+                setShowFirstDeckCelebration(false);
+                setTimeout(() => setShowDeckIncentive(true), 500);
+            }, 4000);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state]);
+
+    // ==========================================
+    // RENDER HELPERS
+    // ==========================================
     const renderScoreContainer = () => {
-       
+        if (mode === 'test') {
+            // Show test progress
+            return (
+                <div className={`${styles.scoreContainer}`}>
+                    <div style={{ margin: '0px', textAlign: 'center' }}>
+                        <span className="text-white/70 text-sm">Test Mode</span>
+                        <div style={{ 
+                            fontSize: '0.7rem', 
+                            color: '#A78BFA', 
+                            marginTop: '0.5px'
+                        }}>
+                            Question {currentTestIndex + 1} of {testQuestions.length}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+        
+        // Study mode progress
         const remainingCards = flashCards.length - currentIndex;
         const progressThroughOriginal = Math.min(currentIndex + 1, originalDeckSize);
         const isInReviewPhase = phaseOneComplete || currentIndex >= originalDeckSize;
@@ -226,275 +273,90 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                         </div>
                     )}
                 </div>
-               
             </div>
         );
-    }
-    
-
-    // ==========================================
-    // MAIN FETCH FUNCTION (Parent-controlled)
-    // ==========================================
-    const loadDeckData = useCallback(async () => {
-      
-
-        if (!paramDeckId) {
-            setLoading(false);
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            // Fetch both deck metadata and cards from cache context
-            const result = await fetchDeckAndCards(paramDeckId);
-            const flashCards = result.cards;
-
-            if (result.error) {
-                setError(result.error);
-                setLoading(false);
-                return;
-            }
-
-            // Set deck metadata
-            setDeckData(result.deck);
-
-            // Set cards
-            setFlashCards(flashCards);
-            setOriginalDeckSize(flashCards.length)
-
-
-            // Fetch owner info if it's a public deck
-            if (result.isPublic && result.deck?.ownerId) {
-                try {
-                    const ownerDoc = await getDoc(doc(db, 'users', result.deck.ownerId));
-                    if (ownerDoc.exists()) {
-                        setDeckOwnerData({
-                            displayName: ownerDoc.data().displayName || 'Anonymous User',
-                            email: ownerDoc.data().email
-                        });
-                    }
-                } catch (err) {
-                    console.log('Could not fetch owner info:', err);
-                }
-            }
-            // advanceStep('create-deck')
-
-            setLoading(false);
-
-        } catch (err) {
-            console.error('Error loading deck data:', err);
-            setError('Failed to load deck');
-            setLoading(false);
-        }
-    }, [user, paramDeckId, fetchDeckAndCards, db]);
-
-    // ==========================================
-    // EFFECT - Initial load
-    // ==========================================
-    useEffect(() => {
-    // Don't attempt to load until we know auth state
-        if (user === undefined) {
-            console.log('Auth state still loading...');
-            return;
-        }
-        
-        loadDeckData();
-    }, [user, paramDeckId, fetchDeckAndCards]);
-
-    // ==========================================
-    // EFFECT - Handle redo deck
-    // ==========================================
-    useEffect(() => {
-        if (redoDeck) {
-            loadDeckData();
-            setRedoDeck(false);
-            // Reset progress
-            setKnowAnswer(0);
-            setDontKnowAnswer(0);
-            setCurrentIndex(0);
-        }
-    }, [redoDeck, loadDeckData]);
-
-    // ==========================================
-    // EFFECT - Reset progress when deck changes
-    // ==========================================
-    useEffect(() => {
-        // Reset all progress when switching decks
-        setKnowAnswer(0);
-        setDontKnowAnswer(0);
-        setCurrentIndex(0);
-        setPercent(0);
-        setDeaths(0);
-        setPhaseOneComplete(false);
-        setOriginalDeckSize(0);
-    }, [paramDeckId]); // Trigger whenever the deck ID changes
-
-    // ==========================================
-    // HANDLERS - Public/Private toggle
-    // ==========================================
-    const handleSetToPublic = async () => {
-        if (!deckData || !user) return;
-
-        try {
-            const deckRef = doc(db, 'decks', paramDeckId);
-            const userDoc = await getDoc(doc(db, "users", user.uid));
-            const firestoreDisplayName = userDoc.exists() ? userDoc.data().displayName : user.displayName;
-
-            const updateData = {
-                isPublic: true,
-                publishedAt: serverTimestamp(),
-                ownerDisplayName: firestoreDisplayName
-            };
-            if (deckData.copies === undefined) {
-                updateData.copies = 0;
-            }
-
-            await updateDoc(deckRef, updateData);
-            
-            setDeckData(prev => ({
-                ...prev,
-                isPublic: true,
-                publishedAt: new Date()
-            }));
-        
-            console.log("Deck set to public successfully!");
-        } catch (error) {
-            console.log("Error setting deck to public:", error);
-        }
     };
 
-    const handleSetToPrivate = async () => {
-        if (!deckData || !user) return;
-
-        try {
-            const deckRef = doc(db, 'decks', paramDeckId);
-            await updateDoc(deckRef, { isPublic: false });
+    const renderModeToggle = () => {
+        if (mode === 'test') {
+            const results = calculateTestResults();
             
-            setDeckData(prev => ({
-                ...prev,
-                isPublic: false,
-            }));
-        
-            console.log("Deck set to private successfully!");
-        } catch (error) {
-            console.log("Error setting deck to private:", error);
+            return (
+                <div className="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div className="flex justify-between items-center mb-4">
+                        <div className="flex items-center gap-3">
+                            <Brain className="w-5 h-5 text-purple-400" />
+                            <span className="text-white font-medium">Practice Test Mode</span>
+                            <span className="text-gray-400 text-sm">
+                                {currentTestIndex + 1} / {testQuestions.length}
+                            </span>
+                        </div>
+                        <button
+                            onClick={handleExitTest}
+                            className="text-gray-400 hover:text-white"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    <div className="flex gap-2 text-sm">
+                        <span className="text-gray-400">Progress:</span>
+                        <span className="text-emerald-400">{results.correct} correct</span>
+                        <span className="text-gray-500">•</span>
+                        <span className="text-gray-400">{results.attempted} / {results.total} answered</span>
+                    </div>
+                </div>
+            );
         }
+
+        return (
+            <div className="flex gap-2 mb-4">
+                <button
+                    onClick={() => setMode('study')}
+                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
+                        mode === 'study' 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                    }`}
+                >
+                    <BookOpen className="w-4 h-4 inline mr-2" />
+                    Study
+                </button>
+                <button
+                    onClick={() => {
+                        // Generate test matching deck size (cap at 20 for very large decks)
+                        const testSize = Math.min(flashCards.length, 20);
+                        handleGeneratePracticeTest({ type: 'mixed', count: testSize });
+                    }}
+                    disabled={isGeneratingTest || flashCards.length === 0}
+                    className="flex-1 py-2 px-4 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors disabled:opacity-50"
+                >
+                    <Brain className="w-4 h-4 inline mr-2" />
+                    {isGeneratingTest ? 'Generating...' : `Simulate Exam`}
+                </button>
+            </div>
+        );
     };
 
     // ==========================================
-    // RENDER - Loading state
+    // LOADING STATE
     // ==========================================
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="text-center">
-                {/* Pixel-style animated sword/weapon */}
-                <div className="mb-8 flex justify-center">
-                <div className="relative">
-                    {/* Spinning pixelated sword */}
-                    <div className="w-24 h-24 relative animate-spin" style={{ animationDuration: '2s' }}>
-                    <div className="absolute inset-0">
-                        <svg viewBox="0 0 100 100" className="w-full h-full">
-                        {/* Sword blade */}
-                        <rect x="46" y="10" width="8" height="50" fill="#94a3b8" />
-                        <rect x="42" y="10" width="4" height="4" fill="#cbd5e1" />
-                        <rect x="54" y="10" width="4" height="4" fill="#64748b" />
-                        
-                        {/* Sword guard */}
-                        <rect x="38" y="58" width="24" height="6" fill="#fbbf24" />
-                        <rect x="38" y="58" width="24" height="2" fill="#fde047" />
-                        
-                        {/* Sword handle */}
-                        <rect x="44" y="64" width="12" height="20" fill="#7c3aed" />
-                        <rect x="44" y="64" width="6" height="20" fill="#8b5cf6" />
-                        
-                        {/* Pommel */}
-                        <rect x="42" y="84" width="16" height="8" fill="#fbbf24" />
-                        <rect x="42" y="84" width="8" height="4" fill="#fde047" />
-                        </svg>
-                    </div>
-                    </div>
-                    
-                    {/* Glowing effect */}
-                    <div className="absolute inset-0 blur-xl opacity-50 bg-purple-500 animate-pulse" />
-                </div>
-                </div>
-
-                {/* Loading text with retro pixel font style */}
-                <div className="space-y-4">
-                <h1 className="text-5xl font-bold text-white mb-2 tracking-wider" 
-                    style={{ 
-                        fontFamily: 'monospace',
-                        textShadow: '4px 4px 0px #7c3aed, 8px 8px 0px rgba(124, 58, 237, 0.3)'
-                    }}>
-                    LOADING
-                    <span className="inline-block animate-pulse">...</span>
-                </h1>
-                
-                {/* Pixelated subtitle */}
-                <p className="text-xl text-purple-300 font-mono tracking-widest animate-pulse"
-                    style={{
-                    textShadow: '2px 2px 0px rgba(124, 58, 237, 0.5)'
-                    }}>
-                    Preparing your Flashcards
-                </p>
-                </div>
-
-                {/* Retro loading bar */}
-                <div className="mt-8 w-64 mx-auto">
-                <div className="h-6 bg-gray-800 border-4 border-purple-500 relative overflow-hidden"
-                    style={{ imageRendering: 'pixelated' }}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-500 to-purple-600 animate-loading-bar" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-full grid grid-cols-8 gap-1 p-1">
-                        {[...Array(8)].map((_, i) => (
-                        <div 
-                            key={i}
-                            className="bg-purple-400 opacity-30 animate-pulse"
-                            style={{ animationDelay: `${i * 0.1}s` }}
-                        />
-                        ))}
-                    </div>
-                    </div>
-                </div>
-                </div>
-
-                
-            </div>
-
-            <style jsx>{`
-                @keyframes loading-bar {
-                0% { transform: translateX(-100%); }
-                100% { transform: translateX(100%); }
-                }
-                
-                @keyframes scan {
-                0% { transform: translateY(-100%); }
-                100% { transform: translateY(100%); }
-                }
-                
-                .animate-loading-bar {
-                animation: loading-bar 1.5s linear infinite;
-                }
-                
-                .animate-scan {
-                animation: scan 8s linear infinite;
-                }
-            `}</style>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
             </div>
         );
     }
 
     // ==========================================
-    // RENDER - Error state
+    // ERROR STATE
     // ==========================================
     if (error) {
         return (
-            <div className={`${styles.flashCardsPageContainer}`}>
-                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                    <h1 className="text-2xl font-bold text-red-400 mb-2">Error: {error}</h1>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold text-red-400 mb-4">Error: {error}</h1>
                     <button 
                         onClick={loadDeckData}
                         className="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700"
@@ -507,211 +369,131 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     }
 
     // ==========================================
-    // RENDER - Display variables
-    // ==========================================
-    const displayName = deckData?.title || "Unknown Deck";
-    const isPublicDeck = deckData?.isPublic && deckData?.ownerId !== user?.uid;
-
-    // ==========================================
     // MAIN RENDER
     // ==========================================
     return (
         <>
-        {/* 2. Incentive Toast (before studying) */}
-        {showDeckIncentive && (
-            <DeckIncentiveToast 
-                xpAmount={200}
-                onComplete={() => setShowDeckIncentive(false)}
-            />
-        )}
-
-        {/* 3. Completion Toast (after finishing deck) */}
-        {showSessionComplete && (
-            <>
-                <Confetti/>
-                <SessionCompleteToast 
+            {showDeckIncentive && (
+                <DeckIncentiveToast 
                     xpAmount={200}
-                    onComplete={() => setShowSessionComplete(false)}
+                    onComplete={() => setShowDeckIncentive(false)}
                 />
-            </>
-          
-        )}
-       
-        <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
-            
+            )}
 
-            <div className={`${styles.leftSideFlashCardsPageContainer}`}>
-                {/* HEADER */}
-
-                <div className="flex justify-between mb-1">
-                    <button
-                        onClick={() => navigate('/')}
-                        className="flex justify-center items-center  gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200 shadow-md text-sm sm:text-base"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span className='truncate max-w-36'>{displayName}</span>
-                    </button>
-                    
-                    <DeckActionsDropdown 
-                        deckId={paramDeckId}
-                        deckData={deckData}
-                        flashCards={flashCards}
-                        user={user}
-                        isMuted={isMuted}
-                        onToggleMute={handleToggleMute}
+            {showSessionComplete && (
+                <>
+                    <Confetti/>
+                    <SessionCompleteToast 
+                        xpAmount={200}
+                        onComplete={() => setShowSessionComplete(false)}
                     />
-                </div>
-            
+                </>
+            )}
+        
+            <div className={`${styles.flashCardsPageContainer} max-w-7xl px-4 mt-8`}>
+                <div className={`${styles.leftSideFlashCardsPageContainer}`}>
+                    {/* HEADER */}
+                    <div className="flex justify-between mb-1">
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex justify-center items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-all duration-200"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            <span className='truncate max-w-36'>{deckData?.title || "Unknown Deck"}</span>
+                        </button>
+                        
+                        <DeckActionsDropdown 
+                            deckId={paramDeckId}
+                            deckData={deckData}
+                            flashCards={flashCards}
+                            user={user}
+                            isMuted={isMuted}
+                            onToggleMute={() => setIsMuted(prev => !prev)}
+                        />
+                    </div>
 
-                {renderScoreContainer()}
-
-                <div className="block lg:hidden">
-                    <BattleSection
-                        deckData={deckData}
-                        knowAnswer={knowAnswer}
-                        dontKnowAnswer={dontKnowAnswer}
-                        deaths={deaths}
-                        setDeaths={setDeaths}
-                        cardCount={originalDeckSize}
-                        deckId={paramDeckId}
-                        currentUser={currentUser}
-                    />
-                </div>
-
-                <FillInTheBlank />
-                
-                <MultipleChoice />
-
-                <TrueOrFalse />
-
-                {/* Pass all data as props to FlashCardUI */}
-                <FlashCardUI 
-                    // Data props (fetched by parent)
-                    flashCards={flashCards}
-                    setFlashCards={setFlashCards}
-                    deckData={deckData}
+                   
                     
-                    // Progress setters
-                    setKnowAnswer={setKnowAnswer}
-                    setDontKnowAnswer={setDontKnowAnswer}
-                    
-                    // Control props
-                    redoDeck={redoDeck}
-                    setRedoDeck={setRedoDeck}
-                    currentIndex={currentIndex}
-                    setCurrentIndex={setCurrentIndex}
-                    
-                    // Firestore instance for session tracking
-                    db={db}
-                    
-                    // Reload function for child to trigger parent refresh
-                    onReload={loadDeckData}
 
-                    // Phase Tracking
-                    phaseOneComplete = {phaseOneComplete}
-                    setPhaseOneComplete = {setPhaseOneComplete}
+                    {/* MOBILE BATTLE SECTION */}
+                    <div className="block lg:hidden mb-4">
+                        <BattleSection
+                            deckData={deckData}
+                            knowAnswer={knowAnswer}
+                            dontKnowAnswer={dontKnowAnswer}
+                            deaths={deaths}
+                            setDeaths={setDeaths}
+                            cardCount={mode === 'study' ? originalDeckSize : testQuestions.length} 
+                            deckId={paramDeckId}
+                            currentUser={currentUser}
+                        />
+                    </div>
 
-                    originalDeckSize={originalDeckSize}
-                    setOriginalDeckSize={setOriginalDeckSize}
+                    {/* SCORE CONTAINER */}
+                    {renderScoreContainer()}
 
-                    result={calculateGrade(currentIndex, knowAnswer)}
-
-                    deaths={deaths}
-
-                    onCreateWithAIModalClick={onCreateWithAIModalClick}
-
-                    knowAnswer={knowAnswer}
-                    dontKnowAnswer={dontKnowAnswer}
-
-                    isMuted={isMuted}
-
-                    hasNotCreatedADeck={hasNotCreatedADeck}
-
-                    onSessionComplete={handleSessionComplete}
-                />
-            </div>
-            
-            <div className={`hidden lg:block ${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
-                
-                    <BattleSection
-                        deckData={deckData}
-                        knowAnswer={knowAnswer}
-                        dontKnowAnswer={dontKnowAnswer}
-                        deaths={deaths}
-                        setDeaths={setDeaths}
-                        cardCount={originalDeckSize} 
-                        deckId={paramDeckId}
-                        currentUser={currentUser}
-                    >
-                        {/* <div className="space-y-4">
-                         
-
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Correct:</span>
-                                <span className="font-bold text-lg text-emerald-400">{knowAnswer}</span>
-                            </div>
-                            <div className="flex justify-between items-center py-3 border-b border-gray-700">
-                                <span className="text-gray-400">Wrong:</span>
-                                <span className="font-bold text-lg text-red-400">{dontKnowAnswer}</span>
-                            </div>
-                       
-                        </div> */}
-                        {/* Quick Actions */}
-                        <div className="mt-6">
-                            <h4 className="text-gray-300 mb-4 font-medium">Quick Actions</h4>
-                            <div className="space-y-3">
-                                <button 
-                                    onClick={() => setRedoDeck(true)}
-                                    className="w-full bg-violet-600 hover:bg-violet-700 px-4 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
-                                >
-                                    <RotateCcw className="w-5 h-5 mr-2" />
-                                    <span>Restart</span>
-                                </button>
-
-                                {/* {deckData && deckData.ownerId === user?.uid && (
-                                    !deckData.isPublic ? (
-                                        <button 
-                                            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                            onClick={handleSetToPublic}
-                                        >
-                                            <Globe />
-                                            <span>Make Public</span>
-                                        </button>
-                                    ) : (
-                                        <button 
-                                            className="w-full bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-                                            onClick={handleSetToPrivate}
-                                        >
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                            </svg>
-                                            <span>Make Private</span>
-                                        </button>
-                                    )
-                                )} */}
-                            </div>
-                        </div>
-                    </BattleSection>
-                    {/* <div className="text-2xl font-bold mb-1 text-purple-400 flex items-center gap-2">
-                        {isPublicDeck && <Globe className="w-6 h-6" />}
-                        {displayName}
-                    </div> */}
-
-                    {/* {deckData?.description && deckData.description !== "No Description" && (
-                        <p className="text-gray-400 mb-4">{deckData.description}</p> 
-                    )} */}
-
-                    {deckOwnerData && (
-                        <p className="text-white/70 text-sm mb-4">
-                            Created by: {deckOwnerData.displayName}
-                        </p>
+                    {/* CONDITIONAL RENDERING */}
+                    {mode === 'study' ? (
+                        <FlashCardUI 
+                            flashCards={flashCards}
+                            setFlashCards={setFlashCards}
+                            deckData={deckData}
+                            setKnowAnswer={setKnowAnswer}
+                            setDontKnowAnswer={setDontKnowAnswer}
+                            redoDeck={redoDeck}
+                            setRedoDeck={setRedoDeck}
+                            currentIndex={currentIndex}
+                            setCurrentIndex={setCurrentIndex}
+                            db={db}
+                            onReload={loadDeckData}
+                            phaseOneComplete={phaseOneComplete}
+                            setPhaseOneComplete={setPhaseOneComplete}
+                            originalDeckSize={originalDeckSize}
+                            setOriginalDeckSize={setOriginalDeckSize}
+                            result={calculateGrade(currentIndex, knowAnswer)}
+                            deaths={deaths}
+                            onCreateWithAIModalClick={onCreateWithAIModalClick}
+                            knowAnswer={knowAnswer}
+                            dontKnowAnswer={dontKnowAnswer}
+                            isMuted={isMuted}
+                            hasNotCreatedADeck={hasNotCreatedADeck}
+                            onSessionComplete={() => setShowSessionComplete(true)}
+                        />
+                    ) : (
+                        <TestTypeUI 
+                            testQuestions={testQuestions}
+                            testAnswers={testAnswers}
+                            setTestAnswers={setTestAnswers}
+                            currentTestIndex={currentTestIndex}
+                            setCurrentTestIndex={setCurrentTestIndex}
+                            setKnowAnswer={setKnowAnswer}
+                            setDontKnowAnswer={setDontKnowAnswer}
+                            setDeaths={setDeaths}
+                            isMuted={isMuted}
+                            onTestComplete={handleTestComplete}
+                        />
                     )}
-                    
-                    
-            </div>
-        </div>
-        </>
 
+                     {/* MODE TOGGLE */}
+                     {renderModeToggle()}
+
+                </div>
+                
+                {/* RIGHT SIDEBAR */}
+                <div className={`hidden lg:block ${styles.rightSideFlashCardsPageContainer} mt-9 md:mt-0`}>
+                    <BattleSection
+                        deckData={deckData}
+                        knowAnswer={knowAnswer}
+                        dontKnowAnswer={dontKnowAnswer}
+                        deaths={deaths}
+                        setDeaths={setDeaths}
+                        cardCount={mode === 'study' ? originalDeckSize : testQuestions.length} 
+                        deckId={paramDeckId}
+                        currentUser={currentUser}
+                    />
+                </div>
+            </div>
+        </>
     );
 }
 
