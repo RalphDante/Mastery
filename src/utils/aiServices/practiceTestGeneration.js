@@ -1,5 +1,52 @@
 // src/utils/aiServices/practiceTestGeneration.js
 
+// OBJECT STRUCTURES
+
+// MULTIPLE CHOICE
+// {
+//   id: "q_1704729600000_0",           // Unique ID
+//   sourceCardId: "card_abc123",        // Original flashcard ID (if matched)
+//   type: "multiple_choice",
+//   question: "What is the powerhouse of the cell?",
+//   answer: "Mitochondria",
+//   choices: [
+//     "Nucleus",
+//     "Mitochondria",      // Correct answer in random position
+//     "Ribosome",
+//     "Golgi Apparatus"
+//   ],
+//   userAnswer: null,      // User's selected answer (filled after answering)
+//   isCorrect: null,       // Boolean (calculated after answering)
+//   points: 10,
+//   order: 1
+// }
+
+// TRUE OR FALSE
+// {
+//   id: "q_1704729600000_2",
+//   sourceCardId: "card_ghi789",
+//   type: "fill_blank",
+//   question: "The ___ is known as the powerhouse of the cell",
+//   answer: "mitochondria",
+//   userAnswer: null,      // User's typed answer
+//   isCorrect: null,
+//   points: 10,
+//   order: 3
+// }
+
+// FILL IN THE BLANK
+// {
+//   id: "q_1704729600000_2",
+//   sourceCardId: "card_ghi789",
+//   type: "fill_blank",
+//   question: "The ___ is known as the powerhouse of the cell",
+//   answer: "mitochondria",
+//   userAnswer: null,      // User's typed answer
+//   isCorrect: null,
+//   points: 10,
+//   order: 3
+// }
+
 import { generateAIContent } from '../subscriptionLimits/aiLimitsHelper';
 
 const env = import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox";

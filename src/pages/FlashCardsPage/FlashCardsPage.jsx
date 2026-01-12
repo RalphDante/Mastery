@@ -21,6 +21,9 @@ import { usePartyContext } from '../../contexts/PartyContext.jsx';
 import { Confetti, FirstDeckCelebration, SessionCompleteToast, DeckIncentiveToast } from '../../components/ConfettiAndToasts.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 import { useUserDataContext } from '../../contexts/UserDataContext.jsx';
+import MultipleChoice from './TestTypeUI/MultipleChoice.jsx';
+import { FillInTheBlank } from './TestTypeUI/FillInTheBlank.jsx';
+import { TrueOrFalse } from './TestTypeUI/TrueOrFalse.jsx';
 
 function FlashCardsPage({onCreateWithAIModalClick}) {
     const {incrementExp} = useUserDataContext();
@@ -575,8 +578,11 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                     />
                 </div>
 
+                <FillInTheBlank />
                 
-                
+                <MultipleChoice />
+
+                <TrueOrFalse />
 
                 {/* Pass all data as props to FlashCardUI */}
                 <FlashCardUI 
