@@ -1,28 +1,52 @@
 import React from 'react';
+import { useState, useEffect } from 'react';
 
-// Refactored MultipleChoice - accepts props from parent
 export default function MultipleChoice({ 
-  question,      // Question object from AI: { question, answer, choices, type }
-  userAnswer,    // User's selected answer (or null)
-  onAnswer,      // Callback: (selectedAnswer) => void
-  isRevealed     // Whether to show correct/incorrect
+  question,
+  userAnswer,
+  onAnswer,
+  isRevealed,
+  onReveal,
+  onNext
 }) {
   
+  const [clickedChoice, setClickedChoice] = useState(null);
+
+  // THIS IS CRITICAL - Reset when question changes
+  useEffect(() => {
+    setClickedChoice(null);
+  }, [question.id]);
+
   const handleAnswerClick = (choice) => {
-    if (!isRevealed) {
-      onAnswer(choice); // Tell parent what user selected
+    if (!isRevealed && !clickedChoice) { // Prevent double-click
+      setClickedChoice(choice);
+      onAnswer(choice);
+      
+      setTimeout(() => {
+        onReveal(choice);
+        
+        if (choice === question.answer && onNext) {
+          setTimeout(() => {
+            onNext();
+          }, 800);
+        }
+      }, 100);
     }
   };
 
   const getButtonStyle = (choice) => {
-    if (!isRevealed) {
-      // Before revealing: highlight selected answer
-      return userAnswer === choice
-        ? 'bg-blue-600 border-blue-500'
-        : 'bg-slate-700/50 border-slate-600 hover:bg-slate-700';
+    const isSelected = clickedChoice === choice || userAnswer === choice;
+    
+    if (isSelected && !isRevealed) {
+      return choice === question.answer 
+        ? 'bg-green-600/30 border-green-500' 
+        : 'bg-red-600/30 border-red-500';
     }
     
-    // After revealing: show correct/incorrect
+    if (!isRevealed) {
+      return 'bg-slate-700/50 border-slate-600 hover:bg-slate-700';
+    }
+    
     if (choice === question.answer) {
       return 'bg-green-600/30 border-green-500';
     }
@@ -58,7 +82,6 @@ export default function MultipleChoice({
           ))}
         </div>
 
-        {/* Show result feedback */}
         {isRevealed && (
           <div className={`p-4 rounded-xl ${
             userAnswer === question.answer 

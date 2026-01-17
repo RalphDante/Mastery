@@ -24,6 +24,9 @@ import { awardWithXP } from '../../utils/giveAwardUtils.js';
 import { useUserDataContext } from '../../contexts/UserDataContext.jsx';
 import { generatePracticeTest } from '../../utils/aiServices/practiceTestGeneration.js';
 
+import PracticeTestModal from '../../components/Modals/PracticeTestModal.jsx';
+import BattleResult from './BattleResult.jsx';
+
 function FlashCardsPage({onCreateWithAIModalClick}) {
     const {incrementExp} = useUserDataContext();
     const [showFirstDeckCelebration, setShowFirstDeckCelebration] = useState(false);
@@ -42,12 +45,17 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     const [testAnswers, setTestAnswers] = useState({});
     const [isGeneratingTest, setIsGeneratingTest] = useState(false);
 
+
+    const [showTestModal, setShowTestModal] = useState(false);
+
     // ==========================================
     // SHARED STATE (used by both modes)
     // ==========================================
     const [knowAnswer, setKnowAnswer] = useState(0);
     const [dontKnowAnswer, setDontKnowAnswer] = useState(0);
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    const [testComplete, setTestComplete] = useState(false);
 
     // Study mode specific
     const [originalDeckSize, setOriginalDeckSize] = useState(0);
@@ -109,6 +117,30 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         }
     };
 
+    const handleGenerateTest = async (config) => {
+        setShowTestModal(false);
+        setIsGeneratingTest(true);
+        setError(null);
+        try {
+          const result = await generatePracticeTest(flashCards, config, user);
+          setTestQuestions(result.questions);
+          setCurrentTestIndex(0);
+          setTestAnswers({});
+          
+          // Reset boss battle stats for test mode
+          setKnowAnswer(0);
+          setDontKnowAnswer(0);
+          setDeaths(0);
+          
+          setMode('test');
+        } catch (err) {
+          setError(err.message);
+          console.error('Test generation error:', err);
+        } finally {
+          setIsGeneratingTest(false);
+        }
+    };
+
     const handleExitTest = () => {
         setMode('study');
         setTestQuestions([]);
@@ -126,9 +158,12 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
         const results = calculateTestResults();
         console.log('Test completed!', results);
         
+
         // Could show a completion modal here
         // For now, just reset
-        handleExitTest();
+
+        setTestComplete(true);
+        // handleExitTest(); 
     };
 
     // ==========================================
@@ -278,36 +313,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     };
 
     const renderModeToggle = () => {
-        if (mode === 'test') {
-            const results = calculateTestResults();
-            
-            return (
-                <div className="bg-gray-800 rounded-lg p-4 mb-4">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex items-center gap-3">
-                            <Brain className="w-5 h-5 text-purple-400" />
-                            <span className="text-white font-medium">Practice Test Mode</span>
-                            <span className="text-gray-400 text-sm">
-                                {currentTestIndex + 1} / {testQuestions.length}
-                            </span>
-                        </div>
-                        <button
-                            onClick={handleExitTest}
-                            className="text-gray-400 hover:text-white"
-                        >
-                            <X className="w-5 h-5" />
-                        </button>
-                    </div>
-                    
-                    <div className="flex gap-2 text-sm">
-                        <span className="text-gray-400">Progress:</span>
-                        <span className="text-emerald-400">{results.correct} correct</span>
-                        <span className="text-gray-500">•</span>
-                        <span className="text-gray-400">{results.attempted} / {results.total} answered</span>
-                    </div>
-                </div>
-            );
-        }
+       
 
         return (
             <div className="flex gap-2 mb-4">
@@ -325,8 +331,9 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                 <button
                     onClick={() => {
                         // Generate test matching deck size (cap at 20 for very large decks)
-                        const testSize = Math.min(flashCards.length, 20);
-                        handleGeneratePracticeTest({ type: 'mixed', count: testSize });
+                        // const testSize = Math.min(flashCards.length, 20);
+                        // handleGeneratePracticeTest({ type: 'mixed', count: testSize });
+                        setShowTestModal(true);
                     }}
                     disabled={isGeneratingTest || flashCards.length === 0}
                     className="flex-1 py-2 px-4 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors disabled:opacity-50"
@@ -373,6 +380,12 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     return (
         <>
+            <PracticeTestModal
+                isOpen={showTestModal}
+                onClose={() => setShowTestModal(false)}
+                onGenerate={handleGenerateTest}
+                maxQuestions={flashCards.length}
+            />
             {showDeckIncentive && (
                 <DeckIncentiveToast 
                     xpAmount={200}
@@ -460,18 +473,30 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                             onSessionComplete={() => setShowSessionComplete(true)}
                         />
                     ) : (
-                        <TestTypeUI 
-                            testQuestions={testQuestions}
-                            testAnswers={testAnswers}
-                            setTestAnswers={setTestAnswers}
-                            currentTestIndex={currentTestIndex}
-                            setCurrentTestIndex={setCurrentTestIndex}
-                            setKnowAnswer={setKnowAnswer}
-                            setDontKnowAnswer={setDontKnowAnswer}
-                            setDeaths={setDeaths}
-                            isMuted={isMuted}
-                            onTestComplete={handleTestComplete}
-                        />
+                        <>  
+                            {testComplete ? 
+                            <BattleResult 
+                                currentIndex={currentIndex}
+                                result={calculateGrade(currentIndex, knowAnswer)}
+                                deaths={deaths}
+                                onCreateWithAIModalClick={onCreateWithAIModalClick}
+                                deckData={deckData}
+                                knowAnswer={knowAnswer}
+                                dontKnowAnswer={dontKnowAnswer}
+                            /> :
+                            <TestTypeUI 
+                                testQuestions={testQuestions}
+                                testAnswers={testAnswers}
+                                setTestAnswers={setTestAnswers}
+                                currentTestIndex={currentTestIndex}
+                                setCurrentTestIndex={setCurrentTestIndex}
+                                setKnowAnswer={setKnowAnswer}
+                                setDontKnowAnswer={setDontKnowAnswer}
+                                setDeaths={setDeaths}
+                                isMuted={isMuted}
+                                onTestComplete={handleTestComplete}
+                            />}
+                        </>
                     )}
 
                      {/* MODE TOGGLE */}

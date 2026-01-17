@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 export const FillInTheBlank = ({ 
   question,      // Question object: { question, answer, type: "fill_blank" }
   userAnswer,    // User's current typed answer (or null)
-  onAnswer,      // Callback: (typedAnswer) => void
-  isRevealed     // Whether to show correct/incorrect
+  onAnswer,      // Callback: (typedAnswer) => void 
+  isRevealed,    // Whether to show correct/incorrect
+  onReveal,      // Callback to reveal the answer
+  onNext         // Callback to go to next question
 }) => {
   const [localAnswer, setLocalAnswer] = useState(userAnswer || '');
 
@@ -15,10 +17,37 @@ export const FillInTheBlank = ({
     }
   }, [userAnswer]);
 
+  // Clear input when question changes
+  useEffect(() => {
+    setLocalAnswer(userAnswer || '');
+  }, [question.id, userAnswer]);
+
   const handleInputChange = (e) => {
     const value = e.target.value;
     setLocalAnswer(value);
     onAnswer(value); // Update parent immediately as user types
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      if (!isRevealed) {
+        // First Enter press: reveal the answer
+        if (onReveal) {
+          onReveal();
+        }
+        // If correct, automatically go to next after a brief delay
+        if (isCorrect() && onNext) {
+          setTimeout(() => {
+            onNext();
+          }, 800);
+        }
+      } else if (isCorrect() && onNext) {
+        // If already revealed and correct, go to next immediately
+        onNext();
+      }
+    }
   };
 
   const isCorrect = () => {
@@ -42,9 +71,10 @@ export const FillInTheBlank = ({
             type="text"
             value={localAnswer}
             onChange={handleInputChange}
-            disabled={isRevealed}
+            onKeyDown={handleKeyDown}
+            disabled={false}
             placeholder="Type your answer here..."
-            className="w-full p-4 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-all duration-200 disabled:bg-slate-700/30 disabled:cursor-not-allowed"
+            className="w-full p-4 bg-slate-700/50 border-2 border-slate-600 rounded-xl text-slate-100 placeholder-slate-400 focus:outline-none focus:border-blue-500 transition-all duration-200"
           />
           
           {isRevealed && (

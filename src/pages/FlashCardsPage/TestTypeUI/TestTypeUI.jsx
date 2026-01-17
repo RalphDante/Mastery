@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import MultipleChoice from './MultipleChoice.jsx';
 import { FillInTheBlank } from './FillInTheBlank.jsx';
 import { TrueOrFalse } from './TrueOrFalse.jsx';
+import { useAuthContext } from '../../../contexts/AuthContext.jsx';
+import { useSessionTracking } from '../../../hooks/useSessionTracking.js';
+import { db } from '../../../api/firebase.js';
 
 function TestTypeUI({
   testQuestions,           // Array of test questions
@@ -23,15 +26,20 @@ function TestTypeUI({
   // Completion callback
   onTestComplete
 }) {
+  const { user } = useAuthContext();
+  const [isFinished, setIsFinished] = useState(false);
+  
+  // Session tracking hook (same as FlashCardUI)
+  const { trackCardReview } = useSessionTracking(user, db, isFinished);
   
   const [revealedQuestions, setRevealedQuestions] = useState(new Set());
   
   // Sound refs
   const correctSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
-  const wrongSound = new Audio("https://assets.mixkit.co/active_storage/sfx/2955/2955-preview.mp3");
+  const wrongSound = new Audio("https://cdn.freesound.org/previews/156/156859_2538033-lq.mp3");
   
   correctSound.volume = 0.3;
-  wrongSound.volume = 0.3;
+  wrongSound.volume = 0.1;
 
   if (!testQuestions.length) {
     return <div className="text-white text-center">No test questions available</div>;
@@ -44,17 +52,19 @@ function TestTypeUI({
   // ==========================================
   // HANDLE REVEAL - Check answer and update boss battle
   // ==========================================
-  const handleReveal = () => {
-    if (!userAnswer && userAnswer !== 'false' && userAnswer !== '') {
+  const handleReveal = (answerToCheck = userAnswer) => {
+    console.log("handleReveal called")
+    if (!answerToCheck && answerToCheck !== 'false' && answerToCheck !== '') {
+      console.log("returning early")
       return; // Can't reveal without an answer
     }
 
     // Check if correct
     let isCorrect = false;
     if (currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'true_false') {
-      isCorrect = userAnswer === currentQuestion.answer;
+      isCorrect = answerToCheck === currentQuestion.answer;
     } else if (currentQuestion.type === 'fill_blank') {
-      isCorrect = userAnswer.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
+      isCorrect = answerToCheck.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
     }
 
     // Mark as revealed
@@ -76,6 +86,12 @@ function TestTypeUI({
       setDontKnowAnswer(prev => prev + 1);
       setDeaths(prev => prev + 1);
     }
+
+    // Track the card review (same as FlashCardUI)
+    console.log('trackCardReview called')
+    trackCardReview(isCorrect);
+    console.log('trackCardReview finished')
+
   };
 
   // ==========================================
@@ -86,6 +102,7 @@ function TestTypeUI({
       setCurrentTestIndex(prev => prev + 1);
     } else {
       // Test complete!
+      setIsFinished(true);
       if (onTestComplete) {
         onTestComplete();
       }
@@ -120,6 +137,8 @@ function TestTypeUI({
             userAnswer={userAnswer}
             onAnswer={handleAnswerChange}
             isRevealed={isRevealed}
+            onReveal={handleReveal}
+            onNext={() => handleNext()}
           />
         );
       
@@ -130,16 +149,20 @@ function TestTypeUI({
             userAnswer={userAnswer}
             onAnswer={handleAnswerChange}
             isRevealed={isRevealed}
+            onReveal={handleReveal}
+            onNext={() => handleNext()}
           />
         );
       
       case 'fill_blank':
         return (
-          <FillInTheBlank 
+          <FillInTheBlank
             question={currentQuestion}
             userAnswer={userAnswer}
             onAnswer={handleAnswerChange}
             isRevealed={isRevealed}
+            onReveal={() => handleReveal()}
+            onNext={() => handleNext()}
           />
         );
       

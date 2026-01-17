@@ -1,33 +1,48 @@
-import { useState } from "react";
+import React from 'react';
 
 export const TrueOrFalse = ({ 
-  question,      // Question object: { question, answer: "true" | "false", type: "true_false" }
-  userAnswer,    // User's selected answer (true/false or null)
-  onAnswer,      // Callback: (selectedValue) => void
-  isRevealed     // Whether to show correct/incorrect
+  question,      // Question object: { question, answer, type: "true_false" }
+  userAnswer,    // User's selected answer (or null)
+  onAnswer,      // Callback: (selectedAnswer) => void
+  isRevealed,    // Whether to show correct/incorrect
+  onReveal,      // Callback to reveal the answer
+  onNext         // Callback to go to next question
 }) => {
-
-  const handleAnswerClick = (value) => {
+  
+  const handleAnswerClick = (choice) => {
     if (!isRevealed) {
-      onAnswer(value === 'true' ? 'true' : 'false'); // Ensure string format
+      onAnswer(choice); // Tell parent what user selected
+      
+      // Auto-reveal when answer is selected
+      if (onReveal) {
+        setTimeout(() => {
+          onReveal(choice);
+          
+          // If correct, auto-advance after brief delay
+          if (choice === question.answer && onNext) {
+            setTimeout(() => {
+              onNext();
+            }, 800);
+          }
+        }, 100);
+      }
     }
   };
 
-  const getButtonStyle = (value) => {
-    const valueStr = value ? 'true' : 'false';
-    
+  const getButtonStyle = (choice) => {
     if (!isRevealed) {
-      return userAnswer === valueStr
+      // Before revealing: highlight selected answer
+      return userAnswer === choice
         ? 'bg-blue-600 border-blue-500'
         : 'bg-slate-700/50 border-slate-600 hover:bg-slate-700';
     }
     
-    // After revealing
-    if (valueStr === question.answer) {
+    // After revealing: show correct/incorrect
+    if (choice === question.answer) {
       return 'bg-green-600/30 border-green-500';
     }
     
-    if (valueStr === userAnswer && valueStr !== question.answer) {
+    if (choice === userAnswer && choice !== question.answer) {
       return 'bg-red-600/30 border-red-500';
     }
     
@@ -35,7 +50,7 @@ export const TrueOrFalse = ({
   };
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full">
       <div className="bg-slate-800/90 backdrop-blur rounded-2xl shadow-2xl border border-slate-700/50 p-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-medium text-slate-100 leading-relaxed">
@@ -47,16 +62,17 @@ export const TrueOrFalse = ({
           <button
             onClick={() => handleAnswerClick('true')}
             disabled={isRevealed}
-            className={`p-6 rounded-xl border-2 transition-all duration-200 ${getButtonStyle(true)} ${
+            className={`p-6 rounded-xl border-2 transition-all duration-200 ${getButtonStyle('true')} ${
               !isRevealed ? 'cursor-pointer' : 'cursor-default'
             }`}
           >
             <span className="text-slate-100 font-medium text-xl">True</span>
           </button>
+          
           <button
             onClick={() => handleAnswerClick('false')}
             disabled={isRevealed}
-            className={`p-6 rounded-xl border-2 transition-all duration-200 ${getButtonStyle(false)} ${
+            className={`p-6 rounded-xl border-2 transition-all duration-200 ${getButtonStyle('false')} ${
               !isRevealed ? 'cursor-pointer' : 'cursor-default'
             }`}
           >
@@ -64,6 +80,7 @@ export const TrueOrFalse = ({
           </button>
         </div>
 
+        {/* Show result feedback */}
         {isRevealed && (
           <div className={`p-4 rounded-xl ${
             userAnswer === question.answer 
@@ -78,7 +95,7 @@ export const TrueOrFalse = ({
             {userAnswer !== question.answer && (
               <div className="text-slate-300 mt-2">
                 Correct answer: <span className="font-medium text-green-400">
-                  {question.answer === 'true' ? 'True' : 'False'}
+                  {question.answer.charAt(0).toUpperCase() + question.answer.slice(1)}
                 </span>
               </div>
             )}
@@ -87,4 +104,4 @@ export const TrueOrFalse = ({
       </div>
     </div>
   );
-}
+};
