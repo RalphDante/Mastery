@@ -1,5 +1,6 @@
 // FlashCardsPage.jsx - SIMPLIFIED with TestTypeUI component
 
+import LimitReachedModal from '../../components/Modals/LimitReachedModal.jsx';
 import { ArrowLeft } from 'lucide-react';
 import { getFirestore, doc, getDoc } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
@@ -31,6 +32,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     const {incrementExp} = useUserDataContext();
     const [showFirstDeckCelebration, setShowFirstDeckCelebration] = useState(false);
     const [deaths, setDeaths] = useState(0);
+    const [showAILimitModal, setShowAILimitModal] = useState(false);
 
     // ==========================================
     // MODE STATE
@@ -118,6 +120,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     };
 
     const handleGenerateTest = async (config) => {
+        setTestComplete(false);
         setShowTestModal(false);
         setIsGeneratingTest(true);
         setError(null);
@@ -134,8 +137,15 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
           
           setMode('test');
         } catch (err) {
-          setError(err.message);
+            // ⭐ CHECK FOR AI LIMIT ERROR
+          if (err.message && err.message.toLowerCase().includes('ai generation')) {
+            setShowAILimitModal(true);
+          } else {
+            setError(err.message);
+          }
           console.error('Test generation error:', err);
+        //   setError(err.message);
+        //   console.error('Test generation error:', err);
         } finally {
           setIsGeneratingTest(false);
         }
@@ -380,6 +390,13 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     // ==========================================
     return (
         <>
+            {showAILimitModal && (
+                <LimitReachedModal 
+                    limitType="ai"
+                    onClose={() => setShowAILimitModal(false)}
+                />
+            )}
+
             <PracticeTestModal
                 isOpen={showTestModal}
                 onClose={() => setShowTestModal(false)}
@@ -476,8 +493,8 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                         <>  
                             {testComplete ? 
                             <BattleResult 
-                                currentIndex={currentIndex}
-                                result={calculateGrade(currentIndex, knowAnswer)}
+                                currentIndex={knowAnswer + dontKnowAnswer}
+                                result={calculateGrade(knowAnswer + dontKnowAnswer, knowAnswer)}
                                 deaths={deaths}
                                 onCreateWithAIModalClick={onCreateWithAIModalClick}
                                 deckData={deckData}

@@ -53,19 +53,27 @@ function TestTypeUI({
   // HANDLE REVEAL - Check answer and update boss battle
   // ==========================================
   const handleReveal = (answerToCheck = userAnswer) => {
-    console.log("handleReveal called")
-    if (!answerToCheck && answerToCheck !== 'false' && answerToCheck !== '') {
-      console.log("returning early")
-      return; // Can't reveal without an answer
+    console.log("handleReveal called", { answerToCheck, type: currentQuestion.type });
+    
+    // Check if we have a valid answer (including boolean false and empty string)
+    if (answerToCheck === undefined || answerToCheck === null) {
+      console.log("returning early - no answer");
+      return;
     }
 
     // Check if correct
     let isCorrect = false;
     if (currentQuestion.type === 'multiple_choice' || currentQuestion.type === 'true_false') {
+      // For MC and T/F, do direct comparison (handles strings and booleans)
       isCorrect = answerToCheck === currentQuestion.answer;
     } else if (currentQuestion.type === 'fill_blank') {
-      isCorrect = answerToCheck.toLowerCase().trim() === currentQuestion.answer.toLowerCase().trim();
+      // For fill in the blank, convert to string and compare
+      const userAnswerStr = String(answerToCheck).toLowerCase().trim();
+      const correctAnswerStr = String(currentQuestion.answer).toLowerCase().trim();
+      isCorrect = userAnswerStr === correctAnswerStr;
     }
+
+    console.log("Answer check:", { userAnswer: answerToCheck, correctAnswer: currentQuestion.answer, isCorrect });
 
     // Mark as revealed
     setRevealedQuestions(prev => new Set([...prev, currentQuestion.id]));
@@ -88,10 +96,9 @@ function TestTypeUI({
     }
 
     // Track the card review (same as FlashCardUI)
-    console.log('trackCardReview called')
+    console.log('trackCardReview called');
     trackCardReview(isCorrect);
-    console.log('trackCardReview finished')
-
+    console.log('trackCardReview finished');
   };
 
   // ==========================================
@@ -184,7 +191,7 @@ function TestTypeUI({
         // REVEAL BUTTON (before answering)
         <button
           onClick={handleReveal}
-          disabled={!userAnswer && userAnswer !== 'false' && userAnswer !== ''}
+          disabled={userAnswer === undefined || userAnswer === null}
           className="w-full py-4 bg-slate-700/50 hover:bg-slate-700 disabled:bg-slate-700/30 disabled:cursor-not-allowed text-slate-300 disabled:text-slate-500 rounded-xl transition-all duration-200 font-medium"
         >
           Tap to reveal answer

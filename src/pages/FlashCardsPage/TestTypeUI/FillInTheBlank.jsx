@@ -58,7 +58,7 @@ export const FillInTheBlank = ({
   };
 
   return (
-    <div className="w-full max-w-2xl">
+    <div className="w-full">
       <div className="bg-slate-800/90 backdrop-blur rounded-2xl shadow-2xl border border-slate-700/50 p-8">
         <div className="text-center mb-12">
           <h2 className="text-2xl md:text-3xl font-medium text-slate-100 leading-relaxed">

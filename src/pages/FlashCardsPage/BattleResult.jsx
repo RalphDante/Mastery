@@ -332,17 +332,11 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
             {!showDemoDecks ? 
             (
             <>
-                {/* Title - Same for all screens */}
-                {!hasNotCreatedADeck ? (
-                    <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
-                        DECK CONQUERED
-                    </h3>
-                ):(
-                    <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
-                        TUTORIAL BOSS DEFEATED
-                    </h3>
-                )
-                }
+               
+                <h3 className="text-xl md:text-2xl text-center font-bold text-white/60 font-mono mb-4 md:mb-6">
+                    DECK CONQUERED
+                </h3>
+              
                
 
                 {/* Unified Layout - Same structure for mobile and desktop */}
@@ -380,13 +374,13 @@ function BattleResult({currentIndex, result, deaths, onCreateWithAIModalClick, d
                                     </div>
                                     <div className="border-t-2 border-dashed border-slate-500/30"></div>
                                     <div className="flex items-center justify-between font-mono text-xs md:text-sm">
-                                        <span className="text-white/80">DEATHS</span>
-                                        <span className="text-red-400 font-bold text-lg md:text-xl">{deaths}</span>
+                                        <span className="text-white/80">CORRECT</span>
+                                        <span className="text-green-400 font-bold text-lg md:text-xl">{knowAnswer}</span>
                                     </div>
                                     <div className="border-t-2 border-dashed border-slate-500/30"></div>
                                     <div className="flex items-center justify-between font-mono text-xs md:text-sm">
-                                        <span className="text-white/80">TOTAL ATTEMPTS</span>
-                                        <span className="text-green-400 font-bold text-lg md:text-xl">{currentIndex}</span>
+                                        <span className="text-white/80">INCORRECT</span>
+                                        <span className="text-red-400 font-bold text-lg md:text-xl">{dontKnowAnswer}</span>
                                     </div>
                                 </div>
                             </div>
