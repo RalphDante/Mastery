@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
 export default defineConfig({
-  plugins: [react(), basicSsl()],
+  plugins: [react()],
   server: {
-    https: true,
+    // https: true,
     host: '0.0.0.0', // Allow external connections
-    port: 443,
+    port: 5173,
   },
 })

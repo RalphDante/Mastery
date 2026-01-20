@@ -1,6 +1,7 @@
-import React from 'react';
 import { Trophy } from 'lucide-react';
 import { usePartyContext } from '../../../contexts/PartyContext';
+import { useEffect, useState } from 'react';
+import Boss from '../Boss/Boss';
 
 function SessionStatsCard({ 
   rewards, 
@@ -11,6 +12,32 @@ function SessionStatsCard({
   predictedStats
 }) {
   const {partyProfile} = usePartyContext();
+
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth );
+
+
+  useEffect(() => {
+    // Check on mount
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 1024);
+    };
+    
+    checkMobile();
+    
+    // Update on resize
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // ONLY render one or the other
+  if (isMobile) {
+    return (
+      <Boss 
+        collapsible={true}
+      />
+    );
+  }
 
   return (
     <div className="bg-slate-900 border border-slate-600 rounded-lg w-full max-w-xs">

@@ -6,7 +6,7 @@ import { usePartyContext } from '../../../contexts/PartyContext';
 import { useTutorials } from '../../../contexts/TutorialContext';
 import { ArrowLeft } from 'lucide-react';
 
-function Boss() {
+function Boss({collapsible}) {
   // Mock data - replace with real data from your backend
   const {partyProfile, partyMembers} = usePartyContext();
 
@@ -30,10 +30,12 @@ function Boss() {
   return (
     <>
       
-        <div className="w-full bg-slate-800 rounded-lg p-6 flex flex-col justify-between text-slate-100 relative">
+        <div className="w-full bg-slate-800 rounded-lg  flex flex-col justify-between text-slate-100 relative">
     
         {bossStatus ? 
-          <CurrentBossFight /> : 
+          <CurrentBossFight 
+            collapsible={collapsible}
+          /> : 
           <BossVictoryScreen />
           }
         

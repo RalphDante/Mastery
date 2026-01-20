@@ -11,7 +11,7 @@ function GoPremium() {
   const [selectedPlan, setSelectedPlan] = useState('annual'); // For mobile toggle
 
   // a state to control when to show the offer
-  const [showNewYearOffer, setShowNewYearOffer] = useState(true);
+  const [showNewYearOffer, setShowNewYearOffer] = useState(false);
 
   const env = import.meta.env.VITE_PADDLE_ENVIRONMENT || "sandbox";
 

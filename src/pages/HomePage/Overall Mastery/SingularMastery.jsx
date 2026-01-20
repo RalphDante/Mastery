@@ -79,148 +79,151 @@ function SingularMastery() {
           onClose={() => setShowUpgradeModal(false)}
         />
       )}
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-6 border border-slate-700/50 shadow-2xl">
-        {/* Header with stats pills */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-s lg:text-xl font-bold text-white flex items-center gap-2">
-            Today's Progress
-          </h3>
-          
-          <div className="flex gap-2">
-            <div className="bg-purple-500/20 border border-purple-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-purple-300">{currentUserStreak} day streak</span>
-            </div>
-            <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
-              <span className="text-xs font-semibold text-amber-300">Best: {currentUserLongestStreak}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Giant minutes display */}
-        <div className="text-center mb-8 relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 blur-3xl" />
-          <div className="relative">
-            <div className="text-8xl font-black bg-gradient-to-br from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent mb-2 tracking-tight drop-shadow-2xl">
-              {todaySession.minutesStudied}
-            </div>
-            <div className="text-lg text-slate-400 font-medium">minutes today</div>
-          </div>
-        </div>
-
-        {/* Chart section */}
-        <div className="relative bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
-          {/* Period selector */}
-          <div className="flex justify-between items-center mb-4">
-            <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-              {period === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
-            </h4>
+      <div className='bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-slate-700/50 shadow-2xl'>
+        <div className="p-6">
+          {/* Header with stats pills */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xs lg:text-xl font-bold text-white flex items-center gap-2">
+              Today's Progress
+            </h3>
             
             <div className="flex gap-2">
-              <button 
-                className={`px-4 py-2 rounded-full transition-all ${
-                  period === '7d' 
-                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' 
-                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                }`}
-                onClick={() => handlePeriodChange('7d')}
-              >
-                7 Days
-              </button>
-              
-              <button 
-                className="px-4 py-2 rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 relative flex items-center gap-2 transition-all"
-                onClick={() => handlePeriodChange('30d')}
-              >
-                30 Days
-                {!isPro && <Crown className="w-4 h-4 text-yellow-400" />}
-              </button>
+              <div className="bg-purple-500/20 border border-purple-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-purple-300">{currentUserStreak} day streak</span>
+              </div>
+              <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-amber-300">Best: {currentUserLongestStreak}</span>
+              </div>
             </div>
           </div>
+
+          {/* Giant minutes display */}
+          <div className="text-center mb-4 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-green-500/20 blur-3xl" />
+            <div className="relative">
+              <div className="text-8xl font-black bg-gradient-to-br from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent mb-2 tracking-tight drop-shadow-2xl">
+                {todaySession.minutesStudied}
+              </div>
+              <div className="text-lg text-slate-400 font-medium">minutes today</div>
+            </div>
+          </div>
+
           
-          {/* Chart */}
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={displayData}>
-              <defs>
-                <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-              <XAxis 
-                dataKey="date"  // Use date instead of day for unique identification
-                stroke="#9CA3AF" 
-                fontSize={11}
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-                tickFormatter={(value) => {
-                  const date = new Date(value);
-                  return date.toLocaleDateString('en', { weekday: 'short' });
-                }}
-              />
-              <YAxis 
-                stroke="#9CA3AF"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                width={35}
-              />
-              <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#10B981', strokeWidth: 2, strokeDasharray: '5 5' }} />
-              <Area
-                type="monotone"
-                dataKey="minutesStudied"
-                stroke="#10B981"
-                strokeWidth={3}
-                fill="url(#colorMinutes)"
-                animationDuration={1000}
-              />
-              <Line 
-                type="monotone" 
-                dataKey="minutesStudied" 
-                stroke="#10B981" 
-                strokeWidth={3}
-                dot={(props) => {
-                  const { cx, cy, payload } = props;
-                  return (
-                    <g>
-                      {payload.isToday && (
+        </div>
+        {/* Chart section */}
+        <div className="relative bg-slate-800/50 rounded-xl p-5 border border-slate-700/50">
+            {/* Period selector */}
+            <div className="flex justify-between items-center mb-4">
+              <h4 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
+                {period === '7d' ? 'Last 7 Days' : 'Last 30 Days'}
+              </h4>
+              
+              <div className="flex gap-2">
+                <button 
+                  className={`px-4 py-2 rounded-full transition-all ${
+                    period === '7d' 
+                      ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30' 
+                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  }`}
+                  onClick={() => handlePeriodChange('7d')}
+                >
+                  7 Days
+                </button>
+                
+                <button 
+                  className="px-4 py-2 rounded-full bg-slate-700 text-slate-300 hover:bg-slate-600 relative flex items-center gap-2 transition-all"
+                  onClick={() => handlePeriodChange('30d')}
+                >
+                  30 Days
+                  {!isPro && <Crown className="w-4 h-4 text-yellow-400" />}
+                </button>
+              </div>
+            </div>
+            
+            {/* Chart */}
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={displayData}>
+                <defs>
+                  <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                <XAxis 
+                  dataKey="date"  // Use date instead of day for unique identification
+                  stroke="#9CA3AF" 
+                  fontSize={11}
+                  tickLine={false}
+                  axisLine={false}
+                  interval="preserveStartEnd"
+                  tickFormatter={(value) => {
+                    const date = new Date(value);
+                    return date.toLocaleDateString('en', { weekday: 'short' });
+                  }}
+                />
+                <YAxis 
+                  stroke="#9CA3AF"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  width={35}
+                />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#10B981', strokeWidth: 2, strokeDasharray: '5 5' }} />
+                <Area
+                  type="monotone"
+                  dataKey="minutesStudied"
+                  stroke="#10B981"
+                  strokeWidth={3}
+                  fill="url(#colorMinutes)"
+                  animationDuration={1000}
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="minutesStudied" 
+                  stroke="#10B981" 
+                  strokeWidth={3}
+                  dot={(props) => {
+                    const { cx, cy, payload } = props;
+                    return (
+                      <g>
+                        {payload.isToday && (
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r={8}
+                            fill="#10B981"
+                            opacity={0.2}
+                            className="animate-ping"
+                          />
+                        )}
                         <circle
                           cx={cx}
                           cy={cy}
-                          r={8}
-                          fill="#10B981"
-                          opacity={0.2}
-                          className="animate-ping"
+                          r={payload.isToday ? 6 : 4}
+                          fill={payload.isToday ? '#34D399' : '#10B981'}
+                          stroke={payload.isToday ? '#065F46' : '#047857'}
+                          strokeWidth={2}
                         />
-                      )}
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={payload.isToday ? 6 : 4}
-                        fill={payload.isToday ? '#34D399' : '#10B981'}
-                        stroke={payload.isToday ? '#065F46' : '#047857'}
-                        strokeWidth={2}
-                      />
-                    </g>
-                  );
-                }}
-                activeDot={{ r: 8, fill: '#34D399', stroke: '#065F46', strokeWidth: 3 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+                      </g>
+                    );
+                  }}
+                  activeDot={{ r: 8, fill: '#34D399', stroke: '#065F46', strokeWidth: 3 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
 
-          {/* Period stats */}
-          <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-700/50">
-            <div className="text-center">
-              <div className="text-slate-400 text-xs font-medium mb-1">Total</div>
-              <div className="text-xl font-bold text-white">{periodTotal}<span className="text-sm text-slate-400 ml-1">min</span></div>
+            {/* Period stats */}
+            <div className="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-700/50">
+              <div className="text-center">
+                <div className="text-slate-400 text-xs font-medium mb-1">Total</div>
+                <div className="text-xl font-bold text-white">{periodTotal}<span className="text-sm text-slate-400 ml-1">min</span></div>
+              </div>
+              <div className="text-center">
+                <div className="text-slate-400 text-xs font-medium mb-1">Daily Avg</div>
+                <div className="text-xl font-bold text-white">{periodAverage}<span className="text-sm text-slate-400 ml-1">min</span></div>
+              </div>
             </div>
-            <div className="text-center">
-              <div className="text-slate-400 text-xs font-medium mb-1">Daily Avg</div>
-              <div className="text-xl font-bold text-white">{periodAverage}<span className="text-sm text-slate-400 ml-1">min</span></div>
-            </div>
-          </div>
         </div>
       </div>
 

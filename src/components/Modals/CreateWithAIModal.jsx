@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch, increment, runTransaction } from 'firebase/firestore';
 import { app } from "../../api/firebase"
-import FileUpload, { generateFlashcardsFromText } from "../AutoFlashCards/FileUpload";
+import FileUpload from "../AutoFlashCards/FileUpload";
+import { generateFlashcardsFromText } from "../../utils/aiServices/flashCardGeneration";
 import { useNavigate } from "react-router-dom";
 import { RefreshCw, Sparkles, AlertCircle, ArrowRight } from 'lucide-react';
 import { usePartyContext } from "../../contexts/PartyContext";
@@ -9,7 +10,6 @@ import { useAuthContext } from "../../contexts/AuthContext";
 import { useTutorials } from "../../contexts/TutorialContext";
 import { useDeckCache } from "../../contexts/DeckCacheContext";
 import LimitReachedModal from "./LimitReachedModal";
-import { awardWithXP } from "../../utils/giveAwardUtils";
 import { useUserDataContext } from "../../contexts/UserDataContext";
 
 function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
@@ -354,9 +354,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
       }
 
       
-      if (isFirstDeck) {
-        await awardWithXP(user.uid, 100, updateUserProfile, userProfile, incrementExp);
-      }
+
   
       navigate(`/flashcards/${newDeckRef.id}`, {
         state: {

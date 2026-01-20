@@ -32,9 +32,10 @@ const DIFFICULTY_STYLES = {
   }
 };
 
-function CurrentBossFight() {
+function CurrentBossFight({collapsible = false}) {
   const {partyProfile, partyMembers} = usePartyContext();
   const {user} = useAuthContext();
+  const [isExpanded, setIsExpanded] = useState(!collapsible);
 
   const bossNumber = partyProfile?.currentBoss.bossNumber;
   const bossHealth = partyProfile?.currentBoss.currentHealth;
@@ -74,17 +75,13 @@ function CurrentBossFight() {
   const healthPercentage = (bossHealth / bossMaxHealth) * 100;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="text-left">
-        <h2 className="text-xl font-semibold mb-1 text-slate-100">Party Boss</h2>
-      </div>
-
-      {/* Boss Display */}
-      <div className="flex-1 flex flex-col justify-center items-center space-y-2">
-        {/* Boss Avatar */}
-        <div className="relative">
-          <div className={`w-40 h-40 rounded-lg bg-slate-900 border-2 ${difficultyStyle.border} overflow-hidden`}>
+    <div className="border border-slate-700 rounded-lg p-3 md:p-4 lg:p-6 bg-slate-900/60">
+      {/* Boss Display - Horizontal on mobile/tablet, Vertical on desktop */}
+      <div className="flex lg:flex-col items-center lg:items-center gap-3 md:gap-4 lg:gap-2">
+        
+        {/* Boss Avatar - Small on mobile, medium on tablet, large on desktop */}
+        <div className="relative flex-shrink-0">
+          <div className={`w-16 h-16 md:w-24 md:h-24 lg:w-40 lg:h-40 rounded-lg bg-slate-900 border-2 ${difficultyStyle.border} overflow-hidden`}>
             <img 
               src={bossImage} 
               alt={bossName}
@@ -103,53 +100,72 @@ function CurrentBossFight() {
           </div>
           
           {/* Difficulty Badge */}
-          <div className={`absolute -top-2 -right-2 ${difficultyStyle.badge} text-white text-xs font-semibold px-2 py-1 rounded-full border border-slate-600 uppercase`}>
+          <div className={`absolute -top-1 -right-1 md:-top-1.5 md:-right-1.5 lg:-top-2 lg:-right-2 ${difficultyStyle.badge} text-white text-[10px] md:text-xs font-semibold px-1.5 md:px-2 py-0.5 md:py-1 rounded-full border border-slate-600 uppercase`}>
             {bossDifficulty}
           </div>
         </div>
-
-        {/* Boss Name */}
-        <span className={`text-lg font-bold ${difficultyStyle.text}`}>
-          {bossName}
-        </span>
-
-        {/* Health Bar */}
-        <div className="w-full max-w-xs">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-slate-400">HP</span>
-            <span className="text-sm text-slate-300">
-              {bossHealth} / {bossMaxHealth}
+  
+        {/* Boss Info - Flex-1 on mobile/tablet to take remaining space */}
+        <div className="flex-1 lg:flex-none lg:w-full">
+          {/* Boss Name */}
+          <div className="flex items-center gap-2 mb-1 lg:justify-center">
+            <span className={`text-sm md:text-base lg:text-lg font-bold ${difficultyStyle.text}`}>
+              {bossName}
             </span>
           </div>
-          <div className="w-full bg-slate-900 rounded-full h-3 border border-slate-700">
-            <div 
-              className={`h-full rounded-full transition-all duration-500 ${
-                healthPercentage > 60 ? 'bg-red-500' : 
-                healthPercentage > 30 ? 'bg-orange-500' : 'bg-yellow-500'
-              }`}
-              style={{ width: `${healthPercentage}%` }}
-            ></div>
-          </div>
-          <div className="text-center mt-2">
-            <span className="text-xs text-slate-400">{Math.round(healthPercentage)}% remaining</span>
+  
+          {/* Health Bar */}
+          <div className="w-full lg:max-w-xs lg:mx-auto">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-xs md:text-sm text-slate-400">HP</span>
+              <span className="text-xs md:text-sm text-slate-300">
+                {bossHealth} / {bossMaxHealth}
+              </span>
+            </div>
+            <div className="w-full bg-slate-800 lg:bg-slate-900 rounded-full h-2 md:h-2.5 lg:h-3 border border-slate-700">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  healthPercentage > 60 ? 'bg-red-500' : 
+                  healthPercentage > 30 ? 'bg-orange-500' : 'bg-yellow-500'
+                }`}
+                style={{ width: `${healthPercentage}%` }}
+              ></div>
+            </div>
+            <div className="text-center mt-1">
+              <span className="text-[10px] md:text-xs text-slate-400">
+                {Math.round(healthPercentage)}% remaining
+              </span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Top Contributors */}
-      <div className="bg-slate-900 border border-slate-700 p-3 rounded-lg min-h-[200px]">
-        <div className="flex justify-between items-center mb-2">
+  
+      {/* Top Contributors - Collapsible on mobile/tablet, always visible on desktop */}
+      <div className="bg-slate-900 p-2 md:p-3 border border-slate-900 rounded-lg mt-3 md:mt-4">
+        {/* Collapse button - only on mobile/tablet */}
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="lg:hidden w-full flex items-center justify-between text-xs md:text-sm text-slate-400 hover:text-slate-300"
+        >
+          <span>Top Contributors</span>
+          <span>{isExpanded ? '▲' : '▼'}</span>
+        </button>
+  
+        {/* Desktop header - always visible */}
+        <div className="hidden lg:flex justify-between items-center mb-2">
           <span className="text-sm text-slate-400">Top Contributors</span>
           <span className="text-xs text-slate-500">This battle</span>
         </div>
-        <div className="space-y-1 h-full overflow-y-auto">
+  
+        {/* Leaderboard content - collapsed on mobile/tablet unless expanded */}
+        <div className={`${!isExpanded ? 'hidden lg:block' : 'block'} space-y-1 max-h-40 md:max-h-48 lg:max-h-[200px] overflow-y-auto mt-2`}>
           {topContributors.length > 0 ? (
-            topContributors.map((contributor, index) => {
+            topContributors.slice(0, collapsible ? 5 : 10).map((contributor, index) => {
               const percentage = (contributor.damage / maxDamage) * 100;
               
               return (
                 <div key={contributor.userId} className="relative">
-                  <div className="w-full bg-slate-800 rounded h-7 overflow-hidden">
+                  <div className="w-full bg-slate-800 rounded h-6 md:h-7 overflow-hidden">
                     <div 
                       className={`h-full transition-all duration-300 ${
                         index === 0 ? 'bg-yellow-500/40' :
@@ -162,17 +178,17 @@ function CurrentBossFight() {
                   </div>
                   <div className="absolute inset-0 flex items-center justify-between px-2">
                     <div className="flex items-center space-x-2">
-                      <span className={index < 3 ? 'text-sm' : 'text-slate-500 text-xs'}>
+                      <span className={index < 3 ? 'text-xs md:text-sm' : 'text-slate-500 text-[10px] md:text-xs'}>
                         {getMedal(index) || `${index + 1}`}
                       </span>
-                      <span className={`text-xs font-medium truncate max-w-[120px] 
+                      <span className={`text-[10px] md:text-xs font-medium 
                         ${contributor.userId === user?.uid ? "text-blue-400" : "text-slate-200"}
                       `}>
                         {contributor.displayName}
                         {contributor.userId === user?.uid && " (you)"}
                       </span>
                     </div>
-                    <span className="text-red-400 font-bold text-xs">
+                    <span className="text-red-400 font-bold text-[10px] md:text-xs">
                       {contributor.damage}
                     </span>
                   </div>
@@ -180,7 +196,7 @@ function CurrentBossFight() {
               );
             })
           ) : (
-            <div className="text-xs text-slate-500 text-center py-2">
+            <div className="text-xs md:text-sm text-slate-500 text-center py-2">
               No damage dealt yet
             </div>
           )}

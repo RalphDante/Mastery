@@ -4,297 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext'; // Add this import
-import { generateAIContent } from '../../utils/subscriptionLimits/aiLimitsHelper'; // Add this import
 import LimitReachedModal from '../Modals/LimitReachedModal';
 import { logFileUploadEvent, logError } from '../../utils/analytics';
+import { generateFlashcardsFromText } from '../../utils/aiServices/flashCardGeneration';
+import { readPDF, readCSV, readDOCX, readPPTX, readTextFile } from '../../utils/fileProcessing';
+import { performOCR } from '../../utils/ocrProcessing';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-const parseAndValidateAIResponse = (aiResponse) => {
-    const extractAndCleanJSON = (text) => {
-        let jsonText = text;
-        
-        // Remove markdown code blocks
-        const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-        if (jsonMatch) {
-            jsonText = jsonMatch[1].trim();
-        }
-        
-        // Find JSON object bounds
-        const startIndex = jsonText.indexOf('{');
-        const lastIndex = jsonText.lastIndexOf('}');
-        
-        if (startIndex !== -1 && lastIndex !== -1 && lastIndex > startIndex) {
-            jsonText = jsonText.substring(startIndex, lastIndex + 1);
-        }
-        
-        // Clean up common issues
-        jsonText = jsonText
-            .replace(/\\(?!["\\/bfnrt])/g, '\\\\')
-            .replace(/\\\\_/g, '_')
-            .replace(/\\'/g, "'")
-            .replace(/\n/g, ' ')
-            .replace(/\r/g, ' ')
-            .replace(/\t/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim();
-        
-        return jsonText;
-    };
-
-    const cleanJSON = extractAndCleanJSON(aiResponse);
-    
-    // Parse the response
-    let parsedResponse;
-    try {
-        parsedResponse = JSON.parse(cleanJSON);
-    } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        
-        // Try to fix common JSON issues
-        let fixedJSON = cleanJSON;
-        fixedJSON = fixedJSON.replace(/,(\s*[}\]])/g, '$1');
-        fixedJSON = fixedJSON.replace(/}(\s*){/g, '},$1{');
-        fixedJSON = fixedJSON.replace(/,,+/g, ',');
-        
-        try {
-            parsedResponse = JSON.parse(fixedJSON);
-        } catch (secondParseError) {
-            // Fallback: extract flashcards manually
-            const flashcardMatches = cleanJSON.match(/{"question":\s*"[^"]*",\s*"answer":\s*"[^"]*"}/g);
-            if (flashcardMatches && flashcardMatches.length > 0) {
-                parsedResponse = {
-                    deckName: `Flashcard Deck ${new Date().toLocaleDateString()}`,
-                    flashcards: flashcardMatches.map(match => {
-                        try {
-                            return JSON.parse(match);
-                        } catch (e) {
-                            return null;
-                        }
-                    }).filter(card => card !== null)
-                };
-            } else {
-                throw new Error('Could not extract flashcards from response');
-            }
-        }
-    }
-
-    // Validate the response structure
-    if (!parsedResponse.flashcards || !Array.isArray(parsedResponse.flashcards)) {
-        throw new Error('AI response missing flashcards array');
-    }
-
-    // Validate individual flashcards
-    const validateFlashcard = (card) => {
-        return card && 
-            typeof card === 'object' && 
-            card.question && 
-            card.answer &&
-            typeof card.question === 'string' &&
-            typeof card.answer === 'string' &&
-            card.question.trim().length > 0 &&
-            card.answer.trim().length > 0;
-    };
-
-    const validFlashCards = parsedResponse.flashcards.filter(validateFlashcard);
-
-    if (validFlashCards.length === 0) {
-        throw new Error('No valid flashcards were generated');
-    }
-
-    // Get deck name or use fallback
-    let deckName = parsedResponse.deckName || `Flashcard Deck ${new Date().toLocaleDateString()}`;
-    
-    // Clean up deck name
-    deckName = deckName
-        .replace(/^["']|["']$/g, '')
-        .replace(/\n/g, ' ')
-        .substring(0, 50)
-        .trim();
-
-    return {
-        flashcards: validFlashCards,
-        deckName: deckName
-    };
-};
-
-export const generateFlashcardsFromText = async (text, user, isTopicGeneration = false) => {
-    if (!user?.uid) {
-        throw new Error('User not authenticated');
-    }
-
-    const apiKey = import.meta.env.VITE_GROQ_API_KEY;
-    if (!apiKey) {
-        throw new Error('Groq API key not configured');
-    }
-
-    // Determine flashcard count and prompt based on type
-    let flashcardCount;
-    let promptText;
-
-    if (isTopicGeneration) {
-        flashcardCount = 25;
-        promptText = `Create ${flashcardCount} educational flashcards about "${text}" AND a descriptive deck name.
-
-                    CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-                    {
-                    "deckName": "Short descriptive name (max 50 chars)",
-                    "flashcards": [
-                        {"question": "Your question here", "answer": "Your answer here"}
-                    ]
-                    }
-
-                    REQUIREMENTS:
-                    - deckName should be descriptive (e.g., "World War II: Key Events")
-                    - Exactly ${flashcardCount} flashcards
-                    - Questions should be clear, specific, and educational
-                    - Answers should be concise but complete
-                    - Use proper JSON escaping
-                    - No line breaks within strings
-                    - Double quotes only
-
-                    Topic: ${text}`;
-    } else {
-        // File/image upload generation
-        
-        // Check if this is a CSV with specific row count request
-        const csvMatch = text.match(/Total rows: (\d+)/);
-        
-        if (csvMatch && text.includes('CSV FILE - CONVERT TO FLASHCARDS')) {
-            // CSV file - use exact row count
-            flashcardCount = parseInt(csvMatch[1]);
-            
-            promptText = `You are converting a CSV file to flashcards.
-    
-                        CRITICAL RULES:
-                        1. Create EXACTLY ${flashcardCount} flashcards - one for each row in the CSV
-                        2. Do NOT generate extra flashcards or additional questions
-                        3. Convert each row directly into a flashcard
-                        4. If a row has 2 columns, use them as question/answer
-                        5. If a row has more columns, intelligently create a question and answer from all the data
-                        
-                        Return ONLY a valid JSON object with this EXACT format:
-                        {
-                        "deckName": "Short descriptive name based on the CSV content (max 50 chars)",
-                        "flashcards": [
-                            {"question": "Your question here", "answer": "Your answer here"}
-                        ]
-                        }
-                        
-                        FORMATTING REQUIREMENTS:
-                        - Return ONLY valid JSON (no explanations, no markdown, no code blocks)
-                        - Use proper JSON escaping
-                        - Exactly ${flashcardCount} flashcards
-                        - Double quotes only
-                        
-                        CSV Data to convert:
-                        ${text}`;
-                            } else {
-                                // Regular file - use existing logic
-                                const estimateFlashcardCount = (textLength) => {
-                                    if (textLength < 500) return 15;
-                                    if (textLength < 1500) return 30;
-                                    if (textLength < 3000) return 50;
-                                    if (textLength < 5000) return 75;
-                                    return 100;
-                                };
-                                
-                                flashcardCount = estimateFlashcardCount(text.length);
-                                
-                                promptText = `You are an expert educational content creator. Create ${flashcardCount} high-quality flashcards AND a deck name from the provided text.
-                        
-                        CRITICAL: Return ONLY a valid JSON object with this EXACT format:
-                        {
-                        "deckName": "Short descriptive name (max 50 chars)",
-                        "flashcards": [
-                            {"question": "Your question here", "answer": "Your answer here"}
-                        ]
-                        }
-                        
-                        FLASHCARD QUALITY GUIDELINES:
-                        - Questions should test understanding, not just memorization
-                        - Use varied question types: definitions, examples, applications, comparisons, cause-and-effect
-                        - Questions should be specific and unambiguous
-                        - Answers should be concise but complete (1-3 sentences typically)
-                        - Include both factual recall AND conceptual understanding questions
-                        - For complex topics, break them into smaller, focused questions
-                        - Use clear, direct language
-                        - Avoid overly obvious or trivial questions
-                        
-                        DECK NAME GUIDELINES:
-                        - Should summarize the main topic/subject
-                        - Max 50 characters
-                        - No quotes or special formatting
-                        - Examples: "Cell Biology: Mitosis", "World War II Overview", "Python Functions & Loops"
-                        
-                        FORMATTING REQUIREMENTS:
-                        - Return ONLY a valid JSON object (no explanations, no markdown, no code blocks)
-                        - Use proper JSON escaping for quotes
-                        - No line breaks within strings
-                        - Exactly ${flashcardCount} flashcards
-                        - Double quotes only
-                        
-                        Text to process: ${text}`;
-        }
-    }
-
-    // Create AI function for generateAIContent helper using Groq
-    const aiFunction = async () => {
-        const response = await fetch(
-            'https://api.groq.com/openai/v1/chat/completions',
-            {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${apiKey}`
-                },
-                body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile', // Fast and good at following instructions
-                    messages: [
-                        {
-                            role: 'system',
-                            content: 'You are an expert educational content creator that produces high-quality flashcards in valid JSON format. You always return pure JSON without any markdown formatting or code blocks.'
-                        },
-                        {
-                            role: 'user',
-                            content: promptText
-                        }
-                    ],
-                    temperature: 0.7, // Balanced creativity
-                    max_tokens: 4000, // Enough for many flashcards
-                    top_p: 0.9
-                })
-            }
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`Groq API request failed: ${response.status} - ${errorData.error?.message || response.statusText}`);
-        }
-
-        const data = await response.json();
-        
-        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
-            throw new Error('Invalid response from Groq API');
-        }
-        
-        return data.choices[0].message.content;
-    };
-
-    // Use the AI limits helper
-    const result = await generateAIContent(text, user.uid, aiFunction);
-    
-    // Parse and validate the response
-    const parsedData = parseAndValidateAIResponse(result.data);
-    
-    console.log(`Generated ${parsedData.flashcards.length} flashcards with deck name: "${parsedData.deckName}"`);
-    
-    if (result.usage.remaining !== 'unlimited') {
-        console.log(`AI generations remaining: ${result.usage.remaining}`);
-    }
-    
-    return parsedData;
-};
 
 function FileUpload({ cameraIsOpen, onSuccess, onError }) {
     const [loading, setLoading] = useState(false);
@@ -320,210 +37,6 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
         }
     }, [user]);
 
-    const loadTesseract = () => {
-        return new Promise((resolve, reject) => {
-            if (typeof window.Tesseract !== 'undefined') {
-                resolve();
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js';
-            script.onload = () => {
-                console.log('Tesseract.js loaded successfully');
-                resolve();
-            };
-            script.onerror = () => {
-                reject(new Error('Failed to load Tesseract.js'));
-            };
-            document.head.appendChild(script);
-        });
-    };
-
-    const loadMammoth = () => {
-        return new Promise((resolve, reject) => {
-            if (typeof window.mammoth !== 'undefined') {
-                resolve();
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.4.2/mammoth.browser.min.js';
-            script.onload = () => {
-                console.log('Mammoth.js loaded successfully');
-                resolve();
-            };
-            script.onerror = () => {
-                reject(new Error('Failed to load Mammoth.js'));
-            };
-            document.head.appendChild(script);
-        });
-    };
-
-    const validateFileBeforeProcessing = (file) => {
-        const maxSize = 8 * 1024 * 1024; // 8MB limit
-        
-        if (file.size > maxSize) {
-            const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-            throw new Error(
-                `📄 File too large (${sizeMB}MB)\n\n` +
-                `For best results, please try:\n\n` +
-                `✅ Split your PDF into smaller files (under 8MB)\n` +
-                `✅ Export key pages as JPG images\n` +
-                `✅ Use online PDF splitters (ilovepdf.com, smallpdf.com)\n` +
-                `✅ Take photos of individual pages instead\n\n` +
-                `Why? Large PDFs can take 30+ minutes to process and may crash your browser.`
-            );
-        }
-    };
-    const validateOCRQuality = (text, confidence) => {
-        // Check text length (too short indicates poor OCR)
-        if (text.trim().length < 50) {
-            return {
-                isValid: false,
-                reason: 'insufficient_text',
-                message: 'Not enough readable text detected'
-            };
-        }
-
-        // Check for too many single characters or fragments
-        const words = text.trim().split(/\s+/);
-        const singleCharWords = words.filter(word => word.length === 1).length;
-        const singleCharRatio = singleCharWords / words.length;
-        
-        if (singleCharRatio > 0.4) { // More than 40% single characters
-            return {
-                isValid: false,
-                reason: 'fragmented_text',
-                message: 'Text appears fragmented or unclear'
-            };
-        }
-
-        // Check for too many non-alphabetic characters
-        const alphaChars = text.replace(/[^a-zA-Z]/g, '').length;
-        const totalChars = text.replace(/\s/g, '').length;
-        const alphaRatio = alphaChars / totalChars;
-        
-        if (alphaRatio < 0.6) { // Less than 60% alphabetic characters
-            return {
-                isValid: false,
-                reason: 'low_text_quality',
-                message: 'Image may contain mostly symbols or unclear text'
-            };
-        }
-
-        // Check confidence if available
-        if (confidence && confidence < 60) {
-            return {
-                isValid: false,
-                reason: 'low_confidence',
-                message: 'OCR confidence is too low'
-            };
-        }
-
-        // Check for common OCR artifacts that indicate poor quality
-        const ocrArtifacts = /[|}{><°~`]/g;
-        const artifactCount = (text.match(ocrArtifacts) || []).length;
-        const artifactRatio = artifactCount / text.length;
-        
-        if (artifactRatio > 0.05) { // More than 5% artifacts
-            return {
-                isValid: false,
-                reason: 'ocr_artifacts',
-                message: 'Image quality appears poor'
-            };
-        }
-
-        return {
-            isValid: true,
-            message: 'Text quality looks good'
-        };
-    };
-
-    // Replace the existing performOCR function with this enhanced version
-    const performOCR = async (imageFile) => {
-        try {
-            console.log('Starting Tesseract OCR for:', imageFile.name || 'captured image');
-            
-            // Ensure Tesseract is loaded
-            setStatus('Loading OCR library...');
-            await loadTesseract();
-            
-            setStatus('Initializing OCR...');
-            
-            console.log('Starting Tesseract recognition...');
-            setStatus('Reading text from image...');
-            
-            const { data: { text, confidence } } = await window.Tesseract.recognize(
-                imageFile,
-                'eng',
-                {
-                    logger: m => {
-                        if (m.status === 'recognizing text') {
-                            console.log(`OCR Progress: ${Math.round(m.progress * 100)}%`);
-                            setStatus(`Processing text... ${Math.round(m.progress * 100)}%`);
-                        }
-                    }
-                }
-            );
-            
-            console.log('OCR completed with confidence:', confidence);
-            console.log('Extracted text preview:', text.substring(0, 200) + '...');
-            
-            // Validate OCR quality
-            const qualityCheck = validateOCRQuality(text, confidence);
-            
-            if (!qualityCheck.isValid) {
-
-                // Log OCR quality issue
-                logFileUploadEvent.ocrQualityIssue(
-                    user?.uid,
-                    qualityCheck.reason,
-                    confidence
-                );
-
-                // Show helpful alert for poor OCR quality
-                const retryMessage = `📷 Photo Quality Issue\n\n` +
-                    `${qualityCheck.message}\n\n` +
-                    `💡 For better results:\n\n` +
-                    `✅ Ensure good lighting (avoid shadows)\n` +
-                    `✅ Hold phone steady and focus clearly\n` +
-                    `✅ Get closer to the text\n` +
-                    `✅ Make sure text fills most of the frame\n` +
-                    `✅ Avoid glare from glossy pages\n` +
-                    `✅ Try portrait orientation for better text capture\n\n` +
-                    `Would you like to try taking another photo?`;
-                
-                const shouldRetry = confirm(retryMessage);
-                
-                if (shouldRetry) {
-                    // Restart camera for another attempt
-                    setTimeout(() => {
-                        startCamera();
-                    }, 100);
-                    throw new Error('OCR_RETRY_REQUESTED');
-                } else {
-                    throw new Error('Poor image quality detected. Please try again with better lighting and focus.');
-                }
-            }
-            
-            if (text && text.trim().length > 10) {
-                return text.trim();
-            } else {
-                throw new Error('No readable text found in image. Please ensure the image is clear and well-lit.');
-            }
-            
-        } catch (error) {
-            console.error('Tesseract OCR error:', error);
-            logError('ocr_error', error, user?.uid);
-            // Don't show alert for retry requests (user already saw the quality alert)
-            if (error.message === 'OCR_RETRY_REQUESTED') {
-                throw error;
-            }
-            
-            throw new Error(`OCR processing failed: ${error.message}`);
-        }
-    };
 
     const { getRootProps, getInputProps } = useDropzone({
         multiple: true, // Enable multiple file selection
@@ -603,11 +116,11 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                     
                     try{
                         if (fileType === 'application/pdf') {
-                            allExtractedText = await readPDF(file);
+                            allExtractedText = await readPDF(file, setStatus);
                         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-                            allExtractedText = await readDOCX(file);
+                            allExtractedText = await readDOCX(file, setStatus);
                         } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-                            allExtractedText = await readPPTX(file);
+                            allExtractedText = await readPPTX(file, setStatus);
                         } else if (fileType === 'text/plain') {
                             allExtractedText = await readTextFile(file);
                         } else if (fileType === 'text/csv') {  // ADD THIS BLOCK
@@ -657,12 +170,24 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                         setStatus(`Processing image ${i + 1}/${imageFiles.length}: ${imageFile.name}`);
                         
                         try {
-                            const imageText = await performOCR(imageFile);
+                            const imageText = await performOCR(imageFile, setStatus, user);
                             if (imageText && imageText.trim()) {
                                 allExtractedText += `\n\n--- Image ${i + 1} (${imageFile.name}) ---\n${imageText}`;
                             }
                         } catch (ocrError) {
                             console.error(`OCR failed for ${imageFile.name}:`, ocrError);
+
+                            // If it's a retry request, just return early
+                            if (ocrError.message === 'OCR_RETRY_REQUESTED') {
+                                setLoading(false);
+                                setStatus('');
+                                return; // Stop everything
+                            }
+                            
+                            // For image-only uploads, we need to fail hard
+                            if (documentFiles.length === 0) {
+                                throw ocrError; // Propagate the error
+                            }
                             logFileUploadEvent.uploadFailed(
                                 user?.uid,
                                 'OCR_ERROR',
@@ -687,6 +212,15 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                 
             } catch (error) {
                 console.error('Error processing files:', error);
+
+                if (error.message && error.message.includes('Rate limit reached')) {
+                    alert(
+                        `⏱️ High traffic right now!\n\n` +
+                        `Please try again in a few minutes.\n\n` +
+                        `💡 Tip: Upload smaller sections (5-10 pages) for faster processing.`
+                    );
+                    return;
+                }
                 
                 // Handle limit reached error specifically
                 if (error.code === 'LIMIT_REACHED') {
@@ -707,162 +241,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
         }
     });
 
-    // [Keep all the existing file reading functions unchanged - readPDF, readDOCX, readPPTX, etc.]
-    const readPDF = async (file) => {
-        // Validate file size first
-        validateFileBeforeProcessing(file);
-        
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
-                try {
-                    const typedArray = new Uint8Array(event.target.result);
-                    const pdf = await pdfjsLib.getDocument(typedArray).promise;
-                    
-                    // Warn about large PDFs
-                    if (pdf.numPages > 20) {
-                        const shouldContinue = confirm(
-                            `🖼️ This PDF has ${pdf.numPages} pages.\n\n` +
-                            `To keep processing fast, we'll only process the first 10 pages if OCR is needed.\n\n` +
-                            `Continue?`
-                        );
-                        if (!shouldContinue) {
-                            reject(new Error('Processing cancelled by user'));
-                            return;
-                        }
-                    }
-                    
-                    let text = '';
-                    let hasText = false;
-                    
-                    // First, try to extract text normally (only check first 5 pages for speed)
-                    const pagesToCheck = Math.min(pdf.numPages, 5);
-                    for (let i = 1; i <= pagesToCheck; i++) {
-                        const page = await pdf.getPage(i);
-                        const content = await page.getTextContent();
-                        const pageText = content.items.map((item) => item.str).join(" ");
-                        text += `${pageText} `;
-                        if (pageText.trim().length > 0) {
-                            hasText = true;
-                        }
-                    }
-                    
-                    // If PDF has readable text, extract from all pages
-                    if (hasText && text.trim().length > 100) {
-                        setStatus('Extracting text from PDF...');
-                        // Get text from remaining pages
-                        for (let i = pagesToCheck + 1; i <= pdf.numPages; i++) {
-                            const page = await pdf.getPage(i);
-                            const content = await page.getTextContent();
-                            const pageText = content.items.map((item) => item.str).join(" ");
-                            text += `${pageText} `;
-                        }
-                    } else {
-                        // If no text found, use limited OCR
-                        setStatus('PDF appears to be image-based. Performing limited OCR...');
-                        text = await performLimitedOCROnPDF(pdf);
-                    }
-                    
-                    resolve(text);
-                } catch (error) {
-                    reject(error);
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsArrayBuffer(file);
-        });
-    };
 
-    const performLimitedOCROnPDF = async (pdf) => {
-        const maxPages = Math.min(pdf.numPages, 10); // Limit to 10 pages
-        let ocrText = '';
-        
-        setStatus(`Processing first ${maxPages} pages with OCR...`);
-        
-        for (let i = 1; i <= maxPages; i++) {
-            try {
-                setStatus(`Processing page ${i}/${maxPages}...`);
-                
-                const page = await pdf.getPage(i);
-                // Reduced scale for faster processing
-                const viewport = page.getViewport({ scale: 1.0 });
-                
-                const canvas = document.createElement('canvas');
-                const context = canvas.getContext('2d');
-                canvas.height = viewport.height;
-                canvas.width = viewport.width;
-                
-                await page.render({
-                    canvasContext: context,
-                    viewport: viewport
-                }).promise;
-                
-                // Convert to JPEG with compression for faster OCR
-                const blob = await new Promise(resolve => 
-                    canvas.toBlob(resolve, 'image/jpeg', 0.6)
-                );
-                
-                const { data: { text } } = await window.Tesseract.recognize(
-                    blob,
-                    'eng',
-                    {
-                        logger: m => {
-                            if (m.status === 'recognizing text' && m.progress > 0.5) {
-                                setStatus(`Processing page ${i}/${maxPages} - ${Math.round(m.progress * 100)}%`);
-                            }
-                        },
-                        // Faster OCR settings
-                        tessedit_ocr_engine_mode: 1,
-                        tessedit_pageseg_mode: 6,
-                    }
-                );
-                
-                ocrText += text.trim() + ' ';
-                
-            } catch (error) {
-                console.error(`Error processing page ${i}:`, error);
-                // Continue with other pages instead of failing completely
-                continue;
-            }
-        }
-        
-        return ocrText;
-    };
-
-    const readDOCX = async (file) => {
-        try {
-            setStatus('Loading DOCX library...');
-            await loadMammoth();
-            
-            setStatus('Reading DOCX file...');
-            
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const arrayBuffer = event.target.result;
-                        console.log('DOCX file size:', arrayBuffer.byteLength);
-                        
-                        const result = await window.mammoth.extractRawText({ arrayBuffer });
-                        console.log('DOCX extraction result:', result);
-                        
-                        if (result.value && result.value.trim()) {
-                            resolve(result.value);
-                        } else {
-                            reject(new Error('No text content found in DOCX file'));
-                        }
-                    } catch (error) {
-                        console.error('DOCX processing error:', error);
-                        reject(error);
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-        } catch (error) {
-            throw new Error(`DOCX processing failed: ${error.message}`);
-        }
-    };
 
     
     // Add this function to load the PPTX library
@@ -884,167 +263,6 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
             };
             document.head.appendChild(script);
         });
-    };
-
-    // Alternative: Load JSZip and XML parser for manual PPTX parsing
-    const loadJSZip = () => {
-        return new Promise((resolve, reject) => {
-            if (typeof window.JSZip !== 'undefined') {
-                resolve();
-                return;
-            }
-            
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
-            script.onload = () => {
-                console.log('JSZip loaded successfully');
-                resolve();
-            };
-            script.onerror = () => {
-                reject(new Error('Failed to load JSZip'));
-            };
-            document.head.appendChild(script);
-        });
-    };
-
-    // Replace your existing readPPTX function with this improved version
-    const readPPTX = async (file) => {
-        try {
-            setStatus('Loading PPTX library...');
-            await loadJSZip();
-            
-            setStatus('Reading PowerPoint file...');
-            
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    try {
-                        const arrayBuffer = event.target.result;
-                        const zip = await window.JSZip.loadAsync(arrayBuffer);
-                        
-                        let extractedText = '';
-                        
-                        // Extract text from slides
-                        const slideFiles = Object.keys(zip.files).filter(fileName => 
-                            fileName.startsWith('ppt/slides/slide') && fileName.endsWith('.xml')
-                        );
-                        
-                        console.log('Found slide files:', slideFiles);
-                        
-                        for (const slideFile of slideFiles) {
-                            const slideXml = await zip.files[slideFile].async('string');
-                            const slideText = extractTextFromSlideXML(slideXml);
-                            extractedText += slideText + '\n\n';
-                        }
-                        
-                        // Also try to extract from slide layouts and masters if slides are empty
-                        if (extractedText.trim().length < 50) {
-                            const layoutFiles = Object.keys(zip.files).filter(fileName => 
-                                fileName.startsWith('ppt/slideLayouts/') && fileName.endsWith('.xml')
-                            );
-                            
-                            for (const layoutFile of layoutFiles) {
-                                const layoutXml = await zip.files[layoutFile].async('string');
-                                const layoutText = extractTextFromSlideXML(layoutXml);
-                                extractedText += layoutText + '\n';
-                            }
-                        }
-                        
-                        console.log('PPTX extraction result length:', extractedText.length);
-                        console.log('PPTX extraction preview:', extractedText.substring(0, 300));
-                        
-                        if (extractedText && extractedText.trim()) {
-                            resolve(extractedText.trim());
-                        } else {
-                            reject(new Error('No readable text content found in PowerPoint file'));
-                        }
-                    } catch (error) {
-                        console.error('PPTX processing error:', error);
-                        reject(error);
-                    }
-                };
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(file);
-            });
-        } catch (error) {
-            throw new Error(`PowerPoint processing failed: ${error.message}`);
-        }
-    };
-
-    // Helper function to extract text from slide XML
-    const extractTextFromSlideXML = (xmlString) => {
-        try {
-            // Create a temporary DOM element to parse XML
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
-            
-            // Check for parsing errors
-            const parserError = xmlDoc.querySelector('parsererror');
-            if (parserError) {
-                console.warn('XML parsing error:', parserError.textContent);
-                return extractTextWithRegex(xmlString);
-            }
-            
-            // Extract text from <a:t> elements (actual text content)
-            const textElements = xmlDoc.querySelectorAll('t');
-            let extractedText = '';
-            
-            textElements.forEach(element => {
-                const text = element.textContent;
-                if (text && text.trim()) {
-                    extractedText += text.trim() + ' ';
-                }
-            });
-            
-            // If DOM parsing didn't work well, fall back to regex
-            if (extractedText.trim().length < 10) {
-                return extractTextWithRegex(xmlString);
-            }
-            
-            return extractedText;
-        } catch (error) {
-            console.warn('DOM parsing failed, using regex fallback:', error);
-            return extractTextWithRegex(xmlString);
-        }
-    };
-
-    // Fallback regex-based text extraction
-    const extractTextWithRegex = (xmlString) => {
-        // Extract text between <a:t> tags
-        const textMatches = xmlString.match(/<a:t[^>]*>(.*?)<\/a:t>/g);
-        let extractedText = '';
-        
-        if (textMatches) {
-            textMatches.forEach(match => {
-                // Remove the XML tags and decode HTML entities
-                const text = match.replace(/<[^>]+>/g, '');
-                if (text && text.trim()) {
-                    extractedText += decodeHtmlEntities(text.trim()) + ' ';
-                }
-            });
-        }
-        
-        // Also try alternative text patterns
-        if (extractedText.trim().length < 10) {
-            const altMatches = xmlString.match(/>([\w\s\.,!?;:'"()-]{3,})</g);
-            if (altMatches) {
-                altMatches.forEach(match => {
-                    const text = match.slice(1, -1); // Remove > and <
-                    if (text && text.trim() && !text.includes('<') && !text.includes('xml')) {
-                        extractedText += text.trim() + ' ';
-                    }
-                });
-            }
-        }
-        
-        return extractedText;
-    };
-
-    // Helper function to decode HTML entities
-    const decodeHtmlEntities = (text) => {
-        const textArea = document.createElement('textarea');
-        textArea.innerHTML = text;
-        return textArea.value;
     };
 
     // Alternative simpler approach if JSZip doesn't work
@@ -1092,63 +310,6 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
             };
             reader.onerror = reject;
             reader.readAsArrayBuffer(file);
-        });
-    };
-
-    const readTextFile = async (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target.result);
-            reader.onerror = reject;
-            reader.readAsText(file);
-        });
-    };
-
-    const readCSV = async (file) => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const csvText = event.target.result;
-                    
-                    // Parse CSV
-                    const lines = csvText.split('\n').filter(line => line.trim());
-                    
-                    if (lines.length === 0) {
-                        reject(new Error('CSV file is empty'));
-                        return;
-                    }
-                    
-                    // Get headers
-                    const headers = lines[0].split(',').map(h => 
-                        h.trim().replace(/^"|"$/g, '')
-                    );
-                    
-                    // Format for AI: Simple, direct conversion request
-                    let formattedText = `CSV FILE - CONVERT TO FLASHCARDS\n\n`;
-                    formattedText += `CRITICAL INSTRUCTION: Create EXACTLY ONE flashcard for each row below. Do NOT generate additional flashcards or expand on the content. Just convert what's provided.\n\n`;
-                    formattedText += `Total rows: ${lines.length - 1}\n`;
-                    formattedText += `Columns: ${headers.join(' | ')}\n\n`;
-                    
-                    // Include ALL rows (since user wants all their data as flashcards)
-                    formattedText += `DATA TO CONVERT:\n\n`;
-                    for (let i = 1; i < lines.length; i++) {
-                        const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-                        if (values.some(v => v)) { // Skip completely empty rows
-                            formattedText += `Row ${i}: ${values.join(' | ')}\n`;
-                        }
-                    }
-                    
-                    formattedText += `\n--- End of CSV data ---\n\n`;
-                    formattedText += `Remember: Create EXACTLY ${lines.length - 1} flashcards, one per row.`;
-                    
-                    resolve(formattedText);
-                } catch (error) {
-                    reject(new Error(`CSV parsing failed: ${error.message}`));
-                }
-            };
-            reader.onerror = reject;
-            reader.readAsText(file);
         });
     };
 
@@ -1203,7 +364,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
             stopCamera();
             
             try {
-                const extractedText = await performOCR(blob);
+                const extractedText = await performOCR(blob, setStatus, user);
                 if (extractedText.trim()) {
                     setStatus('Generating flashcards...');
                     await sendToAI(extractedText);
@@ -1405,7 +566,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                             </div>
                         </div>
                         {/* 2. SCAN PAGES — SUBTLE */}
-                        <div className="text-center">
+                        {/* <div className="text-center">
                             <button 
                             onClick={startCamera}
                             className="text-purple-400 hover:text-purple-300 text-sm font-medium 
@@ -1413,13 +574,13 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                             >
                             Or take a photo of your notes
                             </button>
-                        </div>
+                        </div> */}
                         {/* 3. TOPIC — TINY */}
                         <div className="flex flex-col my-2 text-center">
                             <span className="text-gray-500 text-xs">OR</span>
                             <div className="relative mt-2 w-full max-w-xs mx-auto">
                                <input 
-                                    placeholder="Type a topic..." 
+                                    placeholder="Type a topic... (e.g., Parts of a cell)"
                                     className="w-full bg-slate-700 text-white px-3 py-2 pr-10 rounded-lg text-sm"
                                     value={topic}
                                     onChange={e => setTopic(e.target.value)}

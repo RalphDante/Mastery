@@ -26,10 +26,12 @@ export const useSessionTracking = (user, db, isFinished) => {
         updateMemberDamage, 
         updateLastBossResults, 
         resetAllMembersBossDamage, 
-        updateUserProfile
+        updateUserProfile,
+        partyMembers,
+        partyProfile
     } = usePartyContext();
 
-    const { incrementMinutes } = useUserDataContext();
+    const { incrementMinutes, incrementExp } = useUserDataContext();
 
     // Refs for counters to avoid async state issues
     const pendingCorrectRef = useRef(0);
@@ -50,6 +52,23 @@ export const useSessionTracking = (user, db, isFinished) => {
             setSessionStartTime(new Date());
         }
     }, [user, sessionStartTime]);
+
+    const calculateImmediateRewards = useCallback((isCorrect) => {
+        const baseReward = isCorrect ? CARD_REWARDS.CORRECT : CARD_REWARDS.INCORRECT;
+        
+
+        const estimatedLevel = partyMembers[user?.uid]?.level || 1;
+        
+        const levelMultiplier = 1 + (estimatedLevel * 0.05);
+        const scaledDamage = Math.floor(baseReward.damage * levelMultiplier);
+        
+        return {
+            exp: baseReward.exp,
+            damage: scaledDamage,
+            health: baseReward.health,
+            mana: baseReward.mana
+        };
+    }, [partyMembers, user?.uid]);
 
     // Clear any pending timeout
     const clearWriteTimeout = useCallback(() => {
@@ -77,6 +96,7 @@ export const useSessionTracking = (user, db, isFinished) => {
             const monthId = getMonthId(now);
 
             const estimatedMinutes = Math.ceil(totalCards * 0.5);
+            let totalExpGained;
 
             await runTransaction(db, async (transaction) => {
                 const userRef = doc(db, 'users', user.uid);
@@ -140,7 +160,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                     };
 
                     // Calculate total EXP first to determine level
-                    const totalExpGained = baseCorrectRewards.exp + baseIncorrectRewards.exp;
+                    totalExpGained = baseCorrectRewards.exp + baseIncorrectRewards.exp;
 
                     // Update player stats (calculate new level first)
                     const currentExp = currentData.exp || 0;
@@ -203,7 +223,8 @@ export const useSessionTracking = (user, db, isFinished) => {
                         isPro: currentData.subscription?.tier === 'pro' || false,
                         updatedAt: serverTimestamp(),
                         title: currentData.title || null,
-                        streak: currentData.stats?.currentStreak || 0
+                        streak: currentData.stats?.currentStreak || 0,
+                        exp: increment(totalExpGained)
                     }, { merge: true });
                     
                     transaction.set(monthlyLeaderboardRef, {
@@ -214,7 +235,8 @@ export const useSessionTracking = (user, db, isFinished) => {
                         isPro: currentData.subscription?.tier === 'pro' || false,
                         updatedAt: serverTimestamp(),
                         title: currentData.title || null,
-                        streak: currentData.stats?.currentStreak || 0
+                        streak: currentData.stats?.currentStreak || 0,
+                        exp: increment(totalExpGained)
                     }, { merge: true });
                     
                     console.log(`📊 Updated leaderboards: +${estimatedMinutes} minutes (from ${totalCards} flashcards)`);
@@ -348,6 +370,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                         // Estimate study time: ~30 seconds per card = 0.5 minutes
                         minutesStudied: (existingData.minutesStudied || 0) + Math.ceil(totalCards * 0.5),
                         lastSessionAt: now,
+                        expEarned: (existingData.expEarned || 0) + totalExpGained
                     });
                 } else {
                     transaction.set(dailySessionRef, {
@@ -356,6 +379,7 @@ export const useSessionTracking = (user, db, isFinished) => {
                         lastSessionAt: now,
                         minutesStudied: Math.ceil(totalCards * 0.5),
                         cardsReviewed: totalCards,
+                        expEarned: totalExpGained
                     });
                 }
             });
@@ -378,6 +402,8 @@ export const useSessionTracking = (user, db, isFinished) => {
             });
 
             incrementMinutes(estimatedMinutes);
+            incrementExp(totalExpGained);
+
             
             // console.log(`✅ Session write: ${totalCards} cards (${correctCount} correct, ${incorrectCount} incorrect)`);
             // console.log(`   Base Rewards: +${totalExpGained} XP, +${baseDamage} base DMG`);
@@ -398,16 +424,14 @@ export const useSessionTracking = (user, db, isFinished) => {
 
     // Main tracking function - call this when a card is reviewed
     const trackCardReview = useCallback((isCorrect) => {
-        // STRICT MODE PROTECTION: Check if already processing
         if (trackingInProgressRef.current) {
             console.log('⚠️ trackCardReview blocked - already in progress');
             return;
         }
         
-        // Set lock IMMEDIATELY (synchronous)
         trackingInProgressRef.current = true;
         
-        // Increment using REF (synchronous, not async like setState)
+        // Increment refs
         if (isCorrect) {
             pendingCorrectRef.current += 1;
         } else {
@@ -415,28 +439,54 @@ export const useSessionTracking = (user, db, isFinished) => {
         }
         
         const totalPending = pendingCorrectRef.current + pendingIncorrectRef.current;
-        setDisplayCount(totalPending); // Update UI
+        setDisplayCount(totalPending);
+        
+        // 🎯 OPTIMISTIC UPDATE - Update context immediately for instant UI feedback
+        const rewards = calculateImmediateRewards(isCorrect);
+        
+        // Get current values from partyMembers
+        const currentMember = partyMembers[user.uid];
+        const currentExp = currentMember?.exp || 0;
+        const currentHealth = currentMember?.health || 0;
+        const currentMana = currentMember?.mana || 0;
+        
+        // Update with new calculated values
+        updateUserProfile({
+            exp: currentExp + rewards.exp,
+            health: Math.min(PLAYER_CONFIG.BASE_HEALTH, currentHealth + rewards.health),
+            mana: Math.min(PLAYER_CONFIG.BASE_MANA, currentMana + rewards.mana),
+            lastStudyDate: new Date()
+        });
+        
+        // If in party, update boss health immediately too
+        if (currentMember && partyProfile?.currentBoss) {
+            const currentBossHealth = partyProfile.currentBoss.currentHealth || 0;
+            const newBossHealth = Math.max(0, currentBossHealth - rewards.damage);
+            
+            updateBossHealth(newBossHealth);
+            updateMemberDamage(user.uid, (currentMember?.currentBossDamage || 0) + rewards.damage);
+        }
         
         console.log(`📝 Card tracked (${isCorrect ? 'correct' : 'incorrect'}). Pending: ${totalPending}/${BATCH_SIZE}`);
+        console.log(`⚡ Optimistic update: +${rewards.exp} XP, +${rewards.health} HP, +${rewards.mana} MP, ${rewards.damage} DMG`);
         
-        // Check if we need to write
+        // Check if we need to write to database
         if (totalPending >= BATCH_SIZE) {
             const correctToWrite = pendingCorrectRef.current;
             const incorrectToWrite = pendingIncorrectRef.current;
             
-            // Reset immediately
             pendingCorrectRef.current = 0;
             pendingIncorrectRef.current = 0;
             setDisplayCount(0);
             
+            // Write to database (this will reconcile with actual values)
             writeSessionData(correctToWrite, incorrectToWrite).finally(() => {
                 trackingInProgressRef.current = false;
             });
         } else {
-            // Not writing yet, release lock immediately
             trackingInProgressRef.current = false;
         }
-    }, [writeSessionData, BATCH_SIZE]);
+    }, [calculateImmediateRewards, updateUserProfile, updateMemberDamage, user?.uid, partyMembers, BATCH_SIZE, writeSessionData, partyProfile]);
 
     // Force write function (useful for manual triggers)
     const forceWrite = useCallback(() => {
