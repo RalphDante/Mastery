@@ -62,14 +62,14 @@ export const generatePracticeTest = async (flashcards, config, user) => {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert at creating educational practice tests. You MUST base your questions DIRECTLY on the provided flashcards. You always return valid JSON without markdown formatting or code blocks.'
+              content: 'You are an expert at creating educational practice tests. You follow formatting instructions EXACTLY. For true/false questions, you write STATEMENTS not questions. For fill-in-the-blank, you MUST include "___" in every question. You always return valid JSON without markdown.'
             },
             {
               role: 'user',
               content: promptText
             }
           ],
-          temperature: 0.7, // ⭐ Lowered from 0.8 to stay closer to source material
+          temperature: 0.3, // ⭐ Lowered from 0.8 to stay closer to source material
           max_tokens: 2000,
           top_p: 0.9
         })
@@ -152,38 +152,27 @@ QUALITY:
   // MIXED MODE - AI picks best type for each question
   if (config.type === 'mixed') {
     return `You have ${totalCards} flashcards. Create ${config.count} practice test questions using a MIX of question types (multiple choice, true/false, and fill in the blank).
-
-⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Use the flashcard's question and answer to create a test question.
-
-Return ONLY this JSON format:
-{
-  "questions": [
-    {
-      "question": "Your question text here",
-      "answer": "The correct answer",
-      "type": "multiple_choice",
-      "choices": ["Answer 1", "Answer 2", "Answer 3", "Answer 4"]
-    }
-  ]
-}
-
-REQUIREMENTS:
-- Generate exactly ${config.count} questions
-- Use a variety of types: "multiple_choice", "true_false", "fill_blank"
-- Choose the question type that BEST tests each flashcard concept:
-  * multiple_choice: Good for comparing options or testing distinctions
-  * true_false: Good for testing statements and misconceptions
-  * fill_blank: Good for testing key terms and definitions
-- Aim for roughly equal distribution of types
-- For multiple_choice: Provide 4 choices, randomize correct answer position
-- For true_false: Create a statement based on the flashcard, answer must be "true" or "false"
-- For fill_blank: Use "___" as the blank placeholder (or we'll add it automatically)
-${baseRequirements}
-
-FLASHCARDS TO USE:
-${flashcardsText}
-
-Remember: Each question MUST be based directly on one of the flashcards above!`;
+  
+  ⭐ IMPORTANT: Each question MUST be based on one of the flashcards below.
+  
+  CRITICAL RULES:
+  - For true_false: Write STATEMENTS, not questions. No "?" marks.
+  - For fill_blank: MUST include "___" in the question text.
+  - For multiple_choice: Answer must be one of the 4 choices.
+  
+  Return ONLY this JSON format:
+  {
+    "questions": [
+      {"question": "What is the capital?", "answer": "Paris", "type": "multiple_choice", "choices": ["London", "Paris", "Berlin", "Rome"]},
+      {"question": "Paris is in France", "answer": "true", "type": "true_false"},
+      {"question": "The capital of France is ___", "answer": "Paris", "type": "fill_blank"}
+    ]
+  }
+  
+  FLASHCARDS:
+  ${flashcardsText}
+  
+  Generate exactly ${config.count} questions. Mix the types evenly.`;
   }
   
   // MULTIPLE CHOICE ONLY
@@ -224,94 +213,62 @@ Flashcard: "Q: What is the capital of France? A: Paris"
    Answer: "Paris"`;
   }
   
-  // TRUE/FALSE ONLY
-  if (config.type === 'true_false') {
-    return `You have ${totalCards} flashcards. Create ${config.count} true/false questions.
+// TRUE/FALSE ONLY
+if (config.type === 'true_false') {
+  return `Create ${config.count} true/false questions from these flashcards.
 
-⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Turn the flashcard into a true/false statement.
+CRITICAL FORMAT RULE:
+- Write STATEMENTS, not questions
+- NO question marks (?)
+- NO question words: "why", "what", "how", "when", "where", "who", "which", "is it true"
+- Start statements with a subject (noun), not a question word
 
-⚠️ CRITICAL: True/false questions MUST be STATEMENTS, not questions!
-❌ WRONG: "Why is creating a budget important?" (This is a question)
-❌ WRONG: "What is the capital of France?" (This is a question)
-❌ WRONG: "How does photosynthesis work?" (This is a question)
-✅ CORRECT: "Creating a budget helps manage finances effectively" (This is a statement)
-✅ CORRECT: "Paris is the capital of France" (This is a statement)
-✅ CORRECT: "Photosynthesis occurs in plant cells" (This is a statement)
+CORRECT EXAMPLES:
+"A strong work ethic helps achieve goals" → answer: "true"
+"Paris is located in Germany" → answer: "false"
+"The mitochondria produces energy in cells" → answer: "true"
 
-Return ONLY this JSON format:
+WRONG EXAMPLES (DO NOT DO THIS):
+"Is it true that Paris is in France?" ❌
+"What helps achieve goals?" ❌
+"Why is budgeting important?" ❌
+
+Return ONLY this JSON (no markdown, no code blocks):
 {
   "questions": [
-    {
-      "question": "Statement to evaluate as true or false",
-      "answer": "true",
-      "type": "true_false"
-    }
+    {"question": "Statement here", "answer": "true", "type": "true_false"},
+    {"question": "Statement here", "answer": "false", "type": "true_false"}
   ]
 }
 
-REQUIREMENTS:
-- Generate exactly ${config.count} true/false questions
-- Each statement MUST be derived from one of the flashcards
-- The "question" field MUST contain a STATEMENT, NOT a question
-- NO question words allowed: Do NOT use "why", "what", "how", "when", "where", "who"
-- Answer must be either "true" or "false" (lowercase)
-- Create a mix of true and false statements (roughly 50/50 split)
-- For TRUE statements: Convert flashcard information into a factual statement
-- For FALSE statements: Create a statement that contradicts the flashcard
-- Make statements clear and unambiguous
-- Avoid trick questions or overly complex statements
-${baseRequirements}
-
-FLASHCARDS TO USE:
+FLASHCARDS:
 ${flashcardsText}
 
-Example transformations:
-Flashcard: "Q: What is H2O? A: Water"
-→ TRUE statement: "H2O is the chemical formula for water" (answer: "true")
-→ FALSE statement: "H2O is the chemical formula for carbon dioxide" (answer: "false")
+Generate exactly ${config.count} questions. Make ${Math.floor(config.count/2)} true statements and ${Math.ceil(config.count/2)} false statements.`;
+}  
 
-Flashcard: "Q: Why is exercise important? A: It improves health"
-→ TRUE statement: "Exercise improves overall health" (answer: "true")
-→ FALSE statement: "Exercise has no effect on health" (answer: "false")
-
-Flashcard: "Q: When did WWII end? A: 1945"
-→ TRUE statement: "World War II ended in 1945" (answer: "true")
-→ FALSE statement: "World War II ended in 1939" (answer: "false")`;
-  }
-  
   // FILL IN THE BLANK ONLY
   if (config.type === 'fill_blank') {
-    return `You have ${totalCards} flashcards. Create ${config.count} fill in the blank questions.
+    return `Create ${config.count} fill-in-the-blank questions from these flashcards.
 
-⭐ IMPORTANT: Each question MUST be based on one of the flashcards below. Turn the flashcard into a fill-in-the-blank question.
+  CRITICAL: You MUST include "___" (three underscores) in each question.
 
-Return ONLY this JSON format:
-{
-  "questions": [
-    {
-      "question": "The ___ is the powerhouse of the cell",
-      "answer": "mitochondria",
-      "type": "fill_blank"
-    }
-  ]
-}
+  CORRECT EXAMPLES:
+  "The ___ is the powerhouse of the cell" → answer: "mitochondria"
+  "Paris is the capital of ___" → answer: "France"
+  "A strong work ethic helps improve ___" → answer: "productivity"
 
-REQUIREMENTS:
-- Generate exactly ${config.count} fill in the blank questions
-- Each question MUST be derived from one of the flashcards
-- Ideally use "___" to indicate the blank, but if you forget we'll add it automatically
-- Place the blank where the flashcard's answer would go
-- The answer should be the flashcard's answer (or a close variation)
-- Provide enough context in the question for the answer to be clear
-${baseRequirements}
+  Return ONLY this JSON (no markdown, no code blocks):
+  {
+    "questions": [
+      {"question": "Text with ___ in it", "answer": "word", "type": "fill_blank"}
+    ]
+  }
 
-FLASHCARDS TO USE:
-${flashcardsText}
+  FLASHCARDS:
+  ${flashcardsText}
 
-Example transformation:
-Flashcard: "Q: What is the powerhouse of the cell? A: Mitochondria"
-→ Test Question: "The ___ is known as the powerhouse of the cell"
-   Answer: "mitochondria"`;
+  Generate exactly ${config.count} questions. Every question MUST contain "___".`;
   }
   
   throw new Error(`Unknown test type: ${config.type}`);
@@ -395,23 +352,22 @@ const parseTestQuestionsResponse = (aiResponse) => {
       }
       
       // Check if it's a question instead of a statement
-      const questionWords = ['why', 'what', 'how', 'when', 'where', 'who', 'which', 'whose', 'whom'];
+      const questionWords = ['why', 'what', 'how', 'when', 'where', 'who', 'which', 'whose', 'whom', 'does', 'do', 'did', 'can', 'could', 'would', 'should', 'will', 'is it'];
+      const firstTwoWords = q.question.trim().toLowerCase().split(' ').slice(0, 2).join(' ');
       const firstWord = q.question.trim().split(' ')[0].toLowerCase();
       const hasQuestionMark = q.question.includes('?');
       
-      if (questionWords.includes(firstWord) || hasQuestionMark) {
+      if (questionWords.includes(firstWord) || questionWords.includes(firstTwoWords) || hasQuestionMark) {
         console.warn('❌ True/false is a question, not a statement:', q.question);
         return false;
       }
     }
     
-    // ⭐ UPDATED: Auto-fix missing blanks instead of rejecting
+    // ⭐ UPDATED: Reject instead of auto-fixing
     if (q.type === 'fill_blank') {
       if (!q.question.includes('___')) {
-        console.warn('⚠️ Fill blank missing "___", auto-fixing:', q.question);
-        // Auto-fix: Add blank at the end
-        q.question = q.question.trim() + ' ___';
-        console.log('✅ Fixed to:', q.question);
+        console.warn('❌ Fill blank missing "___":', q.question);
+        return false; // Reject malformed questions
       }
     }
     
