@@ -80,27 +80,7 @@ export const TrueOrFalse = ({
           </button>
         </div>
 
-        {/* Show result feedback */}
-        {isRevealed && (
-          <div className={`p-4 rounded-xl ${
-            userAnswer === question.answer 
-              ? 'bg-green-600/20 border-2 border-green-600/30' 
-              : 'bg-red-600/20 border-2 border-red-600/30'
-          }`}>
-            <div className={`font-medium ${
-              userAnswer === question.answer ? 'text-green-400' : 'text-red-400'
-            }`}>
-              {userAnswer === question.answer ? '✓ Correct!' : '✕ Incorrect'}
-            </div>
-            {userAnswer !== question.answer && (
-              <div className="text-slate-300 mt-2">
-                Correct answer: <span className="font-medium text-green-400">
-                  {question.answer.charAt(0).toUpperCase() + question.answer.slice(1)}
-                </span>
-              </div>
-            )}
-          </div>
-        )}
+        
       </div>
     </div>
   );

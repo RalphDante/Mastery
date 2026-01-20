@@ -17,8 +17,7 @@ function PracticeTestModal({ isOpen, onClose, onGenerate, maxQuestions }) {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-6 h-6 text-purple-400" />
-            <h2 className="text-2xl font-bold text-white">Generate Practice Test</h2>
+            <h2 className="text-2xl font-bold text-white">Simulate Exam</h2>
           </div>
           <button
             onClick={onClose}
@@ -69,7 +68,7 @@ function PracticeTestModal({ isOpen, onClose, onGenerate, maxQuestions }) {
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-semibold">Mixed ✨</div>
+                  <div className="font-semibold">Mixed</div>
                   <div className="text-sm opacity-80">Variety of all types (Recommended)</div>
                 </div>
                 {testType === 'mixed' && (

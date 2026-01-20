@@ -1,7 +1,7 @@
 // FlashCardsPage.jsx - SIMPLIFIED with TestTypeUI component
 
 import LimitReachedModal from '../../components/Modals/LimitReachedModal.jsx';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, WalletCards } from 'lucide-react';
 import { getFirestore, doc, getDoc } from "firebase/firestore"; 
 import { useLocation, useNavigate } from "react-router-dom";
 import { app } from '../../api/firebase';
@@ -323,35 +323,36 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
     };
 
     const renderModeToggle = () => {
-       
-
-        return (
-            <div className="flex gap-2 mb-4">
-                <button
-                    onClick={() => setMode('study')}
-                    className={`flex-1 py-2 px-4 rounded-lg font-medium transition-colors ${
-                        mode === 'study' 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    }`}
-                >
-                    <BookOpen className="w-4 h-4 inline mr-2" />
-                    Study
-                </button>
+        // Show "Back to Study" button when in test mode
+        if (mode === 'test') {
+            return (
                 <button
                     onClick={() => {
-                        // Generate test matching deck size (cap at 20 for very large decks)
-                        // const testSize = Math.min(flashCards.length, 20);
-                        // handleGeneratePracticeTest({ type: 'mixed', count: testSize });
-                        setShowTestModal(true);
+                        setMode('study');
+                        setTestQuestions([]);
+                        setCurrentTestIndex(0);
+                        setTestAnswers({});
                     }}
-                    disabled={isGeneratingTest || flashCards.length === 0}
-                    className="flex-1 py-2 px-4 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors disabled:opacity-50"
+                    className="w-full py-2 px-4 rounded-lg font-medium bg-purple-600 hover:bg-purple-700 text-white transition-colors"
                 >
-                    <Brain className="w-4 h-4 inline mr-2" />
-                    {isGeneratingTest ? 'Generating...' : `Simulate Exam`}
+                    <svg xmlns="http://www.w3.org/2000/svg" className='w-6 h-auto inline xs:mr-2' viewBox="0 0 24 24">
+                        <path fill="currentColor" d="m21.47 4.35l-1.34-.56v9.03l2.43-5.86c.41-1.02-.06-2.19-1.09-2.61m-19.5 3.7L6.93 20a2.01 2.01 0 0 0 1.81 1.26c.26 0 .53-.05.79-.16l7.37-3.05c.75-.31 1.21-1.05 1.23-1.79c.01-.26-.04-.55-.13-.81L13 3.5a1.95 1.95 0 0 0-1.81-1.25c-.26 0-.52.06-.77.15L3.06 5.45a1.994 1.994 0 0 0-1.09 2.6m16.15-3.8a2 2 0 0 0-2-2h-1.45l3.45 8.34"/>
+                    </svg>
+                    <span className='hidden xs:inline'>Back to Study Mode</span>
                 </button>
-            </div>
+            );
+        }
+
+        // Show "Simulate Exam" button when in study mode
+        return (
+            <button
+                onClick={() => setShowTestModal(true)}
+                disabled={isGeneratingTest || flashCards.length === 0}
+                className="w-full max-w-sm py-2 px-4 rounded-lg font-medium bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white transition-colors disabled:opacity-50"
+            >
+                <Brain className="w-6 h-6 inline xs:mr-2" />
+                <span className='hidden xs:inline'>{isGeneratingTest ? 'Generating...' : 'Simulate Exam'}</span>
+            </button>
         );
     };
 
@@ -431,15 +432,20 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                             <ArrowLeft className="w-4 h-4" />
                             <span className='truncate max-w-36'>{deckData?.title || "Unknown Deck"}</span>
                         </button>
+
+                        <div className='flex'>
+                            {renderModeToggle()}
+                            
+                            <DeckActionsDropdown 
+                                deckId={paramDeckId}
+                                deckData={deckData}
+                                flashCards={flashCards}
+                                user={user}
+                                isMuted={isMuted}
+                                onToggleMute={() => setIsMuted(prev => !prev)}
+                            />
+                        </div>
                         
-                        <DeckActionsDropdown 
-                            deckId={paramDeckId}
-                            deckData={deckData}
-                            flashCards={flashCards}
-                            user={user}
-                            isMuted={isMuted}
-                            onToggleMute={() => setIsMuted(prev => !prev)}
-                        />
                     </div>
 
                    
@@ -516,8 +522,7 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                         </>
                     )}
 
-                     {/* MODE TOGGLE */}
-                     {renderModeToggle()}
+                 
 
                 </div>
                 
