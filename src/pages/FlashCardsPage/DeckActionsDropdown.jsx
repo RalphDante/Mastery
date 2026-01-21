@@ -149,23 +149,8 @@ function DeckActionsDropdown({
                 </button>
 
 
-                <div className="border-t border-gray-700 my-1"></div>
 
-                <button
-                    onClick={(e) => {
-                        e.preventDefault();
-                        if (!isOwner) return;
-                        setShowTestModal(true);
-                    }}
-                    disabled={!isOwner}
-                    className={`block w-full text-left px-4 py-2 text-sm transition-colors ${
-                        isOwner
-                        ? "text-slate-200 hover:bg-gray-700"
-                        : "text-gray-500 cursor-not-allowed opacity-50"
-                    }`}
-                >
-                   Simulate Exam
-                </button>
+             
             </div>
         </div>
         </>
