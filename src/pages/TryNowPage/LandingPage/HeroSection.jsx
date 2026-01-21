@@ -47,7 +47,7 @@ const HeroSection = ({setShowModal, signIn}) => {
           <p className={`text-base sm:text-lg lg:text-xl text-gray-300 mb-6 sm:mb-8 transition-all duration-1000 delay-400 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             Study like it's 
             <span className="text-violet-400 font-semibold"> a game. </span>
-            Party up with friends. You'll actually <span className="text-violet-400 font-semibold"> remember </span> what you learn.
+            Party up with friends. <br></br>You'll actually <span className="text-violet-400 font-semibold"> remember </span> what you learn.
           </p>
 
           {/* CTA Button */}

@@ -187,14 +187,14 @@ const TryNowPage = () => {
               </h2>
               
               {/* Agitation Box */}
-              <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-white/10 mb-6 sm:mb-8 max-w-4xl mx-auto">
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+              <div className="mb-6 sm:mb-8 max-w-4xl mx-auto">
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-1 sm:mb-2">
                   Everyone says the same thing: <span className="text-red-400 font-semibold">"Just study harder. Put in the hours."</span>
                 </p>
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-1 sm:mb-2">
                   So you do.<span className="text-red-400 font-semibold">{" "}10 hours cramming</span>. Miss the party. Forget it all by Tuesday.
                 </p>
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
+                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed">
                   There's a better way.
                 </p>
               </div>
@@ -203,69 +203,83 @@ const TryNowPage = () => {
             {/* Benefits Section */}
             <section className="mb-12 sm:mb-16 lg:mb-20 px-4 sm:px-0" aria-labelledby="benefits">
               {/* Transition */}
-              <div className="text-center mb-6 sm:mb-8">
+              {/* <div className="text-center mb-6 sm:mb-8">
                 <p className="text-xl sm:text-2xl lg:text-3xl font-semibold px-4">
                   What if you could Cut study time in Half AND make it actually fun?
                 </p>
-              </div>
+              </div> */}
 
               {/* Solution */}
-              <div className="bg-white/5 rounded-2xl p-6 sm:p-8 border border-slate-500/30 max-w-6xl mx-auto">
-                <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center px-4">
+              <div className=" max-w-6xl mx-auto">
+                {/* <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center px-4">
                   Here's Where <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent ">
                   Mastery
                   </span> Changes Everything
-                </h3>
+                </h3> */}
                 
                 {/* 3 COLUMNS - Stack on mobile, side-by-side on desktop */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <div className="grid grid-cols-1  gap-4 sm:gap-6 mb-6 sm:mb-8">
                   
-                  {/* Column 1 */}
-                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                  {/* Row 1 */}
+                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-xl p-5 sm:p-6 border border-white/10">
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
                         <Zap className="w-5 h-5" />
+                      </div> */}
+                      <div>
+                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-violet-400">
+                          Upload Notes → Get Flashcards in 15 Seconds
+                        </h4>
+                        <p className="text-gray-300 text-xl text-left leading-relaxed">
+                          <span className="font-semibold">Which means you get your weekends back.</span> No more Sunday nights making flashcards while your friends are out.
+                        </p>
                       </div>
-                      <h4 className="text-left text-base sm:text-lg font-semibold text-violet-400">
-                        Upload Notes → Get Flashcards in 15 Seconds
-                      </h4>
                     </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">
-                      <span className="font-semibold">Which means you get your weekends back.</span> No more Sunday nights making flashcards while your friends are out.
-                    </p>
+                    <div className='w-full h-full bg-blue-600'>
+                    </div>
+                   
                   </div>
 
-                  {/* Column 2 */}
-                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                  {/* Row 2 */}
+                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                    <div className='w-full h-full bg-blue-600'>
+                    </div>
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
+                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
+                      </div> */}
+                      <div>
+                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-purple-400">
+                          Party Up With Friends and Fight Bosses
+                        </h4>
+                        <p className="text-gray-300 text-xl text-left leading-relaxed">
+                          <span className="font-semibold">Which means you'll actually look forward to studying</span> instead of dreading it.
+                        </p>
                       </div>
-                      <h4 className="text-left text-base sm:text-lg font-semibold text-purple-400">
-                        Party Up With Friends and Fight Bosses
-                      </h4>
-                    </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">
-                      <span className="font-semibold">Which means you'll actually look forward to studying</span> instead of dreading it.
-                    </p>
+                    </div>              
                   </div>
 
-                  {/* Column 3 */}
-                  <div className="bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
+                  {/* Row 3 */}
+                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
                     <div className="flex items-start gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 flex items-center justify-center flex-shrink-0">
-                        <Brain className="w-5 h-5" />
+                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
+                        <Zap className="w-5 h-5" />
+                      </div> */}
+                      <div>
+                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-indigo-400">
+                         Active recall built in. The same science med students use.
+                        </h4>
+                        <p className="text-gray-300 text-xl text-left leading-relaxed">
+                          <span className="font-semibold">Which means you're getting better grades</span> while it feels like you're just gaming with friends.
+                        </p>
                       </div>
-                      <h4 className="text-left text-base sm:text-lg font-semibold text-indigo-400">
-                        Active recall built in. The same science med students use.
-                      </h4>
                     </div>
-                    <p className="text-gray-300 text-sm leading-relaxed">
-                      <span className="font-semibold">Which means you're getting better grades</span> while it feels like you're just gaming with friends.
-                    </p>
-                  </div>
+                    <div className='w-full h-full bg-blue-600'>
+                    </div>
+                   
+                  </div>                
                 </div>
 
                 {/* CTAs */}
