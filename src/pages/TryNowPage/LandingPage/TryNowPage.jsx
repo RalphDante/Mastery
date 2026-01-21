@@ -192,19 +192,10 @@ const TryNowPage = () => {
                   Everyone says the same thing: <span className="text-red-400 font-semibold">"Just study harder. Put in the hours."</span>
                 </p>
                 <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
-                  So you do. You spend <span className="text-red-400 font-semibold">10 hours cramming</span>. 
-                  You miss the party. Skip the hangout. Say no to the beach trip. 
+                  So you do.<span className="text-red-400 font-semibold">{" "}10 hours cramming</span>. Miss the party. Forget it all by Tuesday.
                 </p>
                 <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-3 sm:mb-4">
-                  Your friends are out living their lives. Making memories. Having fun. 
-                  And you? <span className="text-red-400 font-semibold">You're stuck in your room studying</span>.
-                </p>
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-4 sm:mb-6">
-                  <span className="text-red-400 font-bold text-lg sm:text-xl lg:text-2xl">Which means you'll never get to enjoy your teenage years. </span> 
-                  The parties you missed? You can't get those back. The memories your friends made? You weren't there.
-                </p>
-                <p className="text-sm sm:text-base lg:text-lg text-violet-400 font-semibold italic border-l-4 border-violet-400 pl-3 sm:pl-4">
-                  And the worst part? It's not even your fault. Nobody taught you there was a better way.
+                  There's a better way.
                 </p>
               </div>
             </section>
