@@ -14,17 +14,17 @@ export const authService = {
         try {
             console.log('🔐 Starting authentication flow...');
 
-            if (import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox') {
-                console.log('🧪 Dev mode - using instant demo account');
+            // if (import.meta.env.VITE_PADDLE_ENVIRONMENT === 'sandbox') {
+            //     console.log('🧪 Dev mode - using instant demo account');
                 
-                const { signInAnonymously } = await import('firebase/auth');
-                const result = await signInAnonymously(auth);
-                const user = result.user;
+            //     const { signInAnonymously } = await import('firebase/auth');
+            //     const result = await signInAnonymously(auth);
+            //     const user = result.user;
                 
-                console.log('✅ Demo user created:', user.uid);
-                if (onSuccess) onSuccess(user);
-                return;
-            }
+            //     console.log('✅ Demo user created:', user.uid);
+            //     if (onSuccess) onSuccess(user);
+            //     return;
+            // }
             
             
             const provider = new GoogleAuthProvider();
