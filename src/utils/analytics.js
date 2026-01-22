@@ -179,6 +179,83 @@ export const logFileUploadEvent = {
 };
 
 /**
+ * Log user actions in Timer component
+ */
+export const logTimerEvent = {
+   // When they click "Create Flashcards" card from homepage
+   cardClicked: (userId) => {
+    logEvent('timer_card_clicked', {
+      user_id: userId,
+      source: 'homepage'
+    });
+  },
+  
+  timerStarted: (userId, duration) => {
+    logEvent('pomodoro_started', {
+      user_id: userId,
+      duration_minutes: duration,
+      timer_type: 'pomodoro'
+    });
+  },
+  
+  timerCompleted: (userId, duration) => {
+    logEvent('pomodoro_completed', {
+      user_id: userId,
+      duration_minutes: duration,
+      completion_status: 'finished'
+    });
+  },
+  
+  timerCancelled: (userId, timeRemaining) => {
+    logEvent('pomodoro_cancelled', {
+      user_id: userId,
+      time_remaining_seconds: timeRemaining
+    });
+  }
+};
+
+
+/**
+ * Log user actions in Create Flashcard component
+ */
+export const logCreateFlashcardEvent = {
+  
+  // When they click "Create Flashcards" card from homepage
+  cardClicked: (userId) => {
+    logEvent('create_flashcards_card_clicked', {
+      user_id: userId,
+      source: 'homepage'
+    });
+  },
+
+
+
+  
+  clickedUploadNotes: (userId) => {
+    logEvent('upload_notes_clicked', {
+      user_id: userId,
+    });
+  },
+
+
+  clickedCreateManually: (userId) => {
+    logEvent('create_manually_clicked', {
+      user_id: userId,
+    });
+  },
+  
+
+  
+  deckCreated: (userId, deckSize) => {
+    logEvent('deck_created', {
+      user_id: userId,
+      deck_size: deckSize
+    });
+  }
+};
+
+
+/**
  * Log errors with detailed context
  */
 export const logError = (errorName, errorDetails, userId = null) => {
