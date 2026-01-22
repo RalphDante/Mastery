@@ -404,12 +404,12 @@ function FlashCardsPage({onCreateWithAIModalClick}) {
                 onGenerate={handleGenerateTest}
                 maxQuestions={flashCards.length}
             />
-            {showDeckIncentive && (
+            {/* {showDeckIncentive && (
                 <DeckIncentiveToast 
                     xpAmount={200}
                     onComplete={() => setShowDeckIncentive(false)}
                 />
-            )}
+            )} */}
 
             {showSessionComplete && (
                 <>
