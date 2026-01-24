@@ -143,7 +143,7 @@ function QuickTutorial() {
             </h2>
             
             <p className="text-base sm:text-lg text-gray-300 mb-6 sm:mb-10">
-              Quick run through on how everything works.
+              Here's how it works in 3 steps
             </p>
 
             {/* Visual Flow Diagram */}
@@ -319,6 +319,11 @@ function QuickTutorial() {
               Upload your first study material
             </h2>
 
+           
+
+            <FileUpload 
+              onSuccess={handleFileUploadSuccess}
+            />
             {isSaving && (
               <div className="mb-4 bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg p-3">
                 <div className="text-sm text-blue-200 flex items-center gap-3">
@@ -327,10 +332,6 @@ function QuickTutorial() {
                 </div>
               </div>
             )}
-
-            <FileUpload 
-              onSuccess={handleFileUploadSuccess}
-            />
           </div>
         )}
 
