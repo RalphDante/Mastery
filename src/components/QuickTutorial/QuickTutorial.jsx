@@ -25,9 +25,9 @@ function QuickTutorial() {
   const { partyMembers } = usePartyContext();
   const navigate = useNavigate();
   const db = getFirestore(app);
-  const {isInTutorial, completeTutorial, loading} = useTutorials();
+  const {isInTutorial, completeTutorial, loading, isTutorialAtStep} = useTutorials();
 
-  const hasNotCreatedADeck = isInTutorial('create-deck')
+  const hasNotCreatedADeck = isTutorialAtStep('create-deck', 1);
 
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
 
