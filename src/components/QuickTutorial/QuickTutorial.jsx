@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ArrowRight } from 'lucide-react';
 import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
@@ -10,17 +10,28 @@ import { useAuthContext } from '../../contexts/AuthContext';
 
 // You'll need to import your Firebase app
 import { app } from '../../api/firebase';
+import { useTutorials } from '../../contexts/TutorialContext';
 
 function QuickTutorial() {
   const [step, setStep] = useState(1);
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { user } = useAuthContext();
   const { partyMembers } = usePartyContext();
   const navigate = useNavigate();
   const db = getFirestore(app);
+  const {isInTutorial, completeTutorial, loading} = useTutorials();
+
+  const hasNotCreatedADeck = isInTutorial('create-deck')
 
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
+
+
+  useEffect(() => {
+    if (!loading && hasNotCreatedADeck) {
+      setIsOpen(true);
+    }
+  }, [loading, hasNotCreatedADeck]);
 
   if (!isOpen) return null;
 
@@ -93,6 +104,8 @@ function QuickTutorial() {
       await updateDoc(folderDocRef, {
         updatedAt: new Date(),
       });
+
+      completeTutorial('create-deck')
 
       // Navigate to the deck
       navigate(`/flashcards/${newDeckRef.id}`, {

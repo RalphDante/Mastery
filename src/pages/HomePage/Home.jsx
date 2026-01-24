@@ -24,7 +24,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showQuickTutorial, setShowQuickTutorial] = useState(true);
   const [showBoss, setShowBoss] = useState(false); 
-  const {isTutorialAtStep, completeTutorial, advanceStep, tutorials, loading} = useTutorials();
+  const {isTutorialAtStep, isInTutorial, advanceStep, tutorials, loading} = useTutorials();
   const {updateUserProfile} = usePartyContext();
   const {user, userProfile} = useAuthContext();
   const [hasSeenParty, setHasSeenParty] = useState(() => {
@@ -42,6 +42,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   const userData = userProfile;
   const hasNotStartedATimerSession = isTutorialAtStep('start-timer', 1);
   const hasNotStartedAFlashcardSession = isTutorialAtStep('create-deck', 1);
+  const hasNotCreatedAFlashcard = isInTutorial('create-deck');
   const hasNotStartedASession = hasNotStartedAFlashcardSession && hasNotStartedATimerSession;
 
   const navigate = useNavigate();  
@@ -88,10 +89,10 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 // }, [userProfile, navigate]);
 
   useEffect(()=>{
-    if(hasNotStartedASession){
+    if(!loading && hasNotCreatedAFlashcard){
       setShowQuickTutorial(true);
     }
-  },[]);
+  },[loading, hasNotCreatedAFlashcard]);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
@@ -126,11 +127,7 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
-      {showQuickTutorial && (
-        <>
-          <QuickTutorial />
-        </>
-      )}
+      <QuickTutorial />
 
       {showTimerStart && (
         <>
@@ -279,44 +276,6 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
 
       </main>
-
-    {/* flex flex-col justify-center max-w-fwidth */}
-    {/* <h1 className='my-2 text-xl'>Your Folders:</h1> */}
-
-{/* 
-    <div className="text-center">
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="px-6 py-3 bg-purple-600 rounded-lg text-lg font-semibold hover:bg-purple-500 transition-colors"
-        >
-          Create with AI
-        </button>
-    </div> */}
-
-    {/* <CreateWithAIModal 
-      uid={authUser.uid} 
-      onClose = {() => setIsModalOpen(false)}
-      isOpen={isModalOpen}
-    /> */}
-
-
-
-
-    
-    
-
-    {/* <AutoFlashCards /> */}
-
-
-    
-    
-
-    {/* <CreateBtn /> */}
-
-
-    {/* <h1>You are signed in as {authUser.email}</h1> */}
-    {/* <UserName /> */}
-    {/* <Footer></Footer> */}
 
     </div>
     </>
