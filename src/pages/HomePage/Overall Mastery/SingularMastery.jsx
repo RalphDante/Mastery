@@ -88,11 +88,11 @@ function SingularMastery() {
             </h3>
             
             <div className="flex gap-2">
-              <div className="bg-purple-500/20 border border-purple-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-purple-300">{currentUserStreak} day streak</span>
+              <div className="bg-purple-700 rounded-full px-3 py-1 flex items-center gap-1.5">
+                <span className="text-xs font-semibold">{currentUserStreak} day streak</span>
               </div>
-              <div className="bg-amber-500/20 border border-amber-500/30 rounded-full px-3 py-1 flex items-center gap-1.5">
-                <span className="text-xs font-semibold text-amber-300">Best: {currentUserLongestStreak}</span>
+              <div className="bg-amber-700 rounded-full px-3 py-1 flex items-center gap-1.5">
+                <span className="text-xs font-semibold">Best: {currentUserLongestStreak}</span>
               </div>
             </div>
           </div>

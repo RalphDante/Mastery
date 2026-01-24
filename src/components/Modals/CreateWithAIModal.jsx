@@ -387,7 +387,7 @@ function CreateWithAIModal({ onClose, isOpen, isAutoAssignedFolder }) {
           />
       )}
       <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-        <div className="bg-gray-800 p-8 rounded-2xl shadow-xl border border-gray-700 max-w-md w-full relative">
+        <div className="bg-gray-800 p-8 rounded-2xl shadow-xl max-w-md w-full relative">
           <button 
             onClick={()=>{
               setTutorialCancelled(true)

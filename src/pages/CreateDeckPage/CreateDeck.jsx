@@ -18,6 +18,8 @@ import LimitReachedModal from '../../components/Modals/LimitReachedModal';
 import { usePartyContext } from '../../contexts/PartyContext';
 import { useUserDataContext } from '../../contexts/UserDataContext';
 
+import { logCreateFlashcardEvent } from '../../utils/analytics';
+
 function CreateDeck() {
     const {incrementExp} = useUserDataContext();
     const { invalidateFolderDecks, invalidateCards, invalidateDeckMetadata } = useDeckCache();
@@ -366,6 +368,9 @@ function CreateDeck() {
             });
 
             await batch.commit();
+
+            logCreateFlashcardEvent.deckCreated(user.uid, flashCards.length);
+
             invalidateFolderDecks(folderId);
 
             const isUserFirstDeck = isFirstTime;

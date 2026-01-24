@@ -20,6 +20,8 @@ import StreakModal from '../../../components/Modals/StreakModal';
 import SessionStatsCard from './SessionStatsCard';
 import { useNavigate } from 'react-router-dom';
 
+import { logTimerEvent } from '../../../utils/analytics';
+
 function Timer({
   authUser,
   db,
@@ -461,6 +463,7 @@ function Timer({
     const minutesToSave = Math.floor(cappedSeconds / 60);
     await  handleTimerComplete?.();
     if (minutesToSave > 0) {
+      logTimerEvent.timerCompleted(authUser.uid, selectedDuration);
 
       await saveCompletedSession(minutesToSave);
       console.log(`Saved ${minutesToSave} minutes`);
@@ -519,6 +522,8 @@ function Timer({
     if (!isResuming && startTimeRef.current === null) {
       correctSoundEffect.current.play().catch(err=>console.log(err));
       daggerWooshSFX.current.play().catch(err=>console.log(err));
+
+      logTimerEvent.timerStarted(authUser.uid, selectedDuration);
 
       startTimeRef.current = now;
       pausedTimeRef.current = 0;
@@ -896,6 +901,10 @@ function Timer({
     
     if (minutesElapsed > 0) {
       console.log(`Timer reset with ${minutesElapsed} minutes elapsed - saving...`);
+
+      const timeRemaining = (selectedDuration * 60) - timeElapsed;
+      logTimerEvent.timerCancelled(authUser.uid, timeRemaining);
+
       await saveCompletedSession(minutesElapsed);
       console.log(`Saved ${minutesElapsed} minutes from reset timer`);
     }

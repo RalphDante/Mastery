@@ -179,6 +179,153 @@ export const logFileUploadEvent = {
 };
 
 /**
+ * Log user actions in Timer component
+ */
+export const logTimerEvent = {
+   // When they click "Create Flashcards" card from homepage
+   cardClicked: (userId) => {
+    logEvent('timer_card_clicked', {
+      user_id: userId,
+      source: 'homepage'
+    });
+  },
+  
+  timerStarted: (userId, duration) => {
+    logEvent('pomodoro_started', {
+      user_id: userId,
+      duration_minutes: duration,
+      timer_type: 'pomodoro'
+    });
+  },
+  
+  timerCompleted: (userId, duration) => {
+    logEvent('pomodoro_completed', {
+      user_id: userId,
+      duration_minutes: duration,
+      completion_status: 'finished'
+    });
+  },
+  
+  timerCancelled: (userId, timeRemaining) => {
+    logEvent('pomodoro_cancelled', {
+      user_id: userId,
+      time_remaining_seconds: timeRemaining
+    });
+  }
+};
+
+
+/**
+ * Log user actions in Create Flashcard component
+ */
+export const logCreateFlashcardEvent = {
+  
+  // When they click "Create Flashcards" card from homepage
+  cardClicked: (userId) => {
+    logEvent('create_flashcards_card_clicked', {
+      user_id: userId,
+      source: 'homepage'
+    });
+  },
+
+
+
+  
+  clickedUploadNotes: (userId) => {
+    logEvent('upload_notes_clicked', {
+      user_id: userId,
+    });
+  },
+
+
+  clickedCreateManually: (userId) => {
+    logEvent('create_manually_clicked', {
+      user_id: userId,
+    });
+  },
+  
+
+  
+  deckCreated: (userId, deckSize) => {
+    logEvent('deck_created', {
+      user_id: userId,
+      deck_size: deckSize
+    });
+  }
+};
+
+/**
+ * Log user actions in Onboarding/Tutorial component
+ */
+export const logOnboardingEvent = {
+  // Tutorial started
+  tutorialStarted: (userId) => {
+    logEvent('onboarding_started', {
+      user_id: userId,
+      screen_name: 'onboarding_tutorial'
+    });
+  },
+
+  // Step viewed
+  stepViewed: (userId, stepNumber, stepName) => {
+    logEvent('onboarding_step_viewed', {
+      user_id: userId,
+      step_number: stepNumber,
+      step_name: stepName, // 'promise', 'battle', 'leaderboard', 'upload'
+      timestamp: new Date().toISOString()
+    });
+  },
+
+  // Step completed (when they click Next)
+  stepCompleted: (userId, stepNumber, stepName, timeSpentSeconds) => {
+    logEvent('onboarding_step_completed', {
+      user_id: userId,
+      step_number: stepNumber,
+      step_name: stepName,
+      time_spent_seconds: timeSpentSeconds
+    });
+  },
+
+  // Tutorial completed (made it to the last step)
+  tutorialCompleted: (userId, totalTimeSeconds) => {
+    logEvent('onboarding_completed', {
+      user_id: userId,
+      total_time_seconds: totalTimeSeconds,
+      completed_all_steps: true
+    });
+  },
+
+  // Tutorial skipped/closed early
+  tutorialSkipped: (userId, stepClosedAt, stepName, timeSpentSeconds) => {
+    logEvent('onboarding_skipped', {
+      user_id: userId,
+      step_closed_at: stepClosedAt,
+      step_name: stepName,
+      time_spent_seconds: timeSpentSeconds,
+      completion_percentage: (stepClosedAt / 4) * 100 // 4 total steps
+    });
+  },
+
+  // User clicked "Next" button
+  nextButtonClicked: (userId, currentStep, stepName) => {
+    logEvent('onboarding_next_clicked', {
+      user_id: userId,
+      current_step: currentStep,
+      step_name: stepName
+    });
+  },
+
+  // User reached upload step and started uploading
+  uploadInitiated: (userId) => {
+    logEvent('onboarding_upload_initiated', {
+      user_id: userId,
+      source: 'tutorial_step_4'
+    });
+  }
+};
+
+
+/**
  * Log errors with detailed context
  */
 export const logError = (errorName, errorDetails, userId = null) => {

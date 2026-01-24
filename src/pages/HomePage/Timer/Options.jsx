@@ -6,6 +6,7 @@ import { useAuthContext } from "../../../contexts/AuthContext";
 import { useFolders } from "../../../contexts/DeckCacheContext";
 import { useTutorials } from "../../../contexts/TutorialContext";
 import { doc, getDoc } from 'firebase/firestore';
+import { logCreateFlashcardEvent, logTimerEvent } from "../../../utils/analytics";
 
 
 function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, handleTimerStart, handleTimerComplete, timerStartRef}){
@@ -61,11 +62,30 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     }
 
     const openTimer = ()=>{
+        if (authUser) {
+            logTimerEvent.cardClicked(authUser.uid);
+        }
         setStudyMode("timer");
     }
 
     const openFlashcards = ()=>{
         setStudyMode("flashcards");
+    }
+    
+    const handleCreateWithAI = () => {
+        // Log the event
+        if (authUser) {
+            logCreateFlashcardEvent.clickedUploadNotes(authUser.uid);
+        }
+        onCreateWithAIModalClick("First Folder");
+    }
+
+    const handleCreateManually = () => {
+        // Log the event
+        if (authUser) {
+            logCreateFlashcardEvent.clickedCreateManually(authUser.uid);
+        }
+        onCreateDeckClick("First Folder");
     }
 
     const openOptions = ()=>{
@@ -74,6 +94,9 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
     }
 
     const openAIOption = ()=>{
+        if (authUser) {
+            logCreateFlashcardEvent.cardClicked(authUser.uid);
+        }
         setShowAIOption(true);
     }
 
@@ -221,7 +244,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
                             <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Create with AI - Epic Purple Theme */}
                                 <button
-          onClick={() => onCreateWithAIModalClick("First Folder")}
+          onClick={handleCreateWithAI}
           className="w-full group relative overflow-hidden bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/50"
         >
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
@@ -260,7 +283,7 @@ function Options({db, authUser, onCreateDeckClick, onCreateWithAIModalClick, han
 
         {/* Create Manually Card - Horizontal Layout */}
         <button 
-          onClick={() => onCreateDeckClick("First Folder")}
+          onClick={handleCreateManually}
           className="w-full group relative overflow-hidden bg-gradient-to-br from-amber-600 via-yellow-600 to-orange-600 rounded-xl p-4 hover:scale-105 transition-all duration-300 hover:shadow-2xl hover:shadow-amber-500/50"
         >
           <div className="absolute inset-0 bg-black/20 group-hover:bg-black/0 transition-all duration-300"></div>
