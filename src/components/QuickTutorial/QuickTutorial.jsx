@@ -1,20 +1,26 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Upload, ArrowRight, BookOpen, Zap, Trophy, Swords } from 'lucide-react';
+import { X, ArrowRight } from 'lucide-react';
+import { getFirestore, collection, doc, addDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import FileUpload from '../AutoFlashCards/FileUpload';
 import AvatarWithPlatform from '../AvatarWithPlatform';
 import { usePartyContext } from '../../contexts/PartyContext';
 import { useAuthContext } from '../../contexts/AuthContext';
-import { getAvatarPath } from '../../configs/avatarConfig';
+
+// You'll need to import your Firebase app
+import { app } from '../../api/firebase';
 
 function QuickTutorial() {
   const [step, setStep] = useState(1);
   const [isOpen, setIsOpen] = useState(true);
-  const {user} = useAuthContext();
-  const {partyMembers} = usePartyContext();
+  const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuthContext();
+  const { partyMembers } = usePartyContext();
+  const navigate = useNavigate();
+  const db = getFirestore(app);
 
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
-  
 
   if (!isOpen) return null;
 
@@ -24,9 +30,90 @@ function QuickTutorial() {
     }
   };
 
+  const handleFileUploadSuccess = async (data) => {
+    if (isSaving) return;
+
+    const { flashcards, deckName } = data;
+    
+    if (!user) {
+      alert("User not authenticated. Please log in.");
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const ownerIdRef = `${user.uid}`;
+      const folderName = "First Folder";
+      const finalDeckName = "My First Deck";
+
+      // Create the folder
+      const newFolderRef = await addDoc(collection(db, 'folders'), {
+        name: folderName,
+        ownerId: ownerIdRef,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deckCount: 0,
+      });
+
+      const currentFolderId = newFolderRef.id;
+
+      // Create the deck
+      const newDeckRef = await addDoc(collection(db, 'decks'), {
+        title: finalDeckName,
+        description: "No description",
+        ownerId: ownerIdRef,
+        folderId: `${currentFolderId}`,
+        isPublic: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        tags: []
+      });
+
+      // Add flashcards
+      const cardsCollectionRef = collection(db, 'decks', newDeckRef.id, 'cards');
+      const batch = writeBatch(db);
+
+      flashcards.forEach((card, index) => {
+        const newCardRef = doc(cardsCollectionRef);
+        batch.set(newCardRef, {
+          question: card.question,
+          answer: card.answer,
+          order: index,
+          createdAt: new Date(),
+          answer_type: "text",
+          question_type: "text"
+        });
+      });
+
+      await batch.commit();
+
+      // Update folder timestamp
+      const folderDocRef = doc(db, 'folders', currentFolderId);
+      await updateDoc(folderDocRef, {
+        updatedAt: new Date(),
+      });
+
+      // Navigate to the deck
+      navigate(`/flashcards/${newDeckRef.id}`, {
+        state: {
+          deckId: newDeckRef.id,
+          folderId: currentFolderId,
+          folderName: folderName,
+        }
+      });
+
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Error saving deck and flashcards: ", error);
+      alert("Failed to save deck and flashcards. Please try again.");
+      setIsSaving(false);
+    }
+  };
+
   return createPortal(
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-2 sm:p-4">
-      <div className="bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-[scale-in_0.2s_ease-out] relative">
+      <div className="bg-slate-800 pt-6 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-[scale-in_0.2s_ease-out] relative">
         {/* Close button */}
         <button
           onClick={() => setIsOpen(false)}
@@ -43,7 +130,7 @@ function QuickTutorial() {
             </h2>
             
             <p className="text-base sm:text-lg text-gray-300 mb-6 sm:mb-10">
-              Just a quick run through on how everything works.
+              Quick run through on how everything works.
             </p>
 
             {/* Visual Flow Diagram */}
@@ -58,7 +145,7 @@ function QuickTutorial() {
               </div>
 
               {/* Arrow */}
-              <svg xmlns="http://www.w3.org/2000/svg" className='w-6 sm:w-8 md:w-10 h-auto' viewBox="0 0 24 24"><rect width="24" height="24" fill="none"/><path fill="#fbff09" d="M23 11v2h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h1v-1h1v-1h1v-1h1v-1h1v-1h1v-1H1v-4h15V9h-1V8h-1V7h-1V6h-1V5h-1V4h-1V3h1V2h1V1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1z"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className='w-6 sm:w-8 md:w-10 h-auto' viewBox="0 0 24 24"><rect width="24" height="24" fill="none"/><path fill="#fbff09" d="M23 11v2h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h1v-1h1v-1h1v-1h1v-1h1v-1h1v-1H1v-4h15V9h-1V8h-1V7h-1V6h-1V5h-1V4h-1V3h1V2h1V1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1z"/></svg>
 
               {/* Step 2: Flashcards */}
               <div className="flex flex-col items-center">
@@ -85,7 +172,7 @@ function QuickTutorial() {
         {step === 2 && (
           <div className="p-4 sm:p-6 md:p-8">
             <h2 className="text-xl sm:text-2xl font-bold text-white mb-2 text-center">
-              Every correct answer deals damage!
+              Every correct/wrong answer deals damage!
             </h2>
 
             <p className="text-center text-sm sm:text-base text-gray-300 mb-4 sm:mb-6">
@@ -124,8 +211,6 @@ function QuickTutorial() {
               </div>
             </div>
 
-      
-
             <button
               onClick={handleNext}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
@@ -147,85 +232,69 @@ function QuickTutorial() {
             </p>
 
             {/* Character Leveling Section */}
-            <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-slate-700">
-              <div className="flex flex-col items-center mb-4 sm:mb-6">
-                {/* Avatar */}
-                <div className="transform scale-90 sm:scale-100">
-                  <AvatarWithPlatform
-                    avatar={currentUser?.avatar}
-                    displayName={currentUser?.displayName}
-                    tier={currentUser?.tier}
-                    streak={1}
-                    size="large"
-                  />
-                </div>
-
-                {/* Character Info */}
-                <p className="text-white font-semibold mb-1 text-sm sm:text-base">
-                  {'You'}
-                </p>
-                <p className="text-[10px] sm:text-xs text-gray-400 mb-3 sm:mb-4">Lvl 1 - Novice</p>
-
-                {/* Animated EXP Bar */}
-                <div className="w-full max-w-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-[10px] sm:text-xs text-gray-400">Experience</span>
-                    <span className="text-[10px] sm:text-xs text-yellow-400">0 / 100 XP</span>
+            <div className="bg-gradient-to-br from-slate-900 to-slate-950 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6 border border-slate-700 relative overflow-hidden">
+              {/* Background Image - Slanted */}
+              <div 
+                className="absolute inset-0 opacity-30 pointer-events-none"
+                style={{
+                  backgroundImage: 'url(/images/icons/Leaderboard.png)',
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  transform: 'rotate(10deg) scale(1.3)',
+                  transformOrigin: 'center'
+                }}
+              />
+              
+              <div className="relative z-10">
+                <div className="flex flex-col items-center mb-4 sm:mb-6">
+                
+                  {/* Avatar */}
+                  <div className="transform scale-90 sm:scale-100">
+                    <AvatarWithPlatform
+                      avatar={currentUser?.avatar}
+                      displayName={currentUser?.displayName}
+                      tier={currentUser?.tier}
+                      streak={1}
+                      size="large"
+                    />
                   </div>
-                  <div className="w-full bg-slate-700 h-3 sm:h-4 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 transition-all duration-[3000ms] ease-out"
-                      style={{ 
-                        width: step === 3 ? '60%' : '0%',
-                        animation: step === 3 ? 'fillExp 3s ease-out forwards' : 'none'
-                      }}
-                    ></div>
-                  </div>
-                  <p className="text-center text-[10px] sm:text-xs text-green-400 mt-2 animate-fade-in">
-                    +60 XP from studying!
+
+                  {/* Character Info */}
+                  <p className="text-white font-semibold mb-1 text-sm sm:text-base">
+                    {'You'}
                   </p>
-                </div>
-              </div>
+                  <p className="text-[10px] sm:text-xs text-gray-400 mb-3 sm:mb-4">Lvl 1 - Novice</p>
 
-              <div className="border-t border-slate-700 pt-3 sm:pt-4">
-                {/* Mock Leaderboard */}
-                <div className="text-center mb-2 sm:mb-3">
-                  <div className="text-purple-400 font-semibold text-xs sm:text-sm mb-2 sm:mb-3">Global Leaderboard</div>
-                </div>
-
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="bg-yellow-600/20 border border-yellow-600/50 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-yellow-400 text-xs sm:text-sm font-bold">🥇 1</span>
-                      <span className="text-white text-xs sm:text-sm">StudyMaster</span>
+                  {/* Animated EXP Bar */}
+                  <div className="w-full max-w-sm">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[10px] sm:text-xs text-gray-400">Experience</span>
+                      <span className="text-[10px] sm:text-xs text-yellow-400">0 / 100 XP</span>
                     </div>
-                    <span className="text-yellow-400 text-xs sm:text-sm font-bold">2,450 XP</span>
-                  </div>
-
-                  <div className="bg-slate-700/50 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-gray-400 text-xs sm:text-sm">🥈 2</span>
-                      <span className="text-white text-xs sm:text-sm">BrainPower</span>
+                    <div className="w-full bg-slate-700 h-3 sm:h-4 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 transition-all duration-[3000ms] ease-out"
+                        style={{ 
+                          width: step === 3 ? '60%' : '0%',
+                          animation: step === 3 ? 'fillExp 3s ease-out forwards' : 'none'
+                        }}
+                      ></div>
                     </div>
-                    <span className="text-gray-300 text-xs sm:text-sm">2,100 XP</span>
-                  </div>
-
-                  <div className="bg-purple-600/30 border-2 border-purple-500 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between animate-pulse-subtle">
-                    <div className="flex items-center gap-1.5 sm:gap-2">
-                      <span className="text-purple-400 text-xs sm:text-sm font-bold">→ 47</span>
-                      <span className="text-white text-xs sm:text-sm font-semibold">You</span>
-                    </div>
-                    <span className="text-purple-400 text-xs sm:text-sm font-bold">60 XP</span>
+                    <p className="text-center text-[10px] sm:text-xs text-green-400 mt-2 animate-fade-in">
+                      +60 XP from studying!
+                    </p>
                   </div>
                 </div>
               </div>
+
+              
             </div>
 
             <button
               onClick={handleNext}
               className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-lg hover:shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2 text-sm sm:text-base"
             >
-              Start Climbing! <ArrowRight size={18} className="sm:w-5 sm:h-5" />
+              Next <ArrowRight size={18} className="sm:w-5 sm:h-5" />
             </button>
           </div>
         )}
@@ -237,7 +306,18 @@ function QuickTutorial() {
               Upload your first study material
             </h2>
 
-            <FileUpload />
+            {isSaving && (
+              <div className="mb-4 bg-blue-500 bg-opacity-20 border border-blue-500 rounded-lg p-3">
+                <div className="text-sm text-blue-200 flex items-center gap-3">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400"></div>
+                  <span className="font-medium">Creating your first deck...</span>
+                </div>
+              </div>
+            )}
+
+            <FileUpload 
+              onSuccess={handleFileUploadSuccess}
+            />
           </div>
         )}
 
