@@ -12,7 +12,12 @@ import { useAuthContext } from '../../contexts/AuthContext';
 import { app } from '../../api/firebase';
 import { useTutorials } from '../../contexts/TutorialContext';
 
+import { logOnboardingEvent } from '../../utils/analytics';
+
 function QuickTutorial() {
+
+  const [stepStartTime, setStepStartTime] = useState(Date.now());
+  const [tutorialStartTime] = useState(Date.now());
   const [step, setStep] = useState(1);
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -26,22 +31,79 @@ function QuickTutorial() {
 
   const currentUser = user?.uid ? partyMembers[user.uid] : null;
 
+  const stepNames = {
+    1: 'promise',
+    2: 'battle',
+    3: 'leaderboard',
+    4: 'upload'
+  };
+
 
   useEffect(() => {
     if (!loading && hasNotCreatedADeck) {
       setIsOpen(true);
+      if (user?.uid) {
+        logOnboardingEvent.tutorialStarted(user.uid);
+        logOnboardingEvent.stepViewed(user.uid, 1, 'promise');
+      }
     }
-  }, [loading, hasNotCreatedADeck]);
+  }, [loading, hasNotCreatedADeck, user?.uid]);
+
+  useEffect(() => {
+    if (user?.uid && step > 1 && isOpen) {
+      logOnboardingEvent.stepViewed(user.uid, step, stepNames[step]);
+      setStepStartTime(Date.now());
+    }
+  }, [step, user?.uid, isOpen]);
 
   if (!isOpen) return null;
 
   const handleNext = () => {
+    const timeSpent = Math.floor((Date.now() - stepStartTime) / 1000);
+    
+    // Log current step completion
+    if (user?.uid) {
+      logOnboardingEvent.stepCompleted(
+        user.uid,
+        step,
+        stepNames[step],
+        timeSpent
+      );
+      logOnboardingEvent.nextButtonClicked(user.uid, step, stepNames[step]);
+    }
+
     if (step < 4) {
       setStep(step + 1);
     }
+
+    // If they reached step 4 (upload), log completion
+    if (step === 3 && user?.uid) {
+      const totalTime = Math.floor((Date.now() - tutorialStartTime) / 1000);
+      logOnboardingEvent.tutorialCompleted(user.uid, totalTime);
+    }
+  };
+
+  const handleClose = () => {
+    const timeSpent = Math.floor((Date.now() - stepStartTime) / 1000);
+    
+    // Log that they skipped
+    if (user?.uid) {
+      logOnboardingEvent.tutorialSkipped(
+        user.uid,
+        step,
+        stepNames[step],
+        timeSpent
+      );
+    }
+    
+    setIsOpen(false);
   };
 
   const handleFileUploadSuccess = async (data) => {
+    if (user?.uid) {
+      logOnboardingEvent.uploadInitiated(user.uid);
+    }
+
     if (isSaving) return;
 
     const { flashcards, deckName } = data;
@@ -129,7 +191,7 @@ function QuickTutorial() {
       <div className="bg-slate-800 pt-6 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto animate-[scale-in_0.2s_ease-out] relative">
         {/* Close button */}
         <button
-          onClick={() => setIsOpen(false)}
+          onClick={handleClose}
           className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-200 transition-colors z-10 p-1"
         >
           <X size={20} className="sm:w-6 sm:h-6" />
