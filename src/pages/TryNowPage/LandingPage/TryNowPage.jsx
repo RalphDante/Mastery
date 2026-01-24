@@ -20,94 +20,14 @@ const TryNowPage = () => {
 
   const navigate = useNavigate();
 
-  // Simple SVG icons as components
-  const Camera = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-    </svg>
-  );
-
-  const Brain = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-    </svg>
-  );
-
-  const Zap = () => (
-    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-    </svg>
-  );
-
-  const TrendingUp = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-    </svg>
-  );
-
-  const Sparkles = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3l1.5 1.5L5 6 3.5 4.5L5 3zM12 12l1.5 1.5L12 15l-1.5-1.5L12 12zM19 3l1.5 1.5L19 6l-1.5-1.5L19 3z" />
-    </svg>
-  );
-
   const ArrowRight = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
     </svg>
   );
 
-  const Star = () => (
-    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-    </svg>
-  );
-
-  const steps = [
-    { 
-      icon: Camera, 
-      text: "Snap your notes", 
-      color: "from-violet-500 to-purple-600",
-      description: "Take a photo of your handwritten notes, textbook pages, or study materials with your phone camera"
-    },
-    { 
-      icon: Brain, 
-      text: "AI creates flashcards", 
-      color: "from-purple-500 to-indigo-600",
-      description: "Our advanced AI analyzes your content and automatically generates comprehensive flashcards"
-    },
-    { 
-      icon: Zap, 
-      text: "Study & master", 
-      color: "from-indigo-500 to-violet-600",
-      description: "Use spaced repetition and active recall to memorize concepts faster than traditional methods"
-    }
-  ];
-
-  const testimonials = [
-    { name: "@studyqueen", text: "OMG this is actually magic!!! Improved my grades by 2 letter grades", verified: true },
-    { name: "@crammaster", text: "I wish this was there during my boards 😭. Would have saved me hundreds of hours", verified: true },
-    { name: "@notesgirl", text: "It's so easy to understand!", verified: false }
-  ];
-
-  const handleSignIn = () => {
-    // Handle sign in logic
-  };
-
   useEffect(() => {
     setIsVisible(true);
-    const interval = setInterval(() => {
-      setCurrentStep((prev) => (prev + 1) % steps.length);
-    }, 2000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const counter = setInterval(() => {
-      setCount(prev => prev < 47829 ? prev + Math.floor(Math.random() * 3) + 1 : 47829);
-    }, 100);
-    return () => clearInterval(counter);
   }, []);
 
   // Add structured data for SEO
@@ -132,13 +52,13 @@ const TryNowPage = () => {
 
   return (
     <>
-      {/* SEO Meta Tags - These would typically go in your document head */}
+      {/* SEO Meta Tags */}
       <script 
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
       
-      <div className="min-h-screen text-white overflow-hidden">
+      <div className="min-h-screen overflow-hidden">
         {showModal && (
           <CreateWithAIDemoModal 
             onClose={() => setShowModal(false)}
@@ -146,146 +66,158 @@ const TryNowPage = () => {
           />
         )}
 
-        {/* Navigation */}
-        <nav className="relative z-10 flex justify-between items-center p-3 max-w-7xl mx-auto" role="navigation" aria-label="Main navigation">
-          <div className="flex items-center space-x-2">
-            <img 
-              src="/images/brain-21.svg" 
-              alt="Mastery AI Flashcard Generator Logo"
-              className="w-9 h-9"
-              width="36"
-              height="36"
+        {/* Dark Header Section - Navbar + Hero */}
+        <div className="bg-slate-900 text-white">
+          {/* Navigation */}
+          <nav className="relative z-10 flex justify-between items-center p-3 max-w-7xl mx-auto" role="navigation" aria-label="Main navigation">
+            <div className="flex items-center space-x-2">
+              <img 
+                src="/images/brain-21.svg" 
+                alt="Mastery AI Flashcard Generator Logo"
+                className="w-9 h-9"
+                width="36"
+                height="36"
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
+                Mastery
+              </span>
+            </div>
+            <SignUpBtn 
+              signIn = {signIn}
             />
-            <span className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">
-              Mastery
-            </span>
-          </div>
-          <SignUpBtn 
-            signIn = {signIn}
+          </nav>
+
+          {/* Hero Section */}
+          <HeroSection
+            setShowModal={setShowModal}
+            signIn={signIn}
           />
-        </nav>
+        </div>
 
-          
-
-
-        {/* Hero Section */}
-        <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-10">
-          <div className="text-center">
-            <HeroSection
-              setShowModal={setShowModal}
-              signIn={signIn}
-            />
-
-            {/* <TestimonialsCarousel /> */}
+        {/* Light Grey Content Section */}
+        <div className="bg-gray-50">
+          <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
             
-
-            {/* Problem/Agitate/Solve Section */}
-            <section className="mb-12 sm:mb-16 lg:mb-20 mx-auto px-4 sm:px-0">
-              {/* Problem Headline */}
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6 text-center">
-                Here's The Problem <span className="text-violet-400">You're</span> Facing
-              </h2>
-              
-              {/* Agitation Box */}
-              <div className="mb-6 sm:mb-8 max-w-4xl mx-auto">
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-1 sm:mb-2">
-                  Everyone says the same thing: <span className="text-red-400 font-semibold">"Just study harder. Put in the hours."</span>
-                </p>
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed mb-1 sm:mb-2">
-                  So you do.<span className="text-red-400 font-semibold">{" "}10 hours cramming</span>. Miss the party. Forget it all by Tuesday.
-                </p>
-                <p className="text-base sm:text-lg lg:text-xl xl:text-2xl text-gray-300 leading-relaxed">
-                  There's a better way.
-                </p>
-              </div>
-            </section>
-
             {/* Benefits Section */}
-            <section className="mb-12 sm:mb-16 lg:mb-20 px-4 sm:px-0" aria-labelledby="benefits">
-              {/* Transition */}
-              {/* <div className="text-center mb-6 sm:mb-8">
-                <p className="text-xl sm:text-2xl lg:text-3xl font-semibold px-4">
-                  What if you could Cut study time in Half AND make it actually fun?
-                </p>
-              </div> */}
-
-              {/* Solution */}
-              <div className=" max-w-6xl mx-auto">
-                {/* <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center px-4">
-                  Here's Where <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent ">
-                  Mastery
-                  </span> Changes Everything
-                </h3> */}
-                
-                {/* 3 COLUMNS - Stack on mobile, side-by-side on desktop */}
-                <div className="grid grid-cols-1  gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <section className="mb-12 sm:mb-16 lg:mb-20" aria-labelledby="benefits">
+              <div className="max-w-6xl mx-auto">
+                <div className="space-y-12 sm:space-y-16 lg:space-y-20">
                   
-                  {/* Row 1 */}
-                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-xl p-5 sm:p-6 border border-white/10">
-                    <div className="flex items-start gap-3 mb-3">
-                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Zap className="w-5 h-5" />
-                      </div> */}
-                      <div>
-                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-violet-400">
+                  {/* Benefit 1: Upload Notes */}
+                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                      {/* Visual First - Mobile & Desktop */}
+                      <div className="bg-gradient-to-br from-violet-50 to-purple-50 p-8 sm:p-10 lg:p-12 flex items-center justify-center order-1">
+                        <div className="w-full max-w-md">
+                          <div className="flex items-center justify-center gap-4 sm:gap-6">
+                            {/* Step 1: Upload */}
+                            <div className="flex flex-col items-center">
+                              <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl bg-white shadow-lg flex items-center justify-center mb-3 transform hover:scale-105 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" className='w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-violet-600' viewBox="0 0 256 256">
+                                  <rect width="256" height="256" fill="none"/>
+                                  <path fill="currentColor" d="m213.66 66.34l-40-40A8 8 0 0 0 168 24H88a16 16 0 0 0-16 16v16H56a16 16 0 0 0-16 16v144a16 16 0 0 0 16 16h112a16 16 0 0 0 16-16v-16h16a16 16 0 0 0 16-16V72a8 8 0 0 0-2.34-5.66M136 192H88a8 8 0 0 1 0-16h48a8 8 0 0 1 0 16m0-32H88a8 8 0 0 1 0-16h48a8 8 0 0 1 0 16m64 24h-16v-80a8 8 0 0 0-2.34-5.66l-40-40A8 8 0 0 0 136 56H88V40h76.69L200 75.31Z"/>
+                                </svg>
+                              </div>
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">Upload</p>
+                              <p className="text-xs sm:text-sm text-gray-600">Notes</p>
+                            </div>
+
+                            {/* Arrow */}
+                            <svg xmlns="http://www.w3.org/2000/svg" className='w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0' viewBox="0 0 24 24">
+                              <rect width="24" height="24" fill="none"/>
+                              <path fill="#7c3aed" d="M23 11v2h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v1h-1v-1h-1v-1h-1v-1h1v-1h1v-1h1v-1h1v-1h1v-1h1v-1H1v-4h15V9h-1V8h-1V7h-1V6h-1V5h-1V4h-1V3h1V2h1V1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1h1v1z"/>
+                            </svg>
+
+                            {/* Step 2: Flashcards */}
+                            <div className="flex flex-col items-center">
+                              <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-36 lg:h-36 rounded-2xl bg-white shadow-lg flex items-center justify-center mb-3 transform hover:scale-105 transition-transform">
+                                <svg xmlns="http://www.w3.org/2000/svg" className='w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 text-violet-600' viewBox="0 0 24 24">
+                                  <path fill="currentColor" d="m21.47 4.35l-1.34-.56v9.03l2.43-5.86c.41-1.02-.06-2.19-1.09-2.61m-19.5 3.7L6.93 20a2.01 2.01 0 0 0 1.81 1.26c.26 0 .53-.05.79-.16l7.37-3.05c.75-.31 1.21-1.05 1.23-1.79c.01-.26-.04-.55-.13-.81L13 3.5a1.95 1.95 0 0 0-1.81-1.25c-.26 0-.52.06-.77.15L3.06 5.45a1.994 1.994 0 0 0-1.09 2.6m16.15-3.8a2 2 0 0 0-2-2h-1.45l3.45 8.34"/>
+                                </svg>
+                              </div>
+                              <p className="text-sm sm:text-base font-semibold text-gray-900">Get</p>
+                              <p className="text-xs sm:text-sm text-gray-600">Flashcards</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Text Content */}
+                      <div className="p-8 sm:p-10 lg:p-12 flex flex-col justify-center order-2">
+                        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
                           Upload Notes → Get Flashcards in 15 Seconds
-                        </h4>
-                        <p className="text-gray-300 text-xl text-left leading-relaxed">
-                          <span className="font-semibold">Which means you get your weekends back.</span> No more Sunday nights making flashcards while your friends are out.
+                        </h3>
+                        <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
+                          <span className="font-semibold text-gray-900">Get your weekends back.</span> No more Sunday nights making flashcards while your friends are out.
                         </p>
                       </div>
                     </div>
-                    <div className='w-full h-full bg-blue-600'>
-                    </div>
-                   
                   </div>
 
-                  {/* Row 2 */}
-                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
-                    <div className='w-full h-full bg-blue-600'>
-                    </div>
-                    <div className="flex items-start gap-3 mb-3">
-                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 flex items-center justify-center flex-shrink-0">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div> */}
-                      <div>
-                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-purple-400">
-                          Party Up With Friends and Fight Bosses
-                        </h4>
-                        <p className="text-gray-300 text-xl text-left leading-relaxed">
-                          <span className="font-semibold">Which means you'll actually look forward to studying</span> instead of dreading it.
+                  {/* Benefit 2: Party Up - Reversed Layout on Desktop */}
+                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                      {/* Text Content - Order 1 on mobile, 2 on desktop */}
+                      <div className="p-8 sm:p-10 lg:p-12 flex flex-col justify-center order-2 lg:order-1">
+                        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                          Study With Friends in Real-Time
+                        </h3>
+                        <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
+                          <span className="font-semibold text-gray-900">Actually look forward to studying</span> instead of dreading it. Collaborate and compete with your study group.
                         </p>
                       </div>
-                    </div>              
+
+                      {/* Visual - Order 2 on mobile, 1 on desktop */}
+                      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-8 sm:p-10 lg:p-12 flex items-center justify-center order-1 lg:order-2">
+                        <div className="w-full max-w-sm">
+                          <div className="bg-white rounded-2xl shadow-lg p-2 transform hover:scale-105 transition-transform">
+                            <img
+                              src="/images/icons/Party Aspect.png"
+                              alt="Study together with friends"
+                              className="w-full h-auto rounded-2xl"
+                              style={{ imageRendering: 'pixelated' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Row 3 */}
-                  <div className="grid grid-cols-2 gap-6 bg-white/5 rounded-2xl p-5 sm:p-6 border border-white/10">
-                    <div className="flex items-start gap-3 mb-3">
-                      {/* <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                        <Zap className="w-5 h-5" />
-                      </div> */}
-                      <div>
-                        <h4 className="mb-6 text-left text-base sm:text-3xl font-semibold text-indigo-400">
-                         Active recall built in. The same science med students use.
-                        </h4>
-                        <p className="text-gray-300 text-xl text-left leading-relaxed">
-                          <span className="font-semibold">Which means you're getting better grades</span> while it feels like you're just gaming with friends.
+                  {/* Benefit 3: Track Progress */}
+                  <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
+                      {/* Visual First */}
+                      <div className="bg-gradient-to-br from-indigo-50 to-violet-50 p-8 sm:p-10 lg:p-12 flex items-center justify-center order-1">
+                        <div className="w-full max-w-sm">
+                          <div className="bg-white rounded-2xl p-2 shadow-lg transform hover:scale-105 transition-transform">
+                            <img
+                              src="/images/icons/Consistency Aspect.png"
+                              alt="Track your study progress"
+                              className="w-full h-auto rounded-2xl"
+                              style={{ imageRendering: 'pixelated' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Text Content */}
+                      <div className="p-8 sm:p-10 lg:p-12 flex flex-col justify-center order-2">
+                        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                          Track Your Progress, Minute by Minute
+                        </h3>
+                        <p className="text-lg sm:text-xl text-gray-600 leading-relaxed">
+                          <span className="font-semibold text-gray-900">See exactly where your effort goes.</span> Build consistency and stay accountable with detailed analytics.
                         </p>
                       </div>
                     </div>
-                    <div className='w-full h-full bg-blue-600'>
-                    </div>
-                   
-                  </div>                
+                  </div>
+
                 </div>
 
                 {/* CTAs */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 sm:px-0">
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center mt-12">
                   <button 
-                    className="group bg-gradient-to-r from-violet-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+                    className="group bg-gradient-to-r from-violet-500 to-purple-600 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
                     onClick={() => signIn()}
                   >
                     <span>Start Free</span>
@@ -293,64 +225,57 @@ const TryNowPage = () => {
                   </button>
                   
                   <button 
-                    className="group border-2 border-violet-400 bg-violet-500/10 hover:bg-violet-500/20 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
+                    className="group border-2 border-violet-600 text-violet-600 bg-white hover:bg-violet-50 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
                     onClick={() => navigate('/pricing')}
                   >
                     <span>See Pro Features</span>
                   </button>
                 </div>
 
-                <p className="text-center text-xs sm:text-sm text-gray-400 mt-4 px-4">
+                <p className="text-center text-sm text-gray-600 mt-4">
                   Start with 5 free AI generations. No credit card required.
                 </p>
               </div>
             </section>
 
+            {/* Testimonials */}
             <Testimonials />
 
             {/* FAQ Section */}
-            <section className="mb-12 sm:mb-16 lg:mb-20 text-left max-w-4xl mx-auto px-4" aria-labelledby="faq">
-              <h2 id="faq" className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">
+            <section className="mb-12 sm:mb-16 lg:mb-20 text-left max-w-4xl mx-auto" aria-labelledby="faq">
+              <h2 id="faq" className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center text-gray-900">
                 Frequently Asked Questions
               </h2>
               <div className="space-y-3 sm:space-y-4">
-                <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
-                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
+                <details className="bg-white rounded-lg p-4 sm:p-5 border border-gray-200 shadow-sm">
+                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-600 mb-2">
                     How does the AI flashcard generator work?
                   </summary>
-                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                     Simply take a photo of your notes, textbook, or any study material. Our AI analyzes the content, extracts key concepts, and automatically creates comprehensive flashcards with questions and answers.
                   </p>
                 </details>
-                <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
-                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
+                <details className="bg-white rounded-lg p-4 sm:p-5 border border-gray-200 shadow-sm">
+                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-600 mb-2">
                     What types of study materials can I upload?
                   </summary>
-                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
+                  <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
                     You can upload photos of handwritten notes, textbook pages, lecture slides, worksheets, and any printed study materials. Our AI works with multiple languages and subjects.
                   </p>
                 </details>
-                {/* <details className="bg-white/5 rounded-lg p-4 sm:p-5 border border-white/10">
-                  <summary className="font-semibold text-base sm:text-lg cursor-pointer text-violet-400 mb-2">
-                    How does Active Recall study mode work?
-                  </summary>
-                  <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
-                    Active Recall uses Science backed data to optimize your study sessions. After each flashcard, rate your performance as Again, Hard, Good, or Easy. Cards you find difficult appear more frequently, while easy cards show up less often, maximizing your learning efficiency.
-                  </p>
-                </details> */}
               </div>
             </section>
 
             {/* Final CTA */}
-            <section className="bg-white/5  backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-violet-500/30 mx-4 sm:mx-0">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
+            <section className="bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-3xl p-8 sm:p-12 shadow-2xl">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4 text-center">
                 Ready to Transform Your Study Routine?
               </h2>
-              <p className="text-base sm:text-lg lg:text-xl text-gray-300 mb-4 sm:mb-6">
+              <p className="text-base sm:text-lg lg:text-xl mb-6 sm:mb-8 text-center opacity-90">
                 Join students who've improved their grades with Mastery Study
               </p>
               <button 
-                className="bg-gradient-to-r from-violet-500 to-purple-600 w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 mx-auto"
+                className="bg-white text-violet-600 w-full sm:w-auto px-8 sm:px-10 py-4 sm:py-5 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3 mx-auto"
                 onClick={() => signIn()}
                 aria-label="Start creating AI flashcards from your notes"
               >
@@ -358,8 +283,8 @@ const TryNowPage = () => {
                 <ArrowRight />
               </button>
             </section>
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
     </>
   );

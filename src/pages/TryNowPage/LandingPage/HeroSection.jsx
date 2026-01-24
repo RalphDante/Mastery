@@ -12,7 +12,7 @@ const HeroSection = ({setShowModal, signIn}) => {
 
   return (
     <div className="container mx-auto mb-5 py-6 sm:py-10">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 max-w-7xl mx-auto px-4">
         
         {/* Text Content - Always First */}
         <div className="flex-1 text-center lg:text-left w-full">
@@ -28,18 +28,18 @@ const HeroSection = ({setShowModal, signIn}) => {
           <div className={`flex flex-row gap-4 sm:gap-6 justify-center lg:justify-start mb-4 sm:mb-6 transition-all duration-1000 delay-200 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
             <div className="text-center">
               <div className="text-2xl sm:text-3xl font-bold text-violet-400">2X</div>
-              <div className="text-xs sm:text-sm text-gray-400 font-medium">retention</div>
-              <div className="text-xs text-gray-500">with active recall</div>
+              <div className="text-xs sm:text-sm text-gray-300 font-medium">retention</div>
+              <div className="text-xs text-gray-400">with active recall</div>
             </div>
             <div className="text-center">
               <div className="text-2xl sm:text-3xl font-bold text-purple-400">50%</div>
-              <div className="text-xs sm:text-sm text-gray-400 font-medium">less time</div>
-              <div className="text-xs text-gray-500">needed to study</div>
+              <div className="text-xs sm:text-sm text-gray-300 font-medium">less time</div>
+              <div className="text-xs text-gray-400">needed to study</div>
             </div>
             <div className="text-center">
               <div className="text-2xl sm:text-3xl font-bold text-indigo-400">80%</div>
-              <div className="text-xs sm:text-sm text-gray-400 font-medium">remember</div>
-              <div className="text-xs text-gray-500">after 1 week</div>
+              <div className="text-xs sm:text-sm text-gray-300 font-medium">remember</div>
+              <div className="text-xs text-gray-400">after 1 week</div>
             </div>
           </div>
 
@@ -50,19 +50,8 @@ const HeroSection = ({setShowModal, signIn}) => {
             Party up with friends. <br></br>You'll actually <span className="text-violet-400 font-semibold"> remember </span> what you learn.
           </p>
 
-          {/* CTA Button */}
-          {/* <div className={`flex justify-center lg:justify-start transition-all duration-1000 delay-600 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            <button 
-              className="w-full sm:w-auto group bg-gradient-to-r from-violet-500 to-purple-600 px-8 py-4 rounded-full text-lg sm:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105"
-              onClick={() => signIn()}
-              aria-label="Start your study adventure"
-            >
-              <span>Start Adventure</span>
-            </button>
-          </div> */}
-
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start items-stretch sm:items-center px-4 sm:px-0">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start items-stretch sm:items-center">
             <button 
               className="group bg-gradient-to-r from-violet-500 to-purple-600 px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg lg:text-xl font-bold hover:shadow-2xl hover:shadow-violet-500/50 transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-2"
               onClick={() => signIn()}
@@ -70,12 +59,7 @@ const HeroSection = ({setShowModal, signIn}) => {
               <span>Start Adventure</span>
               <ArrowRight />
             </button>
-           
-
-            
           </div>
-
-          
         </div>
 
         {/* Image - Shows on mobile below text, on desktop to the right */}
