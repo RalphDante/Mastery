@@ -17,10 +17,12 @@ import MiniLeaderboard from '../../components/MiniLeaderboard.jsx';
 import { awardWithXP } from '../../utils/giveAwardUtils.js';
 // import OverallMasteryV2 from './Overall Mastery/OverallMasteryV2.jsx';
 import SingularMastery from './Overall Mastery/SingularMastery.jsx';
+import QuickTutorial from '../../components/QuickTutorial/QuickTutorial.jsx';
 
 function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showQuickTutorial, setShowQuickTutorial] = useState(true);
   const [showBoss, setShowBoss] = useState(false); 
   const {isTutorialAtStep, completeTutorial, advanceStep, tutorials, loading} = useTutorials();
   const {updateUserProfile} = usePartyContext();
@@ -85,6 +87,11 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
 //     }
 // }, [userProfile, navigate]);
 
+  useEffect(()=>{
+    if(hasNotStartedASession){
+      setShowQuickTutorial(true);
+    }
+  },[]);
 
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
@@ -119,8 +126,12 @@ function Home({onCreateDeckClick, onCreateWithAIModalClick}) {
   }
   return(
     <>
+      {showQuickTutorial && (
+        <>
+          <QuickTutorial />
+        </>
+      )}
 
-    
       {showTimerStart && (
         <>
           <TimerStartedToast 
