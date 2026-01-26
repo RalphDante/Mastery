@@ -96,7 +96,7 @@ const TryNowPage = () => {
 
         {/* Light Grey Content Section */}
         <div className="bg-gray-50">
-          <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-10">
+          <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-5">
             
             {/* Benefits Section */}
             <section className="mb-12 sm:mb-16 lg:mb-20" aria-labelledby="benefits">
@@ -238,7 +238,12 @@ const TryNowPage = () => {
               </div>
             </section>
 
-            {/* Testimonials */}
+            
+          </main>
+        </div>
+
+        {/* Testimonials */}
+        <div className='bg-slate-900 max-w-7xl mx-auto pt-16 px-4'>
             <Testimonials />
 
             {/* FAQ Section */}
@@ -283,8 +288,8 @@ const TryNowPage = () => {
                 <ArrowRight />
               </button>
             </section>
-          </main>
-        </div>
+          </div>
+
       </div>
     </>
   );

@@ -2,7 +2,7 @@ function Testimonials(){
     return(
         <>
             <div className="text-center mb-6 sm:mb-8">
-                <p className="text-gray-900 text-xl sm:text-2xl lg:text-3xl font-semibold px-4">
+                <p className="text-white-900 text-xl sm:text-2xl lg:text-3xl font-semibold px-4">
                     Here's what <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent ">Pro</span> user's are saying
                 </p>
             </div>
