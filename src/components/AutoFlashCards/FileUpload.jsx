@@ -9,6 +9,7 @@ import { logFileUploadEvent, logError } from '../../utils/analytics';
 import { generateFlashcardsFromText } from '../../utils/aiServices/flashCardGeneration';
 import { readPDF, readCSV, readDOCX, readPPTX, readTextFile } from '../../utils/fileProcessing';
 import { performOCR } from '../../utils/ocrProcessing';
+import PageSelector from '../PageSelector';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
@@ -21,6 +22,10 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
     const videoRef = useRef(null);
     const navigate = useNavigate();
     const [topic, setTopic] = useState("");
+
+    const [showPageSelector, setShowPageSelector] = useState(false);
+    const [pendingFile, setPendingFile] = useState(null);
+    const [pdfPageCount, setPdfPageCount] = useState(0);
 
     const [originalUploadedText, setOriginalUploadedText] = useState(null);
     
@@ -40,7 +45,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
 
     const { getRootProps, getInputProps } = useDropzone({
         multiple: true, // Enable multiple file selection
-        maxSize: 8 * 1024 * 1024, // 8MB limit per file
+        maxSize: 150 * 1024 * 1024, // 150MB limit per file
         accept: {
             'application/pdf': ['.pdf'],
             'text/plain': ['.txt'],
@@ -65,7 +70,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
 
                 if (rejectedFile.errors.find(e => e.code === 'file-too-large')) {
                     const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
-                    alert(`File "${file.name}" is too large (${sizeMB}MB). Please use files under 8MB.`);
+                    alert(`File "${file.name}" is too large (${sizeMB}MB). Please use files under 150MB.`);
                 }
             });
             
@@ -116,14 +121,22 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                     
                     try{
                         if (fileType === 'application/pdf') {
-                            allExtractedText = await readPDF(file, setStatus);
+                            const arrayBuffer = await file.arrayBuffer();
+                            const typedArray = new Uint8Array(arrayBuffer);
+                            const pdf = await pdfjsLib.getDocument(typedArray).promise;
+                            
+                            setPdfPageCount(pdf.numPages);
+                            setPendingFile(file);
+                            setShowPageSelector(true);
+                            setLoading(false); // Stop loading while user selects
+                            return; // Wait for page selection
                         } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
                             allExtractedText = await readDOCX(file, setStatus);
                         } else if (fileType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
                             allExtractedText = await readPPTX(file, setStatus);
                         } else if (fileType === 'text/plain') {
                             allExtractedText = await readTextFile(file);
-                        } else if (fileType === 'text/csv') {  // ADD THIS BLOCK
+                        } else if (fileType === 'text/csv') {
                             allExtractedText = await readCSV(file);
                         }
 
@@ -241,7 +254,33 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
         }
     });
 
-
+    const handlePageSelection = async (selectedPages) => {
+        setShowPageSelector(false);
+        setLoading(true);
+        setStatus('Processing selected pages...');
+        
+        try {
+            const allExtractedText = await readPDF(pendingFile, setStatus, selectedPages);
+            
+            if (allExtractedText.trim()) {
+                setStatus('Generating flashcards...');
+                await sendToAI(allExtractedText);
+            } else {
+                throw new Error('No text could be extracted from the selected pages');
+            }
+        } catch (error) {
+            console.error('Error processing PDF:', error);
+            if (onError) {
+                onError(error);
+            } else {
+                alert(error.message || 'Failed to process PDF. Please try again.');
+            }
+        } finally {
+            setLoading(false);
+            setStatus('');
+            setPendingFile(null);
+        }
+    };
 
     
     // Add this function to load the PPTX library
@@ -523,7 +562,20 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
 
     return (
         <>
-        
+            {showPageSelector && (
+                <PageSelector
+                    totalPages={pdfPageCount}
+                    fileName={pendingFile?.name}
+                    pdfFile={pendingFile}  // Add this line
+                    onConfirm={handlePageSelection}
+                    onCancel={() => {
+                        setShowPageSelector(false);
+                        setPendingFile(null);
+                        setLoading(false);
+                    }}
+                />
+            )}
+
             {showLimitModal && (
                 <LimitReachedModal 
                     limitType="ai"
@@ -561,7 +613,7 @@ function FileUpload({ cameraIsOpen, onSuccess, onError }) {
                                     </svg>
                                     </div>
                                     <p className="text-white font-black text-xl">DROP PDF, DOCX, OR CSV HERE</p>
-                                    <p className="text-purple-300 text-sm">or click to browse • Max 8MB</p>
+                                    <p className="text-purple-300 text-sm">  or click to browse • PDFs up to 150MB • Other files up to 30MB</p>
                                 </div>
                             </div>
                         </div>

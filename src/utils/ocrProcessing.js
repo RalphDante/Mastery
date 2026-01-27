@@ -147,18 +147,26 @@ export const performOCR = async (imageFile, setStatus, user) => {
     }
 };
 
-export const performLimitedOCROnPDF = async (pdf, setStatus, maxPages = 10) => {
-    const pagesToProcess = Math.min(pdf.numPages, maxPages); // Limit to 10 pages
+export const performLimitedOCROnPDF = async (pdf, setStatus, selectedPages = null) => {
+    // If selectedPages is provided as an array, use it; otherwise default to first 10 pages
+    const pagesToProcess = selectedPages || 
+        Array.from({ length: Math.min(pdf.numPages, 10) }, (_, i) => i + 1);
+    
     let ocrText = '';
     
-    setStatus(`Processing first ${pagesToProcess} pages with OCR...`);
+    console.log('📄 Starting OCR on pages:', pagesToProcess); // DEBUG
     
-    for (let i = 1; i <= pagesToProcess; i++) {
+    setStatus(`Processing ${pagesToProcess.length} pages with OCR...`);
+    
+    // Loop through the page numbers in the array
+    for (let i = 0; i < pagesToProcess.length; i++) {
+        const pageNum = pagesToProcess[i];
+        
         try {
-            setStatus(`Processing page ${i}/${pagesToProcess}...`);
+            setStatus(`Processing page ${pageNum} (${i + 1}/${pagesToProcess.length})...`);
+            console.log(`🔍 OCR processing page ${pageNum}...`); // DEBUG
             
-            const page = await pdf.getPage(i);
-            // Reduced scale for faster processing
+            const page = await pdf.getPage(pageNum);
             const viewport = page.getViewport({ scale: 1.0 });
             
             const canvas = document.createElement('canvas');
@@ -171,10 +179,13 @@ export const performLimitedOCROnPDF = async (pdf, setStatus, maxPages = 10) => {
                 viewport: viewport
             }).promise;
             
-            // Convert to JPEG with compression for faster OCR
+            console.log(`✅ Page ${pageNum} rendered to canvas`); // DEBUG
+            
             const blob = await new Promise(resolve => 
                 canvas.toBlob(resolve, 'image/jpeg', 0.6)
             );
+            
+            console.log(`📷 Page ${pageNum} converted to blob, starting OCR...`); // DEBUG
             
             const { data: { text } } = await window.Tesseract.recognize(
                 blob,
@@ -182,23 +193,27 @@ export const performLimitedOCROnPDF = async (pdf, setStatus, maxPages = 10) => {
                 {
                     logger: m => {
                         if (m.status === 'recognizing text' && m.progress > 0.5) {
-                            setStatus(`Processing page ${i}/${pagesToProcess} - ${Math.round(m.progress * 100)}%`);
+                            setStatus(`Processing page ${pageNum} - ${Math.round(m.progress * 100)}%`);
                         }
                     },
-                    // Faster OCR settings
                     tessedit_ocr_engine_mode: 1,
                     tessedit_pageseg_mode: 6,
                 }
             );
             
+            console.log(`✅ Page ${pageNum} OCR complete. Text length: ${text.length}`); // DEBUG
+            console.log(`Preview: ${text.substring(0, 100)}...`); // DEBUG
+            
             ocrText += text.trim() + ' ';
             
         } catch (error) {
-            console.error(`Error processing page ${i}:`, error);
-            // Continue with other pages instead of failing completely
+            console.error(`❌ Error processing page ${pageNum}:`, error);
             continue;
         }
     }
+    
+    console.log(`📊 Total OCR text length: ${ocrText.length}`); // DEBUG
+    console.log(`Final preview: ${ocrText.substring(0, 200)}...`); // DEBUG
     
     return ocrText;
 };

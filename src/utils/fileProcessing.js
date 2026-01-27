@@ -1,7 +1,7 @@
 // fileProcessing.js
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { loadMammoth, loadJSZip } from "./libraryLoaders";
+import { loadMammoth, loadJSZip, loadTesseract } from "./libraryLoaders";
 import { validateFileBeforeProcessing } from "./fileValidation";
 import { performLimitedOCROnPDF } from "./ocrProcessing";
 import { extractTextFromSlideXML } from "./textExtraction";
@@ -9,8 +9,8 @@ import { extractTextFromSlideXML } from "./textExtraction";
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-export const readPDF = async (file, setStatus) => {
-    validateFileBeforeProcessing(file);
+export const readPDF = async (file, setStatus, selectedPages = null) => {
+    validateFileBeforeProcessing(file, file.type);
     
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -19,29 +19,18 @@ export const readPDF = async (file, setStatus) => {
                 const typedArray = new Uint8Array(event.target.result);
                 const pdf = await pdfjsLib.getDocument(typedArray).promise;
                 
-                const MAX_PAGES = 10;
-                
-                // Single warning for large PDFs
-                if (pdf.numPages > MAX_PAGES) {
-                    const shouldContinue = confirm(
-                        `📚 This PDF has ${pdf.numPages} pages.\n\n` +
-                        `We'll process the first ${MAX_PAGES} pages to stay within limits.\n\n` +
-                        `Tip: Upload specific chapters for best results.\n\n` +
-                        `Continue?`
-                    );
-                    if (!shouldContinue) {
-                        reject(new Error('Processing cancelled by user'));
-                        return;
-                    }
-                }
+                // Use selected pages or default to first 10
+                const pagesToProcess = selectedPages || 
+                    Array.from({ length: Math.min(pdf.numPages, 10) }, (_, i) => i + 1);
                 
                 let text = '';
                 let hasText = false;
                 
-                // Check first 5 pages for text
-                const pagesToCheck = Math.min(pdf.numPages, 5);
-                for (let i = 1; i <= pagesToCheck; i++) {
-                    const page = await pdf.getPage(i);
+                // Check first few pages for text
+                const pagesToCheck = Math.min(5, pagesToProcess.length);
+                for (let i = 0; i < pagesToCheck; i++) {
+                    const pageNum = pagesToProcess[i];
+                    const page = await pdf.getPage(pageNum);
                     const content = await page.getTextContent();
                     const pageText = content.items.map((item) => item.str).join(" ");
                     text += `${pageText} `;
@@ -50,24 +39,23 @@ export const readPDF = async (file, setStatus) => {
                     }
                 }
                 
-                const totalPagesToProcess = Math.min(pdf.numPages, MAX_PAGES);
-                
-                // If PDF has readable text, extract from remaining pages
+                // Process remaining pages
                 if (hasText && text.trim().length > 100) {
-                    setStatus(`Extracting text from ${totalPagesToProcess} pages...`);
-                    
-                    for (let i = pagesToCheck + 1; i <= totalPagesToProcess; i++) {
-                        setStatus(`Processing page ${i}/${totalPagesToProcess}...`);
-                        const page = await pdf.getPage(i);
+                    setStatus(`Extracting text from ${pagesToProcess.length} pages...`);
+                    for (let i = pagesToCheck; i < pagesToProcess.length; i++) {
+                        setStatus(`Processing page ${pagesToProcess[i]}/${pdf.numPages}...`);
+                        const page = await pdf.getPage(pagesToProcess[i]);
                         const content = await page.getTextContent();
                         const pageText = content.items.map((item) => item.str).join(" ");
                         text += `${pageText} `;
                     }
                 } else {
-                    // If no text found, use limited OCR
+                    // Use OCR for image-based PDFs
                     setStatus('PDF appears to be image-based. Performing OCR...');
-                    const ocrPages = Math.min(totalPagesToProcess, 10); // OCR is slower, limit to 10
-                    text = await performLimitedOCROnPDF(pdf, setStatus, ocrPages);
+
+                    await loadTesseract();
+
+                    text = await performLimitedOCROnPDF(pdf, setStatus, pagesToProcess);
                 }
                 
                 resolve(text);
@@ -81,6 +69,7 @@ export const readPDF = async (file, setStatus) => {
 };
 
 export const readDOCX = async (file, setStatus) => {
+    validateFileBeforeProcessing(file, file.type);
     try {
         setStatus('Loading DOCX library...');
         await loadMammoth();
@@ -117,6 +106,7 @@ export const readDOCX = async (file, setStatus) => {
 
 
 export const readPPTX = async (file, setStatus) => {
+    validateFileBeforeProcessing(file, file.type);
     try {
         setStatus('Loading PPTX library...');
         await loadJSZip();
@@ -181,6 +171,7 @@ export const readPPTX = async (file, setStatus) => {
 
 
 export const readCSV = async (file) => {
+    validateFileBeforeProcessing(file, file.type);
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -229,6 +220,7 @@ export const readCSV = async (file) => {
 };
 
 export const readTextFile = async (file) => {
+    validateFileBeforeProcessing(file, file.type);
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => resolve(event.target.result);
